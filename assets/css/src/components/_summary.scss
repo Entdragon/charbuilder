@@ -1,0 +1,23 @@
+.cg-summary-skills {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1em;
+}
+.cg-summary-skills td {
+  border: 1px solid #ccc;
+  padding: 0.5em;
+}
+.cg-summary-skills tr:nth-child(odd) {
+  background: #f9f9f9;
+}
+
+.cg-subsection {
+  margin-top: 1.5em;
+  padding: 0.5em 1em;
+  border-left: 4px solid #ccc;
+  background: #f9f9f9;
+}
+.cg-subsection label {
+  display: block;
+  margin-bottom: 0.75em;
+}

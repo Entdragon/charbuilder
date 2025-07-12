@@ -1,0 +1,4 @@
+# Ignore Node modules and log files
+/node_modules/
+*.log
+

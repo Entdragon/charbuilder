@@ -1,0 +1,167 @@
+:root {
+  /* Tab variables */
+  --cg-tab-font-size:    1rem;
+  --cg-tab-padding:      0.5em 1em;
+  --cg-tab-color:        #333;
+  --cg-tab-bg:           #e0e0e0;
+  --cg-tab-hover-bg:     #d5d5d5;
+  --cg-tab-active-bg:    #ccc;
+  --cg-tab-active-color: #000;
+  --cg-tab-border-radius: 6px;
+  --cg-tab-gap:          1em;
+
+  /* Modal variables */
+  --cg-modal-overlay-bg:  rgba(0,0,0,0.5);
+  --cg-modal-bg:          #fff;
+  --cg-modal-width:       90%;
+  --cg-modal-max-width:   1000px;
+  --cg-modal-height:      90%;
+  --cg-modal-max-height:  800px;
+  --cg-modal-padding:     1.5em;
+  --cg-modal-border-radius: 12px;
+  --cg-modal-shadow:      0 2px 10px rgba(0,0,0,0.3);
+  --cg-close-font-size:   1.2em;
+}
+
+/* ─── Modal Overlay & Modal Window ─────────────────────────────── */
+.cg-modal-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: var(--cg-modal-overlay-bg);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cg-modal {
+  background: var(--cg-modal-bg);
+  width: var(--cg-modal-width);
+  max-width: var(--cg-modal-max-width);
+  height: var(--cg-modal-height);
+  max-height: var(--cg-modal-max-height);
+  overflow: auto;
+  position: relative;
+  padding: var(--cg-modal-padding);
+  border-radius: var(--cg-modal-border-radius);
+  box-shadow: var(--cg-modal-shadow);
+}
+
+/* Modal inner layout centering */
+.cg-modal #cg-app {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* Close button */
+.cg-modal-close {
+  position: absolute;
+  top: 1em;
+  right: 1em;
+  background: transparent;
+  border: none;
+  font-size: var(--cg-close-font-size);
+  cursor: pointer;
+  color: #666;
+  transition: color 0.2s;
+}
+.cg-modal-close:hover {
+  color: #000;
+}
+
+/* ─── Tabs Container (wraps tabs + panels) ─────────────────────── */
+.cg-tab-wrap {
+  border: 2px solid #ccc;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fdfdfd;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+/* ─── Tab Navigation Bar ───────────────────────────────────────── */
+.cg-tabs {
+  list-style: none;
+  display: flex;
+  justify-content: center;
+  gap: var(--cg-tab-gap);
+  padding: 0.5em 1em;
+  margin: 0;
+  background: #eee;
+  border-bottom: 1px solid #ccc;
+}
+.cg-tabs li {
+  padding: var(--cg-tab-padding);
+  font-size: var(--cg-tab-font-size);
+  color: var(--cg-tab-color);
+  background: var(--cg-tab-bg);
+  border-radius: var(--cg-tab-border-radius);
+  transition: background 0.2s, font-weight 0.2s;
+  cursor: default;
+  user-select: none;
+  pointer-events: none;
+  opacity: 0.5;
+}
+.cg-tabs li.active {
+  background: var(--cg-tab-active-bg);
+  color: var(--cg-tab-active-color);
+  font-weight: bold;
+  opacity: 1;
+  pointer-events: auto;
+  cursor: pointer;
+}
+.cg-tabs li:hover:not(.active) {
+  background: var(--cg-tab-hover-bg);
+}
+
+/* ─── Tab Content Panels ───────────────────────────────────────── */
+.tab-panel {
+  display: none;
+  padding: 1em 1.5em;
+}
+.tab-panel.active {
+  display: block;
+}
+
+/* ─── Navigation Buttons (Next / Previous) ─────────────────────── */
+.cg-nav-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 1em;
+  margin: 1.5em 0;
+}
+.cg-nav-buttons button {
+  padding: 0.5em 1em;
+  border: none;
+  background: #ddd;
+  color: #333;
+  font-size: 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.cg-nav-buttons button:hover {
+  background: #ccc;
+}
+
+/* ─── Form-wide buttons ─────────────────────────────────────────── */
+.cg-form-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1em;
+  margin-top: 2em;
+}
+.cg-form-buttons button {
+  padding: 0.6em 1.2em;
+  font-size: 1rem;
+  border-radius: 6px;
+  background: #444;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.cg-form-buttons button:hover {
+  background: #222;
+}

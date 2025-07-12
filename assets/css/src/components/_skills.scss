@@ -1,0 +1,40 @@
+.cg-skills-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.cg-skills-table th,
+.cg-skills-table td {
+  padding: 0.5em 1em;
+  border: 1px solid #ddd;
+}
+.cg-skills-table th {
+  background: #f2f2f2;
+}
+
+.mark-buttons {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+.mark-buttons button {
+  width: 24px;
+  height: 24px;
+  border: 1px solid #aaa;
+  border-radius: 50%;
+  background: #f0f0f0;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  transition: background 0.2s;
+}
+.mark-buttons button.active {
+  background: #3182ce;
+  color: #fff;
+  border-color: #255e99;
+}
+.mark-dice {
+  font-size: 0.85em;
+  text-align: center;
+  color: #444;
+}

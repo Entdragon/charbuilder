@@ -1,0 +1,17 @@
+// new module syntax
+@use 'abstracts/variables' as *;
+@use 'abstracts/mixins'    as *;
+
+@use 'base/reset'          as *;
+@use 'base/typography'     as *;
+
+@use 'layout/grid'         as *;
+@use 'layout/layout'       as *;
+
+@use 'components/tabs'     as *;
+@use 'components/traits'   as *;
+@use 'components/skills'   as *;
+@use 'components/summary'  as *;
+@use 'components/text'     as *;
+@use 'components/details'  as *;
+@use 'components/profile'  as *;

@@ -1,0 +1,26 @@
+.cg-text-box {
+  background: var(--cg-gray-light);
+  border: 1px solid var(--cg-gray);
+  padding: var(--cg-space);
+  border-radius: var(--cg-radius);
+  grid-column: span 2;  /* stretch full width under your two columns */
+}
+.cg-text-box h3 {
+  margin-bottom: var(--cg-space);
+  font-size: 1.2rem;
+  border-bottom: 1px solid var(--cg-gray);
+}
+.cg-text-box label {
+  font-weight: bold;
+  margin-top: var(--cg-space-sm);
+  display: block;
+}
+.cg-text-box textarea {
+  width: 100%;
+  min-height: 6rem;
+  padding: var(--cg-space-sm);
+  margin-top: var(--cg-space-sm);
+  border: 1px solid var(--cg-gray);
+  border-radius: var(--cg-radius);
+  resize: vertical;
+}

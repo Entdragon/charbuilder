@@ -1,0 +1,38 @@
+.cg-profile-box {
+  border: 1px solid var(--cg-gray);
+  border-radius: var(--cg-radius);
+  background: var(--cg-gray-light);
+  padding: var(--cg-space);
+  margin-bottom: var(--cg-space-lg);
+}
+.cg-profile-box h3 {
+  margin-top: 0;
+  font-size: 1.2rem;
+  border-bottom: 1px solid var(--cg-gray);
+  padding-bottom: 0.25rem;
+}
+.cg-profile-box label {
+  display: block;
+  margin: 0.5em 0 0.25em;
+  font-weight: bold;
+}
+.cg-profile-select {
+  width: 100%;
+  padding: 0.5em;
+  font-size: 1rem;
+  border: 1px solid var(--cg-gray);
+  border-radius: var(--cg-radius);
+  margin-bottom: 0.5em;
+}
+.cg-profile-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--cg-space);
+}
+.cg-gift-label {
+  font-weight: bold;
+  margin-top: 1em;
+}
+.cg-gift-item {
+  margin: 0.25em 0;
+}
