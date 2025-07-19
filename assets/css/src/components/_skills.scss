@@ -2,39 +2,59 @@
   width: 100%;
   border-collapse: collapse;
 }
+
 .cg-skills-table th,
 .cg-skills-table td {
   padding: 0.5em 1em;
   border: 1px solid #ddd;
 }
+
 .cg-skills-table th {
   background: #f2f2f2;
 }
 
-.mark-buttons {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 4px;
+.skill-mark-btn {
+  background: var(--cg-gray-light);
+  border: 1px solid var(--cg-gray);
+  border-radius: 4px;
+  padding: 0.25em 0.5em;
 }
-.mark-buttons button {
-  width: 24px;
-  height: 24px;
-  border: 1px solid #aaa;
-  border-radius: 50%;
-  background: #f0f0f0;
-  font-weight: bold;
-  cursor: pointer;
-  padding: 0;
-  line-height: 1;
-  transition: background 0.2s;
-}
-.mark-buttons button.active {
-  background: #3182ce;
+
+.skill-mark-btn.active {
+  background: var(--cg-primary);
   color: #fff;
-  border-color: #255e99;
 }
-.mark-dice {
-  font-size: 0.85em;
-  text-align: center;
-  color: #444;
+
+.skill-mark-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* make the three buttons look like empty dots/squares */
+.skill-mark-btn {
+  width: 1em;
+  height: 1em;
+  margin-right: 0.25em;
+  border: 1px solid var(--cg-gray);
+  background: transparent;
+  padding: 0;
+  border-radius: 50%;       /* circle; use 4px for squares */
+  cursor: pointer;
+}
+
+/* filled blue when active */
+.skill-mark-btn.active {
+  background: var(--cg-primary);
+  border-color: var(--cg-primary);
+}
+
+/* dim & unclickable when budget exhausted */
+.skill-mark-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.marks-display {
+  margin-top: 0.25em;
+  font-size: 0.9em;
 }

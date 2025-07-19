@@ -1,17 +1,13 @@
-// new module syntax
-@use 'abstracts/variables' as *;
-@use 'abstracts/mixins'    as *;
+@charset "UTF-8";
 
-@use 'base/reset'          as *;
-@use 'base/typography'     as *;
+// 1) Variables & Mixins
+@use 'abstracts'  as *;
 
-@use 'layout/grid'         as *;
-@use 'layout/layout'       as *;
+// 2) Reset & Typography
+@use 'base'       as *;
 
-@use 'components/tabs'     as *;
-@use 'components/traits'   as *;
-@use 'components/skills'   as *;
-@use 'components/summary'  as *;
-@use 'components/text'     as *;
-@use 'components/details'  as *;
-@use 'components/profile'  as *;
+// 3) Grid & Layout Utilities
+@use 'layout'     as *;
+
+// 4) All Components (modal, tabs, details, profile, traits, skills, summary, text, print…)
+@use 'components' as *;

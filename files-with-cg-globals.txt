@@ -1,0 +1,8 @@
+assets/js/src/core/formBuilder/render-details.js
+assets/js/src/core/index.js
+assets/js/src/core/skills/trait-utils.js
+assets/js/src/core/summary/api.js
+assets/js/src/core/traits/service.js
+assets/js/src/gifts/free-choices.js
+assets/js/src/gifts/state.js
+assets/js/src/utils/logger.js

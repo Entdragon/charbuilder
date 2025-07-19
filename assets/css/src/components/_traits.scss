@@ -30,6 +30,9 @@
 
 .trait-adjusted {
   margin-top: var(--cg-space-sm);
-  color: #0073aa;
-  font-style: italic;
+  color: #0073aa;       // WordPress blue
+  font-weight: bold;    // make it stand out
+  font-style: normal;   // remove the italic if you had it
 }
+
+

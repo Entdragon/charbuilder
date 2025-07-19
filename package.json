@@ -3,16 +3,19 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build:gifts": "esbuild assets/js/src/gifts/index.js --bundle --outfile=assets/js/dist/gifts.bundle.js --platform=browser --target=es2015 --sourcemap --external:jquery",
-    "build:core":  "esbuild assets/js/src/core/index.js --bundle --outfile=assets/js/dist/core.bundle.js --platform=browser --target=es2015 --sourcemap --external:jquery",
-    "build:css":   "sass assets/css/src/main.scss assets/css/dist/core.css --no-source-map",
-    "build":       "npm run build:gifts && npm run build:core && npm run build:css",
-    "watch:gifts": "esbuild assets/js/src/gifts/index.js --bundle --outfile=assets/js/dist/gifts.bundle.js --platform=browser --target=es2015 --sourcemap --external:jquery --watch",
-    "watch:core":  "esbuild assets/js/src/core/index.js --bundle --outfile=assets/js/dist/core.bundle.js --platform=browser --target=es2015 --sourcemap --external:jquery --watch",
-    "watch:css":   "sass --watch assets/css/src/main.scss:assets/css/dist/core.css --no-source-map"
+    "build:gifts": "esbuild assets/js/src/gifts/index.js --bundle --outfile=assets/js/dist/gifts.bundle.js --platform=browser --target=es2015 --sourcemap --global-name=CG_Gifts",
+    "build:core": "esbuild assets/js/src/core/index.js --bundle --outfile=assets/js/dist/core.bundle.js --platform=browser --target=es2015 --format=iife --sourcemap",
+    "build:css": "sass assets/css/src/main.scss assets/css/dist/core.css --no-source-map",
+    "build": "npm run build:gifts && npm run build:core && npm run build:css",
+    "watch:gifts": "esbuild assets/js/src/gifts/index.js --bundle --outfile=assets/js/dist/gifts.bundle.js --platform=browser --target=es2015 --sourcemap --global-name=CG_Gifts --watch",
+    "watch:core": "esbuild assets/js/src/core/index.js --bundle --outfile=assets/js/dist/core.bundle.js --platform=browser --target=es2015 --format=iife --sourcemap --watch",
+    "watch:css": "sass --watch assets/css/src/main.scss:assets/css/dist/core.css --no-source-map"
   },
   "devDependencies": {
     "esbuild": "^0.19.0",
-    "sass":    "^1.89.2"
+    "sass": "^1.89.2"
+  },
+  "dependencies": {
+    "jquery": "^3.7.1"
   }
 }

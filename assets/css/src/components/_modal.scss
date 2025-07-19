@@ -1,0 +1,138 @@
+// components/_modal.scss
+
+// Overlay
+#cg-modal-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--cg-modal-overlay-bg, rgba(0, 0, 0, 0.5));
+  z-index: 1000;
+  display: none;
+}
+
+// Modal Window
+#cg-modal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: var(--cg-modal-width, 90%);
+  max-width: var(--cg-modal-max-width, 1000px);
+  height: var(--cg-modal-height, 90%);
+  max-height: var(--cg-modal-max-height, 800px);
+  background: var(--cg-modal-bg, #fff);
+  padding: var(--cg-modal-padding, 1.5em);
+  border-radius: var(--cg-modal-border-radius, 12px);
+  box-shadow: var(--cg-modal-shadow, 0 2px 10px rgba(0, 0, 0, 0.3));
+  overflow-y: auto;
+  display: none;
+  z-index: 1001;
+}
+
+// Close Button
+.cg-modal-close {
+  position: absolute;
+  top: 1em;
+  right: 1em;
+  background: transparent;
+  border: none;
+  font-size: var(--cg-close-font-size, 1.2em);
+  cursor: pointer;
+  color: #666;
+  transition: color 0.2s;
+}
+
+.cg-modal-close:hover {
+  color: #000;
+}
+
+// Visibility Toggles
+.cg-hidden {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+.cg-visible {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+// A mini‐backdrop just for the unsaved‐changes prompt
+#cg-unsaved-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1001;
+  display: none;
+}
+
+// The actual unsaved‐changes prompt container
+#cg-unsaved-confirm {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #fff;
+  padding: 1.5rem;
+  border-radius: var(--cg-radius);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  z-index: 1002;
+  display: none;
+
+  &.cg-hidden {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+  }
+
+  &.cg-visible {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+}
+
+// ——— Final: New/Load Splash Overlay ———
+
+#cg-modal-splash {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.6);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1003;
+}
+
+#cg-modal-splash.visible {
+  display: flex !important;
+}
+
+#cg-modal-splash.cg-hidden {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+// Correct class selector for content box
+.cg-modal-splash__content {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 4px;
+  max-width: 90%;
+  width: 400px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  text-align: center;
+}
+
+#cg-modal-splash button {
+  margin: 0.5rem;
+}

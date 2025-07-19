@@ -1,0 +1,35 @@
+// assets/css/src/components/_print.scss
+
+// Extract our print rules so we can reuse them
+@mixin summaryPrintRules {
+  // hide everything
+  body * {
+    visibility: hidden !important;
+    display:    none       !important;
+  }
+
+  // show only the summary sheet
+  #cg-summary-sheet,
+  #cg-summary-sheet * {
+    visibility: visible !important;
+    display:    block     !important;
+  }
+
+  // stretch it full page
+  #cg-summary-sheet {
+    position: absolute !important;
+    top:      0        !important;
+    left:     0        !important;
+    width:    100%     !important;
+  }
+}
+
+// real print preview uses this
+@media print {
+  @include summaryPrintRules;
+}
+
+// our on-screen debug uses this class
+body.print-mode {
+  @include summaryPrintRules;
+}

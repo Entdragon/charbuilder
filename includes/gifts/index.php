@@ -1,10 +1,18 @@
 <?php
-// includes/gifts/index.php
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
 
 require_once __DIR__ . '/ajax-gifts.php';
 
-add_action( 'wp_ajax_cg_get_free_gifts',      'cg_get_free_gifts' );
-add_action( 'wp_ajax_cg_get_species_profile', 'cg_get_species_profile' );
-add_action( 'wp_ajax_cg_get_career_gifts',    'cg_get_career_gifts' );
-add_action( 'wp_ajax_cg_get_eligible_extra_careers', 'cg_get_eligible_extra_careers' );
-// …etc for any other gifts endpoints…
+// Local Knowledge gift (fixed ID)
+add_action(   'wp_ajax_cg_get_local_knowledge',      'cg_get_local_knowledge' );
+add_action(   'wp_ajax_nopriv_cg_get_local_knowledge','cg_get_local_knowledge' );
+
+// Language gift (fixed ID)
+add_action(   'wp_ajax_cg_get_language_gift',        'cg_get_language_gift' );
+add_action(   'wp_ajax_nopriv_cg_get_language_gift','cg_get_language_gift' );
+
+// Free‐choice gifts
+add_action(   'wp_ajax_cg_get_free_gifts',           'cg_get_free_gifts' );
+add_action(   'wp_ajax_nopriv_cg_get_free_gifts',   'cg_get_free_gifts' );
