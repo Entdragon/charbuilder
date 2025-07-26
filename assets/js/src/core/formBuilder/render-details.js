@@ -1,9 +1,7 @@
-// assets/js/src/core/formBuilder/render-details.js
-
 import TraitsService from '../traits/service.js';
 
-const TRAITS = TraitsService.TRAITS;       // ["will","speed","body","mind","trait_species","trait_career"]
-const DICE   = TraitsService.DICE_TYPES;   // ["d8","d6","d4"]
+const TRAITS = TraitsService.TRAITS;
+const DICE   = TraitsService.DICE_TYPES;
 
 function escape(val) {
   const s = val == null ? '' : String(val);
@@ -21,6 +19,7 @@ function capitalize(str = '') {
 
 export default {
   renderTabs() {
+    console.log('[RenderDetails] renderTabs() called');
     return `
       <ul class="cg-tabs">
         <li data-tab="tab-traits" class="active">Details & Traits</li>
@@ -32,34 +31,64 @@ export default {
   },
 
   renderContent(data = {}) {
-    // Build each trait’s <select> using the full DICE array—
-    // no pool removal, so every option is always rendered.
-    const traitFields = TRAITS.map(trait => {
-      const val   = String(data[trait] ?? '');
-      const label = trait === 'trait_species' ? 'Species'
-                  : trait === 'trait_career'  ? 'Career'
-                  : capitalize(trait);
+    console.group('[RenderDetails] renderContent()');
+    console.log('[RenderDetails] Input data:', data);
 
-      const options = DICE.map(die => {
-        const sel = (die === val) ? ' selected' : '';
-        return `<option value="${die}"${sel}>${die}</option>`;
-      }).join('');
+    const boostMap = TraitsService.calculateBoostMap();
+    console.log('[RenderDetails] boostMap result:', boostMap);
+
+    const traitFields = TRAITS.map(trait => {
+      const rawVal = data[trait];
+      const val    = rawVal == null || rawVal === '' ? '' : String(rawVal);
+      const label  = trait === 'trait_species' ? 'Species'
+                   : trait === 'trait_career'  ? 'Career'
+                   : capitalize(trait);
+
+      console.log(`▶️ [RenderDetails] Trait: ${trait}`);
+      console.log(`    ↳ Raw value: "${rawVal}"`);
+      console.log(`    ↳ Cleaned val: "${val}"`);
+      console.log(`    ↳ Label: "${label}"`);
+
+      let options = [`<option value="">— Select —</option>`];
+      DICE.forEach(die => {
+        const sel = die === val ? ' selected' : '';
+        options.push(`<option value="${die}"${sel}>${die}</option>`);
+      });
+
+      const boostCount = boostMap[trait] || 0;
+      let adjusted = '–';
+
+      if (DICE.includes(val)) {
+        const DIE_ORDER = ['d4', 'd6', 'd8', 'd10', 'd12'];
+        const baseIndex = DIE_ORDER.indexOf(val);
+        const boostedIndex = Math.min(baseIndex + boostCount, DIE_ORDER.length - 1);
+        adjusted = DIE_ORDER[boostedIndex];
+        console.log(`    ↳ BaseIndex: ${baseIndex}, BoostCount: ${boostCount}, Adjusted: ${adjusted}`);
+      }
+
+      let suffix = '';
+      if (boostCount === 1) suffix = ' (increased by gift)';
+      else if (boostCount > 1) suffix = ` (increased by gift ${boostCount} times)`;
+
+      const display = adjusted + suffix;
+      console.log(`    ↳ Final display: ${display}`);
 
       return `
         <div class="cg-trait">
           <label>${label} <small>(choose one)</small></label>
           <select id="cg-${trait}" class="cg-trait-select">
-            <option value="">&mdash; Select &mdash;</option>
-            ${options}
+            ${options.join('\n')}
           </select>
           <div
             class="trait-adjusted"
             id="cg-${trait}-adjusted"
             style="color:#0073aa;font-weight:bold;"
-          ></div>
+          >${display}</div>
         </div>
       `;
     }).join('');
+
+    console.groupEnd();
 
     return `
       <div id="tab-traits" class="tab-panel active">
@@ -80,7 +109,7 @@ export default {
               <div>
                 <label>Gender</label>
                 <select id="cg-gender">
-                  <option value="">&mdash; Select &mdash;</option>
+                  <option value="">— Select —</option>
                   <option value="Male"     ${data.gender === 'Male'     ? 'selected' : ''}>Male</option>
                   <option value="Female"   ${data.gender === 'Female'   ? 'selected' : ''}>Female</option>
                   <option value="Nonbinary"${data.gender === 'Nonbinary'? 'selected' : ''}>Nonbinary</option>

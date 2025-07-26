@@ -21,40 +21,37 @@ export default {
         const speciesId = $('#cg-species').val();
         const data      = FormBuilderAPI.getData();
 
-        // Persist selection in builder data
+        console.log('[SpeciesEvents] ⬇ Species changed →', speciesId);
+
         data.profile = data.profile || {};
         data.profile.species = speciesId;
 
-        console.log('[SpeciesEvents] selected species →', speciesId);
-
-        // If no species selected, clear UI and traits
         if (!speciesId) {
+          console.log('[SpeciesEvents] ⚠️ No species selected, clearing state.');
           SpeciesAPI.currentProfile = null;
           SpeciesRender.clearUI();
+          GiftsState.setList([]); // 🧼 Clear gifts to prevent leaks
           TraitsService.refreshAll();
           return;
         }
 
-        // Fetch the full species profile
         SpeciesAPI.loadSpeciesProfile(speciesId, profileData => {
-          // Expose for trait calculations
+          console.log('[SpeciesEvents] 📦 Loaded species profile →', profileData);
           SpeciesAPI.currentProfile = profileData;
-
-          // Merge into saved profile
           data.profile = { ...data.profile, ...profileData };
-          console.log('[SpeciesEvents] loaded profile →', data.profile);
 
-          // Prepare species gifts for state (include manifold)
           const spGifts = [1, 2, 3].map(i => {
             const id       = profileData[`gift_id_${i}`];
             const manifold = parseInt(profileData[`manifold_${i}`], 10) || 1;
             return id ? { id, ct_gifts_manifold: manifold } : null;
           }).filter(Boolean);
 
-          // Merge into central GiftsState
-          GiftsState.setList(spGifts);
+          console.log('[SpeciesEvents] 🧬 Species gifts parsed →', spGifts);
 
-          // Render gifts and refresh trait boosts
+          // Update gift state and THEN refresh traits
+          GiftsState.setList(spGifts);
+          console.log('[SpeciesEvents] ✅ GiftState set. Now rendering and refreshing...');
+
           SpeciesRender.renderGifts(profileData);
           TraitsService.refreshAll();
         });

@@ -1,9 +1,7 @@
 // assets/js/src/core/formBuilder/index.js
 
 const $ = window.jQuery;
-import BuilderUI     from '../main/builder-ui.js';
-import TraitsService from '../traits/service.js';
-import FormBuilder   from './form-builder.js';
+import FormBuilder from './form-builder.js';
 
 const FormBuilderAPI = {
   _data:   {},
@@ -16,19 +14,27 @@ const FormBuilderAPI = {
    * @param {Object} payload
    */
   init(payload = {}) {
+    console.log('[FormBuilderAPI] 🚀 init() called with payload:', payload);
     this._data   = { ...payload };
     this.isNew   = Boolean(payload.isNew);
     this.hasData = !this.isNew;
 
-    $('#cg-form-container').html(
-      FormBuilder.buildForm(this._data)
-    );
+    console.log('[FormBuilderAPI] 📦 Initial state:', {
+      _data: this._data,
+      isNew: this.isNew,
+      hasData: this.hasData
+    });
+
+    const html = FormBuilder.buildForm(this._data);
+    $('#cg-form-container').html(html);
+    console.log('[FormBuilderAPI] 🧱 Form rendered');
   },
 
   /**
    * Return a shallow copy of the in-memory data.
    */
   getData() {
+    console.log('[FormBuilderAPI] 📤 getData() called');
     return { ...this._data };
   },
 
@@ -38,14 +44,15 @@ const FormBuilderAPI = {
    * aren't present on the current tab.
    */
   collectFormData() {
+    console.log('[FormBuilderAPI] 🗃️ collectFormData() called');
+
     const d = {};
 
-    // Preserve existing ID (for updates)
     if (this._data.id) {
       d.id = this._data.id;
+      console.log('[FormBuilderAPI] ⏳ Merging existing ID:', d.id);
     }
 
-    // Basic fields
     d.name        = $('#cg-name').val();
     d.player_name = $('#cg-player-name').val();
     d.age         = $('#cg-age').val();
@@ -57,32 +64,29 @@ const FormBuilderAPI = {
     d.description = $('#cg-description').val();
     d.backstory   = $('#cg-backstory').val();
 
-    // Species & Career
     d.species_id = $('#cg-species').val();
     d.career_id  = $('#cg-career').val();
 
-    // Traits (will, speed, body, mind, trait_species, trait_career)
-    TraitsService.TRAITS.forEach(key => {
-      d[key] = $(`#cg-${key}`).val();
-    });
-
-    // Skill marks: start with whatever is in-memory,
-    // then overwrite from any <input class="skill-marks">
-    const mergedMarks = { ...(this._data.skillMarks || {}) };
+    d.skillMarks = {};
     $('input.skill-marks').each((i, el) => {
       const skillId = $(el).data('skill-id');
-      const val     = parseInt($(el).val(), 10) || 0;
-      mergedMarks[skillId] = val;
+      d.skillMarks[skillId] = parseInt($(el).val(), 10) || 0;
     });
-    d.skillMarks = mergedMarks;
 
-    // Free‐choice gifts
     d.free_gifts = [
       $('#cg-free-choice-0').val() || '',
       $('#cg-free-choice-1').val() || '',
       $('#cg-free-choice-2').val() || ''
     ];
 
+    d.traits = {};
+    $('.cg-trait-select').each((i, sel) => {
+      const key = $(sel).attr('id').replace('cg-', '');
+      const val = $(sel).val();
+      d.traits[key] = val;
+    });
+
+    console.log('[FormBuilderAPI] 📦 Form data collected:', d);
     return d;
   },
 
@@ -93,8 +97,8 @@ const FormBuilderAPI = {
    * @returns {Promise}
    */
   save(shouldClose = false) {
+    console.log('[FormBuilderAPI] 💾 save() called. shouldClose:', shouldClose);
     const payload = this.collectFormData();
-    console.log('[FormBuilderAPI] ▶ save()', payload);
 
     return $.ajax({
       url:    CG_Ajax.ajax_url,
@@ -106,24 +110,30 @@ const FormBuilderAPI = {
       }
     })
     .done(res => {
+      console.log('[FormBuilderAPI] ✅ save done. Response:', res);
       if (!res.success) {
-        console.error('[FormBuilderAPI] save.error()', res.data);
+        console.error('[FormBuilderAPI] ❌ save error:', res.data);
         alert('Save failed: ' + res.data);
         return;
       }
 
-      // Update ID in-memory
-      this._data = { ...this._data, id: res.data.id };
+      this._data   = { ...this._data, id: res.data.id };
       this.isNew   = false;
       this.hasData = true;
 
-      BuilderUI.markClean();
+      console.log('[FormBuilderAPI] 💾 save complete. Updated state:', {
+        _data: this._data,
+        isNew: this.isNew,
+        hasData: this.hasData
+      });
+
+      FormBuilderAPI.onSaveClean();
       if (shouldClose) {
-        BuilderUI.closeBuilder();
+        FormBuilderAPI.onSaveClose();
       }
     })
     .fail((xhr, status, err) => {
-      console.error('[FormBuilderAPI] save.fail()', status, err, xhr.responseText);
+      console.error('[FormBuilderAPI] ❌ save failed', status, err, xhr.responseText);
       alert('Save failed—check console for details.');
     });
   },
@@ -132,6 +142,7 @@ const FormBuilderAPI = {
    * Fetch a list of saved characters (for the Load splash).
    */
   listCharacters() {
+    console.log('[FormBuilderAPI] 📄 listCharacters() called');
     return $.ajax({
       url:    CG_Ajax.ajax_url,
       method: 'POST',
@@ -148,7 +159,7 @@ const FormBuilderAPI = {
    * @param {number|string} id
    */
   fetchCharacter(id) {
-    console.log('[FormBuilderAPI] fetchCharacter() called with ID:', id);
+    console.log('[FormBuilderAPI] 📥 fetchCharacter() called with ID:', id);
     return $.ajax({
       url:    CG_Ajax.ajax_url,
       method: 'POST',
@@ -158,6 +169,14 @@ const FormBuilderAPI = {
         security: CG_Ajax.nonce
       }
     });
+  },
+
+  // Hooks assigned by builder-ui.js:
+  onSaveClean: () => {
+    console.log('[FormBuilderAPI] 🧹 onSaveClean() called');
+  },
+  onSaveClose: () => {
+    console.log('[FormBuilderAPI] 🛑 onSaveClose() called');
   }
 };
 

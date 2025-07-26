@@ -11,123 +11,65 @@ import SkillsAPI       from '../skills';
 import SummaryAPI      from '../summary';
 
 const $ = window.jQuery;
+const TRAITS = TraitsAPI.TRAITS;
 
 export default function bindUIEvents() {
-  console.log('[BuilderEvents] bindUIEvents() called');
+  console.log('[BuilderEvents] 🚀 bindUIEvents() called');
 
-  // 1) Mark form dirty on change & sync into FormBuilderAPI._data
+  // 1) Sync form input/select/textarea changes into FormBuilderAPI._data
   $(document)
     .off('input change', '#cg-modal input, #cg-modal select, #cg-modal textarea')
-    .on('input change', '#cg-modal input, #cg-modal select, #cg-modal textarea', function() {
+    .on('input change', '#cg-modal input, #cg-modal select, #cg-modal textarea', function () {
       BuilderUI.markDirty();
-
       const $el = $(this);
+      const val = $el.val();
+      const id = this.id;
 
-      // Skill-marks inputs don’t have an ID, so handle them explicitly
+      console.log(`[BuilderEvents] ✏️ Change detected on: #${id || '[no-id]'}`, val);
+
+      // Handle skill-marks which don’t use standard ID mapping
       if ($el.hasClass('skill-marks')) {
         const skillId = $el.data('skill-id');
-        const val     = parseInt($el.val(), 10) || 0;
+        const skillVal = parseInt(val, 10) || 0;
+
+        console.log(`[BuilderEvents] 🎯 Skill mark changed → SkillID: ${skillId}, Value: ${skillVal}`);
+
         FormBuilderAPI._data.skillMarks = FormBuilderAPI._data.skillMarks || {};
-        FormBuilderAPI._data.skillMarks[skillId] = val;
+        FormBuilderAPI._data.skillMarks[skillId] = skillVal;
+
+        console.log('[BuilderEvents] 💾 Updated skillMarks:', FormBuilderAPI._data.skillMarks);
         return;
       }
 
-      // All other fields map by stripping “cg-” off the ID
-      const id  = this.id;     // e.g. “cg-name”, “cg-body”, “cg-species”
-      if (!id) return;
+      if (!id) {
+        console.warn('[BuilderEvents] ⚠️ Element changed has no ID. Skipping.');
+        return;
+      }
+
       const key = id.replace(/^cg-/, '');
-      FormBuilderAPI._data[key] = $el.val();
-    });
+      FormBuilderAPI._data[key] = val;
 
-  // 2) Show splash with character dropdown
-  $(document)
-    .off('click', '#cg-open-builder')
-    .on('click', '#cg-open-builder', e => {
-      e.preventDefault();
-      $('#cg-modal-splash').removeClass('cg-hidden').addClass('visible');
-      FormBuilderAPI.listCharacters()
-        .done(resp => {
-          const $sel = $('#cg-splash-load-select').empty();
-          resp.data.forEach(c => {
-            $sel.append(`<option value="${c.id}">${c.name}</option>`);
-          });
-        });
-    });
+      console.log(`[BuilderEvents] 💾 Updated FormBuilderAPI._data["${key}"] →`, val);
 
-  // 3) Open blank builder (NEW CHARACTER) and purge previous state
-  $(document)
-    .off('click', '#cg-new-splash')
-    .on('click', '#cg-new-splash', e => {
-      e.preventDefault();
+      // Update trait-adjusted display, if applicable
+      if (TRAITS.includes(key)) {
+        const $out = $(`#cg-${key}-adjusted`);
+        const isValid = ['d4', 'd6', 'd8'].includes(val);
+        const displayVal = isValid ? val : '–';
 
-      // Hide the splash
-      $('#cg-modal-splash').removeClass('visible').addClass('cg-hidden');
-
-      // Clear all builder state
-      BuilderUI.openBuilder({ isNew: true, payload: {} });
-
-      // Reset skill marks
-      FormBuilderAPI._data.skillMarks = {};
-
-      // Reset species/career
-      FormBuilderAPI._data.species = '';
-      FormBuilderAPI._data.career  = '';
-
-      // Reset gifts state
-      if (window.CG_FreeChoicesState) {
-        window.CG_FreeChoicesState.selected = ['', '', ''];
-        window.CG_FreeChoicesState.gifts    = [];
+        $out.text(displayVal);
+        console.log(`[BuilderEvents] 🧬 Trait adjustment → ${key}: raw "${val}", display "${displayVal}"`);
       }
     });
 
-  // 4) Load character by ID and launch builder
-  $(document)
-    .off('click', '#cg-load-splash')
-    .on('click', '#cg-load-splash', e => {
-      e.preventDefault();
-      const charId = $('#cg-splash-load-select').val();
-      if (!charId) {
-        alert('Please select a character to load.');
-        return;
-      }
-
-      FormBuilderAPI.fetchCharacter(charId)
-        .done(resp => {
-          console.log('🔎 [AJAX] raw cg_get_character response:', resp);
-          const parsed = typeof resp === 'string' ? JSON.parse(resp) : resp;
-          console.log('🔍 [AJAX] parsed.data:', parsed.data);
-
-          const record = parsed.data || parsed;
-          if (!record || !record.id) {
-            return alert('Character could not be loaded.');
-          }
-
-          // Hide the splash, open builder, and seed state from record
-          $('#cg-modal-splash')
-            .removeClass('visible')
-            .addClass('cg-hidden');
-
-          BuilderUI.openBuilder({
-            isNew:   false,
-            payload: record
-          });
-        })
-        .fail((xhr, status, err) => {
-          console.error('Load failed:', xhr.responseText);
-          alert('Could not load character. Check console for details.');
-        });
-    });
-
-  // 5) Wire up Save & Load inside builder
-  bindLoadEvents();
-  bindSaveEvents();
-
-  // 6) Tab navigation → highlight panel + run refreshTab()
+  // 2) Modal tab switching
   $(document)
     .off('click', '#cg-modal .cg-tabs li')
-    .on('click', '#cg-modal .cg-tabs li', function(e) {
+    .on('click', '#cg-modal .cg-tabs li', function (e) {
       e.preventDefault();
       const tabName = $(this).data('tab');
+
+      console.log(`[BuilderEvents] 🔀 Switched to tab: ${tabName}`);
 
       $('#cg-modal .cg-tabs li').removeClass('active');
       $(this).addClass('active');
@@ -138,44 +80,36 @@ export default function bindUIEvents() {
       refreshTab();
     });
 
-  // 7a) Modal close (X)
-  $(document)
-    .off('click', '#cg-modal-close')
-    .on('click', '#cg-modal-close', e => {
-      e.preventDefault();
-      BuilderUI.showUnsaved();
-    });
+  // 3) Unsaved modal logic
+  $(document).off('click', '#cg-modal-close').on('click', '#cg-modal-close', e => {
+    e.preventDefault();
+    console.log('[BuilderEvents] ❌ Modal close clicked');
+    BuilderUI.showUnsaved();
+  });
 
-  // 7b) Modal overlay click
-  $(document)
-    .off('click', '#cg-modal-overlay')
-    .on('click', '#cg-modal-overlay', function(e) {
-      if (e.target !== this) return;
-      BuilderUI.showUnsaved();
-    });
+  $(document).off('click', '#cg-modal-overlay').on('click', '#cg-modal-overlay', function (e) {
+    if (e.target !== this) return;
+    console.log('[BuilderEvents] 🧊 Modal overlay clicked');
+    BuilderUI.showUnsaved();
+  });
 
-  // 7c) Prompt: Save & Exit
-  $(document)
-    .off('click', '#unsaved-save')
-    .on('click', '#unsaved-save', e => {
-      e.preventDefault();
-      console.log('[BuilderEvents] Prompt: SAVE & EXIT clicked');
-      FormBuilderAPI.save(true);
-    });
+  $(document).off('click', '#unsaved-save').on('click', '#unsaved-save', e => {
+    e.preventDefault();
+    console.log('[BuilderEvents] 💾 Unsaved modal → Save and close clicked');
+    FormBuilderAPI.save(true);
+  });
 
-  // 7d) Prompt: Exit Without Save
-  $(document)
-    .off('click', '#unsaved-exit')
-    .on('click', '#unsaved-exit', e => {
-      e.preventDefault();
-      BuilderUI.closeBuilder();
-    });
+  $(document).off('click', '#unsaved-exit').on('click', '#unsaved-exit', e => {
+    e.preventDefault();
+    console.log('[BuilderEvents] 🚪 Unsaved modal → Exit without saving clicked');
+    BuilderUI.closeBuilder();
+  });
 
-  // 7e) Prompt: Cancel
-  $(document)
-    .off('click', '#unsaved-cancel')
-    .on('click', '#unsaved-cancel', e => {
-      e.preventDefault();
-      BuilderUI.hideUnsaved();
-    });
+  $(document).off('click', '#unsaved-cancel').on('click', '#unsaved-cancel', e => {
+    e.preventDefault();
+    console.log('[BuilderEvents] 🔙 Unsaved modal → Cancel clicked');
+    BuilderUI.hideUnsaved();
+  });
+
+  console.log('[BuilderEvents] ✅ Event bindings complete');
 }

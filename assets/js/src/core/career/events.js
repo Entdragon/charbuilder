@@ -26,14 +26,16 @@ export default {
     const careerId = $('#cg-career').val();
     const data     = FormBuilderAPI.getData();
 
-    // Persist the raw selection
+    console.log('[CareerEvents] ⬇ Career changed →', careerId);
+
+    // Save raw selection
     data.career = careerId;
 
-    // If cleared, wipe out gifts & recalc
     if (!careerId) {
+      console.log('[CareerEvents] ⚠️ Career cleared — resetting profile and UI');
       CareerAPI.currentProfile = null;
 
-      // Clear out any merged career fields
+      // Preserve other profile data, only clear career-related parts
       data.profile = {
         ...(data.profile || {}),
         careerName: '',
@@ -45,41 +47,44 @@ export default {
         skill_three: null
       };
 
+      GiftsState.setList([]);
       CareerRender.clearGifts();
       TraitsService.refreshAll();
       SkillsRender.render();
       return;
     }
 
-    // Fetch the career profile
+    // Fetch the career profile (includes skills and gifts)
     CareerAPI.loadGifts(careerId, profile => {
-      // Expose for trait logic
-      CareerAPI.currentProfile = profile;
+      console.log('[CareerEvents] 📦 Loaded career profile →', profile);
 
-      // Merge full profile into data.profile
+      CareerAPI.currentProfile = profile;
       data.profile = { ...(data.profile || {}), ...profile };
 
-      // Build career-gifts list for trait boosts
+      // Extract and structure the 3 gifts for state & boost calculation
       const crGifts = [1, 2, 3].map(i => {
         const id       = profile[`gift_id_${i}`];
         const manifold = parseInt(profile[`manifold_${i}`], 10) || 1;
         return id ? { id, ct_gifts_manifold: manifold } : null;
       }).filter(Boolean);
+
+      console.log('[CareerEvents] 🧬 Parsed career gifts →', crGifts);
       GiftsState.setList(crGifts);
 
-      // 1) Render career gifts UI
+      // 1) Update UI for visible gift list
       CareerRender.renderGifts(profile);
 
-      // 2) Re-render species gifts (so they don’t vanish)
+      // 2) Restore species gifts in UI (if present)
       const sp = data.profile || {};
       if (sp.gift_id_1 || sp.gift_id_2 || sp.gift_id_3) {
+        console.log('[CareerEvents] 🔁 Re-rendering species gifts to preserve UI');
         SpeciesRender.renderGifts(sp);
       }
 
-      // 3) Recalculate all trait boosts
+      // 3) Recalculate boosts and enforce dice rules
       TraitsService.refreshAll();
 
-      // 4) Finally, repaint the Skills tab
+      // 4) Update skill display with career dice
       SkillsRender.render();
     });
   }

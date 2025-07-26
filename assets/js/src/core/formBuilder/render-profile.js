@@ -7,7 +7,12 @@
 
 export default {
   renderContent(data = {}) {
-    return `
+    console.group('[RenderProfile] renderContent() called');
+    console.log('[RenderProfile] Incoming data:', data);
+    console.log('[RenderProfile] species_id:', data.species_id || '');
+    console.log('[RenderProfile] career_id:', data.career_id || '');
+
+    const html = `
       <div id="tab-profile" class="tab-panel">
 
         <div class="cg-profile-box">
@@ -50,5 +55,8 @@ export default {
 
       </div>
     `;
+
+    console.groupEnd();
+    return html;
   }
 };

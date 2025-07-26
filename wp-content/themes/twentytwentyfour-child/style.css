@@ -1,0 +1,229 @@
+/*
+ Theme Name:   Twenty Twenty-Four Child
+ Template:     twentytwentyfour
+ Author:       Your Name
+ Description:  Child theme to register custom menu locations
+ Version:      1.0
+*/
+
+/* ──────────────────────────────────────────────────────────────  
+   OUTER WRAPPER
+────────────────────────────────────────────────────────────── */
+.site-container {
+  max-width: 1280px;
+  margin: 2rem auto;
+  border: 4px solid #5a8f5c;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.site-frame {
+  border: none;
+}
+
+/* ──────────────────────────────────────────────────────────────  
+   HEADER / MAIN / FOOTER
+────────────────────────────────────────────────────────────── */
+.site-header {
+  background: #f7f7f7;
+  padding: 1.5em 2em;
+  border-bottom: 2px solid #888;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+}
+
+.random-header-thumb {
+  position: absolute;
+  top: 20px;
+  right: 30px;
+  z-index: 20;
+}
+
+.random-header-thumb img.random-book-thumb {
+  border: 2px solid #ccc;
+  border-radius: 6px;
+  max-width: 100px;
+  height: auto;
+  transition: transform 0.3s ease;
+}
+
+.random-header-thumb img.random-book-thumb:hover {
+  transform: scale(1.05);
+}
+
+.site-header {
+  position: relative;
+  /* existing styles... */
+}
+
+
+.site-main {
+  padding: 20px;
+  flex: 1;
+}
+
+.site-footer,
+footer {
+  background: #222;
+  color: #fff;
+  padding: 1em;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+}
+
+/* ──────────────────────────────────────────────────────────────  
+   SKILL GRID / CARDS (Responsive Layout)
+────────────────────────────────────────────────────────────── */
+.skill-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 20px;
+}
+
+.skill-card {
+  background: #f7f7f7;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  text-align: center;
+  transition: box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.skill-card:hover {
+  background: #eaeaea;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+
+.skill-card a {
+  display: inline-block;
+  color: #0066cc;
+  font-weight: bold;
+  text-decoration: none;
+  transition: color 0.2s ease, text-decoration 0.2s ease;
+}
+
+.skill-tab {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.9em;
+  font-weight: bold;
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+/* Internal Link Style */
+.skill-tab.internal-link {
+  background: #e7f3ff;
+  color: #195faa;
+  border-color: #b3d2f2;
+}
+
+.skill-tab.internal-link:hover {
+  background: #d4e9fb;
+  color: #144d8c;
+}
+
+/* External Link Style */
+.skill-tab.external-link {
+  background: #fff4d6;
+  color: #8c5a00;
+  border-color: #ffd993;
+}
+
+.skill-tab.external-link:hover {
+  background: #ffecbf;
+  color: #724900;
+}
+
+
+.skill-card a:hover {
+  text-decoration: underline;
+  color: #004999;
+}
+
+/* ──────────────────────────────────────────────────────────────  
+   SIDEBAR LAYOUT & LINKS
+────────────────────────────────────────────────────────────── */
+#site-sidebar {
+  background: #f1f1f1;
+  border-top-left-radius: 16px;
+  border-bottom-left-radius: 16px;
+  border-right: 1px solid #ccc;
+  padding: 2em 1em 1em;
+  width: 250px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s ease;
+  overflow: hidden;
+}
+
+#main-content {
+  display: flex;
+  flex-direction: column;
+  margin-left: 0;
+}
+
+/* Sidebar toggle button */
+#menu-toggle {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  margin-bottom: 1em;
+  cursor: pointer;
+  align-self: flex-start;
+  z-index: 10;
+}
+
+/* Sidebar menu as cards */
+.sidebar-menu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-menu li {
+  margin-bottom: 8px;
+}
+
+.sidebar-menu a {
+  display: block;
+  background: #f7f7f7;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 10px 15px;
+  text-align: center;
+  font-weight: bold;
+  color: #333;
+  text-decoration: none;
+  transition: background 0.3s ease;
+  white-space: nowrap;
+}
+
+.sidebar-menu a:hover {
+  background: #eaeaea;
+}
+
+.book-cover-thumb {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.book-cover-full {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}

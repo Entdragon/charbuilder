@@ -1,27 +1,20 @@
-import MainAPI from './main';
+import MainAPI from './main/index.js';
+import TraitsService from './traits/service.js'; // ✅ CORRECT relative path
+
+// ✅ Expose TraitsService globally
+window.TraitsService = TraitsService;
 
 const Core = {
   init() {
-    console.log('[Core] init() called');           // ← you should see this
+    console.log('[Core] init() called');
     MainAPI.init();
   }
 };
 
-// log when the bundle loads
 console.log('[Core] bundle loaded');
 
-// fire when DOM is ready
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', Core.init);
 } else {
   Core.init();
-}
-
-import SkillsModule from './skills/index.js';
-// … other imports …
-
-export default function initCore() {
-  // … existing binds …
-  SkillsModule.init();
-  // … builder‐events …
 }

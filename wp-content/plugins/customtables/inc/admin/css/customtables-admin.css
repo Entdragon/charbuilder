@@ -1,0 +1,62 @@
+/**
+ * All of the CSS for your admin-specific functionality should be included in this file.
+ *
+ * The file is enqueued from inc/admin/class-admin.php.
+ */
+
+.gtabs {            position: relative;           }
+
+.gtab {
+    background: #eee;
+    width: 100%;
+    opacity: 0;
+    display:none;
+    transition: all 0.4s;
+
+    padding: 20px 1vw;
+}
+.gtabs .active {
+    opacity: 1;
+
+    display:block;
+    top: 0;
+    transition: all 0.4s;
+}
+
+.ct_doc h4{
+    font-weight: 700;
+}
+
+.ct_doc h6{
+    font-weight: 700;
+    font-size:14px;
+}
+
+
+
+.CustomTablesDocumentationTips pre{
+    display: inline-block;
+}
+.CustomTablesDocumentationTips .copy-button {
+    cursor: pointer;
+    padding: 4px 8px;
+    margin-left: 8px;
+    background: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
+}
+.CustomTablesDocumentationTips .copy-button:hover {
+    background: #e0e0e0;
+}
+.CustomTablesDocumentationTips .copy-icon {
+    width: 14px;
+    height: 14px;
+    margin-right: 4px;
+}
+.CustomTablesDocumentationTips .shortcode-container {
+    display: inline-flex;
+    align-items: center;
+}

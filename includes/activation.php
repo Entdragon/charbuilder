@@ -1,8 +1,13 @@
 <?php
+
+namespace CharacterGeneratorDev {
+
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-register_activation_hook( __FILE__, 'cg_activate' );
-function cg_activate() {
+// Correctly namespaced callback reference
+\register_activation_hook( __FILE__, __NAMESPACE__ . '\\cgdev_activate' );
+
+function cgdev_activate() {
     global $wpdb;
     require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
@@ -27,11 +32,13 @@ function cg_activate() {
       free_gift_3  MEDIUMINT(9),
       local_area   TEXT,
       language     TEXT,
-      skill_marks  TEXT, -- JSON string of skill marks
+      skill_marks  TEXT,
       created      DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated      DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       PRIMARY KEY (id)
     ) {$charset};
     ";
-    dbDelta( $sql );
+    \dbDelta( $sql );
 }
+
+} // namespace CharacterGeneratorDev

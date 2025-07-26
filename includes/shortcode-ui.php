@@ -1,11 +1,15 @@
 <?php
+namespace CG_Dev;
+
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-add_shortcode( 'character_generator', 'cg_render_ui' );
-function cg_render_ui() {
-  if ( ! is_user_logged_in() ) {
+// Register the shortcode with a namespaced callback
+\add_shortcode( 'character_generator_dev', __NAMESPACE__ . '\\render_ui' );
+
+function render_ui() {
+  if ( ! \is_user_logged_in() ) {
     return '<p>Please <a href="' 
-      . esc_url( wp_login_url() ) 
+      . \esc_url( \wp_login_url() ) 
       . '">log in</a> to create or load a character.</p>';
   }
 
@@ -68,5 +72,5 @@ function cg_render_ui() {
   </div>
 
   <?php
-  return ob_get_clean();
+  return \ob_get_clean();
 }

@@ -1,0 +1,63 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 2,
+	"name": "customtables/dynamic-block",
+	"version": "1.0.0",
+	"title": "CustomTables Block",
+	"category": "text",
+	"icon": "editor-table",
+	"attributes": {
+		"type": {
+			"type": "string",
+			"default": 1
+		},
+		"table": {
+			"type": "string",
+			"default": 0
+		},
+		"cataloglayout": {
+			"type": "string",
+			"default": 0
+		},
+		"editlayout": {
+			"type": "string",
+			"default": 0
+		},
+		"detailslayout": {
+			"type": "string",
+			"default": 0
+		},
+		"filter": {
+			"type": "string",
+			"default": ""
+		},
+		"orderby": {
+			"type": "string",
+			"default": ""
+		},
+		"order": {
+			"type": "string",
+			"default": ""
+		},
+		"limit": {
+			"type": "string",
+			"default": ""
+		},
+		"loading": {
+			"type": "integer",
+			"default": 0
+		}
+	},
+	"example": {
+		"attributes": {
+
+		}
+	},
+	"supports": {
+		"html": false
+	},
+	"textdomain": "customtables",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css"
+}
