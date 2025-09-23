@@ -1,3 +1,4 @@
+import bindOnce, { makeInitGuard } from '../utils/bind-once.js';
 import BuilderUI       from './builder-ui.js';
 import FormBuilderAPI  from '../formBuilder';
 import refreshTab      from './builder-refresh.js';
@@ -41,8 +42,8 @@ export default function bindUIEvents() {
 
   // 2) Show splash with character dropdown
   $(document)
-    .off('click', '#cg-open-builder')
-    .on('click', '#cg-open-builder', e => {
+    .off('click.cg', '#cg-open-builder')
+    .on('click.cg', '#cg-open-builder', e => {
       e.preventDefault();
       $('#cg-modal-splash').removeClass('cg-hidden').addClass('visible');
       FormBuilderAPI.listCharacters()
@@ -56,8 +57,8 @@ export default function bindUIEvents() {
 
   // 3) Open blank builder (NEW CHARACTER) and purge previous state
   $(document)
-    .off('click', '#cg-new-splash')
-    .on('click', '#cg-new-splash', e => {
+    .off('click.cg', '#cg-new-splash')
+    .on('click.cg', '#cg-new-splash', e => {
       e.preventDefault();
 
       // Hide the splash
@@ -82,8 +83,8 @@ export default function bindUIEvents() {
 
   // 4) Load character by ID and launch builder
   $(document)
-    .off('click', '#cg-load-splash')
-    .on('click', '#cg-load-splash', e => {
+    .off('click.cg', '#cg-load-splash')
+    .on('click.cg', '#cg-load-splash', e => {
       e.preventDefault();
       const charId = $('#cg-splash-load-select').val();
       if (!charId) {
@@ -124,8 +125,8 @@ export default function bindUIEvents() {
 
   // 6) Tab navigation → highlight panel + run refreshTab()
   $(document)
-    .off('click', '#cg-modal .cg-tabs li')
-    .on('click', '#cg-modal .cg-tabs li', function(e) {
+    .off('click.cg', '#cg-modal .cg-tabs li')
+    .on('click.cg', '#cg-modal .cg-tabs li', function(e) {
       e.preventDefault();
       const tabName = $(this).data('tab');
 
@@ -140,24 +141,24 @@ export default function bindUIEvents() {
 
   // 7a) Modal close (X)
   $(document)
-    .off('click', '#cg-modal-close')
-    .on('click', '#cg-modal-close', e => {
+    .off('click.cg', '#cg-modal-close')
+    .on('click.cg', '#cg-modal-close', e => {
       e.preventDefault();
       BuilderUI.showUnsaved();
     });
 
   // 7b) Modal overlay click
   $(document)
-    .off('click', '#cg-modal-overlay')
-    .on('click', '#cg-modal-overlay', function(e) {
+    .off('click.cg', '#cg-modal-overlay')
+    .on('click.cg', '#cg-modal-overlay', function(e) {
       if (e.target !== this) return;
       BuilderUI.showUnsaved();
     });
 
   // 7c) Prompt: Save & Exit
   $(document)
-    .off('click', '#unsaved-save')
-    .on('click', '#unsaved-save', e => {
+    .off('click.cg', '#unsaved-save')
+    .on('click.cg', '#unsaved-save', e => {
       e.preventDefault();
       console.log('[BuilderEvents] Prompt: SAVE & EXIT clicked');
       FormBuilderAPI.save(true);
@@ -165,16 +166,16 @@ export default function bindUIEvents() {
 
   // 7d) Prompt: Exit Without Save
   $(document)
-    .off('click', '#unsaved-exit')
-    .on('click', '#unsaved-exit', e => {
+    .off('click.cg', '#unsaved-exit')
+    .on('click.cg', '#unsaved-exit', e => {
       e.preventDefault();
       BuilderUI.closeBuilder();
     });
 
   // 7e) Prompt: Cancel
   $(document)
-    .off('click', '#unsaved-cancel')
-    .on('click', '#unsaved-cancel', e => {
+    .off('click.cg', '#unsaved-cancel')
+    .on('click.cg', '#unsaved-cancel', e => {
       e.preventDefault();
       BuilderUI.hideUnsaved();
     });

@@ -1,3 +1,4 @@
+import bindOnce, { makeInitGuard } from '../utils/bind-once.js';
 // assets/js/src/core/main/builder-save.js
 
 import BuilderUI      from './builder-ui.js';
@@ -7,8 +8,8 @@ const $ = window.jQuery;
 export default function bindSaveEvents() {
   // Both “Save” and “Save & Close” buttons use the .cg-save-button class
   $(document)
-    .off('click', '.cg-save-button')
-    .on('click', '.cg-save-button', function(e) {
+    .off('click.cg', '.cg-save-button')
+    .on('click.cg', '.cg-save-button', function(e) {
       e.preventDefault();
 
       // Detect if this click should close after saving

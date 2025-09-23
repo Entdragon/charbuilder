@@ -1,32 +1,19 @@
 // assets/js/src/core/species/index.js
+// Coordinates species API + events + population
 
-import SpeciesAPI     from './api.js';
-import SpeciesEvents  from './events.js';
-import FormBuilderAPI from '../formBuilder';
+import SpeciesAPI from './api.js';
+import bindSpeciesEvents from './events.js';
 
-// make sure jQuery’s $ is defined
-const $ = window.jQuery;
+const SpeciesIndex = {
+  _init: false,
 
-export default {
   init() {
-    console.log('[SpeciesIndex] init()');
+    if (this._init) return;
+    this._init = true;
 
-    // bind your change‐handler once
-    if (!SpeciesEvents.bound) {
-      SpeciesEvents.bind();
-    }
-
-    // grab saved species from the builder data
-    const data = FormBuilderAPI.getData();
-
-    // always reload the dropdown
-    SpeciesAPI.loadSpeciesList(() => {
-      // after options are in place, re‐apply selection
-      if (data.profile && data.profile.species) {
-        $('#cg-species')
-          .val(data.profile.species)
-          .trigger('change');
-      }
-    });
+    bindSpeciesEvents();
+    SpeciesAPI.populateSelect('#cg-species');
   }
 };
+
+export default SpeciesIndex;

@@ -1,5 +1,6 @@
 <?php
 /**
+require_once __DIR__ . "/includes/ajax-endpoints.php";
  * Plugin Name:     Character Generator
  * Plugin URI:      https://yourdomain.com/character-generator
  * Description:     Modular character creation system with custom tables, AJAX, and dynamic UI.
@@ -99,3 +100,4 @@ function cg_enqueue_assets() {
     wp_localize_script( 'cg-core', 'CG_CAREERS_LIST', $careers );
 }
 
+require_once __DIR__ . '/includes/ajax-endpoints.php';

@@ -19,6 +19,9 @@
   };
   var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
 
+  // assets/js/src/core/utils/bind-once.js
+  var $ = window.jQuery;
+
   // assets/js/src/gifts/state.js
   var State = {
     // currently selected free‐gift IDs
@@ -66,14 +69,14 @@
   var state_default = State;
 
   // assets/js/src/core/species/api.js
-  var $ = window.jQuery;
+  var $2 = window.jQuery;
   var SpeciesAPI = {
     /**
      * Populate the #cg-species dropdown.
      */
     loadSpeciesList(cb) {
-      const $sel = $("#cg-species").html('<option value="">\u2014 Select Species \u2014</option>');
-      $.post(CG_Ajax.ajax_url, {
+      const $sel = $2("#cg-species").html('<option value="">\u2014 Select Species \u2014</option>');
+      $2.post(CG_Ajax.ajax_url, {
         action: "cg_get_species_list",
         security: CG_Ajax.nonce
       }).done((res) => {
@@ -89,7 +92,7 @@
      * Fetch the full profile for one species (gifts, skills, etc).
      */
     loadSpeciesProfile(speciesId, cb) {
-      $.post(CG_Ajax.ajax_url, {
+      $2.post(CG_Ajax.ajax_url, {
         action: "cg_get_species_profile",
         id: speciesId,
         security: CG_Ajax.nonce
@@ -103,11 +106,11 @@
   var api_default = SpeciesAPI;
 
   // assets/js/src/core/career/api.js
-  var $2 = window.jQuery;
+  var $3 = window.jQuery;
   var CareerAPI = {
     loadList(callback) {
-      const $sel = $2("#cg-career").html('<option value="">\u2014 Select Career \u2014</option>');
-      $2.post(CG_Ajax.ajax_url, {
+      const $sel = $3("#cg-career").html('<option value="">\u2014 Select Career \u2014</option>');
+      $3.post(CG_Ajax.ajax_url, {
         action: "cg_get_career_list",
         security: CG_Ajax.nonce
       }).done((res) => {
@@ -121,7 +124,7 @@
       });
     },
     loadGifts(careerId, callback) {
-      $2.post(CG_Ajax.ajax_url, {
+      $3.post(CG_Ajax.ajax_url, {
         action: "cg_get_career_gifts",
         id: careerId,
         security: CG_Ajax.nonce
@@ -197,14 +200,14 @@
      * Enforce dice‐count limits on the trait selects.
      */
     enforceCounts() {
-      const $24 = window.jQuery;
+      const $25 = window.jQuery;
       const freq = { d8: 0, d6: 0, d4: 0 };
-      $24(".cg-trait-select").each(function() {
-        const v = $24(this).val();
+      $25(".cg-trait-select").each(function() {
+        const v = $25(this).val();
         if (v && v in freq) freq[v]++;
       });
-      $24(".cg-trait-select").each(function() {
-        const $sel = $24(this);
+      $25(".cg-trait-select").each(function() {
+        const $sel = $25(this);
         const current = $sel.val() || "";
         let options = '<option value="">\u2014 Select \u2014</option>';
         DICE_TYPES.forEach((die) => {
@@ -220,15 +223,15 @@
      * Update the “adjusted” labels under each trait select.
      */
     updateAdjustedDisplays() {
-      const $24 = window.jQuery;
+      const $25 = window.jQuery;
       const boosts = this.calculateBoostMap();
       TRAITS.forEach((traitKey) => {
-        const $sel = $24(`#cg-${traitKey}`);
+        const $sel = $25(`#cg-${traitKey}`);
         const base = $sel.val() || "d4";
         const idx = DIE_ORDER.indexOf(base);
         const count = boosts[traitKey] || 0;
         const boosted = DIE_ORDER[Math.min(idx + count, DIE_ORDER.length - 1)];
-        $24(`#cg-${traitKey}-adjusted`).text(boosted);
+        $25(`#cg-${traitKey}-adjusted`).text(boosted);
       });
     },
     /**
@@ -482,7 +485,7 @@
   };
 
   // assets/js/src/core/formBuilder/form-builder.js
-  var $3 = window.jQuery;
+  var $4 = window.jQuery;
   var FormBuilder = {
     buildForm(data = {}) {
       console.log("\u{1F6E0}\uFE0F FormBuilder.buildForm fired:", data);
@@ -505,14 +508,14 @@
 </form>`;
       setTimeout(() => {
         console.log("\u{1F53D} [buildForm] SELECT VALUES AFTER RENDER:", {
-          will: $3("#cg-will").val(),
-          speed: $3("#cg-speed").val(),
-          body: $3("#cg-body").val(),
-          mind: $3("#cg-mind").val(),
-          trait_species: $3("#cg-trait_species").val(),
-          trait_career: $3("#cg-trait_career").val(),
-          profileSpecies: $3("#cg-species").val(),
-          profileCareer: $3("#cg-career").val()
+          will: $4("#cg-will").val(),
+          speed: $4("#cg-speed").val(),
+          body: $4("#cg-body").val(),
+          mind: $4("#cg-mind").val(),
+          trait_species: $4("#cg-trait_species").val(),
+          trait_career: $4("#cg-trait_career").val(),
+          profileSpecies: $4("#cg-species").val(),
+          profileCareer: $4("#cg-career").val()
         });
       }, 0);
       return html;
@@ -521,7 +524,7 @@
   var form_builder_default = FormBuilder;
 
   // assets/js/src/core/formBuilder/index.js
-  var $4 = window.jQuery;
+  var $5 = window.jQuery;
   var FormBuilderAPI = {
     _data: {},
     isNew: true,
@@ -535,7 +538,7 @@
       this._data = __spreadValues({}, payload);
       this.isNew = Boolean(payload.isNew);
       this.hasData = !this.isNew;
-      $4("#cg-form-container").html(
+      $5("#cg-form-container").html(
         form_builder_default.buildForm(this._data)
       );
     },
@@ -555,32 +558,32 @@
       if (this._data.id) {
         d.id = this._data.id;
       }
-      d.name = $4("#cg-name").val();
-      d.player_name = $4("#cg-player-name").val();
-      d.age = $4("#cg-age").val();
-      d.gender = $4("#cg-gender").val();
-      d.motto = $4("#cg-motto").val();
-      d.goal1 = $4("#cg-goal1").val();
-      d.goal2 = $4("#cg-goal2").val();
-      d.goal3 = $4("#cg-goal3").val();
-      d.description = $4("#cg-description").val();
-      d.backstory = $4("#cg-backstory").val();
-      d.species_id = $4("#cg-species").val();
-      d.career_id = $4("#cg-career").val();
+      d.name = $5("#cg-name").val();
+      d.player_name = $5("#cg-player-name").val();
+      d.age = $5("#cg-age").val();
+      d.gender = $5("#cg-gender").val();
+      d.motto = $5("#cg-motto").val();
+      d.goal1 = $5("#cg-goal1").val();
+      d.goal2 = $5("#cg-goal2").val();
+      d.goal3 = $5("#cg-goal3").val();
+      d.description = $5("#cg-description").val();
+      d.backstory = $5("#cg-backstory").val();
+      d.species_id = $5("#cg-species").val();
+      d.career_id = $5("#cg-career").val();
       service_default.TRAITS.forEach((key) => {
-        d[key] = $4(`#cg-${key}`).val();
+        d[key] = $5(`#cg-${key}`).val();
       });
       const mergedMarks = __spreadValues({}, this._data.skillMarks || {});
-      $4("input.skill-marks").each((i, el) => {
-        const skillId = $4(el).data("skill-id");
-        const val = parseInt($4(el).val(), 10) || 0;
+      $5("input.skill-marks").each((i, el) => {
+        const skillId = $5(el).data("skill-id");
+        const val = parseInt($5(el).val(), 10) || 0;
         mergedMarks[skillId] = val;
       });
       d.skillMarks = mergedMarks;
       d.free_gifts = [
-        $4("#cg-free-choice-0").val() || "",
-        $4("#cg-free-choice-1").val() || "",
-        $4("#cg-free-choice-2").val() || ""
+        $5("#cg-free-choice-0").val() || "",
+        $5("#cg-free-choice-1").val() || "",
+        $5("#cg-free-choice-2").val() || ""
       ];
       return d;
     },
@@ -593,7 +596,7 @@
     save(shouldClose = false) {
       const payload = this.collectFormData();
       console.log("[FormBuilderAPI] \u25B6 save()", payload);
-      return $4.ajax({
+      return $5.ajax({
         url: CG_Ajax.ajax_url,
         method: "POST",
         data: {
@@ -623,7 +626,7 @@
      * Fetch a list of saved characters (for the Load splash).
      */
     listCharacters() {
-      return $4.ajax({
+      return $5.ajax({
         url: CG_Ajax.ajax_url,
         method: "POST",
         data: {
@@ -639,7 +642,7 @@
      */
     fetchCharacter(id) {
       console.log("[FormBuilderAPI] fetchCharacter() called with ID:", id);
-      return $4.ajax({
+      return $5.ajax({
         url: CG_Ajax.ajax_url,
         method: "POST",
         data: {
@@ -653,26 +656,26 @@
   var formBuilder_default = FormBuilderAPI;
 
   // assets/js/src/core/main/builder-ui.js
-  var $5 = window.jQuery;
+  var $6 = window.jQuery;
   var isDirty = false;
   function openBuilder({ isNew = false, payload = {} } = {}) {
     console.log("[BuilderUI] openBuilder() called with opts:", { isNew, payload });
     isDirty = false;
-    $5("#cg-unsaved-confirm, #cg-unsaved-backdrop").hide().css("display", "none");
+    $6("#cg-unsaved-confirm, #cg-unsaved-backdrop").hide().css("display", "none");
     const data = __spreadProps(__spreadValues({}, payload), {
       isNew
     });
     formBuilder_default.init(data);
-    $5("#cg-modal-overlay, #cg-modal").removeClass("cg-hidden").addClass("cg-visible").css("display", "block");
+    $6("#cg-modal-overlay, #cg-modal").removeClass("cg-hidden").addClass("cg-visible").css("display", "block");
     if (isNew) {
-      $5('#cg-modal .cg-tabs li[data-tab="tab-traits"]').click();
+      $6('#cg-modal .cg-tabs li[data-tab="tab-traits"]').click();
     }
   }
   function closeBuilder() {
-    $5("#cg-unsaved-backdrop").hide().css("display", "none");
-    $5("#cg-unsaved-confirm").removeClass("cg-visible").addClass("cg-hidden").hide().css("display", "none");
-    $5("#cg-modal, #cg-modal-overlay").removeClass("cg-visible").addClass("cg-hidden").fadeOut(200, () => {
-      $5("#cg-form-container").empty();
+    $6("#cg-unsaved-backdrop").hide().css("display", "none");
+    $6("#cg-unsaved-confirm").removeClass("cg-visible").addClass("cg-hidden").hide().css("display", "none");
+    $6("#cg-modal, #cg-modal-overlay").removeClass("cg-visible").addClass("cg-hidden").fadeOut(200, () => {
+      $6("#cg-form-container").empty();
     });
     isDirty = false;
   }
@@ -686,11 +689,11 @@
     return isDirty;
   }
   function showUnsaved() {
-    if (!$5("#cg-unsaved-backdrop").length) {
-      $5('<div id="cg-unsaved-backdrop"></div>').appendTo("body");
+    if (!$6("#cg-unsaved-backdrop").length) {
+      $6('<div id="cg-unsaved-backdrop"></div>').appendTo("body");
     }
-    const $backdrop = $5("#cg-unsaved-backdrop");
-    const $prompt = $5("#cg-unsaved-confirm");
+    const $backdrop = $6("#cg-unsaved-backdrop");
+    const $prompt = $6("#cg-unsaved-confirm");
     if (!$prompt.parent().is("body")) {
       $prompt.appendTo("body");
     }
@@ -698,8 +701,8 @@
     $prompt.removeClass("cg-hidden").addClass("cg-visible").show().css("display", "block");
   }
   function hideUnsaved() {
-    $5("#cg-unsaved-backdrop").hide().css("display", "none");
-    $5("#cg-unsaved-confirm").removeClass("cg-visible").addClass("cg-hidden").hide().css("display", "none");
+    $6("#cg-unsaved-backdrop").hide().css("display", "none");
+    $6("#cg-unsaved-confirm").removeClass("cg-visible").addClass("cg-hidden").hide().css("display", "none");
   }
   var builder_ui_default = {
     openBuilder,
@@ -712,16 +715,16 @@
   };
 
   // assets/js/src/core/traits/events.js
-  var $6 = window.jQuery;
+  var $7 = window.jQuery;
   var bound = false;
   var events_default = {
     bind() {
       if (bound) return;
       bound = true;
-      $6(function() {
+      $7(function() {
         service_default.refreshAll();
       });
-      $6(document).off("change", ".cg-trait-select").on("change", ".cg-trait-select", () => {
+      $7(document).off("change", ".cg-trait-select").on("change", ".cg-trait-select", () => {
         service_default.refreshAll();
       });
     }
@@ -738,7 +741,7 @@
   };
 
   // assets/js/src/core/species/render.js
-  var $7 = window.jQuery;
+  var $8 = window.jQuery;
   var render_default = {
     renderGifts(profile) {
       const gifts = [
@@ -747,23 +750,23 @@
         { label: "Species Gift Three", name: profile.gift_3 }
       ].filter((g) => g.name);
       const html = gifts.map((g) => `<li><strong>${g.label}:</strong> ${g.name}</li>`).join("");
-      $7("#species-gift-block").html(html);
+      $8("#species-gift-block").html(html);
     },
     clearUI() {
-      $7("#species-gift-block").empty();
-      $7("#cg-species").val("");
+      $8("#species-gift-block").empty();
+      $8("#cg-species").val("");
     }
   };
 
   // assets/js/src/core/species/events.js
-  var $8 = window.jQuery;
+  var $9 = window.jQuery;
   var events_default2 = {
     bound: false,
     bind() {
       if (this.bound) return;
       this.bound = true;
-      $8(document).off("change", "#cg-species").on("change", "#cg-species", () => {
-        const speciesId = $8("#cg-species").val();
+      $9(document).off("change", "#cg-species").on("change", "#cg-species", () => {
+        const speciesId = $9("#cg-species").val();
         const data = formBuilder_default.getData();
         data.profile = data.profile || {};
         data.profile.species = speciesId;
@@ -792,7 +795,7 @@
   };
 
   // assets/js/src/core/species/index.js
-  var $9 = window.jQuery;
+  var $10 = window.jQuery;
   var species_default = {
     init() {
       console.log("[SpeciesIndex] init()");
@@ -802,14 +805,14 @@
       const data = formBuilder_default.getData();
       api_default.loadSpeciesList(() => {
         if (data.profile && data.profile.species) {
-          $9("#cg-species").val(data.profile.species).trigger("change");
+          $10("#cg-species").val(data.profile.species).trigger("change");
         }
       });
     }
   };
 
   // assets/js/src/core/skills/render.js
-  var $10 = window.jQuery;
+  var $11 = window.jQuery;
   var MARK_DIE = {
     1: "d4",
     2: "d6",
@@ -825,17 +828,17 @@
       const MAX_MARKS = 13;
       const usedMarks = Object.values(data.skillMarks).reduce((sum, v) => sum + v, 0);
       const marksRemain = Math.max(0, MAX_MARKS - usedMarks);
-      $10("#marks-remaining").remove();
-      $10("#skills-table").before(`
+      $11("#marks-remaining").remove();
+      $11("#skills-table").before(`
       <div id="marks-remaining" class="marks-remaining">
         Marks Remaining: <strong>${marksRemain}</strong>
       </div>
     `);
-      const $thead = $10("<thead>");
-      $10("<tr>").append("<th>Skill</th>").append(`<th>${species.speciesName || ""}</th>`).append(`<th>${career.careerName || ""}</th>`).append("<th>Marks</th>").append("<th>Dice Pool</th>").appendTo($thead);
+      const $thead = $11("<thead>");
+      $11("<tr>").append("<th>Skill</th>").append(`<th>${species.speciesName || ""}</th>`).append(`<th>${career.careerName || ""}</th>`).append("<th>Marks</th>").append("<th>Dice Pool</th>").appendTo($thead);
       const spSkills = [species.skill_one, species.skill_two, species.skill_three].map(String);
       const cpSkills = [career.skill_one, career.skill_two, career.skill_three].map(String);
-      const $tbody = $10("<tbody>");
+      const $tbody = $11("<tbody>");
       skills.forEach((skill) => {
         const id = String(skill.id);
         const name = skill.name;
@@ -858,18 +861,18 @@
         const markDisplay = markDie || "\u2013";
         const poolDice = [spDie, cpDie, markDie].filter(Boolean);
         const poolStr = poolDice.length ? poolDice.join(" + ") : "\u2013";
-        const $row = $10("<tr>").append(`<td>${name}</td>`).append(`<td>${spDie || "\u2013"}</td>`).append(`<td>${cpDie || "\u2013"}</td>`).append(`<td>
+        const $row = $11("<tr>").append(`<td>${name}</td>`).append(`<td>${spDie || "\u2013"}</td>`).append(`<td>${cpDie || "\u2013"}</td>`).append(`<td>
                    <div class="marks-buttons">${buttonsHtml}</div>
                    <div class="marks-display">${markDisplay}</div>
                  </td>`).append(`<td>${poolStr}</td>`);
         $tbody.append($row);
       });
-      $10("#skills-table").empty().append($thead).append($tbody);
+      $11("#skills-table").empty().append($thead).append($tbody);
     }
   };
 
   // assets/js/src/core/career/render.js
-  var $11 = window.jQuery;
+  var $12 = window.jQuery;
   var render_default3 = {
     /**
      * Render the three career gifts into your UI and then
@@ -882,30 +885,30 @@
         { label: "Career Gift Three", name: profile.gift_3 }
       ].filter((g) => g.name);
       const html = gifts.map((g) => `<li><strong>${g.label}:</strong> ${g.name}</li>`).join("");
-      $11("#career-gifts").html(html);
+      $12("#career-gifts").html(html);
       render_default2.render();
     },
     /**
      * Clear the career‐gift UI and re-render Skills.
      */
     clearGifts() {
-      $11("#career-gifts").empty();
-      $11("#cg-career").val("");
+      $12("#career-gifts").empty();
+      $12("#cg-career").val("");
       render_default2.render();
     }
   };
 
   // assets/js/src/core/career/events.js
-  var $12 = window.jQuery;
+  var $13 = window.jQuery;
   var events_default3 = {
     bound: false,
     bind() {
       if (this.bound) return;
       this.bound = true;
-      $12(document).off("change", "#cg-career").on("change", "#cg-career", () => this.handleCareerChange());
+      $13(document).off("change", "#cg-career").on("change", "#cg-career", () => this.handleCareerChange());
     },
     handleCareerChange() {
-      const careerId = $12("#cg-career").val();
+      const careerId = $13("#cg-career").val();
       const data = formBuilder_default.getData();
       data.career = careerId;
       if (!careerId) {
@@ -945,7 +948,7 @@
   };
 
   // assets/js/src/core/career/index.js
-  var $13 = window.jQuery;
+  var $14 = window.jQuery;
   var career_default = {
     init() {
       console.log("[CareerIndex] init()");
@@ -953,17 +956,17 @@
       const data = formBuilder_default.getData();
       api_default2.loadList(() => {
         if (data.career) {
-          $13("#cg-career").val(data.career).trigger("change");
+          $14("#cg-career").val(data.career).trigger("change");
         }
       });
     }
   };
 
   // assets/js/src/gifts/api.js
-  var $14 = window.jQuery;
+  var $15 = window.jQuery;
   var api_default3 = {
     fetchLocalKnowledge(cb) {
-      $14.post(CG_Ajax.ajax_url, {
+      $15.post(CG_Ajax.ajax_url, {
         action: "cg_get_local_knowledge",
         security: CG_Ajax.nonce
       }).done((res) => {
@@ -971,7 +974,7 @@
       });
     },
     fetchLanguageGift(cb) {
-      $14.post(CG_Ajax.ajax_url, {
+      $15.post(CG_Ajax.ajax_url, {
         action: "cg_get_language_gift",
         security: CG_Ajax.nonce
       }).done((res) => {
@@ -979,7 +982,7 @@
       });
     },
     fetchFreeChoices(cb) {
-      $14.post(CG_Ajax.ajax_url, {
+      $15.post(CG_Ajax.ajax_url, {
         action: "cg_get_free_gifts",
         security: CG_Ajax.nonce
       }).done((res) => {
@@ -996,10 +999,10 @@
   };
 
   // assets/js/src/gifts/local-knowledge.js
-  var $15 = window.jQuery;
+  var $16 = window.jQuery;
   var local_knowledge_default = {
     init() {
-      const $container = $15("#cg-local-knowledge");
+      const $container = $16("#cg-local-knowledge");
       api_default3.fetchLocalKnowledge((data) => {
         $container.text(data.name);
       });
@@ -1007,10 +1010,10 @@
   };
 
   // assets/js/src/gifts/language.js
-  var $16 = window.jQuery;
+  var $17 = window.jQuery;
   var language_default = {
     init() {
-      const $container = $16("#cg-language");
+      const $container = $17("#cg-language");
       api_default3.fetchLanguageGift((data) => {
         $container.text(data.name);
       });
@@ -1018,7 +1021,7 @@
   };
 
   // assets/js/src/gifts/free-choices.js
-  var $17 = window.jQuery;
+  var $18 = window.jQuery;
   var free_choices_default = {
     /**
      * Initialize the three free-choice gift selectors,
@@ -1060,7 +1063,7 @@
           });
         });
         console.log("[FreeChoices] after filtering \u2192", available);
-        const $wrap = $17("#cg-free-choices").empty();
+        const $wrap = $18("#cg-free-choices").empty();
         for (let i = 0; i < 3; i++) {
           const selId = `cg-free-choice-${i}`;
           const prev = state_default.selected[i] || "";
@@ -1075,8 +1078,8 @@
           </select>
         `);
         }
-        $17(document).off("change", "#cg-free-choices select").on("change", "#cg-free-choices select", (e) => {
-          const $sel = $17(e.currentTarget);
+        $18(document).off("change", "#cg-free-choices select").on("change", "#cg-free-choices select", (e) => {
+          const $sel = $18(e.currentTarget);
           const idx = $sel.data("index");
           const id = $sel.val();
           state_default.set(idx, id);
@@ -1100,15 +1103,15 @@
   };
 
   // assets/js/src/core/skills/events.js
-  var $18 = window.jQuery;
+  var $19 = window.jQuery;
   var events_default4 = {
     bind() {
-      $18(document).off("click", "#tab-skills, #cg-species, #cg-career").on("click change", "#tab-skills, #cg-species, #cg-career", () => {
+      $19(document).off("click", "#tab-skills, #cg-species, #cg-career").on("click change", "#tab-skills, #cg-species, #cg-career", () => {
         render_default2.render();
       });
-      $18(document).off("click", ".skill-mark-btn").on("click", ".skill-mark-btn", function() {
-        const skillId = String($18(this).data("skill-id"));
-        const mark = parseInt($18(this).data("mark"), 10);
+      $19(document).off("click", ".skill-mark-btn").on("click", ".skill-mark-btn", function() {
+        const skillId = String($19(this).data("skill-id"));
+        const mark = parseInt($19(this).data("mark"), 10);
         const data = formBuilder_default.getData();
         data.skillMarks = data.skillMarks || {};
         data.skillMarks[skillId] = mark;
@@ -1140,7 +1143,7 @@
   }
 
   // assets/js/src/core/summary/api.js
-  var $19 = window.jQuery;
+  var $20 = window.jQuery;
   var TRAITS3 = service_default.TRAITS;
   var MARK_DIE2 = { 1: "d4", 2: "d6", 3: "d8" };
   var SummaryAPI = {
@@ -1157,7 +1160,7 @@
      * Build and inject the full summary into #cg-summary-sheet.
      */
     renderSummary(data = {}) {
-      const $sheet = $19("#cg-summary-sheet").empty();
+      const $sheet = $20("#cg-summary-sheet").empty();
       const name = data.name || "\u2014";
       const age = data.age || "\u2014";
       const gender = data.gender || "\u2014";
@@ -1270,7 +1273,7 @@
      * Open a new window, inject the summary + CSS, and print it.
      */
     bindExportButton() {
-      $19(document).off("click", "#cg-export-pdf").on("click", "#cg-export-pdf", (e) => {
+      $20(document).off("click", "#cg-export-pdf").on("click", "#cg-export-pdf", (e) => {
         e.preventDefault();
         console.log("[SummaryAPI] Export to PDF clicked");
         const sheetHtml = document.getElementById("cg-summary-sheet").outerHTML;
@@ -1315,9 +1318,9 @@
   };
 
   // assets/js/src/core/main/builder-refresh.js
-  var $20 = window.jQuery;
+  var $21 = window.jQuery;
   function refreshTab() {
-    const tab = $20("#cg-modal .cg-tabs li.active").data("tab");
+    const tab = $21("#cg-modal .cg-tabs li.active").data("tab");
     switch (tab) {
       case "tab-traits":
         traits_default.init();
@@ -1337,11 +1340,11 @@
   }
 
   // assets/js/src/core/main/builder-load.js
-  var $21 = window.jQuery;
+  var $22 = window.jQuery;
   function bindLoadEvents() {
-    $21(document).off("click", "#cg-load-confirm").on("click", "#cg-load-confirm", (e) => {
+    $22(document).off("click.cg", "#cg-load-confirm").on("click.cg", "#cg-load-confirm", (e) => {
       e.preventDefault();
-      const charId = $21("#cg-splash-load-select").val();
+      const charId = $22("#cg-splash-load-select").val();
       if (!charId) {
         alert("Please select a character.");
         return;
@@ -1354,7 +1357,7 @@
           alert("Could not load character.");
           return;
         }
-        $21("#cg-modal-splash").removeClass("visible").addClass("cg-hidden");
+        $22("#cg-modal-splash").removeClass("visible").addClass("cg-hidden");
         builder_ui_default.openBuilder({
           isNew: false,
           payload: record
@@ -1364,7 +1367,7 @@
         alert("Load error. See console.");
       });
     });
-    $21(document).off("click", "#cg-splash-back").on("click", "#cg-splash-back", (e) => {
+    $22(document).off("click.cg", "#cg-splash-back").on("click.cg", "#cg-splash-back", (e) => {
       e.preventDefault();
       console.log("[BuilderLoad] #cg-splash-back clicked \u2192 show NEW form");
       builder_ui_default.openBuilder({ isNew: true });
@@ -1372,14 +1375,14 @@
   }
 
   // assets/js/src/core/main/builder-save.js
-  var $22 = window.jQuery;
+  var $23 = window.jQuery;
   function bindSaveEvents() {
-    $22(document).off("click", ".cg-save-button").on("click", ".cg-save-button", function(e) {
+    $23(document).off("click.cg", ".cg-save-button").on("click.cg", ".cg-save-button", function(e) {
       e.preventDefault();
-      const closeAfter = $22(this).hasClass("cg-close-after-save");
+      const closeAfter = $23(this).hasClass("cg-close-after-save");
       const payload = formBuilder_default.collectFormData();
       console.log("[BuilderSave] \u25B6 saving payload:", payload);
-      $22.post(CG_Ajax.ajax_url, {
+      $23.post(CG_Ajax.ajax_url, {
         action: "cg_save_character",
         character: payload,
         security: CG_Ajax.nonce
@@ -1404,12 +1407,12 @@
   }
 
   // assets/js/src/core/main/builder-events.js
-  var $23 = window.jQuery;
+  var $24 = window.jQuery;
   function bindUIEvents() {
     console.log("[BuilderEvents] bindUIEvents() called");
-    $23(document).off("input change", "#cg-modal input, #cg-modal select, #cg-modal textarea").on("input change", "#cg-modal input, #cg-modal select, #cg-modal textarea", function() {
+    $24(document).off("input change", "#cg-modal input, #cg-modal select, #cg-modal textarea").on("input change", "#cg-modal input, #cg-modal select, #cg-modal textarea", function() {
       builder_ui_default.markDirty();
-      const $el = $23(this);
+      const $el = $24(this);
       if ($el.hasClass("skill-marks")) {
         const skillId = $el.data("skill-id");
         const val = parseInt($el.val(), 10) || 0;
@@ -1422,19 +1425,19 @@
       const key = id.replace(/^cg-/, "");
       formBuilder_default._data[key] = $el.val();
     });
-    $23(document).off("click", "#cg-open-builder").on("click", "#cg-open-builder", (e) => {
+    $24(document).off("click.cg", "#cg-open-builder").on("click.cg", "#cg-open-builder", (e) => {
       e.preventDefault();
-      $23("#cg-modal-splash").removeClass("cg-hidden").addClass("visible");
+      $24("#cg-modal-splash").removeClass("cg-hidden").addClass("visible");
       formBuilder_default.listCharacters().done((resp) => {
-        const $sel = $23("#cg-splash-load-select").empty();
+        const $sel = $24("#cg-splash-load-select").empty();
         resp.data.forEach((c) => {
           $sel.append(`<option value="${c.id}">${c.name}</option>`);
         });
       });
     });
-    $23(document).off("click", "#cg-new-splash").on("click", "#cg-new-splash", (e) => {
+    $24(document).off("click.cg", "#cg-new-splash").on("click.cg", "#cg-new-splash", (e) => {
       e.preventDefault();
-      $23("#cg-modal-splash").removeClass("visible").addClass("cg-hidden");
+      $24("#cg-modal-splash").removeClass("visible").addClass("cg-hidden");
       builder_ui_default.openBuilder({ isNew: true, payload: {} });
       formBuilder_default._data.skillMarks = {};
       formBuilder_default._data.species = "";
@@ -1444,9 +1447,9 @@
         window.CG_FreeChoicesState.gifts = [];
       }
     });
-    $23(document).off("click", "#cg-load-splash").on("click", "#cg-load-splash", (e) => {
+    $24(document).off("click.cg", "#cg-load-splash").on("click.cg", "#cg-load-splash", (e) => {
       e.preventDefault();
-      const charId = $23("#cg-splash-load-select").val();
+      const charId = $24("#cg-splash-load-select").val();
       if (!charId) {
         alert("Please select a character to load.");
         return;
@@ -1459,7 +1462,7 @@
         if (!record || !record.id) {
           return alert("Character could not be loaded.");
         }
-        $23("#cg-modal-splash").removeClass("visible").addClass("cg-hidden");
+        $24("#cg-modal-splash").removeClass("visible").addClass("cg-hidden");
         builder_ui_default.openBuilder({
           isNew: false,
           payload: record
@@ -1471,33 +1474,33 @@
     });
     bindLoadEvents();
     bindSaveEvents();
-    $23(document).off("click", "#cg-modal .cg-tabs li").on("click", "#cg-modal .cg-tabs li", function(e) {
+    $24(document).off("click.cg", "#cg-modal .cg-tabs li").on("click.cg", "#cg-modal .cg-tabs li", function(e) {
       e.preventDefault();
-      const tabName = $23(this).data("tab");
-      $23("#cg-modal .cg-tabs li").removeClass("active");
-      $23(this).addClass("active");
-      $23(".tab-panel").removeClass("active");
-      $23(`#${tabName}`).addClass("active");
+      const tabName = $24(this).data("tab");
+      $24("#cg-modal .cg-tabs li").removeClass("active");
+      $24(this).addClass("active");
+      $24(".tab-panel").removeClass("active");
+      $24(`#${tabName}`).addClass("active");
       refreshTab();
     });
-    $23(document).off("click", "#cg-modal-close").on("click", "#cg-modal-close", (e) => {
+    $24(document).off("click.cg", "#cg-modal-close").on("click.cg", "#cg-modal-close", (e) => {
       e.preventDefault();
       builder_ui_default.showUnsaved();
     });
-    $23(document).off("click", "#cg-modal-overlay").on("click", "#cg-modal-overlay", function(e) {
+    $24(document).off("click.cg", "#cg-modal-overlay").on("click.cg", "#cg-modal-overlay", function(e) {
       if (e.target !== this) return;
       builder_ui_default.showUnsaved();
     });
-    $23(document).off("click", "#unsaved-save").on("click", "#unsaved-save", (e) => {
+    $24(document).off("click.cg", "#unsaved-save").on("click.cg", "#unsaved-save", (e) => {
       e.preventDefault();
       console.log("[BuilderEvents] Prompt: SAVE & EXIT clicked");
       formBuilder_default.save(true);
     });
-    $23(document).off("click", "#unsaved-exit").on("click", "#unsaved-exit", (e) => {
+    $24(document).off("click.cg", "#unsaved-exit").on("click.cg", "#unsaved-exit", (e) => {
       e.preventDefault();
       builder_ui_default.closeBuilder();
     });
-    $23(document).off("click", "#unsaved-cancel").on("click", "#unsaved-cancel", (e) => {
+    $24(document).off("click.cg", "#unsaved-cancel").on("click.cg", "#unsaved-cancel", (e) => {
       e.preventDefault();
       builder_ui_default.hideUnsaved();
     });

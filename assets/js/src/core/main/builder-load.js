@@ -1,56 +1,46 @@
 // assets/js/src/core/main/builder-load.js
-import BuilderUI      from './builder-ui.js';
-import FormBuilderAPI from '../formBuilder';
+// Populates Species/Career on builder open and wires Gifts free-choice.
+
+import SpeciesIndex from '../species';
+import CareerIndex  from '../career';
+import FreeChoices  from '../../../gifts/free-choices.js';
 
 const $ = window.jQuery;
 
-export default function bindLoadEvents() {
-  //
-  // 1) Confirm load — this is your “Load” button inside the splash
-  //
+export default function builderLoadInit() {
+  // When the modal opens and the Profile tab is shown, initialize modules.
+  // If you have a dedicated tab event, hook that here; otherwise run on open.
+
+  // Ensure selects exist (non-fatal if template injects later)
+  const ensureProfileSkeleton = () => {
+    const container = document.querySelector('#cg-form-container');
+    if (!container) return;
+
+    if (!container.querySelector('#cg-species')) {
+      const block = document.createElement('div');
+      block.innerHTML = `
+        <section id="cg-profile-panel" class="cg-panel">
+          <label>Species<br><select id="cg-species"></select></label>
+          <label>Career<br><select  id="cg-career"></select></label>
+        </section>`;
+      container.appendChild(block.firstElementChild);
+    }
+  };
+
+  ensureProfileSkeleton();
+
+  // Initialize index modules (safe to call multiple times)
+  SpeciesIndex.init();
+  CareerIndex.init();
+  FreeChoices.init();
+
+  // Optional: if your UI has a tab system, re-run population when the
+  // Profile tab is first shown.
   $(document)
-    .off('click', '#cg-load-confirm')
-    .on('click', '#cg-load-confirm', e => {
-      e.preventDefault();
-      const charId = $('#cg-splash-load-select').val();
-      if (!charId) {
-        alert('Please select a character.');
-        return;
-      }
-
-      console.log('[BuilderLoad] #cg-load-confirm clicked → fetch ID', charId);
-      FormBuilderAPI.fetchCharacter(charId)
-        .done(res => {
-          const parsed  = typeof res === 'string' ? JSON.parse(res) : res;
-          const record  = parsed.data || parsed;
-          if (!record || !record.id) {
-            alert('Could not load character.');
-            return;
-          }
-
-          $('#cg-modal-splash')
-            .removeClass('visible')
-            .addClass('cg-hidden');
-
-          BuilderUI.openBuilder({
-            isNew:   false,
-            payload: record
-          });
-        })
-        .fail((xhr, status, err) => {
-          console.error('[BuilderLoad] fetchCharacter failed:', xhr.responseText);
-          alert('Load error. See console.');
-        });
-    });
-
-  //
-  // 2) Back button
-  //
-  $(document)
-    .off('click', '#cg-splash-back')
-    .on('click', '#cg-splash-back', e => {
-      e.preventDefault();
-      console.log('[BuilderLoad] #cg-splash-back clicked → show NEW form');
-      BuilderUI.openBuilder({ isNew: true });
+    .off('cg:profile:show.cgload')
+    .on('cg:profile:show.cgload', () => {
+      SpeciesIndex.init();
+      CareerIndex.init();
+      FreeChoices.init();
     });
 }

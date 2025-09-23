@@ -1,4 +1,4 @@
-# Ignore Node modules and log files
-/node_modules/
-*.log
-
+assets/js/dist/
+node_modules/
+*.map
+.DS_Store

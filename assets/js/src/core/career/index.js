@@ -1,31 +1,19 @@
-// career/index.js
-import CareerAPI      from './api.js';
-import CareerEvents   from './events.js';
-import ExtraCareer    from './extra.js';
-import FormBuilderAPI from '../formBuilder';
+// assets/js/src/core/career/index.js
+// Coordinates career API + events + population
 
-const $ = window.jQuery;
+import CareerAPI from './api.js';
+import bindCareerEvents from './events.js';
 
-export default {
+const CareerIndex = {
+  _init: false,
+
   init() {
-    console.log('[CareerIndex] init()');
+    if (this._init) return;
+    this._init = true;
 
-    // bind onChange once
-    CareerEvents.bind();
-
-    // grab last‐saved career
-    const data = FormBuilderAPI.getData();
-
-    // always rebuild the dropdown then reapply selection
-    CareerAPI.loadList(() => {
-      if (data.career) {
-        $('#cg-career')
-          .val(data.career)
-          .trigger('change');
-      }
-    });
-
-    // rebuild any extra‐career slots
-   // ExtraCareer.init();
+    bindCareerEvents();
+    CareerAPI.populateSelect('#cg-career');
   }
 };
+
+export default CareerIndex;

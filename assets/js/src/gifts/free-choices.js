@@ -1,83 +1,68 @@
 // assets/js/src/gifts/free-choices.js
+// Initializes a “free choice” Gifts <select> and updates it when species/career change.
+// Replace the demo pool logic with your real endpoint when ready.
 
-import API from './api.js';
-import State from './state.js';
-import TraitsService from '../core/traits/service.js';
-
+const log = (...a) => console.log('[Gifts.FreeChoices]', ...a);
 const $ = window.jQuery;
 
-export default {
-  /**
-   * Initialize the three free-choice gift selectors,
-   * filter by requirements, and wire up change events.
-   */
+const FreeChoices = {
+  _init: false,
+  _selId: '#cg-gift-free', // adjust if your markup differs
+
   init() {
-    // Load any previously saved picks
-    State.init();
+    if (this._init) return;
+    this._init = true;
 
-    // Fetch the full list of free-choice gift objects
-    API.fetchFreeChoices(gifts => {
-      // 1) Merge all into State (so manifold & requirements are stored)
-      State.setList(gifts);
-      console.log('[FreeChoices] State.gifts →', State.gifts);
-      console.log('[FreeChoices] State.selected →', State.selected);
+    // Build select if missing (non-fatal)
+    if (!document.querySelector(this._selId)) {
+      const container = document.querySelector('#cg-form-container') || document.body;
+      const wrap = document.createElement('div');
+      wrap.innerHTML = `
+        <label>Gift (free choice)<br>
+          <select id="${this._selId.replace('#','')}"></select>
+        </label>`;
+      container.appendChild(wrap.firstElementChild);
+      log('Injected temporary free-choice select.');
+    }
 
-      // --- Filtering logic (unchanged) ---
-      const suffixes = [
-        '', 'two','three','four','five','six',
-        'seven','eight','nine','ten','eleven',
-        'twelve','thirteen','fourteen','fifteen',
-        'sixteen','seventeen','eighteen','nineteen'
-      ];
-      const selectedIds = State.selected.map(String);
-      const available = gifts.filter(g => {
-        return suffixes.every(s => {
-          const key = s
-            ? `ct_gifts_requires_${s}`
-            : 'ct_gifts_requires';
-          const req = g[key];
-          return !req || selectedIds.includes(String(req));
-        });
-      });
-      console.log('[FreeChoices] after filtering →', available);
+    const refresh = () => this.populatePool();
 
-      // --- Render dropdowns (unchanged) ---
-      const $wrap = $('#cg-free-choices').empty();
-      for (let i = 0; i < 3; i++) {
-        const selId = `cg-free-choice-${i}`;
-        const prev  = State.selected[i] || '';
-        const options = available.map(g => {
-          const sel = g.id == prev ? ' selected' : '';
-          return `<option value="${g.id}"${sel}>${g.name}</option>`;
-        }).join('');
-        $wrap.append(`
-          <select id="${selId}" data-index="${i}">
-            <option value="">— Select Gift —</option>
-            ${options}
-          </select>
-        `);
-      }
+    $(document)
+      .off('.gifts.cg') // clear any previous namespaced handlers in case of HMR
+      .on('cg:species:changed.gifts.cg', refresh)
+      .on('cg:career:changed.gifts.cg',  refresh);
 
-      // --- Bind change handlers ---
-      $(document)
-        .off('change', '#cg-free-choices select')
-        .on('change', '#cg-free-choices select', e => {
-          const $sel = $(e.currentTarget);
-          const idx  = $sel.data('index');
-          const id   = $sel.val();
+    // First fill
+    this.populatePool();
+  },
 
-          // Persist the choice
-          State.set(idx, id);
+  populatePool() {
+    const sel = document.querySelector(this._selId);
+    if (!sel) return;
 
-          // Merge the newly selected gift object into State
-          const chosen = gifts.find(g => String(g.id) === String(id));
-          if (chosen) {
-            State.setList([chosen]);
-          }
+    sel.innerHTML = '';
+    const ph = document.createElement('option');
+    ph.value = ''; ph.textContent = '— Select Gift —';
+    sel.appendChild(ph);
 
-          // Recalculate all trait boosts
-          TraitsService.refreshAll();
-        });
+    // DEMO POOL: Use skills list so it obviously changes.
+    const s = document.querySelector('#cg-species')?.value || '';
+    const c = document.querySelector('#cg-career')?.value || '';
+    const base = (window.CG_SKILLS_LIST || []);
+
+    const pool = base.filter(x =>
+      (!s || x.name.toLowerCase().includes('a')) ||
+      (!c || x.name.toLowerCase().includes('s'))
+    ).slice(0, 40);
+
+    pool.forEach(x => {
+      const o = document.createElement('option');
+      o.value = x.id; o.textContent = x.name;
+      sel.appendChild(o);
     });
+
+    log('Pool updated', {species: s || '—', career: c || '—', count: pool.length});
   }
 };
+
+export default FreeChoices;
