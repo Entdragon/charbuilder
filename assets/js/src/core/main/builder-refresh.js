@@ -1,7 +1,7 @@
 import TraitsAPI      from '../traits';
 import SpeciesIndex   from '../species';
 import CareerIndex    from '../career';
-import GiftsAPI       from '../../gifts';
+import GiftsAPI       from '../gifts';
 import SkillsAPI      from '../skills';
 import SummaryAPI     from '../summary';
 

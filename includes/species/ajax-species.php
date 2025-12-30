@@ -1,12 +1,16 @@
 <?php
-if ( ! defined( 'ABSPATH' ) ) {
-    exit;
-}
+if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-add_action( 'wp_ajax_cg_get_species_list',       'cg_get_species_list' );
-add_action( 'wp_ajax_nopriv_cg_get_species_list','cg_get_species_list' );
+/**
+ * Species AJAX handlers.
+ *
+ * NOTE: Hook registration is owned by includes/species/index.php.
+ */
+require_once __DIR__ . '/../ajax-nonce.php';
+
 function cg_get_species_list() {
-    check_ajax_referer( 'cg_nonce', 'security' );
+    cg_ajax_require_nonce_multi();
+
     global $wpdb;
     $table = $wpdb->prefix . 'customtables_table_species';
 
@@ -25,11 +29,8 @@ function cg_get_species_list() {
     wp_send_json_success( $rows );
 }
 
-
-add_action( 'wp_ajax_cg_get_species_profile', 'cg_get_species_profile' );
-add_action( 'wp_ajax_nopriv_cg_get_species_profile', 'cg_get_species_profile' );
 function cg_get_species_profile() {
-    check_ajax_referer( 'cg_nonce', 'security' );
+    cg_ajax_require_nonce_multi();
 
     $species_id = isset( $_POST['id'] ) ? intval( $_POST['id'] ) : 0;
     if ( $species_id <= 0 ) {
@@ -45,7 +46,6 @@ function cg_get_species_profile() {
     $senses_tbl  = $wpdb->prefix . 'customtables_table_senses';
     $weapons_tbl = $wpdb->prefix . 'customtables_table_weapons';
 
-    // Pull in the speciesName so the Skills tab can show it
     $sql = "
       SELECT
         s.ct_species_name        AS speciesName,

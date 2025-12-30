@@ -3,11 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build:gifts": "esbuild assets/js/src/gifts/index.js --bundle --outfile=assets/js/dist/gifts.bundle.js --platform=browser --target=es2015 --sourcemap --global-name=CG_Gifts",
     "build:core": "esbuild assets/js/src/core/index.js --bundle --outfile=assets/js/dist/core.bundle.js --platform=browser --target=es2015 --format=iife --sourcemap",
     "build:css": "sass assets/css/src/main.scss assets/css/dist/core.css --no-source-map",
-    "build": "npm run build:gifts && npm run build:core && npm run build:css",
-    "watch:gifts": "esbuild assets/js/src/gifts/index.js --bundle --outfile=assets/js/dist/gifts.bundle.js --platform=browser --target=es2015 --sourcemap --global-name=CG_Gifts --watch",
+    "build": "npm run build:core && npm run build:css",
     "watch:core": "esbuild assets/js/src/core/index.js --bundle --outfile=assets/js/dist/core.bundle.js --platform=browser --target=es2015 --format=iife --sourcemap --watch",
     "watch:css": "sass --watch assets/css/src/main.scss:assets/css/dist/core.css --no-source-map"
   },

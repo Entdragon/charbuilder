@@ -4,10 +4,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * Skills AJAX handlers.
+ *
+ * NOTE: Hook registration is owned by includes/skills/index.php.
+ */
+require_once __DIR__ . '/../ajax-nonce.php';
+
+/**
  * Return a flat list of all skills for the Skills tab.
  */
 function cg_get_skills_list() {
-    check_ajax_referer( 'cg_nonce', 'security' );
+    cg_ajax_require_nonce_multi();
 
     global $wpdb;
     $table = $wpdb->prefix . 'customtables_table_skills';
@@ -30,7 +37,7 @@ function cg_get_skills_list() {
  * Return full details for a single skill (if your UI needs it).
  */
 function cg_get_skill_detail() {
-    check_ajax_referer( 'cg_nonce', 'security' );
+    cg_ajax_require_nonce_multi();
 
     $skill_id = isset( $_POST['id'] ) ? intval( $_POST['id'] ) : 0;
     if ( $skill_id <= 0 ) {

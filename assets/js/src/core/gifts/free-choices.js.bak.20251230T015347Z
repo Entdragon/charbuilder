@@ -1,0 +1,333 @@
+// assets/js/src/core/gifts/free-choices.js
+//
+// Free-choice gifts dropdowns (3).
+// Idempotent refresh + safe mount probing (no spam).
+//
+// IMPORTANT:
+// - No self-boot here. Core calls GiftsAPI.init().
+// - Sync fetched gift rows into State.gifts so TraitsService can read ct_gifts_manifold.
+//
+// Exposes: window.CG_FreeChoices
+
+import State from './state.js';
+
+const $ = window.jQuery;
+
+const warn = (...a) => console.warn('[FreeChoices]', ...a);
+const err  = (...a) => console.error('[FreeChoices]', ...a);
+
+function ajaxEnv() {
+  const env = window.CG_AJAX || window.CG_Ajax || window.cgAjax || {};
+  const url =
+    env.ajax_url ||
+    window.ajaxurl ||
+    document.body?.dataset?.ajaxUrl ||
+    '/wp-admin/admin-ajax.php';
+
+  // Prefer per-action nonce if available
+  const perAction = (window.CG_NONCES && window.CG_NONCES.cg_get_free_gifts)
+    ? window.CG_NONCES.cg_get_free_gifts
+    : null;
+
+  const generic = env.nonce || env.security || env._ajax_nonce || window.CG_NONCE || null;
+
+  return { url, nonce: (perAction || generic) };
+}
+
+function parseJsonMaybe(res) {
+  try { return (typeof res === 'string') ? JSON.parse(res) : res; }
+  catch (_) { return res; }
+}
+
+function normalizePool(rows) {
+  if (!Array.isArray(rows)) return [];
+  return rows.map(g => ({
+    id:   String(g?.id ?? g?.ct_id ?? g?.gift_id ?? ''),
+    name: (g?.name || g?.ct_gifts_name || g?.title || '').toString() ||
+          `Gift #${String(g?.id ?? g?.ct_id ?? g?.gift_id ?? '')}`
+  })).filter(x => x.id && x.name);
+}
+
+// Normalize a gift row into something TraitsService can use.
+// TraitsService expects: gift.id and gift.ct_gifts_manifold (default 1).
+function normalizeGiftForState(g) {
+  if (!g || typeof g !== 'object') return null;
+
+  const idRaw =
+    g.id ?? g.ct_id ?? g.gift_id ?? g.ct_gift_id ?? g.ct_gifts_id ?? null;
+
+  if (idRaw == null || String(idRaw) === '') return null;
+
+  const manifoldRaw =
+    g.ct_gifts_manifold ?? g.manifold ?? g.manifold_count ?? g.ct_manifold ?? 1;
+
+  const id = String(idRaw);
+
+  return {
+    ...g,
+    id,
+    ct_gifts_manifold: parseInt(manifoldRaw, 10) || 1,
+    name: (g.name || g.ct_gifts_name || g.title || '').toString() || `Gift #${id}`,
+  };
+}
+
+const FreeChoices = {
+  _inited: false,
+  _mounted: false,
+  _root: null,
+  _selects: [],
+  _pool: [],
+  _refreshInFlight: false,
+  _lastRefreshAt: 0,
+  _retryCount: 0,
+  _maxRetries: 2,
+  _mountTimer: null,
+  _mountTries: 0,
+  _maxMountTries: 80, // 80 * 250ms = 20s
+
+  init() {
+    if (this._inited) return;
+    this._inited = true;
+
+    // Ensure State exists and is initialized from builder data (if any).
+    try { State.init(); } catch (_) {}
+
+    // Try mount now; if not possible, start watcher (no refresh spam).
+    this._ensureMounted();
+
+    // When builder signals ready/open, mount + refresh (once).
+    document.addEventListener('cg:builder:ready', () => {
+      this._ensureMounted();
+      this.refresh({ force: false });
+    });
+  },
+
+  _ensureMounted() {
+    if (this._mounted) return true;
+
+    const ok = this._tryMount();
+    if (ok) return true;
+
+    if (this._mountTimer) return false;
+
+    this._mountTries = 0;
+    this._mountTimer = setInterval(() => {
+      this._mountTries++;
+      if (this._tryMount()) {
+        clearInterval(this._mountTimer);
+        this._mountTimer = null;
+        this.refresh({ force: false });
+        return;
+      }
+      if (this._mountTries >= this._maxMountTries) {
+        clearInterval(this._mountTimer);
+        this._mountTimer = null;
+      }
+    }, 250);
+
+    return false;
+  },
+
+  _tryMount() {
+    const container = document.querySelector('#cg-form-container');
+    if (!container) return false;
+
+    let section = document.getElementById('cg-free-gifts');
+    if (!section) {
+      section = document.createElement('section');
+      section.id = 'cg-free-gifts';
+      section.innerHTML = `
+        <h3>Free Gifts (3)</h3>
+        <div class="cg-free-row" style="display:flex; gap:12px; margin-top:8px;">
+          <select class="cg-free-select" data-slot="0"></select>
+          <select class="cg-free-select" data-slot="1"></select>
+          <select class="cg-free-select" data-slot="2"></select>
+        </div>`;
+      container.appendChild(section);
+    }
+
+    this._root = section;
+    this._selects = Array.from(section.querySelectorAll('.cg-free-select'));
+
+    // Bind once (idempotent)
+    this._selects.forEach(sel => {
+      if ($) {
+        $(sel).off('change.cgfree').on('change.cgfree', () => this._onSelectChange(sel));
+      } else {
+        sel.onchange = () => this._onSelectChange(sel);
+      }
+    });
+
+    this._mounted = true;
+    this._drawPlaceholders();
+
+    return true;
+  },
+
+  _drawPlaceholders() {
+    if (!this._mounted) return;
+    const placeholders = [
+      '— Select gift #1 —',
+      '— Select gift #2 —',
+      '— Select gift #3 —'
+    ];
+    this._selects.forEach((sel, idx) => {
+      sel.innerHTML = '';
+      sel.appendChild(new Option(placeholders[idx], ''));
+    });
+  },
+
+  _readSelections() {
+    const fb = (window.CG_FormBuilderAPI && window.CG_FormBuilderAPI._data) || null;
+    const arr =
+      (fb && Array.isArray(fb.free_gifts)) ? fb.free_gifts :
+      (Array.isArray(State.selected)) ? State.selected :
+      this._selects.map(s => s.value || '');
+
+    return arr.map(v => (v ? String(v) : ''));
+  },
+
+  _writeSelections(arrStr) {
+    const fb = (window.CG_FormBuilderAPI && window.CG_FormBuilderAPI._data) || null;
+
+    const normalized = (Array.isArray(arrStr) ? arrStr : [])
+      .slice(0, 3)
+      .map(v => (v ? String(v) : ''));
+    while (normalized.length < 3) normalized.push('');
+
+    if (fb) fb.free_gifts = normalized;
+
+    try { State.setSelected(normalized); } catch (_) {}
+
+    document.dispatchEvent(new CustomEvent('cg:free-gift:changed', {
+      detail: { free_gifts: normalized }
+    }));
+    if ($) $(document).trigger('cg:free-gift:changed', [{ free_gifts: normalized }]);
+  },
+
+  _onSelectChange(sel) {
+    const slot = parseInt(sel.getAttribute('data-slot') || '0', 10);
+    const cur = this._readSelections();
+    cur[slot] = sel.value || '';
+    this._writeSelections(cur);
+  },
+
+  _fillSelectsFromPool() {
+    if (!this._mounted) return;
+
+    const placeholders = [
+      '— Select gift #1 —',
+      '— Select gift #2 —',
+      '— Select gift #3 —'
+    ];
+
+    const fillSelect = (sel, options, placeholder, prior) => {
+      sel.innerHTML = '';
+      sel.appendChild(new Option(placeholder, ''));
+      options.forEach(opt => sel.appendChild(new Option(opt.name, opt.id)));
+      if (prior && options.some(o => o.id === prior)) sel.value = prior;
+    };
+
+    const prior = this._readSelections();
+    this._selects.forEach((sel, idx) => fillSelect(sel, this._pool, placeholders[idx], prior[idx]));
+
+    this._writeSelections(this._selects.map(s => s.value || ''));
+  },
+
+  refresh({ force = false } = {}) {
+    if (!this._mounted) return;
+
+    if (!force && Array.isArray(this._pool) && this._pool.length) {
+      this._fillSelectsFromPool();
+      return;
+    }
+
+    const now = Date.now();
+    if (!force && (now - this._lastRefreshAt) < 3000) return;
+
+    if (this._refreshInFlight) return;
+    this._refreshInFlight = true;
+
+    const { url, nonce } = ajaxEnv();
+    const payload = { action: 'cg_get_free_gifts' };
+    if (nonce) {
+      payload.security = nonce;
+      payload.nonce = nonce;
+      payload._ajax_nonce = nonce;
+    }
+
+    const onDone = (res) => {
+      this._refreshInFlight = false;
+      this._lastRefreshAt = Date.now();
+
+      const json = parseJsonMaybe(res);
+
+      if (!json || json.success !== true || !Array.isArray(json.data)) {
+        warn('Unexpected response:', json);
+        this._drawPlaceholders();
+        this._maybeRetry();
+        return;
+      }
+
+      const pool = normalizePool(json.data);
+      this._pool = pool;
+
+      const giftRows = json.data
+        .map(normalizeGiftForState)
+        .filter(Boolean);
+
+      try { State.setList(giftRows); } catch (_) {}
+
+      this._retryCount = 0;
+      this._fillSelectsFromPool();
+    };
+
+    const onFail = (status, errorText, responseText) => {
+      this._refreshInFlight = false;
+      this._lastRefreshAt = Date.now();
+      err('AJAX failed', status, errorText, responseText || '');
+      this._drawPlaceholders();
+      this._maybeRetry();
+    };
+
+    if ($ && $.post) {
+      $.post(url, payload)
+        .done(onDone)
+        .fail((xhr, status, e) => onFail(status, e, xhr?.responseText));
+    } else {
+      const body = new URLSearchParams(payload).toString();
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+        body,
+        credentials: 'same-origin'
+      })
+        .then(r => r.text().then(t => ({ status: r.status, text: t })))
+        .then(({ status, text }) => {
+          let json = null;
+          try { json = JSON.parse(text); } catch (_) {}
+          if (status >= 200 && status < 300) onDone(json);
+          else onFail(status, 'http_error', text);
+        })
+        .catch(e => onFail('fetch_error', e?.message || String(e), ''));
+    }
+  },
+
+  _maybeRetry() {
+    if (!this._mounted) return;
+    if (this._retryCount >= this._maxRetries) return;
+
+    this._retryCount++;
+    const delay = 600 * this._retryCount;
+    setTimeout(() => {
+      if (!this._pool || !this._pool.length) {
+        this.refresh({ force: true });
+      }
+    }, delay);
+  }
+};
+
+// Expose globally
+window.CG_FreeChoices = FreeChoices;
+
+export default FreeChoices;

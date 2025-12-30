@@ -25,3 +25,8 @@ export default function initCore() {
   SkillsModule.init();
   // … builder‐events …
 }
+
+
+
+import SpeciesAPI from './species/api.js';
+if (typeof window !== 'undefined') window.SpeciesAPI = SpeciesAPI;

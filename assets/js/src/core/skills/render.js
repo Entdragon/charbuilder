@@ -12,20 +12,92 @@ const MARK_DIE = {
   3: 'd8'
 };
 
+/** -----------------------------
+ * Tolerant utilities
+ * ------------------------------*/
+function pickFirst(obj, keys) {
+  for (const k of keys) {
+    if (obj && Object.prototype.hasOwnProperty.call(obj, k) && obj[k] != null && obj[k] !== '') {
+      return obj[k];
+    }
+  }
+  return null;
+}
+
+/**
+ * Extract up to 3 skill IDs from *any* shape:
+ * - flat keys: skill_one/two/three, skill_id_1..3, career_skill_1..3, etc.
+ * - arrays (of ids or objects with id/skill_id/value)
+ * - nested under .skills / .career_skills / .data
+ */
+function extractSkillTripletFromAny(input) {
+  const asStr = v => (v == null ? '' : String(v));
+
+  if (Array.isArray(input)) {
+    const ids = input
+      .map(x => (typeof x === 'object') ? (x.id ?? x.skill_id ?? x.value ?? null) : x)
+      .filter(v => v != null)
+      .slice(0, 3)
+      .map(asStr);
+    while (ids.length < 3) ids.push('');
+    return ids;
+  }
+
+  if (input && typeof input === 'object') {
+    if (input.skills != null)         return extractSkillTripletFromAny(input.skills);
+    if (input.career_skills != null)  return extractSkillTripletFromAny(input.career_skills);
+    if (input.species_skills != null) return extractSkillTripletFromAny(input.species_skills);
+    if (input.data != null)           return extractSkillTripletFromAny(input.data);
+
+    const id1 = pickFirst(input, [
+      'skill_one', 'skill1', 'skill_id_1', 'skill_one_id', 'career_skill_1', 'career_skill_one'
+    ]);
+    const id2 = pickFirst(input, [
+      'skill_two', 'skill2', 'skill_id_2', 'skill_two_id', 'career_skill_2', 'career_skill_two'
+    ]);
+    const id3 = pickFirst(input, [
+      'skill_three', 'skill3', 'skill_id_3', 'skill_three_id', 'career_skill_3', 'career_skill_three'
+    ]);
+    return [asStr(id1), asStr(id2), asStr(id3)];
+  }
+
+  return ['', '', ''];
+}
+
+/** Best-effort name helpers */
+function speciesNameOf(sp) {
+  return (
+    sp?.speciesName ||
+    sp?.species_name ||
+    sp?.name ||
+    ''
+  );
+}
+
+function careerNameOf(cp) {
+  return (
+    cp?.careerName ||
+    cp?.career_name ||
+    cp?.name ||
+    ''
+  );
+}
+
 export default {
   render() {
-    const skills  = window.CG_SKILLS_LIST || [];
+    const data    = FormBuilderAPI.getData();
+    const skills  = data.skillsList || window.CG_SKILLS_LIST || [];
     const species = SpeciesAPI.currentProfile || {};
     const career  = CareerAPI.currentProfile  || {};
-    const data    = FormBuilderAPI.getData();
 
+    // Read marks state & remaining budget
     data.skillMarks = data.skillMarks || {};
     const MAX_MARKS = 13;
     const usedMarks = Object.values(data.skillMarks)
-                          .reduce((sum, v) => sum + v, 0);
+      .reduce((sum, v) => sum + (parseInt(v, 10) || 0), 0);
     const marksRemain = Math.max(0, MAX_MARKS - usedMarks);
 
-    // Inject remaining‐marks display
+    // Inject “Marks Remaining” display
     $('#marks-remaining').remove();
     $('#skills-table').before(`
       <div id="marks-remaining" class="marks-remaining">
@@ -37,15 +109,16 @@ export default {
     const $thead = $('<thead>');
     $('<tr>')
       .append('<th>Skill</th>')
-      .append(`<th>${species.speciesName || ''}</th>`)
-      .append(`<th>${career.careerName || ''}</th>`)
+      .append(`<th>${speciesNameOf(species) || ''}</th>`)
+      .append(`<th>${careerNameOf(career) || ''}</th>`)
       .append('<th>Marks</th>')
       .append('<th>Dice Pool</th>')
       .appendTo($thead);
 
-    // Rows
-    const spSkills = [species.skill_one, species.skill_two, species.skill_three].map(String);
-    const cpSkills = [career.skill_one,  career.skill_two,  career.skill_three ].map(String);
+    // Species & Career skill IDs (tolerant)
+    const spSkills = extractSkillTripletFromAny(species).map(String);
+    const cpSkills = extractSkillTripletFromAny(career).map(String);
+
     const $tbody = $('<tbody>');
 
     skills.forEach(skill => {
@@ -57,10 +130,10 @@ export default {
       const cpDie = cpSkills.includes(id) ? 'd6' : '';
 
       // mark buttons: empty content, active if mark index ≤ myMarks
-      const myMarks = data.skillMarks[id] || 0;
+      const myMarks = parseInt(data.skillMarks[id], 10) || 0;
       let buttonsHtml = '';
-      [1,2,3].forEach(n => {
-        // disable any button above remaining budget
+      [1, 2, 3].forEach(n => {
+        // disable any button above remaining budget (unless already active)
         const disabled = (usedMarks >= MAX_MARKS && myMarks < n) ? ' disabled' : '';
         const active   = myMarks >= n ? ' active' : '';
         buttonsHtml += `<button
@@ -72,7 +145,7 @@ export default {
         ></button>`;
       });
 
-      const markDie    = myMarks ? MARK_DIE[myMarks] : '';
+      const markDie     = myMarks ? MARK_DIE[myMarks] : '';
       const markDisplay = markDie || '–';
 
       // dice pool = species + career + marks

@@ -4,10 +4,46 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * Diagnostics AJAX handlers.
+ *
+ * NOTE: Hook registration is owned by includes/diagnostics/index.php.
+ */
+require_once __DIR__ . '/../ajax-nonce.php';
+
+function cg_diag_require_post() {
+    $method = $_SERVER['REQUEST_METHOD'] ?? '';
+    if ( strtoupper( $method ) !== 'POST' ) {
+        wp_send_json_error( [ 'message' => 'Invalid request method.' ], 405 );
+    }
+}
+
+function cg_diag_require_logged_in_read() {
+    if ( ! is_user_logged_in() ) {
+        wp_send_json_error( [ 'message' => 'Not authenticated.' ], 401 );
+    }
+    // Keep capability light so subscribers work.
+    if ( ! current_user_can( 'read' ) ) {
+        wp_send_json_error( [ 'message' => 'Forbidden.' ], 403 );
+    }
+}
+
+function cg_diag_require_admin() {
+    if ( ! is_user_logged_in() ) {
+        wp_send_json_error( [ 'message' => 'Not authenticated.' ], 401 );
+    }
+    if ( ! current_user_can( 'manage_options' ) ) {
+        wp_send_json_error( [ 'message' => 'Forbidden.' ], 403 );
+    }
+}
+
+/**
  * Return a snapshot of system diagnostics.
+ * Admin-only (manage_options).
  */
 function cg_run_diagnostics() {
-    check_ajax_referer( 'cg_nonce', 'security' );
+    cg_diag_require_post();
+    cg_ajax_require_nonce_multi();
+    cg_diag_require_admin();
 
     global $wpdb;
 
@@ -16,28 +52,32 @@ function cg_run_diagnostics() {
         $db_test   = $wpdb->get_var( 'SELECT 1' );
         $db_status = ( $db_test == 1 ) ? 'ok' : 'unexpected result';
     } catch ( Exception $e ) {
+        // Admin-only endpoint; safe to include message.
         $db_status = 'error: ' . $e->getMessage();
     }
 
     $data = [
-        'wp_version'          => get_bloginfo( 'version' ),
-        'php_version'         => PHP_VERSION,
-        'memory_usage_bytes'  => memory_get_usage(),
-        'peak_usage_bytes'    => memory_get_peak_usage(),
-        'php_memory_limit'    => ini_get( 'memory_limit' ),
-        'wp_memory_limit'     => defined( 'WP_MEMORY_LIMIT' ) ? WP_MEMORY_LIMIT : ini_get( 'memory_limit' ),
-        'db_status'           => $db_status,
-        'timestamp'           => current_time( 'mysql' ),
+        'wp_version'         => get_bloginfo( 'version' ),
+        'php_version'        => PHP_VERSION,
+        'php_memory_limit'   => ini_get( 'memory_limit' ),
+        'wp_memory_limit'    => defined( 'WP_MEMORY_LIMIT' ) ? WP_MEMORY_LIMIT : ini_get( 'memory_limit' ),
+        'memory_usage_bytes' => memory_get_usage(),
+        'peak_usage_bytes'   => memory_get_peak_usage(),
+        'db_status'          => $db_status,
+        'timestamp'          => current_time( 'mysql' ),
     ];
 
     wp_send_json_success( $data );
 }
 
 /**
- * Lightweight ping: memory + time.
+ * Lightweight ping: time + memory.
+ * Logged-in only (read).
  */
 function cg_ping() {
-    check_ajax_referer( 'cg_nonce', 'security' );
+    cg_diag_require_post();
+    cg_ajax_require_nonce_multi();
+    cg_diag_require_logged_in_read();
 
     $data = [
         'memory_usage_bytes' => memory_get_usage(),

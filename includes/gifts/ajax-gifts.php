@@ -1,15 +1,18 @@
 <?php
-if ( ! defined( 'ABSPATH' ) ) {
-    exit;
-}
+if ( ! defined( 'ABSPATH' ) ) { exit; }
+
+/**
+ * Gifts AJAX handlers (STAGE hardening)
+ *
+ * NOTE: Hook registration is owned by includes/gifts/index.php.
+ */
+require_once __DIR__ . '/../ajax-nonce.php';
 
 /**
  * Return the Local Knowledge gift (ID 242).
  */
-add_action( 'wp_ajax_cg_get_local_knowledge',       'cg_get_local_knowledge' );
-add_action( 'wp_ajax_nopriv_cg_get_local_knowledge','cg_get_local_knowledge' );
 function cg_get_local_knowledge() {
-    check_ajax_referer( 'cg_nonce', 'security' );
+    cg_ajax_require_nonce_multi();
 
     global $wpdb;
     $id  = 242;
@@ -40,10 +43,8 @@ function cg_get_local_knowledge() {
 /**
  * Return the Language gift (ID 236).
  */
-add_action( 'wp_ajax_cg_get_language_gift',       'cg_get_language_gift' );
-add_action( 'wp_ajax_nopriv_cg_get_language_gift','cg_get_language_gift' );
 function cg_get_language_gift() {
-    check_ajax_referer( 'cg_nonce', 'security' );
+    cg_ajax_require_nonce_multi();
 
     global $wpdb;
     $id  = 236;
@@ -72,22 +73,20 @@ function cg_get_language_gift() {
 }
 
 /**
- * Return all free‐choice gifts.
+ * Return all gifts (used by Free Choices pool).
  */
-add_action( 'wp_ajax_cg_get_free_gifts',       'cg_get_free_gifts' );
-add_action( 'wp_ajax_nopriv_cg_get_free_gifts','cg_get_free_gifts' );
 function cg_get_free_gifts() {
-    check_ajax_referer( 'cg_nonce', 'security' );
+    cg_ajax_require_nonce_multi();
 
     global $wpdb;
     $tbl = "{$wpdb->prefix}customtables_table_gifts";
 
     // Base columns
     $cols = [
-        'ct_id                   AS id',
-        'ct_gifts_name           AS name',
+        'ct_id                    AS id',
+        'ct_gifts_name            AS name',
         'ct_gifts_allows_multiple AS allows_multiple',
-        'ct_gifts_manifold       AS ct_gifts_manifold',
+        'ct_gifts_manifold        AS ct_gifts_manifold',
     ];
 
     // Adds ct_gifts_requires, ct_gifts_requires_two … ct_gifts_requires_nineteen
@@ -98,9 +97,7 @@ function cg_get_free_gifts() {
         'sixteen','seventeen','eighteen','nineteen'
     ];
     foreach ( $suffixes as $s ) {
-        $cols[] = $s
-            ? "ct_gifts_requires_{$s}"
-            : 'ct_gifts_requires';
+        $cols[] = $s ? "ct_gifts_requires_{$s}" : 'ct_gifts_requires';
     }
 
     $col_sql = implode( ', ', $cols );

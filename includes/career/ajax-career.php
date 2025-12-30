@@ -1,12 +1,16 @@
 <?php
-if ( ! defined( 'ABSPATH' ) ) {
-    exit;
-}
+if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-add_action( 'wp_ajax_cg_get_career_list',       'cg_get_career_list' );
-add_action( 'wp_ajax_nopriv_cg_get_career_list','cg_get_career_list' );
+/**
+ * Career AJAX handlers.
+ *
+ * NOTE: Hook registration is owned by includes/career/index.php.
+ */
+require_once __DIR__ . '/../ajax-nonce.php';
+
 function cg_get_career_list() {
-    check_ajax_referer( 'cg_nonce', 'security' );
+    cg_ajax_require_nonce_multi();
+
     global $wpdb;
     $table = $wpdb->prefix . 'customtables_table_careers';
 
@@ -24,10 +28,9 @@ function cg_get_career_list() {
     wp_send_json_success( $rows );
 }
 
-add_action( 'wp_ajax_cg_get_career_gifts',       'cg_get_career_gifts' );
-add_action( 'wp_ajax_nopriv_cg_get_career_gifts','cg_get_career_gifts' );
 function cg_get_career_gifts() {
-    check_ajax_referer( 'cg_nonce', 'security' );
+    cg_ajax_require_nonce_multi();
+
     $career_id = isset( $_POST['id'] ) ? intval( $_POST['id'] ) : 0;
     if ( $career_id <= 0 ) {
         wp_send_json_error( 'Invalid career ID.' );
@@ -37,7 +40,6 @@ function cg_get_career_gifts() {
     $careers_tbl = $wpdb->prefix . 'customtables_table_careers';
     $gifts_tbl   = $wpdb->prefix . 'customtables_table_gifts';
 
-    // Pull careerName at top for Skills tab
     $sql = "
       SELECT
         c.ct_career_name        AS careerName,

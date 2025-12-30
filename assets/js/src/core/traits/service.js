@@ -1,6 +1,6 @@
 // assets/js/src/core/traits/service.js
 
-import GiftsState     from '../../gifts/state.js';
+import GiftsState     from '../gifts/state.js';
 import SpeciesService from '../species/api.js';
 import CareerService  from '../career/api.js';
 
@@ -34,7 +34,7 @@ const TraitsService = {
   calculateBoostMap() {
     const map = {};
 
-    /** 
+    /**
      * Look up one gift, see if it’s in BOOSTS, then add
      * its manifold count (default 1) to that traitKey in map.
      */

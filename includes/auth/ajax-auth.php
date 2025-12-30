@@ -4,18 +4,25 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * Auth AJAX handlers.
+ *
+ * NOTE: Hook registration is owned by includes/auth/index.php.
+ */
+require_once __DIR__ . '/../ajax-nonce.php';
+
+/**
  * Handle new user registration via AJAX.
  */
 function cg_register_user() {
-    check_ajax_referer( 'cg_nonce', 'security' );
+    cg_ajax_require_nonce_multi();
 
     if ( is_user_logged_in() ) {
         wp_send_json_error( 'You are already logged in.' );
     }
 
-    $username = isset( $_POST['username'] ) ? sanitize_user( $_POST['username'] ) : '';
-    $email    = isset( $_POST['email'] )    ? sanitize_email( $_POST['email'] )   : '';
-    $password = isset( $_POST['password'] ) ? $_POST['password']                 : '';
+    $username = isset( $_POST['username'] ) ? sanitize_user( wp_unslash( $_POST['username'] ) ) : '';
+    $email    = isset( $_POST['email'] )    ? sanitize_email( wp_unslash( $_POST['email'] ) )   : '';
+    $password = isset( $_POST['password'] ) ? (string) wp_unslash( $_POST['password'] )         : '';
 
     if ( empty( $username ) || empty( $email ) || empty( $password ) ) {
         wp_send_json_error( 'All fields are required.' );
@@ -29,13 +36,11 @@ function cg_register_user() {
         wp_send_json_error( 'Email already registered.' );
     }
 
-    // Create the user
     $user_id = wp_create_user( $username, $password, $email );
     if ( is_wp_error( $user_id ) ) {
         wp_send_json_error( $user_id->get_error_message() );
     }
 
-    // Log them in immediately
     wp_set_current_user( $user_id );
     wp_set_auth_cookie( $user_id );
 
@@ -46,16 +51,16 @@ function cg_register_user() {
  * Handle user login via AJAX.
  */
 function cg_login_user() {
-    check_ajax_referer( 'cg_nonce', 'security' );
+    cg_ajax_require_nonce_multi();
 
     if ( is_user_logged_in() ) {
         wp_send_json_error( 'You are already logged in.' );
     }
 
     $creds = [
-        'user_login'    => isset( $_POST['username'] ) ? sanitize_user( $_POST['username'] ) : '',
-        'user_password' => isset( $_POST['password'] ) ? $_POST['password']               : '',
-        'remember'      => true
+        'user_login'    => isset( $_POST['username'] ) ? sanitize_user( wp_unslash( $_POST['username'] ) ) : '',
+        'user_password' => isset( $_POST['password'] ) ? (string) wp_unslash( $_POST['password'] )         : '',
+        'remember'      => true,
     ];
 
     $user = wp_signon( $creds, is_ssl() );
@@ -70,7 +75,7 @@ function cg_login_user() {
  * Handle user logout via AJAX.
  */
 function cg_logout_user() {
-    check_ajax_referer( 'cg_nonce', 'security' );
+    cg_ajax_require_nonce_multi();
 
     if ( ! is_user_logged_in() ) {
         wp_send_json_error( 'You are not logged in.' );
