@@ -11,8 +11,9 @@ const $ = window.jQuery;
 let isDirty = false;
 
 const SELECTORS = {
-  species: ['select[name="species"]', 'select[data-cg="species"]', 'select.cg-species'],
-  career:  ['select[name="career"]',  'select[data-cg="career"]',  'select.cg-career'],
+  // Include #cg-* as canonical IDs (current formBuilder renders these).
+  species: ['#cg-species', 'select[name="species"]', 'select[data-cg="species"]', 'select.cg-species'],
+  career:  ['#cg-career',  'select[name="career"]',  'select[data-cg="career"]',  'select.cg-career'],
 };
 
 function first(selectorList, root = document) {
@@ -75,6 +76,19 @@ async function ensureListsThenApply(record = {}) {
   }
 }
 
+function activateDefaultTab() {
+  try {
+    const $details = $('#cg-modal .cg-tabs li[data-tab="tab-details"]');
+    if ($details.length) {
+      $details.trigger('click');
+      return;
+    }
+    // Fallback: first tab
+    const $first = $('#cg-modal .cg-tabs li').first();
+    if ($first.length) $first.trigger('click');
+  } catch (_) {}
+}
+
 function openBuilder({ isNew = false, payload = {} } = {}) {
   console.log('[BuilderUI] openBuilder()', { isNew, payload });
 
@@ -90,7 +104,8 @@ function openBuilder({ isNew = false, payload = {} } = {}) {
     .addClass('cg-visible')
     .css('display', 'block');
 
-  if (isNew) $('#cg-modal .cg-tabs li[data-tab="tab-traits"]').trigger('click');
+  // Always open on Details tab (user expectation).
+  activateDefaultTab();
 
   // Critically: (re)build species/career options and push changes downstream.
   ensureListsThenApply(payload).then(() => {
@@ -128,12 +143,26 @@ function hideUnsaved() {
   $('#cg-unsaved-confirm').removeClass('cg-visible').addClass('cg-hidden').hide().css('display', 'none');
 }
 
-// When a character is fetched, rehydrate lists & selections and fire changes.
-document.addEventListener('cg:character:loaded', (ev) => {
-  const record = ev?.detail || {};
-  console.log('[BuilderUI] cg:character:loaded → rehydrate for record', record);
-  ensureListsThenApply(record);
-});
+// Idempotent native listener: cg:character:loaded
+// IMPORTANT: do NOT also bind any legacy fallback handler (that’s what caused the duplicate in DIST).
+try {
+  window.__CG_EVT__ = window.__CG_EVT__ || {};
+  const EVT = window.__CG_EVT__;
+
+  if (EVT.builderUICharacterLoaded) {
+    document.removeEventListener('cg:character:loaded', EVT.builderUICharacterLoaded);
+  }
+
+  EVT.builderUICharacterLoaded = (ev) => {
+    const record = ev?.detail || {};
+    console.log('[BuilderUI] cg:character:loaded → rehydrate for record', record);
+    ensureListsThenApply(record);
+  };
+
+  document.addEventListener('cg:character:loaded', EVT.builderUICharacterLoaded);
+} catch (e) {
+  console.error('[BuilderUI] failed to bind idempotent cg:character:loaded listener', e);
+}
 
 export default {
   open: openBuilder,

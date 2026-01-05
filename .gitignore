@@ -2,3 +2,12 @@ assets/js/dist/
 node_modules/
 *.map
 .DS_Store
+
+# Character Generator local safety backups
+.bak/
+.bak-tabs/
+*.bak
+*.bak.*
+*.broken.*
+*.prepatch.*
+*.tmp.*

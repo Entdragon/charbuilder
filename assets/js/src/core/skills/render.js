@@ -1,4 +1,9 @@
 // assets/js/src/core/skills/render.js
+//
+// TAB-RESTRUCTURE HARDENING (Dec 2025):
+// - Do not touch DOM unless Skills tab is active AND #skills-table exists.
+// - This prevents background refresh calls from other tabs from mutating UI.
+
 import FormBuilderAPI from '../formBuilder';
 import SpeciesAPI     from '../species/api.js';
 import CareerAPI      from '../career/api.js';
@@ -11,6 +16,18 @@ const MARK_DIE = {
   2: 'd6',
   3: 'd8'
 };
+
+function isSkillsTabActive() {
+  try {
+    const li  = document.querySelector('#cg-modal .cg-tabs li.active');
+    const tab = li ? (li.getAttribute('data-tab') || '') : '';
+    if (tab === 'tab-skills') return true;
+
+    const panel = document.getElementById('tab-skills');
+    if (panel && panel.classList.contains('active')) return true;
+  } catch (_) {}
+  return false;
+}
 
 /** -----------------------------
  * Tolerant utilities
@@ -83,12 +100,42 @@ function careerNameOf(cp) {
   );
 }
 
+function parseExtraCareersFromData(d) {
+  if (!d) return [];
+  if (Array.isArray(d.extraCareers)) return d.extraCareers;
+
+  if (typeof d.extra_careers === 'string' && d.extra_careers.trim()) {
+    try {
+      const arr = JSON.parse(d.extra_careers);
+      if (Array.isArray(arr)) return arr;
+    } catch (_) {}
+  }
+  return [];
+}
+
 export default {
   render() {
+    // HARD GATE: only run when Skills tab is active
+    if (!isSkillsTabActive()) return;
+
+    // HARD GATE: only run if the skills table exists
+    let $table = $('#tab-skills #skills-table');
+    if (!$table.length) $table = $('#skills-table');
+    if (!$table.length) return;
+
     const data    = FormBuilderAPI.getData();
     const skills  = data.skillsList || window.CG_SKILLS_LIST || [];
     const species = SpeciesAPI.currentProfile || {};
     const career  = CareerAPI.currentProfile  || {};
+
+    // Extra careers from state (written by career/extra.js)
+    const extraCareers = parseExtraCareersFromData(data)
+      .filter(x => x && x.id)
+      .map(x => ({
+        id: String(x.id),
+        name: String(x.name || ''),
+        skills: Array.isArray(x.skills) ? x.skills.map(String) : []
+      }));
 
     // Read marks state & remaining budget
     data.skillMarks = data.skillMarks || {};
@@ -97,9 +144,9 @@ export default {
       .reduce((sum, v) => sum + (parseInt(v, 10) || 0), 0);
     const marksRemain = Math.max(0, MAX_MARKS - usedMarks);
 
-    // Inject “Marks Remaining” display
-    $('#marks-remaining').remove();
-    $('#skills-table').before(`
+    // Inject “Marks Remaining” display (scoped to the skills area)
+    $('#tab-skills #marks-remaining, #marks-remaining').remove();
+    $table.before(`
       <div id="marks-remaining" class="marks-remaining">
         Marks Remaining: <strong>${marksRemain}</strong>
       </div>
@@ -107,11 +154,17 @@ export default {
 
     // Build table header
     const $thead = $('<thead>');
-    $('<tr>')
+    const $tr = $('<tr>')
       .append('<th>Skill</th>')
       .append(`<th>${speciesNameOf(species) || ''}</th>`)
-      .append(`<th>${careerNameOf(career) || ''}</th>`)
-      .append('<th>Marks</th>')
+      .append(`<th>${careerNameOf(career) || ''}</th>`);
+
+    // Add extra-career columns
+    extraCareers.forEach(ec => {
+      $tr.append(`<th>${ec.name || 'Extra Career'}</th>`);
+    });
+
+    $tr.append('<th>Marks</th>')
       .append('<th>Dice Pool</th>')
       .appendTo($thead);
 
@@ -129,6 +182,9 @@ export default {
       const spDie = spSkills.includes(id) ? 'd4' : '';
       const cpDie = cpSkills.includes(id) ? 'd6' : '';
 
+      // Extra careers contribute d4 for matching skills
+      const extraDies = extraCareers.map(ec => (ec.skills || []).includes(id) ? 'd4' : '');
+
       // mark buttons: empty content, active if mark index ≤ myMarks
       const myMarks = parseInt(data.skillMarks[id], 10) || 0;
       let buttonsHtml = '';
@@ -145,17 +201,24 @@ export default {
         ></button>`;
       });
 
-      const markDie     = myMarks ? MARK_DIE[myMarks] : '';
+      const markDie= myMarks ? MARK_DIE[myMarks] : '';
       const markDisplay = markDie || '–';
 
-      // dice pool = species + career + marks
-      const poolDice = [spDie, cpDie, markDie].filter(Boolean);
+      // dice pool = species + career + extra careers + marks
+      const poolDice = [spDie, cpDie].concat(extraDies).concat([markDie]).filter(Boolean);
       const poolStr  = poolDice.length ? poolDice.join(' + ') : '–';
 
       const $row = $('<tr>')
         .append(`<td>${name}</td>`)
         .append(`<td>${spDie || '–'}</td>`)
-        .append(`<td>${cpDie || '–'}</td>`)
+        .append(`<td>${cpDie || '–'}</td>`);
+
+      // Extra career cells
+      extraDies.forEach(die => {
+        $row.append(`<td>${die || '–'}</td>`);
+      });
+
+      $row
         .append(`<td>
                    <div class="marks-buttons">${buttonsHtml}</div>
                    <div class="marks-display">${markDisplay}</div>
@@ -166,7 +229,7 @@ export default {
     });
 
     // Inject into DOM
-    $('#skills-table')
+    $table
       .empty()
       .append($thead)
       .append($tbody);

@@ -246,7 +246,9 @@
   font-weight: bold;
 }
 
-.cg-profile-select {
+/* Match styling for Profile selects + Free-choice selects */
+.cg-profile-select,
+.cg-free-select {
   width: 100%;
   padding: 0.5em;
   font-size: 1rem;
@@ -268,6 +270,24 @@
 
 .cg-gift-item {
   margin: 0.25em 0;
+}
+
+/* === Free-choice gift dropdown layout (vertical stack) === */
+.cg-free-row {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: var(--cg-space);
+  margin-top: 0.5em;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  align-items: stretch;
+}
+
+/* When stacking, let the gap control spacing (avoid double-spacing from margin-bottom) */
+.cg-free-row .cg-free-select {
+  margin-bottom: 0;
 }
 
 #species-gift-block {
@@ -324,11 +344,140 @@
   border-radius: var(--cg-radius);
 }
 
+/* Dropdown + badge row */
+.cg-trait-control {
+  display: flex;
+  align-items: center;
+  gap: var(--cg-space-sm);
+  margin-top: var(--cg-space-sm);
+}
+
+/* override the default 100% width when in a flex row */
+.cg-trait-control .cg-trait-select,
+.cg-trait-control .cg-profile-select {
+  flex: 1 1 auto;
+  width: auto;
+  margin-top: 0;
+}
+
+/* Circular die badge */
+.cg-trait-badge {
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  border: 1px solid var(--cg-gray);
+  background: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  line-height: 1;
+  color: #111;
+}
+
+.cg-trait-badge--sm {
+  width: 1.9rem;
+  height: 1.9rem;
+  font-size: 0.95rem;
+}
+
+/* Note line under dropdown (used for "Increased by gift") */
 .trait-adjusted {
   margin-top: var(--cg-space-sm);
   color: #0073aa;
-  font-weight: bold;
+  font-weight: 600;
   font-style: normal;
+  font-size: 0.95rem;
+  min-height: 1em; /* keeps layout stable when empty */
+}
+
+/* Extra career trait display (Traits tab, read-only) */
+.cg-extra-career-traits-box {
+  margin-top: var(--cg-space);
+  padding-top: var(--cg-space);
+  border-top: 1px solid var(--cg-gray);
+}
+
+.cg-extra-career-traits-box h4 {
+  margin: 0 0 var(--cg-space-sm);
+  font-size: 1rem;
+}
+
+.cg-extra-career-trait-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cg-space-sm);
+  padding: 0.15rem 0;
+}
+
+.cg-extra-career-trait-name {
+  font-weight: 600;
+}
+
+/* EXTRA CAREER BADGE OVERRIDE
+   Traits tab: make the extra-career die badge a bit larger (scoped, so other badges stay unchanged). */
+#cg-extra-career-traits .cg-trait-badge--sm {
+  width: 2.2rem;
+  height: 2.2rem;
+  font-size: 1rem;
+}
+
+/* EXTRA CAREER SELECT FULL WIDTH
+   Make the Extra Career dropdown match Species/Career dropdown width. */
+#cg-extra-careers select,
+#cg-extra-careers .cg-profile-select {
+  display: block;
+  width: 100%;
+  max-width: none;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* EXTRA CAREER SELECT FULL WIDTH (FORCED)
+   Make the Extra Career dropdown match Species/Career dropdown width. */
+#cg-extra-careers select,
+#cg-extra-careers .cg-profile-select {
+  width: 100% !important;
+  max-width: none !important;
+  flex: 1 1 auto;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* EXTRA CAREER WRAPPER FULL WIDTH
+   The select is already 100%, but its container is constrained (often 50% in a grid/flex layout).
+   Force the extra-career block + control row to span full width, scoped to Extra Careers only. */
+#cg-extra-careers .cg-extra-career-block,
+#cg-extra-careers .cg-trait-control--extra {
+  width: 100% !important;
+  max-width: none !important;
+  flex: 1 1 100% !important;
+  flex-basis: 100% !important;
+  grid-column: 1/-1 !important;
+}
+
+/* Make sure the select can actually grow inside the control row */
+#cg-extra-careers .cg-trait-control--extra .cg-profile-select,
+#cg-extra-careers .cg-trait-control--extra select {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+/* EXTRA CAREER SELECT HIDE BADGE
+   The Extra Careers *selection* UI should not show a die badge.
+   (Traits tab extra-career trait dice live under #cg-extra-career-traits and are unaffected.) */
+#cg-extra-careers .cg-trait-badge,
+#cg-extra-careers .cg-trait-badge--sm {
+  display: none !important;
+}
+
+/* PROFILE SELECTS HIDE DIE BADGE
+   Species/Career/Extra Career selection dropdowns should NEVER show die badges.
+   Badges remain for trait dice selectors and for #cg-extra-career-traits display. */
+.cg-trait-control--profile .cg-trait-badge,
+.cg-trait-control--profile .cg-trait-badge--sm {
+  display: none !important;
 }
 
 .cg-skills-table {

@@ -1,8 +1,19 @@
-// assets/js/src/core/main/builder-events.js
-// Maintains original builder wiring and adds safe hydration for Species/Career
-// across New, Load, tab switches, and post-save refreshes.
+/**
+ * assets/js/src/core/main/builder-events.js
+ * Maintains original builder wiring and adds safe hydration for Species/Career
+ * across New, Load, tab switches, and post-save refreshes.
+ *
+ * IMPORTANT:
+ * - Do NOT include trait_* selects in Species/Career selectors.
+ * - Tabs may detach panels; when #cg-species/#cg-career are not present we must NOT
+ *   accidentally target #cg-trait_species/#cg-trait_career.
+ *
+ * Jan 2026 fix:
+ * - Prevent programmatic "change" events firing just because options were injected.
+ *   Only fire change when we are applying a real record selection.
+ * - Remove redundant NEW-character hydration (tab-click hydration already runs).
+ */
 
-import bindOnce, { makeInitGuard } from '../utils/bind-once.js';
 import BuilderUI       from './builder-ui.js';
 import FormBuilderAPI  from '../formBuilder';
 import refreshTab      from './builder-refresh.js';
@@ -25,9 +36,10 @@ const LOG = (...a) => console.log('[BuilderEvents]', ...a);
 const ERR = (...a) => console.error('[BuilderEvents]', ...a);
 
 // Broad selectors to match your actual controls no matter how they’re rendered
+// NOTE: intentionally excludes trait_species / trait_career.
 const SEL = {
-  species: '#cg-species, select[name="species"], select[name="trait_species"], select[data-cg="species"], .cg-species',
-  career:  '#cg-career,  select[name="career"],  select[name="trait_career"],  select[data-cg="career"],  .cg-career',
+  species: '#cg-species, select[name="species"], select[data-cg="species"], .cg-species',
+  career:  '#cg-career,  select[name="career"],  select[data-cg="career"],  .cg-career',
 };
 
 function firstSelect(selector) {
@@ -40,14 +52,22 @@ function firstSelect(selector) {
 
 function setSelectValue($sel, want) {
   if (!$sel || !$sel.length || !want) return false;
-  const val = String(want);
+
+  const valRaw = String(want);
+  const val = valRaw.trim();
+
+  // Extra safety: never set a select to a dice value
+  const dice = new Set(['d4','d6','d8','d10','d12','–','-']);
+  if (dice.has(val.toLowerCase())) return false;
+
   $sel.val(val);
-  if ($sel.val() === val) return true;
+  if (String($sel.val() || '') === val) return true;
 
   // fallback: try by visible text
   const $byText = $sel.find('option').filter(function () {
     return $(this).text() === val;
   }).first();
+
   if ($byText.length) {
     $sel.val($byText.val());
     return true;
@@ -55,17 +75,30 @@ function setSelectValue($sel, want) {
   return false;
 }
 
-function triggerDownstream() {
-  try { TraitsAPI?.Service?.updateAdjustedDisplays?.(); } catch (_) {}
-  try { GiftsAPI?.refresh?.(); }   catch (_) {}
-  try { SkillsAPI?.refresh?.(); }  catch (_) {}
-  try { SummaryAPI?.refresh?.(); } catch (_) {}
+/**
+ * Emit a single canonical tab-change event.
+ * This is the anchor for the upcoming tab restructure so modules stop binding
+ * "panel click" hacks and instead react to cg:tab:changed.
+ */
+function emitTabChanged(fromTab, toTab) {
+  try {
+    if (!toTab) return;
+    if (fromTab && String(fromTab) === String(toTab)) return; // no-op: same tab
+    document.dispatchEvent(new CustomEvent('cg:tab:changed', {
+      detail: {
+        from: fromTab ? String(fromTab) : '',
+        to:   String(toTab),
+      }
+    }));
+  } catch (_) { /* non-fatal */ }
 }
 
 /**
  * hydrateSelect(kind: 'species'|'career', { force, record })
  * - Calls your Index module first (render/refresh); if empty, falls back to API.populateSelect
- * - Applies record’s saved selection (id or name) and triggers change → downstream recompute
+ * - Applies record’s saved selection (id or name)
+ * - IMPORTANT: Only triggers "change" when we actually applied a non-empty record selection.
+ *   Do NOT trigger change merely because options were injected; that causes duplicate empty logs.
  */
 function hydrateSelect(kind, { force = false, record = null } = {}) {
   const key      = kind === 'species' ? 'species' : 'career';
@@ -74,28 +107,15 @@ function hydrateSelect(kind, { force = false, record = null } = {}) {
 
   if (!$sel) { LOG(`no ${kind} select found`); return $.Deferred().resolve().promise(); }
 
-  const el       = $sel.get(0);
-  const hadCount = el.options.length;
+  const el = $sel.get(0);
+  const beforeVal = String($sel.val() || '').trim();
 
   // Prefer project modules
   try {
     const Index = (kind === 'species') ? SpeciesIndex : CareerIndex;
     if (Index?.refresh) Index.refresh();
     else if (Index?.render) Index.render();
-  } catch (e) { /* non-fatal */ }
-
-  const doApply = () => {
-    // Apply record selection if provided
-    if (record) {
-      const want = record[key] ?? record[`${key}_id`] ?? '';
-      if (want) setSelectValue($sel, want);
-    }
-    // If options were newly injected or we applied a value, trigger change
-    if (el.options.length > hadCount || (record && (record[key] || record[`${key}_id`]))) {
-      $sel.trigger('change');
-      triggerDownstream();
-    }
-  };
+  } catch (_) { /* non-fatal */ }
 
   // Fallback populate via API if still empty
   const ensureOptions = () => {
@@ -103,6 +123,26 @@ function hydrateSelect(kind, { force = false, record = null } = {}) {
     const API = (kind === 'species') ? SpeciesAPI : CareerAPI;
     if (typeof API?.populateSelect !== 'function') return $.Deferred().resolve().promise();
     return API.populateSelect(el, { force: !!force });
+  };
+
+  const doApply = () => {
+    if (!record) return;
+
+    const wantRaw = record[key] ?? record[`${key}_id`] ?? '';
+    const want = String(wantRaw || '').trim();
+    if (!want) return;
+
+    const applied = setSelectValue($sel, want);
+    const afterVal = String($sel.val() || '').trim();
+
+    // Only trigger change if we have a real, non-empty selection after applying.
+    // This avoids "selected species → ''" logs during mere option injection.
+    if (afterVal) {
+      // If we successfully applied OR the value now differs from before, notify downstream
+      if (applied || afterVal !== beforeVal) {
+        $sel.trigger('change');
+      }
+    }
   };
 
   // Give the DOM a tick in case Index.render() appended later in the event loop
@@ -120,6 +160,13 @@ function hydrateSpeciesAndCareer(opts = {}) {
     hydrateSelect('species', opts),
     hydrateSelect('career',  opts)
   );
+}
+
+// Stable handler reference so we can remove/re-add safely.
+function onCharactersRefresh() {
+  setTimeout(() => {
+    hydrateSpeciesAndCareer({ force: true });
+  }, 0);
 }
 
 export default function bindUIEvents() {
@@ -191,14 +238,9 @@ export default function bindUIEvents() {
       // Reset gifts state
       if (window.CG_FreeChoicesState) {
         window.CG_FreeChoicesState.selected = ['', '', ''];
-        // keep gifts list unless you explicitly want it purged
-        // window.CG_FreeChoicesState.gifts    = [];
       }
 
-      // Ensure species/career lists exist for the new form
-      setTimeout(() => {
-        hydrateSpeciesAndCareer({ force: false, record: {} });
-      }, 0);
+      // NOTE: Do NOT hydrate here; openBuilder() activates a tab which triggers hydration once.
     });
 
   // 4) Load character by ID and launch builder
@@ -229,7 +271,7 @@ export default function bindUIEvents() {
 
           BuilderUI.openBuilder({ isNew: false, payload: record });
 
-          // Rehydrate lists and apply record selections, fire downstream recompute
+          // Rehydrate lists and apply record selections AFTER options exist (avoids “empty change”)
           setTimeout(() => {
             hydrateSpeciesAndCareer({ force: true, record });
           }, 0);
@@ -249,6 +291,8 @@ export default function bindUIEvents() {
     .off('click.cg', '#cg-modal .cg-tabs li')
     .on('click.cg', '#cg-modal .cg-tabs li', function(e) {
       e.preventDefault();
+
+      const fromTab = $('#cg-modal .cg-tabs li.active').data('tab');
       const tabName = $(this).data('tab');
 
       $('#cg-modal .cg-tabs li').removeClass('active');
@@ -257,9 +301,12 @@ export default function bindUIEvents() {
       $('.tab-panel').removeClass('active');
       $(`#${tabName}`).addClass('active');
 
+      // Canonical tab-change hook for the upcoming tab restructure
+      emitTabChanged(fromTab, tabName);
+
       refreshTab();
 
-      // Some tabs rebuild DOM; ensure selects remain populated
+      // Some tabs rebuild DOM; ensure selects remain populated (NO change trigger here)
       setTimeout(() => {
         hydrateSpeciesAndCareer({ force: false });
       }, 0);
@@ -307,9 +354,13 @@ export default function bindUIEvents() {
     });
 
   // 8) After saves trigger list refresh elsewhere, gently rehydrate here too
-  document.addEventListener('cg:characters:refresh', () => {
-    setTimeout(() => {
-      hydrateSpeciesAndCareer({ force: true });
-    }, 0);
-  });
+  // IMPORTANT: avoid stacking native listeners on repeated bindUIEvents() calls.
+  try {
+    window.__CG_EVT__ = window.__CG_EVT__ || {};
+    if (window.__CG_EVT__.charactersRefreshEvents) {
+      document.removeEventListener('cg:characters:refresh', window.__CG_EVT__.charactersRefreshEvents);
+    }
+    window.__CG_EVT__.charactersRefreshEvents = onCharactersRefresh;
+    document.addEventListener('cg:characters:refresh', window.__CG_EVT__.charactersRefreshEvents);
+  } catch (_) {}
 }

@@ -1,37 +1,16 @@
 // assets/js/src/core/formBuilder/render-profile.js
-
-/**
- * “Profile” tab & panel
- * Species, Career & Gifts all together
- */
+//
+// “Gifts” + “Trappings” panels
+// NOTE: Element IDs are intentionally unchanged so existing APIs keep working.
 
 export default {
-  renderContent(data = {}) {
+  renderContent(_data = {}) {
     return `
-      <div id="tab-profile" class="tab-panel">
-
-        <div class="cg-profile-box">
-          <h3>Species and Career</h3>
-          <label for="cg-species">Species</label>
-          <select 
-            id="cg-species" 
-            class="cg-profile-select" 
-            data-selected="${data.species_id || ''}"
-          ></select>
-          <ul id="species-gifts" class="cg-gift-item"></ul>
-
-          <label for="cg-career">Career</label>
-          <select 
-            id="cg-career" 
-            class="cg-profile-select" 
-            data-selected="${data.career_id || ''}"
-          ></select>
-          <div class="trait-adjusted" id="cg-trait_career-adjusted"></div>
-          <div id="cg-extra-careers" class="cg-profile-grid"></div>
-        </div>
+      <div id="tab-gifts" class="tab-panel">
 
         <div class="cg-profile-box">
           <h3>Gifts</h3>
+
           <div class="cg-gift-label">Local Knowledge</div>
           <div id="cg-local-knowledge" class="cg-gift-item"></div>
 
@@ -48,6 +27,13 @@ export default {
           <div id="cg-free-choices" class="cg-gift-item"></div>
         </div>
 
+      </div>
+
+      <div id="tab-trappings" class="tab-panel">
+        <div class="cg-profile-box">
+          <h3>Trappings &amp; Equipment</h3>
+          <p><em>Coming soon.</em></p>
+        </div>
       </div>
     `;
   }

@@ -16,7 +16,10 @@
   margin: 0.5em 0 0.25em;
   font-weight: bold;
 }
-.cg-profile-select {
+
+/* Match styling for Profile selects + Free-choice selects */
+.cg-profile-select,
+.cg-free-select {
   width: 100%;
   padding: 0.5em;
   font-size: 1rem;
@@ -24,17 +27,37 @@
   border-radius: var(--cg-radius);
   margin-bottom: 0.5em;
 }
+
 .cg-profile-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--cg-space);
 }
+
 .cg-gift-label {
   font-weight: bold;
   margin-top: 1em;
 }
 .cg-gift-item {
   margin: 0.25em 0;
+}
+
+/* === Free-choice gift dropdown layout (vertical stack) === */
+.cg-free-row {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: var(--cg-space);
+  margin-top: 0.5em;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  align-items: stretch;
+}
+
+/* When stacking, let the gap control spacing (avoid double-spacing from margin-bottom) */
+.cg-free-row .cg-free-select {
+  margin-bottom: 0;
 }
 
 #species-gift-block {

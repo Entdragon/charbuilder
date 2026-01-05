@@ -26,14 +26,23 @@ function normalizeList(raw) {
   if (!Array.isArray(raw)) return [];
   return raw.map(it => {
     if (it && typeof it === 'object') {
-      return {
+      const out = {
         id:   String(it.id ?? it.value ?? ''),
         name: String(it.name ?? it.title ?? '')
       };
+
+      // CG_CAREERLIST_EXTFIELDS: preserve extra fields returned by PHP list endpoint
+      // so Extra Careers can compute eligibility without N AJAX calls.
+      ['gift_id_1','gift_id_2','gift_id_3','skill_one','skill_two','skill_three'].forEach(k => {
+        if (it[k] != null && String(it[k]) !== '') out[k] = String(it[k]);
+      });
+
+      return out;
     }
     return { id: String(it), name: String(it) };
   }).filter(x => x.id && x.name);
 }
+
 
 /**
  * Try preloaded globals (fast path)
@@ -112,6 +121,7 @@ function giftNamesFromProfile(profile = {}) {
 const CareerAPI = {
   _cache: { list: null, listPromise: null },
   currentProfile: null,
+    currentProfileId: null, // CG_CAREERAPI_PROFILE_RACE_GUARD
 
   clearCache() {
     this._cache.list = null;
@@ -207,10 +217,14 @@ const CareerAPI = {
    * so we call that here and treat the response as the profile.
    */
   fetchProfile(careerId) {
-    if (!careerId) {
+    // CG_CAREERAPI_PROFILE_RACE_GUARD: guard against out-of-order AJAX profile responses
+    const wantedId = String(careerId || '');
+    if (!wantedId) {
       this.currentProfile = null;
+      this.currentProfileId = null;
       return $.Deferred().resolve(null).promise();
     }
+    this.currentProfileId = wantedId;
 
     const { ajax_url, nonce } = ajaxEnv();
     if (!ajax_url) {
@@ -236,7 +250,9 @@ const CareerAPI = {
 
         if (!profRaw) {
           warn('Career profile response missing/invalid:', res);
-          this.currentProfile = null;
+          if (String(this.currentProfileId || '') === String(wantedId)) {
+            this.currentProfile = null;
+          }
           return null;
         }
 

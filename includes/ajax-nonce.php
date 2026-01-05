@@ -2,9 +2,9 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 /**
- * Shared nonce validator for Character Generator AJAX endpoints.
+ * Shared helpers for Character Generator AJAX endpoints.
  *
- * Accepts:
+ * Nonce validator:
  * - generic nonce action: 'cg_nonce'
  * - per-action nonce: $_REQUEST['action'] (e.g. 'cg_get_species_list')
  * - legacy retry nonce: 'cg_ajax'
@@ -12,6 +12,26 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
  * Looks in common nonce fields: security, nonce, _ajax_nonce, _wpnonce.
  * On failure: wp_die('-1', 403) (matches WP AJAX behavior)
  */
+
+/**
+ * Require POST for this AJAX request.
+ *
+ * NOTE: Not all endpoints must use this (some list endpoints may be intentionally GET-safe),
+ * but it provides a single canonical helper so modules can opt-in consistently.
+ */
+if ( ! function_exists( 'cg_ajax_require_post' ) ) {
+    function cg_ajax_require_post() {
+        $method = isset( $_SERVER['REQUEST_METHOD'] ) ? strtoupper( (string) $_SERVER['REQUEST_METHOD'] ) : '';
+        if ( $method !== 'POST' ) {
+            if ( ! headers_sent() ) {
+                header( 'Allow: POST' );
+            }
+            status_header( 405 );
+            wp_send_json_error( 'Method not allowed. Use POST.' );
+        }
+    }
+}
+
 if ( ! function_exists( 'cg_ajax_require_nonce_multi' ) ) {
     function cg_ajax_require_nonce_multi( $default_action = 'cg_nonce' ) {
         $nonce = '';

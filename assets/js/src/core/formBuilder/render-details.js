@@ -23,17 +23,23 @@ export default {
   renderTabs() {
     return `
       <ul class="cg-tabs">
-        <li data-tab="tab-traits" class="active">Details & Traits</li>
-        <li data-tab="tab-profile">Profile: Species, Career & Gifts</li>
+        <li data-tab="tab-details" class="active">Details</li>
+        <li data-tab="tab-traits">Traits, Species, Careers</li>
+        <li data-tab="tab-gifts">Gifts</li>
         <li data-tab="tab-skills">Skills</li>
-        <li data-tab="tab-summary">Summary</li>
+        <li data-tab="tab-trappings">Trappings &amp; Equipment</li>
+        <li data-tab="tab-description">Description</li>
+        <li data-tab="tab-summary">Character Sheet</li>
       </ul>
     `;
   },
 
   renderContent(data = {}) {
-    // Build each trait’s <select> using the full DICE array—
-    // no pool removal, so every option is always rendered.
+    const speciesSelected =
+      (data && (data.species_id || data.species || (data.profile && data.profile.species))) || '';
+    const careerSelected =
+      (data && (data.career_id || data.career || (data.profile && data.profile.career))) || '';
+
     const traitFields = TRAITS.map(trait => {
       const val   = String(data[trait] ?? '');
       const label = trait === 'trait_species' ? 'Species'
@@ -47,22 +53,29 @@ export default {
 
       return `
         <div class="cg-trait">
-          <label>${label} <small>(choose one)</small></label>
-          <select id="cg-${trait}" class="cg-trait-select">
-            <option value="">&mdash; Select &mdash;</option>
-            ${options}
-          </select>
-          <div
-            class="trait-adjusted"
-            id="cg-${trait}-adjusted"
-            style="color:#0073aa;font-weight:bold;"
-          ></div>
+          <label for="cg-${trait}">${label} <small>(choose one)</small></label>
+
+          <div class="cg-trait-control">
+            <select id="cg-${trait}" class="cg-trait-select" data-trait="${trait}">
+              <option value="">— Select —</option>
+              ${options}
+            </select>
+
+            <span
+              class="cg-trait-badge"
+              id="cg-${trait}-badge"
+              aria-label="${escape(label)} die"
+              aria-live="polite"
+            >–</span>
+          </div>
+
+          <div class="trait-adjusted" id="cg-${trait}-adjusted"></div>
         </div>
       `;
     }).join('');
 
     return `
-      <div id="tab-traits" class="tab-panel active">
+      <div id="tab-details" class="tab-panel active">
         <div class="cg-details-panel">
 
           <div class="cg-details-box">
@@ -81,9 +94,9 @@ export default {
                 <label>Gender</label>
                 <select id="cg-gender">
                   <option value="">&mdash; Select &mdash;</option>
-                  <option value="Male"     ${data.gender === 'Male'     ? 'selected' : ''}>Male</option>
-                  <option value="Female"   ${data.gender === 'Female'   ? 'selected' : ''}>Female</option>
-                  <option value="Nonbinary"${data.gender === 'Nonbinary'? 'selected' : ''}>Nonbinary</option>
+                  <option value="Male"      ${data.gender === 'Male'      ? 'selected' : ''}>Male</option>
+                  <option value="Female"    ${data.gender === 'Female'    ? 'selected' : ''}>Female</option>
+                  <option value="Nonbinary" ${data.gender === 'Nonbinary' ? 'selected' : ''}>Nonbinary</option>
                 </select>
               </div>
               <div>
@@ -103,15 +116,61 @@ export default {
             <input type="text" id="cg-goal3" value="${escape(data.goal3)}" />
           </div>
 
+        </div>
+      </div>
+
+      <div id="tab-traits" class="tab-panel">
+        <div class="cg-details-panel">
+
+          <div class="cg-profile-box">
+            <h3>Species and Career</h3>
+
+            <label for="cg-species">Species</label>
+            <select
+              id="cg-species"
+              class="cg-profile-select"
+              data-selected="${escape(speciesSelected)}"
+            ></select>
+
+            <ul id="species-gifts" class="cg-gift-item"></ul>
+
+            <label for="cg-career">Career</label>
+            <div class="cg-trait-control cg-trait-control--profile">
+              <select
+                id="cg-career"
+                class="cg-profile-select"
+                data-selected="${escape(careerSelected)}"
+              ></select>
+
+              <span
+                class="cg-trait-badge"
+                id="cg-profile-trait_career-badge"
+                aria-label="Career trait die"
+                aria-live="polite"
+              >–</span>
+            </div>
+
+            <div class="trait-adjusted" id="cg-profile-trait_career-note"></div>
+            <div id="cg-extra-careers" class="cg-profile-grid"></div>
+          </div>
+
           <div class="cg-traits-box">
             <h3>Traits</h3>
             <div class="cg-profile-grid">
               ${traitFields}
             </div>
+
+            <!-- Read-only display of extra-career trait dice (populated by career/extra.js) -->
+            <div id="cg-extra-career-traits" class="cg-extra-career-traits-box"></div>
           </div>
 
+        </div>
+      </div>
+
+      <div id="tab-description" class="tab-panel">
+        <div class="cg-details-panel">
           <div class="cg-text-box">
-            <h3>Description & Backstory</h3>
+            <h3>Description &amp; Backstory</h3>
             <label>Description</label>
             <textarea id="cg-description">${escape(data.description)}</textarea>
             <label>Backstory</label>

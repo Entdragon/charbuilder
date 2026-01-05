@@ -9,7 +9,9 @@
 // - A gift with NO prereqs is always eligible.
 // - If prereqs exist, ALL non-empty prereq IDs must already be acquired (free/species/career).
 //
-// Exposes: window.CG_FreeChoices (+ window.CG_FormBuilderAPI for debugging)
+// NOTE (Jan 2026):
+// Layout is controlled by SCSS (assets/css/src/components/_profile.scss).
+// We intentionally DO NOT apply inline styles here. We also clear any legacy inline styles.
 
 import State from './state.js';
 import FormBuilderAPI from '../formBuilder';
@@ -18,8 +20,9 @@ import CareerAPI from '../career/api.js';
 
 const $ = window.jQuery;
 
-const log  = (...a) => (window.CG_DEBUG_GIFTS ? console.log('[FreeChoices]', ...a) : null);
-const warn = (...a) => console.warn('[FreeChoices]', ...a);
+const dbg  = () => !!window.CG_DEBUG_GIFTS;
+const log  = (...a) => (dbg() ? console.log('[FreeChoices]', ...a) : null);
+const warn = (...a) => (dbg() ? console.warn('[FreeChoices]', ...a) : null);
 const err  = (...a) => console.error('[FreeChoices]', ...a);
 
 const REQ_SUFFIXES = [
@@ -40,7 +43,6 @@ function ajaxEnv() {
     document.body?.dataset?.ajaxUrl ||
     '/wp-admin/admin-ajax.php';
 
-  // Prefer per-action nonce if available
   const perAction = (window.CG_NONCES && window.CG_NONCES.cg_get_free_gifts)
     ? window.CG_NONCES.cg_get_free_gifts
     : null;
@@ -67,11 +69,9 @@ function splitIds(val) {
   if (Array.isArray(val)) return val.flatMap(splitIds);
   const s = String(val).trim();
   if (!s) return [];
-  // split on commas/whitespace
   return s.split(/[,\s]+/g)
     .map(t => t.trim())
     .filter(Boolean)
-    // only keep “number-ish” tokens
     .map(t => (String(parseInt(t, 10)) === 'NaN' ? '' : String(parseInt(t, 10))))
     .filter(Boolean);
 }
@@ -83,7 +83,6 @@ function extractRequires(rawGift) {
     if (!Object.prototype.hasOwnProperty.call(rawGift, key)) return;
     req.push(...splitIds(rawGift[key]));
   });
-  // de-dupe
   return Array.from(new Set(req));
 }
 
@@ -118,11 +117,11 @@ const FreeChoices = {
   _inited: false,
   _mounted: false,
 
-  _root: null,     // placeholder (#cg-free-choices or fallback section)
-  _host: null,     // row wrapper
+  _root: null,
+  _host: null,
   _selects: [],
 
-  _allGifts: [],   // normalized full gifts from endpoint (includes requires/allows_multiple)
+  _allGifts: [],
   _refreshInFlight: false,
   _lastRefreshAt: 0,
   _retryCount: 0,
@@ -130,9 +129,10 @@ const FreeChoices = {
 
   _mountTimer: null,
   _mountTries: 0,
-  _maxMountTries: 80, // 80 * 250ms = 20s
+  _maxMountTries: 80, // 20s
 
   _suppressEmit: false,
+  _pendingFill: false,
 
   init() {
     if (this._inited) return;
@@ -142,12 +142,53 @@ const FreeChoices = {
 
     try { State.init(); } catch (_) {}
 
-    this._ensureMounted();
+    // Ensure stable 3-slot selection array
+    try {
+      this._suppressEmit = true;
+      const cur = this._readSelections();
+      this._writeSelections(cur);
+      this._suppressEmit = false;
+    } catch (_) {
+      this._suppressEmit = false;
+    }
 
-    // Re-mount + refresh when builder opens
+    // Builder lifecycle
     document.addEventListener('cg:builder:opened', () => {
       this._ensureMounted();
       this.refresh({ force: false });
+    });
+
+    // IMPORTANT: Builder close empties #cg-form-container; drop DOM refs + stop mount retries.
+    document.addEventListener('cg:builder:closed', () => {
+      this._resetMount(true);
+    });
+
+    // If the builder emits "rendered", refresh UI.
+    document.addEventListener('cg:builder:rendered', () => {
+      this._ensureMounted();
+      this._fillSelectsFiltered();
+    });
+
+    // Character load often triggers rebuild/rehydrate.
+    document.addEventListener('cg:character:loaded', () => {
+      this._ensureMounted();
+      this._fillSelectsFiltered();
+    });
+
+    // When entering profile, mount + fill
+    document.addEventListener('cg:tab:changed', (e) => {
+      const to = e?.detail?.to || '';
+      if (to !== 'tab-profile') return;
+
+      this._ensureMounted();
+      if (!this._mounted) return;
+
+      if (this._pendingFill && Array.isArray(this._allGifts) && this._allGifts.length) {
+        this._pendingFill = false;
+        this._fillSelectsFiltered();
+      } else if (!Array.isArray(this._allGifts) || !this._allGifts.length) {
+        this.refresh({ force: true });
+      }
     });
 
     // React to changes that affect prereqs
@@ -155,7 +196,6 @@ const FreeChoices = {
       $(document)
         .off('cg:species:changed.cgfree cg:career:changed.cgfree cg:free-gift:changed.cgfree')
         .on('cg:species:changed.cgfree cg:career:changed.cgfree cg:free-gift:changed.cgfree', () => {
-          // No refetch needed; just re-filter options
           this._fillSelectsFiltered();
         });
     }
@@ -163,20 +203,32 @@ const FreeChoices = {
 
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => this._ensureMounted());
+    } else {
+      this._ensureMounted();
     }
   },
 
-  _resetMount() {
+  _clearMountTimer() {
+    if (this._mountTimer) {
+      clearInterval(this._mountTimer);
+      this._mountTimer = null;
+    }
+  },
+
+  _resetMount(clearTimer = false) {
+    if (clearTimer) this._clearMountTimer();
     this._mounted = false;
     this._root = null;
     this._host = null;
     this._selects = [];
+    this._mountTries = 0;
   },
 
   _ensureMounted() {
     if (this._mounted && (!inDom(this._root) || !inDom(this._host))) {
+      // This is normal during builder re-render; only show in debug mode.
       warn('mounted root was detached; remounting');
-      this._resetMount();
+      this._resetMount(false);
     }
     if (this._mounted) return true;
 
@@ -189,14 +241,17 @@ const FreeChoices = {
     this._mountTimer = setInterval(() => {
       this._mountTries++;
       if (this._tryMount()) {
-        clearInterval(this._mountTimer);
-        this._mountTimer = null;
-        this.refresh({ force: false });
+        this._clearMountTimer();
+
+        if (Array.isArray(this._allGifts) && this._allGifts.length) {
+          this._fillSelectsFiltered();
+        } else {
+          this.refresh({ force: false });
+        }
         return;
       }
       if (this._mountTries >= this._maxMountTries) {
-        clearInterval(this._mountTimer);
-        this._mountTimer = null;
+        this._clearMountTimer();
       }
     }, 250);
 
@@ -206,8 +261,10 @@ const FreeChoices = {
   _tryMount() {
     let root = document.querySelector('#cg-free-choices');
 
+    // Fallback if placeholder missing
     if (!root) {
-      const container = document.querySelector('#cg-form-container');
+      const profilePanel = document.getElementById('tab-profile');
+      const container = profilePanel || document.querySelector('#cg-form-container');
       if (!container) return false;
 
       let section = document.getElementById('cg-free-gifts');
@@ -227,16 +284,12 @@ const FreeChoices = {
       row = document.createElement('div');
       row.className = 'cg-free-row';
       root.appendChild(row);
+    } else {
+      if (!row.classList.contains('cg-free-row')) row.classList.add('cg-free-row');
     }
 
-    row.style.display = 'flex';
-    row.style.flexWrap = 'wrap';
-    row.style.gap = '12px';
-    row.style.marginTop = '8px';
-    row.style.width = '100%';
-    row.style.maxWidth = '100%';
-    row.style.boxSizing = 'border-box';
-    row.style.alignItems = 'flex-start';
+    // Let SCSS own layout (clear legacy inline styles)
+    if (row.getAttribute('style')) row.removeAttribute('style');
 
     const ensureSelect = (slot) => {
       const id = `cg-free-choice-${slot}`;
@@ -247,13 +300,12 @@ const FreeChoices = {
         sel.className = 'cg-free-select';
         sel.setAttribute('data-slot', String(slot));
         row.appendChild(sel);
+      } else {
+        if (!sel.classList.contains('cg-free-select')) sel.classList.add('cg-free-select');
       }
 
-      sel.style.flex = '1 1 240px';
-      sel.style.minWidth = '200px';
-      sel.style.maxWidth = '100%';
-      sel.style.width = '100%';
-      sel.style.boxSizing = 'border-box';
+      // Let SCSS own layout (clear legacy inline styles)
+      if (sel.getAttribute('style')) sel.removeAttribute('style');
 
       return sel;
     };
@@ -342,21 +394,15 @@ const FreeChoices = {
     const cur = this._readSelections();
     cur[slot] = sel.value || '';
 
-    // Persist, then re-filter so newly unlocked gifts appear immediately
     this._writeSelections(cur);
     this._fillSelectsFiltered();
   },
 
   _acquiredGiftIdSet(selections) {
     const set = new Set();
-
-    // Always-acquired gifts (if your rules want these)
     ALWAYS_ACQUIRED_GIFT_IDS.forEach(id => set.add(String(id)));
-
-    // Free choices
     (selections || []).forEach(id => { if (id) set.add(String(id)); });
 
-    // Species gifts
     const sp = SpeciesAPI?.currentProfile || null;
     if (sp) {
       ['gift_id_1', 'gift_id_2', 'gift_id_3'].forEach(k => {
@@ -364,7 +410,6 @@ const FreeChoices = {
       });
     }
 
-    // Career gifts
     const cp = CareerAPI?.currentProfile || null;
     if (cp) {
       ['gift_id_1', 'gift_id_2', 'gift_id_3'].forEach(k => {
@@ -378,7 +423,6 @@ const FreeChoices = {
   _isEligibleGift(g, acquiredSet) {
     const req = Array.isArray(g.requires) ? g.requires : [];
     if (!req.length) return true;
-    // AND semantics: all prereqs must be acquired
     return req.every(id => acquiredSet.has(String(id)));
   },
 
@@ -393,7 +437,6 @@ const FreeChoices = {
         if (!g || !g.id) return false;
         if (!this._isEligibleGift(g, acquiredSet)) return false;
 
-        // Prevent duplicates unless allows_multiple OR it is the current selection
         if (!g.allows_multiple && otherSelected.has(String(g.id)) && String(g.id) !== String(cur)) {
           return false;
         }
@@ -415,12 +458,10 @@ const FreeChoices = {
       '— Select gift #3 —'
     ];
 
-    // Iterate a few times to clear any now-invalid selections (after species/career changes)
     let selections = this._readSelections().slice();
-    let changed = false;
 
     for (let pass = 0; pass < 3; pass++) {
-      changed = false;
+      let changed = false;
       const acquired = this._acquiredGiftIdSet(selections);
 
       for (let slot = 0; slot < this._selects.length; slot++) {
@@ -434,11 +475,9 @@ const FreeChoices = {
           changed = true;
         }
       }
-
       if (!changed) break;
     }
 
-    // If we had to clear anything, persist silently first
     const before = this._readSelections().slice();
     if (selections.join('|') !== before.join('|')) {
       this._suppressEmit = true;
@@ -454,11 +493,8 @@ const FreeChoices = {
 
       options.forEach(opt => sel.appendChild(new Option(opt.name, opt.id)));
 
-      if (prior && options.some(o => o.id === String(prior))) {
-        sel.value = String(prior);
-      } else {
-        sel.value = '';
-      }
+      if (prior && options.some(o => o.id === String(prior))) sel.value = String(prior);
+      else sel.value = '';
     };
 
     this._selects.forEach((sel, idx) => {
@@ -466,7 +502,6 @@ const FreeChoices = {
       fillSelect(sel, options, placeholders[idx], selections[idx]);
     });
 
-    // Sync state (silently; DOM is authoritative here)
     const nowSel = this._selects.map(s => s.value || '');
     if (nowSel.join('|') !== selections.join('|')) {
       this._suppressEmit = true;
@@ -477,7 +512,6 @@ const FreeChoices = {
 
   refresh({ force = false } = {}) {
     this._ensureMounted();
-    if (!this._mounted) return;
 
     const now = Date.now();
     if (!force && (now - this._lastRefreshAt) < 3000) return;
@@ -500,30 +534,28 @@ const FreeChoices = {
 
       if (!json || json.success !== true || !Array.isArray(json.data)) {
         warn('Unexpected response:', json);
-        this._drawPlaceholders();
+        if (this._mounted) this._drawPlaceholders();
         this._maybeRetry();
         return;
       }
 
-      const giftRows = json.data
-        .map(normalizeGiftForState)
-        .filter(Boolean);
+      const giftRows = json.data.map(normalizeGiftForState).filter(Boolean);
 
-      // Keep full list for filtering + state lookups
       this._allGifts = giftRows;
 
-      // TraitsService needs the master list
       try { State.setList(giftRows); } catch (_) {}
 
       this._retryCount = 0;
-      this._fillSelectsFiltered();
+
+      if (this._mounted) this._fillSelectsFiltered();
+      else this._pendingFill = true;
     };
 
     const onFail = (status, errorText, responseText) => {
       this._refreshInFlight = false;
       this._lastRefreshAt = Date.now();
       err('AJAX failed', status, errorText, responseText || '');
-      this._drawPlaceholders();
+      if (this._mounted) this._drawPlaceholders();
       this._maybeRetry();
     };
 
@@ -551,7 +583,6 @@ const FreeChoices = {
   },
 
   _maybeRetry() {
-    if (!this._mounted) return;
     if (this._retryCount >= this._maxRetries) return;
 
     this._retryCount++;
@@ -564,7 +595,5 @@ const FreeChoices = {
   }
 };
 
-// Expose globally
 window.CG_FreeChoices = FreeChoices;
-
 export default FreeChoices;
