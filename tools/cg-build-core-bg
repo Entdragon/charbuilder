@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+set -euo pipefail
+set +H
+
+# Resolve plugin root as parent of this script's directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+CG_ROOT="$(cd "$SCRIPT_DIR/.." && pwd -P)"
+
+TS="$(date -u +%Y%m%dT%H%M%SZ)"
+LOG="$HOME/cg_build_core_${TS}.log"
+RC="$HOME/cg_build_core_${TS}.rc"
+
+# Run build in a detached login shell, but:
+# - always print diagnostics into the log
+# - always write the true exit code to RC
+# - exit with that same code (useful if you ever wait/join)
+nohup bash -lc "
+  set -euo pipefail
+  echo '[cg-build-core-bg] start: '\"\$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
+  echo '[cg-build-core-bg] CG_ROOT=$CG_ROOT'
+  cd \"$CG_ROOT\"
+  echo '[cg-build-core-bg] pwd='\"\$(pwd)\"
+  echo '[cg-build-core-bg] node='\"\$(command -v node || true)\"' v='\"\$(node -v 2>/dev/null || true)\"
+  echo '[cg-build-core-bg] npm='\"\$(command -v npm || true)\"' v='\"\$(npm -v 2>/dev/null || true)\"
+  ls -lah package.json 2>/dev/null || true
+  npm run build:core
+  st=\$?
+  echo \"\$st\" > \"$RC\"
+  echo '[cg-build-core-bg] exit='\"\$st\"
+  exit \"\$st\"
+" > "$LOG" 2>&1 &
+
+PID=$!
+echo "PID=$PID"
+echo "LOG=$LOG"
+echo "RC =$RC"
+echo "TIP: tail -f \"$LOG\""

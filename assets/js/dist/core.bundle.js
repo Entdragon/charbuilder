@@ -134,8 +134,8 @@
           log("Species list fetched:", list.length);
           return list;
         },
-        (xhr, status, err2) => {
-          warn("AJAX species list failed:", status, err2, xhr == null ? void 0 : xhr.responseText);
+        (xhr, status, err) => {
+          warn("AJAX species list failed:", status, err, xhr == null ? void 0 : xhr.responseText);
           this._cache.list = [];
           return [];
         }
@@ -211,8 +211,8 @@
           }));
           return this.currentProfile;
         },
-        (xhr, status, err2) => {
-          warn("AJAX species profile failed:", status, err2, xhr == null ? void 0 : xhr.responseText);
+        (xhr, status, err) => {
+          warn("AJAX species profile failed:", status, err, xhr == null ? void 0 : xhr.responseText);
           this.currentProfile = null;
           return null;
         }
@@ -350,8 +350,8 @@
         this._cache.list = list;
         log2("Career list fetched:", list.length);
         return list;
-      }).fail((xhr, status, err2) => {
-        warn2("AJAX career list failed:", status, err2, xhr == null ? void 0 : xhr.responseText);
+      }).fail((xhr, status, err) => {
+        warn2("AJAX career list failed:", status, err, xhr == null ? void 0 : xhr.responseText);
         return [];
       }).always(() => {
         this._cache.listPromise = null;
@@ -421,8 +421,8 @@
         const normalized = normalizeCareerProfileShape(profRaw);
         this.currentProfile = normalized;
         return normalized;
-      }).fail((xhr, status, err2) => {
-        warn2("AJAX career profile failed:", status, err2, xhr == null ? void 0 : xhr.responseText);
+      }).fail((xhr, status, err) => {
+        warn2("AJAX career profile failed:", status, err, xhr == null ? void 0 : xhr.responseText);
         this.currentProfile = null;
         return null;
       });
@@ -444,13 +444,109 @@
   }
   var api_default2 = CareerAPI;
 
+  // assets/js/src/core/quals/catalog.js
+  var TYPES = ["language", "literacy", "insider", "mystic", "piety"];
+  function stripDiacritics(s) {
+    return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  }
+  function canon(s) {
+    return stripDiacritics(String(s || "")).trim().replace(/\s+/g, " ").toLowerCase();
+  }
+  function matchCategoryLine(text) {
+    const m = String(text || "").trim().match(/^(Language|Literacy|Insider|Mystic|Piety)\s*:\s*(.+)\s*$/i);
+    if (!m)
+      return null;
+    const type = canon(m[1]);
+    const value = String(m[2] || "").trim();
+    if (!type || !value)
+      return null;
+    const key = canon(value);
+    if (!key)
+      return null;
+    return { type, value, key };
+  }
+  function buildQualCatalogFromGifts(gifts = []) {
+    const catalog = /* @__PURE__ */ Object.create(null);
+    TYPES.forEach((t) => catalog[t] = /* @__PURE__ */ Object.create(null));
+    (Array.isArray(gifts) ? gifts : []).forEach((g) => {
+      var _a, _b;
+      const rs = (_b = (_a = g == null ? void 0 : g.requires_special) != null ? _a : g == null ? void 0 : g.ct_gifts_requires_special) != null ? _b : "";
+      const hit = matchCategoryLine(rs);
+      if (!hit || !catalog[hit.type])
+        return;
+      const bucket = catalog[hit.type];
+      if (!bucket[hit.key]) {
+        bucket[hit.key] = { key: hit.key, forms: /* @__PURE__ */ Object.create(null), count: 0 };
+      }
+      bucket[hit.key].count += 1;
+      bucket[hit.key].forms[hit.value] = (bucket[hit.key].forms[hit.value] || 0) + 1;
+    });
+    const out = /* @__PURE__ */ Object.create(null);
+    TYPES.forEach((type) => {
+      out[type] = Object.values(catalog[type]).map((entry) => {
+        const forms = entry.forms || {};
+        let bestLabel = Object.keys(forms)[0] || entry.key;
+        let bestCount = -1;
+        for (const k of Object.keys(forms)) {
+          const c = forms[k] || 0;
+          if (c > bestCount) {
+            bestCount = c;
+            bestLabel = k;
+          }
+        }
+        return { type, key: entry.key, label: bestLabel, count: entry.count };
+      }).sort((a, b) => a.label.localeCompare(b.label));
+    });
+    return out;
+  }
+
+  // assets/js/src/core/quals/index.js
+  var Quals = {
+    _catalog: { language: [], literacy: [], insider: [], mystic: [], piety: [] },
+    updateFromGifts(gifts) {
+      this._catalog = buildQualCatalogFromGifts(gifts || []);
+      window.CG_QualCatalog = this._catalog;
+    },
+    get(type) {
+      const t = String(type || "").toLowerCase();
+      return this._catalog[t] || [];
+    },
+    debugTop(limit = 30) {
+      const rows = [];
+      Object.keys(this._catalog || {}).forEach((type) => {
+        (this._catalog[type] || []).forEach((o) => {
+          rows.push({ type, count: o.count, text: `${type}: ${o.label}` });
+        });
+      });
+      rows.sort((a, b) => b.count - a.count);
+      const top = rows.slice(0, limit);
+      console.table(top);
+      return top;
+    }
+  };
+  window.CG_Quals = Quals;
+  var quals_default = Quals;
+
   // assets/js/src/core/gifts/state.js
   var $3 = window.jQuery;
+  function emit(name, detail) {
+    try {
+      document.dispatchEvent(new CustomEvent(name, { detail }));
+    } catch (_) {
+    }
+    try {
+      if ($3)
+        $3(document).trigger(name, [detail]);
+    } catch (_) {
+    }
+  }
   var State = {
     // currently selected free-gift IDs (strings; '' means none)
     selected: ["", "", ""],
     // master list of gift objects (must include id; may include ct_gifts_manifold, etc.)
     gifts: [],
+    // guard: avoid rebuilding quals catalog repeatedly for the same sized list
+    _qualCatalogBuiltForCount: 0,
     /**
      * Pull any previously saved free_gifts/freeGifts from the builder’s data.
      */
@@ -463,27 +559,68 @@
         normalized.push("");
       this.selected = normalized;
     },
+    _persistSelected() {
+      try {
+        if (formBuilder_default && formBuilder_default._data) {
+          formBuilder_default._data.free_gifts = this.selected.slice();
+          formBuilder_default._data.freeGifts = this.selected.slice();
+        }
+      } catch (_) {
+      }
+    },
+    _emitSelectedChanged(reason = "set") {
+      const detail = { reason: String(reason || ""), free_gifts: this.selected.slice() };
+      emit("cg:free-gift:changed", detail);
+      emit("cg:free-gifts:changed", detail);
+      emit("cg:traits:changed", detail);
+    },
     /**
      * Update one slot and persist back into FormBuilder’s live _data (when available).
+     * IMPORTANT: emits cg:free-gift:changed so downstream UIs update.
      */
     set(index, id) {
-      this.selected[index] = id ? String(id) : "";
-      if (formBuilder_default && formBuilder_default._data) {
-        formBuilder_default._data.free_gifts = this.selected.slice();
-        formBuilder_default._data.freeGifts = this.selected.slice();
-      }
+      const i = Number(index);
+      if (!Number.isFinite(i) || i < 0 || i > 2)
+        return;
+      this.selected[i] = id ? String(id) : "";
+      this._persistSelected();
+      this._emitSelectedChanged("set-slot");
     },
     /**
      * Replace selected list (normalized), and persist into builder _data if present.
+     * IMPORTANT: emits cg:free-gift:changed so downstream UIs update.
      */
     setSelected(list = []) {
       const normalized = (Array.isArray(list) ? list : []).slice(0, 3).map((v) => v ? String(v) : "");
       while (normalized.length < 3)
         normalized.push("");
       this.selected = normalized;
-      if (formBuilder_default && formBuilder_default._data) {
-        formBuilder_default._data.free_gifts = this.selected.slice();
-        formBuilder_default._data.freeGifts = this.selected.slice();
+      this._persistSelected();
+      this._emitSelectedChanged("set-selected");
+    },
+    /**
+     * Internal: rebuild the Qualifications catalog from the current master gifts list,
+     * then notify the Quals UI to re-render its dropdown options.
+     */
+    _updateQualCatalog(reason = "setList") {
+      try {
+        const q = quals_default || window.CG_Quals;
+        if (!q || typeof q.updateFromGifts !== "function")
+          return;
+        const n = Array.isArray(this.gifts) ? this.gifts.length : 0;
+        if (!n)
+          return;
+        if (this._qualCatalogBuiltForCount === n && window.CG_QualCatalog)
+          return;
+        q.updateFromGifts(this.gifts);
+        this._qualCatalogBuiltForCount = n;
+        const detail = {
+          source: "gifts-state",
+          reason: String(reason || ""),
+          count: n
+        };
+        emit("cg:quals:catalog-updated", detail);
+      } catch (_) {
       }
     },
     /**
@@ -504,6 +641,7 @@
           this.gifts.push(__spreadProps(__spreadValues({}, g), { id: idStr }));
         }
       });
+      this._updateQualCatalog("setList");
     },
     /**
      * Find one gift object by its ID.
@@ -559,30 +697,13 @@
       } catch (_) {
       }
     }
-    function emitRefresh(reason) {
-      try {
-        const detail = { reason: String(reason || ""), free_gifts: State.selected.slice() };
-        document.dispatchEvent(new CustomEvent("cg:free-gift:changed", { detail }));
-        document.dispatchEvent(new CustomEvent("cg:traits:changed", { detail }));
-        document.dispatchEvent(new CustomEvent("cg:species:changed", { detail: { id: "" } }));
-        document.dispatchEvent(new CustomEvent("cg:career:changed", { detail: { id: "" } }));
-        if ($3) {
-          $3(document).trigger("cg:free-gift:changed", [detail]);
-          $3(document).trigger("cg:traits:changed", [detail]);
-          $3(document).trigger("cg:species:changed", [{ id: "" }]);
-          $3(document).trigger("cg:career:changed", [{ id: "" }]);
-        }
-      } catch (_) {
-      }
-    }
     function clearSelectIfPresent(selector) {
       try {
         const el = document.querySelector(selector);
         if (!el)
           return false;
-        if (String(el.value || "") !== "") {
+        if (String(el.value || "") !== "")
           el.value = "";
-        }
         el.dispatchEvent(new Event("change", { bubbles: true }));
         return true;
       } catch (_) {
@@ -604,11 +725,12 @@
         setTimeout(() => {
           clearSelectIfPresent("#cg-species");
           clearSelectIfPresent("#cg-career");
-          emitRefresh("new-character-reset");
+          emit("cg:species:changed", { id: "" });
+          emit("cg:career:changed", { id: "" });
         }, 0);
         return;
       }
-      emitRefresh("resync");
+      State._emitSelectedChanged("resync");
     }
     document.addEventListener("cg:builder:opened", resync);
     document.addEventListener("cg:character:loaded", resync);
@@ -661,8 +783,15 @@
     const d = readFormBuilderData();
     const extraIds = readSelectedExtraCareerIds();
     let assigned = 0;
+    function slotSelect(slot) {
+      try {
+        return document.querySelector(`#cg-free-choices select.cg-free-gift-select[data-slot="${slot}"]`) || document.getElementById(`cg-free-choice-${slot}`);
+      } catch (_) {
+        return document.getElementById(`cg-free-choice-${slot}`);
+      }
+    }
     for (let slot = 0; slot <= 2; slot++) {
-      const sel = document.getElementById(`cg-free-choice-${slot}`);
+      const sel = slotSelect(slot);
       if (!sel)
         continue;
       if (String(sel.value || "") !== "223")
@@ -694,20 +823,25 @@
      */
     calculateBoostMap() {
       const map = /* @__PURE__ */ Object.create(null);
-      function addGift(giftId) {
-        if (giftId == null)
+      function addGift(giftId2) {
+        if (giftId2 == null)
           return;
-        const id = String(giftId).trim();
+        const id = String(giftId2).trim();
         if (!id || id === "0")
           return;
         const gift = state_default.getGiftById(id);
-        if (!gift)
+        if (gift) {
+          const traitKey2 = BOOSTS[gift.id];
+          if (!traitKey2)
+            return;
+          const count = parseInt(gift.ct_gifts_manifold, 10) || 1;
+          map[traitKey2] = (map[traitKey2] || 0) + count;
           return;
-        const traitKey = BOOSTS[gift.id];
+        }
+        const traitKey = BOOSTS[id];
         if (!traitKey)
           return;
-        const count = parseInt(gift.ct_gifts_manifold, 10) || 1;
-        map[traitKey] = (map[traitKey] || 0) + count;
+        map[traitKey] = (map[traitKey] || 0) + 1;
       }
       (Array.isArray(state_default.selected) ? state_default.selected : []).forEach(addGift);
       const sp = api_default && api_default.currentProfile ? api_default.currentProfile : null;
@@ -730,15 +864,15 @@
       return map;
     },
     enforceCounts() {
-      const $20 = window.jQuery;
+      const $21 = window.jQuery;
       const freq = { d8: 0, d6: 0, d4: 0 };
-      $20(".cg-trait-select").each(function() {
-        const v = $20(this).val();
+      $21(".cg-trait-select").each(function() {
+        const v = $21(this).val();
         if (v && v in freq)
           freq[v]++;
       });
-      $20(".cg-trait-select").each(function() {
-        const $sel = $20(this);
+      $21(".cg-trait-select").each(function() {
+        const $sel = $21(this);
         const current = $sel.val() || "";
         let options = '<option value="">\u2014 Select \u2014</option>';
         DICE_TYPES.forEach((die) => {
@@ -751,13 +885,13 @@
       });
     },
     updateAdjustedDisplays() {
-      const $20 = window.jQuery;
+      const $21 = window.jQuery;
       const boosts = this.calculateBoostMap();
       const totalCareerBoosts = boosts.trait_career || 0;
       const careerCounts = computeCareerBoostCounts(totalCareerBoosts);
       const careerMainBoosts = careerCounts.main || 0;
       TRAITS.forEach((traitKey) => {
-        const $sel = $20(`#cg-${traitKey}`);
+        const $sel = $21(`#cg-${traitKey}`);
         if (!$sel.length)
           return;
         const rawBase = String($sel.val() || "").trim();
@@ -769,11 +903,11 @@
         if (rawBase) {
           badgeText = count > 0 ? boostedDie(rawBase, count) : rawBase;
         }
-        const $badge = $20(`#cg-${traitKey}-badge`);
+        const $badge = $21(`#cg-${traitKey}-badge`);
         if ($badge.length)
           $badge.text(badgeText);
         if (traitKey === "trait_career") {
-          const $pb = $20("#cg-profile-trait_career-badge");
+          const $pb = $21("#cg-profile-trait_career-badge");
           if ($pb.length)
             $pb.text(badgeText);
         }
@@ -788,11 +922,11 @@
             note = origBoosts === 1 ? "Increased by gift" : `Increased by gift \xD7${origBoosts}`;
           }
         }
-        const $note = $20(`#cg-${traitKey}-adjusted`);
+        const $note = $21(`#cg-${traitKey}-adjusted`);
         if ($note.length)
           $note.text(note);
         if (traitKey === "trait_career") {
-          const $pn = $20("#cg-profile-trait_career-note");
+          const $pn = $21("#cg-profile-trait_career-note");
           if ($pn.length)
             $pn.text(note);
         }
@@ -1374,7 +1508,7 @@
         const v = $el.val();
         return v == null ? "" : v;
       };
-      const normalize3 = (arr) => {
+      const normalize32 = (arr) => {
         const out = Array.isArray(arr) ? arr.slice(0, 3) : [];
         while (out.length < 3)
           out.push("");
@@ -1495,20 +1629,29 @@
       }
       d.skillMarks = mergedMarks;
       this._data.skillMarks = mergedMarks;
-      const s0 = readIfExists("#cg-free-choice-0");
-      const s1 = readIfExists("#cg-free-choice-1");
-      const s2 = readIfExists("#cg-free-choice-2");
+      const readFreeChoiceSlot = (slot) => {
+        try {
+          const sel = document.querySelector(`#cg-free-choices select.cg-free-gift-select[data-slot="${slot}"]`) || document.querySelector(`select.cg-free-gift-select[data-slot="${slot}"]`) || document.getElementById(`cg-free-choice-${slot}`);
+          if (sel)
+            return String(sel.value || "");
+        } catch (_) {
+        }
+        return readIfExists(`#cg-free-choice-${slot}`);
+      };
+      const s0 = readFreeChoiceSlot(0);
+      const s1 = readFreeChoiceSlot(1);
+      const s2 = readFreeChoiceSlot(2);
       let freeArr;
       if (s0 !== void 0 || s1 !== void 0 || s2 !== void 0) {
-        freeArr = normalize3([s0 != null ? s0 : "", s1 != null ? s1 : "", s2 != null ? s2 : ""]);
+        freeArr = normalize32([s0 != null ? s0 : "", s1 != null ? s1 : "", s2 != null ? s2 : ""]);
       } else if (Array.isArray(this._data.free_gifts)) {
-        freeArr = normalize3(this._data.free_gifts);
+        freeArr = normalize32(this._data.free_gifts);
       } else if (Array.isArray(this._data.freeGifts)) {
-        freeArr = normalize3(this._data.freeGifts);
+        freeArr = normalize32(this._data.freeGifts);
       } else if (this._data["free-choice-0"] != null || this._data["free-choice-1"] != null || this._data["free-choice-2"] != null) {
-        freeArr = normalize3([this._data["free-choice-0"], this._data["free-choice-1"], this._data["free-choice-2"]]);
+        freeArr = normalize32([this._data["free-choice-0"], this._data["free-choice-1"], this._data["free-choice-2"]]);
       } else {
-        freeArr = normalize3([this._data.free_gift_1, this._data.free_gift_2, this._data.free_gift_3]);
+        freeArr = normalize32([this._data.free_gift_1, this._data.free_gift_2, this._data.free_gift_3]);
       }
       d.free_gifts = freeArr;
       d.freeGifts = freeArr.slice();
@@ -1636,8 +1779,8 @@
         }
         document.dispatchEvent(new CustomEvent("cg:character:saved", { detail: { id: ((_b = res.data) == null ? void 0 : _b.id) || raw.id || null, record: raw } }));
         document.dispatchEvent(new CustomEvent("cg:characters:refresh", { detail: {} }));
-      }).fail((xhr, status, err2) => {
-        console.error("[FormBuilderAPI] save.fail()", status, err2, xhr == null ? void 0 : xhr.responseText);
+      }).fail((xhr, status, err) => {
+        console.error("[FormBuilderAPI] save.fail()", status, err, xhr == null ? void 0 : xhr.responseText);
         alert("Save failed\u2014check console for details.");
       }).always(() => {
         window.CG_SAVE_IN_FLIGHT = false;
@@ -2074,9 +2217,19 @@
   }
 
   // assets/js/src/core/career/extra.js
-  var $8 = window.jQuery;
-  var LOG = (...a) => console.log("[ExtraCareers]", ...a);
-  var WARN = (...a) => console.warn("[ExtraCareers]", ...a);
+  var $8 = window.jQuery || null;
+  var LOG = (...a) => {
+    try {
+      console.log("[ExtraCareers]", ...a);
+    } catch (_) {
+    }
+  };
+  var WARN = (...a) => {
+    try {
+      console.warn("[ExtraCareers]", ...a);
+    } catch (_) {
+    }
+  };
   var EXTRA_CAREER_GIFT_ID = "184";
   var INC_TRAIT_CAREER_GIFT_ID = "223";
   var BOOST_TARGET_KEY_LEGACY = "increased_trait_career_target";
@@ -2148,29 +2301,35 @@
       try {
         window.__CG_EVT__ = window.__CG_EVT__ || {};
         const EVT = window.__CG_EVT__;
-        if (EVT.extraCareersOnBuilderOpened) {
-          document.removeEventListener("cg:builder:opened", EVT.extraCareersOnBuilderOpened);
-        }
-        if (EVT.extraCareersOnCharacterLoaded) {
-          document.removeEventListener("cg:character:loaded", EVT.extraCareersOnCharacterLoaded);
-        }
-        if (EVT.extraCareersOnFreeGiftChanged) {
-          document.removeEventListener("cg:free-gift:changed", EVT.extraCareersOnFreeGiftChanged);
-        }
+        const names = [
+          ["cg:builder:opened", "extraCareersOnBuilderOpened"],
+          ["cg:character:loaded", "extraCareersOnCharacterLoaded"],
+          ["cg:free-gift:changed", "extraCareersOnFreeGiftChanged"],
+          ["cg:tab:changed", "extraCareersOnTabChanged"]
+        ];
+        names.forEach(([evtName, key]) => {
+          if (EVT[key]) {
+            try {
+              document.removeEventListener(evtName, EVT[key]);
+            } catch (_) {
+            }
+          }
+        });
         EVT.extraCareersOnBuilderOpened = () => ExtraCareers.render();
         EVT.extraCareersOnCharacterLoaded = () => ExtraCareers.render();
         EVT.extraCareersOnFreeGiftChanged = () => ExtraCareers.render();
+        EVT.extraCareersOnTabChanged = () => ExtraCareers.render();
         document.addEventListener("cg:builder:opened", EVT.extraCareersOnBuilderOpened);
         document.addEventListener("cg:character:loaded", EVT.extraCareersOnCharacterLoaded);
         document.addEventListener("cg:free-gift:changed", EVT.extraCareersOnFreeGiftChanged);
+        document.addEventListener("cg:tab:changed", EVT.extraCareersOnTabChanged);
       } catch (e) {
-        try {
-          WARN("idempotent native listener bind failed", e);
-        } catch (_) {
-        }
+        WARN("idempotent native listener bind failed", e);
       }
       if ($8) {
-        $8(document).off("cg:species:changed.cgextra cg:career:changed.cgextra cg:free-gift:changed.cgextra").on("cg:species:changed.cgextra cg:career:changed.cgextra cg:free-gift:changed.cgextra", () => this.render());
+        $8(document).off("cg:species:changed.cgextra cg:career:changed.cgextra cg:free-gift:changed.cgextra cg:tab:changed.cgextra").on("cg:species:changed.cgextra cg:career:changed.cgextra cg:free-gift:changed.cgextra cg:tab:changed.cgextra", () => {
+          this.render();
+        });
       }
       setTimeout(() => this.render(), 0);
     },
@@ -2265,9 +2424,9 @@
       if ($8)
         $8(document).trigger("cg:extra-careers:changed", [payload]);
     },
-    _countGiftInAcquired(giftId) {
+    _countGiftInAcquired(giftId2) {
       var _a, _b, _c;
-      const target = String(giftId);
+      const target = String(giftId2);
       let count = 0;
       const dFB = ((_a = formBuilder_default) == null ? void 0 : _a._data) || {};
       let free = Array.isArray(state_default.selected) && state_default.selected.length ? state_default.selected : null;
@@ -2451,11 +2610,20 @@
         if (key === this._eligibleCacheKey && Array.isArray(this._eligibleCache)) {
           return this._eligibleCache.slice();
         }
-        let list = yield api_default2.getList(false);
+        let list = [];
+        try {
+          list = yield api_default2.getList(false);
+        } catch (_) {
+          list = [];
+        }
         let careers = Array.isArray(list) ? list : [];
         const listHasExt = careers.some((c) => c && (c.gift_id_1 != null || c.gift_id_2 != null || c.gift_id_3 != null || c.skill_one != null || c.skill_two != null || c.skill_three != null));
         if (!listHasExt) {
-          list = yield api_default2.getList(true);
+          try {
+            list = yield api_default2.getList(true);
+          } catch (_) {
+            list = [];
+          }
           careers = Array.isArray(list) ? list : [];
         }
         const results = [];
@@ -2577,7 +2745,7 @@
     _findFreeChoiceSelectsFor223() {
       const out = [];
       for (let i = 0; i <= 2; i++) {
-        const el = document.getElementById(`cg-free-choice-${i}`);
+        const el = document.querySelector(`#cg-free-choices select.cg-free-gift-select[data-slot="${i}"]`) || document.querySelector(`select.cg-free-gift-select[data-slot="${i}"]`) || document.getElementById(`cg-free-choice-${i}`);
         if (el && String(el.value || "") === INC_TRAIT_CAREER_GIFT_ID)
           out.push({ slot: i, el });
       }
@@ -2823,17 +2991,13 @@
         var _a;
         const wrap = this._getWrap();
         const traitsWrap = this._getTraitsWrap();
-        if (!wrap && traitsWrap) {
-          traitsWrap.innerHTML = "";
-          for (let i = 0; i <= 2; i++)
-            this._removeBoostTargetInlineUIForSlot(i);
-          return;
-        }
-        if (!wrap)
-          return;
         const unlocks = this._countExtraCareerUnlocks();
+        let selectedForUI = this._readExtraCareersFromData().filter((x) => x && x.id);
+        this._ensureBoostTargetInlineUI(selectedForUI);
+        setTimeout(() => this._ensureBoostTargetInlineUI(selectedForUI), 0);
         if (!unlocks) {
-          wrap.innerHTML = "";
+          if (wrap)
+            wrap.innerHTML = "";
           if (traitsWrap)
             traitsWrap.innerHTML = "";
           this._writeExtraCareersToData([]);
@@ -2842,7 +3006,8 @@
             this._removeBoostTargetInlineUIForSlot(i);
           return;
         }
-        wrap.innerHTML = `<div class="cg-extra-careers-loading">Loading eligible extra careers\u2026</div>`;
+        if (wrap)
+          wrap.innerHTML = `<div class="cg-extra-careers-loading">Loading eligible extra careers\u2026</div>`;
         let eligible = [];
         try {
           eligible = yield this._computeEligibleCareers();
@@ -2873,6 +3038,8 @@
         const boostCounts = this._computeCareerBoostCounts(selectedWithId);
         const baseTrait = this._careerTraitBaseDie();
         this._renderTraitsTabExtraCareerDice(unlocks, selected, baseTrait, boostCounts);
+        if (!wrap)
+          return;
         const otherSelectedIds = (slot) => {
           const set = /* @__PURE__ */ new Set();
           selected.forEach((x, i) => {
@@ -3236,531 +3403,1023 @@
     getBoostedDie: service_default.getBoostedDie.bind(service_default)
   };
 
-  // assets/js/src/core/gifts/free-choices.js
-  var $11 = window.jQuery;
-  var dbg = () => !!window.CG_DEBUG_GIFTS;
-  var log3 = (...a) => dbg() ? console.log("[FreeChoices]", ...a) : null;
-  var warn3 = (...a) => dbg() ? console.warn("[FreeChoices]", ...a) : null;
-  var err = (...a) => console.error("[FreeChoices]", ...a);
-  var REQ_SUFFIXES = [
-    "",
-    "two",
-    "three",
-    "four",
-    "five",
-    "six",
-    "seven",
-    "eight",
-    "nine",
-    "ten",
-    "eleven",
-    "twelve",
-    "thirteen",
-    "fourteen",
-    "fifteen",
-    "sixteen",
-    "seventeen",
-    "eighteen",
-    "nineteen"
-  ];
-  var ALWAYS_ACQUIRED_GIFT_IDS2 = ["242", "236"];
-  function ajaxEnv5() {
-    var _a, _b;
-    const env = window.CG_AJAX || window.CG_Ajax || window.cgAjax || {};
-    const url = env.ajax_url || window.ajaxurl || ((_b = (_a = document.body) == null ? void 0 : _a.dataset) == null ? void 0 : _b.ajaxUrl) || "/wp-admin/admin-ajax.php";
-    const perAction = window.CG_NONCES && window.CG_NONCES.cg_get_free_gifts ? window.CG_NONCES.cg_get_free_gifts : null;
-    const generic = env.nonce || env.security || env._ajax_nonce || window.CG_NONCE || null;
-    return { url, nonce: perAction || generic };
+  // assets/js/src/core/quals/state.js
+  var TYPES2 = ["language", "literacy", "insider", "mystic", "piety"];
+  function stripDiacritics2(s) {
+    return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   }
-  function parseJsonMaybe2(res) {
+  function canon2(s) {
+    return stripDiacritics2(String(s || "")).trim().replace(/\s+/g, " ").toLowerCase();
+  }
+  function emptyData() {
+    return {
+      language: [],
+      literacy: [],
+      insider: [],
+      mystic: [],
+      piety: []
+    };
+  }
+  function normalizeList3(v) {
+    if (v == null)
+      return [];
+    const arr = Array.isArray(v) ? v : [v];
+    const out = [];
+    const seen = /* @__PURE__ */ new Set();
+    arr.forEach((x) => {
+      const raw = String(x || "").trim().replace(/\s+/g, " ");
+      if (!raw)
+        return;
+      const k = canon2(raw);
+      if (!k || seen.has(k))
+        return;
+      seen.add(k);
+      out.push(raw);
+    });
+    return out;
+  }
+  function getBuilderData() {
+    var _a;
+    if (formBuilder_default && formBuilder_default._data)
+      return formBuilder_default._data;
+    if (typeof ((_a = formBuilder_default) == null ? void 0 : _a.getData) === "function")
+      return formBuilder_default.getData() || {};
+    return {};
+  }
+  var QualState = {
+    data: emptyData(),
+    init() {
+      const src = getBuilderData();
+      const q = src.qualifications || src.quals || src.cg_quals || {};
+      const next = emptyData();
+      TYPES2.forEach((t) => {
+        next[t] = normalizeList3(q[t]);
+      });
+      this.data = next;
+      this.persist();
+    },
+    persist() {
+      const src = getBuilderData();
+      const payload = {};
+      TYPES2.forEach((t) => payload[t] = (this.data[t] || []).slice());
+      if (formBuilder_default && formBuilder_default._data) {
+        formBuilder_default._data.qualifications = payload;
+        formBuilder_default._data.quals = payload;
+        formBuilder_default._data.cg_quals = payload;
+      } else {
+        src.qualifications = payload;
+      }
+      document.dispatchEvent(new CustomEvent("cg:quals:changed", { detail: { qualifications: payload } }));
+      const $21 = window.jQuery;
+      if ($21)
+        $21(document).trigger("cg:quals:changed", [{ qualifications: payload }]);
+    },
+    getAll() {
+      return JSON.parse(JSON.stringify(this.data || emptyData()));
+    },
+    get(type) {
+      const t = String(type || "").toLowerCase();
+      return this.data && Array.isArray(this.data[t]) ? this.data[t] : [];
+    },
+    has(type, value) {
+      var _a;
+      const t = String(type || "").toLowerCase();
+      const k = canon2(value);
+      return !!(((_a = this.data) == null ? void 0 : _a[t]) || []).some((v) => canon2(v) === k);
+    },
+    add(type, value) {
+      const t = String(type || "").toLowerCase();
+      if (!TYPES2.includes(t))
+        return false;
+      const raw = String(value || "").trim().replace(/\s+/g, " ");
+      if (!raw)
+        return false;
+      if (this.has(t, raw))
+        return false;
+      this.data[t] = (this.data[t] || []).concat([raw]);
+      this.persist();
+      return true;
+    },
+    remove(type, value) {
+      const t = String(type || "").toLowerCase();
+      if (!TYPES2.includes(t))
+        return false;
+      const k = canon2(value);
+      const before = this.get(t);
+      const after = before.filter((v) => canon2(v) !== k);
+      if (after.length === before.length)
+        return false;
+      this.data[t] = after;
+      this.persist();
+      return true;
+    }
+  };
+  window.CG_QualState = QualState;
+  var state_default2 = QualState;
+
+  // assets/js/src/core/gifts/free-choices.js
+  function cgWin() {
+    if (typeof globalThis !== "undefined")
+      return globalThis;
+    if (typeof window !== "undefined")
+      return window;
+    return {};
+  }
+  var W = cgWin();
+  var $11 = W && W.jQuery ? W.jQuery : null;
+  var log3 = (...a) => {
     try {
-      return typeof res === "string" ? JSON.parse(res) : res;
+      console.log("[FreeChoices]", ...a);
     } catch (_) {
-      return res;
+    }
+  };
+  var warn3 = (...a) => {
+    try {
+      console.warn("[FreeChoices]", ...a);
+    } catch (_) {
+    }
+  };
+  var ALWAYS_ACQUIRED_GIFT_IDS2 = ["242", "236"];
+  function normalize3(arr) {
+    const out = (Array.isArray(arr) ? arr : []).slice(0, 3).map((v) => v ? String(v) : "");
+    while (out.length < 3)
+      out.push("");
+    return out;
+  }
+  function getBuilderData2() {
+    var _a;
+    if (formBuilder_default && formBuilder_default._data)
+      return formBuilder_default._data;
+    if (typeof ((_a = formBuilder_default) == null ? void 0 : _a.getData) === "function")
+      return formBuilder_default.getData() || {};
+    return {};
+  }
+  function setBuilderKey(key, value) {
+    const d = getBuilderData2();
+    try {
+      if (formBuilder_default && formBuilder_default._data)
+        formBuilder_default._data[key] = value;
+      else
+        d[key] = value;
+    } catch (_) {
     }
   }
-  function isTruthyBool(v) {
+  function getAjax() {
+    return W.CG_AJAX || W.CG_Ajax || {};
+  }
+  function getNonceFor(action) {
+    const nonces = W.CG_NONCES || {};
+    if (nonces && nonces[action])
+      return nonces[action];
+    const ajax = getAjax();
+    if (ajax && ajax.nonce)
+      return ajax.nonce;
+    if (ajax && ajax.security)
+      return ajax.security;
+    return "";
+  }
+  function ajaxPost(payload) {
+    const ajax = getAjax();
+    const url = ajax.ajax_url || ajax.url || W.ajaxurl || "";
+    const data = __spreadValues({}, payload || {});
+    const nonce = getNonceFor(String(data.action || ""));
+    if (nonce && !data.security && !data.nonce && !data._ajax_nonce) {
+      data.security = nonce;
+      data.nonce = nonce;
+      data._ajax_nonce = nonce;
+    }
+    if ($11 && url) {
+      return new Promise((resolve, reject) => {
+        $11.ajax({
+          url,
+          method: "POST",
+          data,
+          dataType: "json",
+          success: (res) => resolve(res),
+          error: (xhr, status, err) => reject(err || status || xhr)
+        });
+      });
+    }
+    if (!url)
+      return Promise.reject(new Error("Missing AJAX url"));
+    const body = new URLSearchParams();
+    Object.entries(data).forEach(([k, v]) => body.append(k, String(v != null ? v : "")));
+    return fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+      body
+    }).then((r) => r.json());
+  }
+  function modalRoot() {
+    if (typeof document === "undefined")
+      return null;
+    return document.querySelector("#cg-modal") || null;
+  }
+  function getFreeGiftSlotsFromData() {
+    try {
+      if (state_default && typeof state_default.getFreeGifts === "function")
+        return normalize3(state_default.getFreeGifts());
+    } catch (_) {
+    }
+    const d = getBuilderData2();
+    const v = d.free_gifts || d.freeGifts || d.cg_free_gifts || d.free_choices || d.freeChoices || [];
+    return normalize3(Array.isArray(v) ? v : [v]);
+  }
+  function emitFreeGiftChanged(selected, source = "free-choices") {
+    try {
+      const detail = { free_gifts: selected.slice(), source: String(source || "") };
+      document.dispatchEvent(new CustomEvent("cg:free-gift:changed", { detail }));
+      if ($11)
+        $11(document).trigger("cg:free-gift:changed", [detail]);
+    } catch (_) {
+    }
+  }
+  function setFreeGiftSlotsToData(slots, source = "free-choices") {
+    const normalized = normalize3(slots);
+    setBuilderKey("free_gifts", normalized);
+    setBuilderKey("freeGifts", normalized);
+    setBuilderKey("cg_free_gifts", normalized);
+    let stateHandled = false;
+    try {
+      if (state_default && typeof state_default.setSelected === "function") {
+        state_default.setSelected(normalized);
+        stateHandled = true;
+      } else if (state_default && typeof state_default.setFreeGifts === "function") {
+        state_default.setFreeGifts(normalized, { source });
+        stateHandled = true;
+      }
+    } catch (_) {
+    }
+    if (!stateHandled)
+      emitFreeGiftChanged(normalized, source);
+    return normalized;
+  }
+  function giftId(g) {
+    var _a, _b, _c, _d;
+    return String((_d = (_c = (_b = (_a = g == null ? void 0 : g.id) != null ? _a : g == null ? void 0 : g.ct_id) != null ? _b : g == null ? void 0 : g.gift_id) != null ? _c : g == null ? void 0 : g.ct_gift_id) != null ? _d : "");
+  }
+  function giftName(g) {
+    var _a, _b, _c, _d;
+    return String((_d = (_c = (_b = (_a = g == null ? void 0 : g.name) != null ? _a : g == null ? void 0 : g.title) != null ? _b : g == null ? void 0 : g.gift_name) != null ? _c : g == null ? void 0 : g.ct_gift_name) != null ? _d : "");
+  }
+  function requiresSpecialText(g) {
+    var _a, _b, _c;
+    const rs = (_c = (_b = (_a = g == null ? void 0 : g.requires_special) != null ? _a : g == null ? void 0 : g.ct_gifts_requires_special) != null ? _b : g == null ? void 0 : g.requiresSpecial) != null ? _c : "";
+    return String(rs != null ? rs : "").trim();
+  }
+  function allowsMultiple(g) {
+    var _a, _b, _c;
+    const v = (_c = (_b = (_a = g == null ? void 0 : g.allows_multiple) != null ? _a : g == null ? void 0 : g.ct_gifts_manifold) != null ? _b : g == null ? void 0 : g.manifold) != null ? _c : null;
     if (v === true)
       return true;
-    if (v === false)
-      return false;
-    if (v == null)
-      return false;
-    const s = String(v).trim().toLowerCase();
-    return s === "1" || s === "true" || s === "yes" || s === "y" || s === "on";
+    const n = Number(v);
+    return Number.isFinite(n) && n > 1;
   }
-  function splitIds(val) {
-    if (val == null)
-      return [];
-    if (Array.isArray(val))
-      return val.flatMap(splitIds);
-    const s = String(val).trim();
-    if (!s)
-      return [];
-    return s.split(/[,\s]+/g).map((t) => t.trim()).filter(Boolean).map((t) => String(parseInt(t, 10)) === "NaN" ? "" : String(parseInt(t, 10))).filter(Boolean);
-  }
-  function extractRequires(rawGift) {
-    const req = [];
-    REQ_SUFFIXES.forEach((suf) => {
-      const key = suf ? `ct_gifts_requires_${suf}` : "ct_gifts_requires";
-      if (!Object.prototype.hasOwnProperty.call(rawGift, key))
-        return;
-      req.push(...splitIds(rawGift[key]));
-    });
-    return Array.from(new Set(req));
-  }
-  function normalizeGiftForState(g) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k;
+  function extractRequiredGiftIds(g) {
     if (!g || typeof g !== "object")
-      return null;
-    const idRaw = (_e = (_d = (_c = (_b = (_a = g.id) != null ? _a : g.ct_id) != null ? _b : g.gift_id) != null ? _c : g.ct_gift_id) != null ? _d : g.ct_gifts_id) != null ? _e : null;
-    if (idRaw == null || String(idRaw) === "")
-      return null;
-    const manifoldRaw = (_i = (_h = (_g = (_f = g.ct_gifts_manifold) != null ? _f : g.manifold) != null ? _g : g.manifold_count) != null ? _h : g.ct_manifold) != null ? _i : 1;
-    const id = String(idRaw);
-    return __spreadProps(__spreadValues({}, g), {
-      id,
-      ct_gifts_manifold: parseInt(manifoldRaw, 10) || 1,
-      name: (g.name || g.ct_gifts_name || g.title || "").toString() || `Gift #${id}`,
-      allows_multiple: isTruthyBool((_k = (_j = g.allows_multiple) != null ? _j : g.ct_gifts_allows_multiple) != null ? _k : 0),
-      requires: extractRequires(g)
+      return [];
+    const out = [];
+    Object.keys(g).forEach((k) => {
+      if (!/^ct_gifts_requires(_[a-z]+)?$/i.test(k) && !/^ct_gifts_requires_/i.test(k))
+        return;
+      if (k.toLowerCase() === "ct_gifts_requires_special")
+        return;
+      const v = g[k];
+      if (v == null)
+        return;
+      const s = String(v).trim();
+      if (!s)
+        return;
+      s.split(",").map((x) => x.trim()).filter(Boolean).forEach((x) => out.push(String(x)));
     });
+    return [...new Set(out)];
   }
-  function inDom(node) {
-    return !!(node && document.contains(node));
+  function diceToNum(s) {
+    const t = String(s || "").trim().toLowerCase();
+    const m = t.match(/d\s*(4|6|8|10|12)/);
+    return m ? Number(m[1]) : null;
   }
-  var FreeChoices = {
+  function getTraitDieValue(traitKey) {
+    const d = getBuilderData2();
+    const pools = [];
+    if (d && typeof d === "object") {
+      if (d.traits && typeof d.traits === "object")
+        pools.push(d.traits);
+      if (d.cg_traits && typeof d.cg_traits === "object")
+        pools.push(d.cg_traits);
+      pools.push(d);
+    }
+    const keys = [traitKey, `trait_${traitKey}`, `${traitKey}_die`, `die_${traitKey}`];
+    for (const obj of pools) {
+      for (const k of keys) {
+        if (!obj || !(k in obj))
+          continue;
+        const v = obj[k];
+        const n = diceToNum(v);
+        if (n != null)
+          return n;
+      }
+    }
+    return null;
+  }
+  function extractTraitMinimaFromRequiresSpecial(rs) {
+    const text = String(rs || "");
+    if (!text)
+      return [];
+    const traits = [
+      { key: "mind", re: /\bmind\b/i },
+      { key: "body", re: /\bbody\b/i },
+      { key: "speed", re: /\bspeed\b/i },
+      { key: "will", re: /\bwill\b/i }
+    ];
+    const mins = [];
+    const parts = text.split(/[\n\r.;]+/).map((s) => s.trim()).filter(Boolean);
+    parts.forEach((p) => {
+      traits.forEach((t) => {
+        if (!t.re.test(p))
+          return;
+        const m = p.match(/d\s*(4|6|8|10|12)/i);
+        if (!m)
+          return;
+        const need = Number(m[1]);
+        if (!Number.isFinite(need))
+          return;
+        mins.push({ traitKey: t.key, need, raw: p });
+      });
+    });
+    const best = /* @__PURE__ */ new Map();
+    mins.forEach((x) => {
+      const cur = best.get(x.traitKey);
+      if (!cur || x.need > cur.need)
+        best.set(x.traitKey, x);
+    });
+    return Array.from(best.values());
+  }
+  function traitMinimaSatisfied(g) {
+    const rs = requiresSpecialText(g);
+    const mins = extractTraitMinimaFromRequiresSpecial(rs);
+    if (!mins.length)
+      return true;
+    for (const m of mins) {
+      const have = getTraitDieValue(m.traitKey);
+      if (have == null)
+        return false;
+      if (have < m.need)
+        return false;
+    }
+    return true;
+  }
+  function computeOwnedGiftIdSet(selectedFreeGiftIds = []) {
+    const owned2 = /* @__PURE__ */ new Set();
+    ALWAYS_ACQUIRED_GIFT_IDS2.forEach((id) => owned2.add(String(id)));
+    (selectedFreeGiftIds || []).filter(Boolean).forEach((id) => owned2.add(String(id)));
+    const d = getBuilderData2();
+    const candidateKeys = [
+      "gift_id_1",
+      "gift_id_2",
+      "gift_id_3",
+      "species_gift_one",
+      "species_gift_two",
+      "species_gift_three",
+      "career_gift_one",
+      "career_gift_two",
+      "career_gift_three",
+      "species_gifts",
+      "career_gifts",
+      "gift_ids",
+      "giftIds",
+      "gifts",
+      "career_gift_replacements",
+      "cg_career_gift_replacements"
+    ];
+    candidateKeys.forEach((k) => {
+      if (!d || !(k in d))
+        return;
+      const v = d[k];
+      if (Array.isArray(v))
+        v.forEach((x) => x && owned2.add(String(x)));
+      else if (v && typeof v === "object")
+        Object.values(v).forEach((x) => x && owned2.add(String(x)));
+      else if (v)
+        owned2.add(String(v));
+    });
+    const apis = [W.SpeciesAPI, W.CareerAPI].filter(Boolean);
+    apis.forEach((api) => {
+      const prof = (api == null ? void 0 : api.currentProfile) || (api == null ? void 0 : api.profile) || (api == null ? void 0 : api.current) || (api == null ? void 0 : api.selected) || null;
+      if (!prof)
+        return;
+      candidateKeys.forEach((k) => {
+        if (!(k in prof))
+          return;
+        const v = prof[k];
+        if (Array.isArray(v))
+          v.forEach((x) => x && owned2.add(String(x)));
+        else if (v && typeof v === "object")
+          Object.values(v).forEach((x) => x && owned2.add(String(x)));
+        else if (v)
+          owned2.add(String(v));
+      });
+    });
+    return owned2;
+  }
+  function giftEligible(g, ownedSet, otherSelectedIds = /* @__PURE__ */ new Set()) {
+    if (!g)
+      return false;
+    const id = giftId(g);
+    const name = giftName(g);
+    const __DBG471 = !!(W && W.__CG_DBG471__) && (String(id) === "471" || String(name).toLowerCase() === "attendant fireball");
+    const __owned = typeof ownedSet !== "undefined" ? ownedSet : typeof owned !== "undefined" ? owned : null;
+    const __others = typeof otherSelectedIds !== "undefined" ? otherSelectedIds : typeof others !== "undefined" ? others : null;
+    if (__DBG471) {
+      console.log("[FreeChoices][DBG471] start", { id, name });
+      try {
+        console.log("[FreeChoices][DBG471] owned", __owned ? Array.from(__owned) : __owned);
+      } catch (_) {
+      }
+      try {
+        console.log("[FreeChoices][DBG471] others", __others ? Array.from(__others) : __others);
+      } catch (_) {
+      }
+      console.log("[FreeChoices][DBG471] fields", {
+        requires: g && g.requires,
+        ct_gifts_requires: g && g.ct_gifts_requires,
+        manifold: g && g.manifold,
+        ct_gifts_manifold: g && g.ct_gifts_manifold,
+        allows_multiple: g && g.allows_multiple,
+        ct_gifts_allows_multiple: g && g.ct_gifts_allows_multiple,
+        requires_special: g && (g.requires_special || g.ct_gifts_requires_special || g.requiresSpecial)
+      });
+    }
+    if (!id || !name) {
+      if (__DBG471)
+        console.log("[FreeChoices][DBG471] FAIL: missing id/name", { id, name });
+      return false;
+    }
+    const reqIds = extractRequiredGiftIds(g);
+    for (const rid of reqIds) {
+      if (!ownedSet.has(String(rid)))
+        return false;
+    }
+    if (!traitMinimaSatisfied(g)) {
+      if (__DBG471) {
+        try {
+          const rs = requiresSpecialText(g);
+          const mins = extractTraitMinimaFromRequiresSpecial(rs);
+          const tv = {};
+          mins.forEach((t) => tv[t.trait] = getTraitDieValue(t.trait));
+          console.log("[FreeChoices][DBG471] FAIL: trait minima", { rs, mins, tv });
+        } catch (_) {
+        }
+      }
+      return false;
+    }
+    if (otherSelectedIds.has(id) && !allowsMultiple(g))
+      return false;
+    return true;
+  }
+  function ensureSectionInHost(host) {
+    if (typeof document === "undefined")
+      return null;
+    let section = document.getElementById("cg-free-gifts");
+    if (!section) {
+      section = document.createElement("div");
+      section.id = "cg-free-gifts";
+      section.className = "cg-profile-box cg-free-gifts";
+      section.innerHTML = `
+      <h3>Free Gifts (3)</h3>
+      <div class="cg-free-row" style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;"></div>
+    `;
+    }
+    try {
+      if (host && section.parentNode !== host)
+        host.appendChild(section);
+    } catch (_) {
+    }
+    return section;
+  }
+  function getSlotQualMap() {
+    const d = getBuilderData2();
+    const m = d.free_gift_quals || d.cg_free_gift_quals || d.freeGiftQuals || {};
+    if (!m || typeof m !== "object")
+      return {};
+    return JSON.parse(JSON.stringify(m));
+  }
+  function setSlotQualMap(map) {
+    const clean = map && typeof map === "object" ? map : {};
+    setBuilderKey("free_gift_quals", clean);
+    setBuilderKey("cg_free_gift_quals", clean);
+    setBuilderKey("freeGiftQuals", clean);
+  }
+  function stripDiacritics3(s) {
+    return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  }
+  function canon3(s) {
+    return stripDiacritics3(String(s || "")).trim().replace(/\s+/g, " ").toLowerCase();
+  }
+  function detectQualTypesNeeded(g) {
+    const rs = requiresSpecialText(g);
+    const name = giftName(g).toLowerCase();
+    const found = /* @__PURE__ */ new Set();
+    const lines = String(rs || "").split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+    lines.forEach((line) => {
+      const m = line.match(/^(language|literacy|insider|mystic|piety)\s*:/i);
+      if (m && m[1])
+        found.add(String(m[1]).toLowerCase());
+    });
+    if (found.size === 0) {
+      if (name.includes("piety"))
+        found.add("piety");
+      if (name.includes("mystic"))
+        found.add("mystic");
+      if (name.includes("insider"))
+        found.add("insider");
+      if (name.includes("literacy"))
+        found.add("literacy");
+      if (name.includes("language"))
+        found.add("language");
+    }
+    const TYPES3 = ["language", "literacy", "insider", "mystic", "piety"];
+    return TYPES3.filter((t) => found.has(t));
+  }
+  function getQualItemsForType(type, allGifts) {
+    let items = [];
+    try {
+      items = quals_default && typeof quals_default.get === "function" ? quals_default.get(type) || [] : [];
+    } catch (_) {
+      items = [];
+    }
+    if (Array.isArray(items) && items.length > 0)
+      return items;
+    const want = String(type || "").toLowerCase();
+    const rx = new RegExp(`^\\s*${want}\\s*:\\s*(.+)$`, "i");
+    const keep = /* @__PURE__ */ new Map();
+    const list = Array.isArray(allGifts) ? allGifts : [];
+    for (const g of list) {
+      const rs = requiresSpecialText(g);
+      if (!rs)
+        continue;
+      const lines = rs.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+      for (const line of lines) {
+        const m = line.match(rx);
+        if (!m || !m[1])
+          continue;
+        const raw = String(m[1]).trim();
+        const parts = raw.split(/,|\/|;|\bor\b/ig).map((s) => String(s || "").trim()).filter(Boolean);
+        for (const p of parts) {
+          if (/^any\b/i.test(p))
+            continue;
+          const k = canon3(p);
+          if (!k)
+            continue;
+          if (!keep.has(k))
+            keep.set(k, p);
+        }
+      }
+    }
+    const labels = Array.from(keep.values()).sort((a, b) => String(a).localeCompare(String(b), void 0, { sensitivity: "base" }));
+    return labels.map((label) => ({ label, key: label }));
+  }
+  function ensureQualStateInit() {
+    var _a, _b;
+    try {
+      (_b = (_a = state_default2) == null ? void 0 : _a.init) == null ? void 0 : _b.call(_a);
+    } catch (_) {
+    }
+  }
+  function qualStateHas(type, value) {
+    var _a, _b, _c;
+    type = String(type || "").toLowerCase();
+    if (!value)
+      return false;
+    try {
+      if (typeof ((_a = state_default2) == null ? void 0 : _a.has) === "function")
+        return !!state_default2.has(type, value);
+      const arr = ((_c = (_b = state_default2) == null ? void 0 : _b.get) == null ? void 0 : _c.call(_b, type)) || [];
+      return arr.some((v) => canon3(v) === canon3(value));
+    } catch (_) {
+      return false;
+    }
+  }
+  function qualStateAdd(type, value) {
+    var _a, _b, _c, _d, _e, _f;
+    if (!value)
+      return;
+    ensureQualStateInit();
+    if (type === "language") {
+      try {
+        const cur = (((_b = (_a = state_default2) == null ? void 0 : _a.get) == null ? void 0 : _b.call(_a, "language")) || []).slice();
+        const base = cur[0] || "";
+        if (canon3(base) === canon3(value))
+          return;
+        if (qualStateHas("language", value))
+          return;
+        if (((_c = state_default2) == null ? void 0 : _c.data) && Array.isArray(state_default2.data.language) && typeof state_default2.persist === "function") {
+          state_default2.data.language = [base, ...cur.slice(1).filter((v) => canon3(v) !== canon3(value)), value].filter(Boolean);
+          state_default2.persist();
+        } else if (typeof ((_d = state_default2) == null ? void 0 : _d.add) === "function") {
+          state_default2.add("language", value);
+        }
+      } catch (_) {
+      }
+      return;
+    }
+    try {
+      if (qualStateHas(type, value))
+        return;
+      if (typeof ((_e = state_default2) == null ? void 0 : _e.add) === "function")
+        state_default2.add(type, value);
+      else if (((_f = state_default2) == null ? void 0 : _f.data) && Array.isArray(state_default2.data[type]) && typeof state_default2.persist === "function") {
+        state_default2.data[type] = (state_default2.data[type] || []).concat([value]);
+        state_default2.persist();
+      }
+    } catch (_) {
+    }
+  }
+  function qualStateRemoveIfSafe(type, value, slotMap) {
+    var _a, _b, _c, _d;
+    if (!value)
+      return;
+    ensureQualStateInit();
+    const stillUsed = Object.values(slotMap || {}).some((slotObj) => {
+      if (!slotObj || typeof slotObj !== "object")
+        return false;
+      const v = slotObj[type];
+      return v && canon3(v) === canon3(value);
+    });
+    if (stillUsed)
+      return;
+    if (type === "language") {
+      try {
+        const cur = (((_b = (_a = state_default2) == null ? void 0 : _a.get) == null ? void 0 : _b.call(_a, "language")) || []).slice();
+        const base = cur[0] || "";
+        if (canon3(base) === canon3(value))
+          return;
+      } catch (_) {
+      }
+    }
+    try {
+      if (typeof ((_c = state_default2) == null ? void 0 : _c.remove) === "function")
+        state_default2.remove(type, value);
+      else if (((_d = state_default2) == null ? void 0 : _d.data) && Array.isArray(state_default2.data[type]) && typeof state_default2.persist === "function") {
+        state_default2.data[type] = (state_default2.data[type] || []).filter((v) => canon3(v) !== canon3(value));
+        state_default2.persist();
+      }
+    } catch (_) {
+    }
+  }
+  function renderQualSelectHtml({ slot, type, value, allGifts }) {
+    const items = getQualItemsForType(type, allGifts);
+    const opts = (Array.isArray(items) ? items : []).map((it) => {
+      var _a, _b;
+      const label = String((_b = (_a = it == null ? void 0 : it.label) != null ? _a : it == null ? void 0 : it.key) != null ? _b : "").trim();
+      if (!label)
+        return "";
+      const sel = canon3(value) === canon3(label) ? " selected" : "";
+      return `<option value="${label}"${sel}>${label}</option>`;
+    }).filter(Boolean).join("\n");
+    const nice = type.charAt(0).toUpperCase() + type.slice(1);
+    return `
+    <label style="display:flex; flex-direction:column; gap:4px; margin-top:8px; min-width: 220px;">
+      <span style="font-weight:600;">${nice}</span>
+      <select class="cg-free-qual-select" data-slot="${slot}" data-qtype="${type}">
+        <option value="">\u2014 Select ${nice} \u2014</option>
+        ${opts}
+      </select>
+    </label>
+  `;
+  }
+  var Existing = W.CG_FreeChoices;
+  var FreeChoices = Existing && Existing.__cg_singleton ? Existing : {
+    __cg_singleton: true,
     _inited: false,
-    _mounted: false,
-    _root: null,
-    _host: null,
-    _selects: [],
+    _bound: false,
     _allGifts: [],
-    _refreshInFlight: false,
-    _lastRefreshAt: 0,
-    _retryCount: 0,
-    _maxRetries: 2,
-    _mountTimer: null,
-    _mountTries: 0,
-    _maxMountTries: 80,
-    // 20s
-    _suppressEmit: false,
-    _pendingFill: false,
+    _byId: null,
+    _loading: false,
+    _renderQueued: false,
+    _renderRunning: false,
+    _renderPending: false,
+    _scheduleRender(reason = "auto") {
+      if (this._renderRunning) {
+        this._renderPending = true;
+        return;
+      }
+      if (this._renderQueued)
+        return;
+      this._renderQueued = true;
+      const run = () => {
+        this._renderQueued = false;
+        this._renderRunning = true;
+        try {
+          this.render();
+        } catch (e) {
+          try {
+            console.error("[FreeChoices] render failed", e);
+          } catch (_) {
+          }
+        } finally {
+          this._renderRunning = false;
+          if (this._renderPending) {
+            this._renderPending = false;
+            this._scheduleRender("pending");
+          }
+        }
+      };
+      if (typeof requestAnimationFrame === "function")
+        requestAnimationFrame(run);
+      else
+        setTimeout(run, 0);
+    },
     init() {
+      var _a, _b, _c, _d, _e, _f;
+      if (this.__inited)
+        return;
+      this.__inited = true;
       if (this._inited)
         return;
       this._inited = true;
-      window.CG_FormBuilderAPI = formBuilder_default;
       try {
-        state_default.init();
+        (_b = (_a = state_default) == null ? void 0 : _a.init) == null ? void 0 : _b.call(_a);
       } catch (_) {
       }
       try {
-        this._suppressEmit = true;
-        const cur = this._readSelections();
-        this._writeSelections(cur);
-        this._suppressEmit = false;
-      } catch (_) {
-        this._suppressEmit = false;
-      }
-      document.addEventListener("cg:builder:opened", () => {
-        this._ensureMounted();
-        this.refresh({ force: false });
-      });
-      document.addEventListener("cg:builder:closed", () => {
-        this._resetMount(true);
-      });
-      document.addEventListener("cg:builder:rendered", () => {
-        this._ensureMounted();
-        this._fillSelectsFiltered();
-      });
-      document.addEventListener("cg:character:loaded", () => {
-        this._ensureMounted();
-        this._fillSelectsFiltered();
-      });
-      document.addEventListener("cg:tab:changed", (e) => {
-        var _a;
-        const to = ((_a = e == null ? void 0 : e.detail) == null ? void 0 : _a.to) || "";
-        if (to !== "tab-profile")
-          return;
-        this._ensureMounted();
-        if (!this._mounted)
-          return;
-        if (this._pendingFill && Array.isArray(this._allGifts) && this._allGifts.length) {
-          this._pendingFill = false;
-          this._fillSelectsFiltered();
-        } else if (!Array.isArray(this._allGifts) || !this._allGifts.length) {
-          this.refresh({ force: true });
-        }
-      });
-      if ($11) {
-        $11(document).off("cg:species:changed.cgfree cg:career:changed.cgfree cg:free-gift:changed.cgfree").on("cg:species:changed.cgfree cg:career:changed.cgfree cg:free-gift:changed.cgfree", () => {
-          this._fillSelectsFiltered();
-        });
-      }
-      document.addEventListener("cg:free-gift:changed", () => this._fillSelectsFiltered());
-      if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", () => this._ensureMounted());
-      } else {
-        this._ensureMounted();
-      }
-    },
-    _clearMountTimer() {
-      if (this._mountTimer) {
-        clearInterval(this._mountTimer);
-        this._mountTimer = null;
-      }
-    },
-    _resetMount(clearTimer = false) {
-      if (clearTimer)
-        this._clearMountTimer();
-      this._mounted = false;
-      this._root = null;
-      this._host = null;
-      this._selects = [];
-      this._mountTries = 0;
-    },
-    _ensureMounted() {
-      if (this._mounted && (!inDom(this._root) || !inDom(this._host))) {
-        warn3("mounted root was detached; remounting");
-        this._resetMount(false);
-      }
-      if (this._mounted)
-        return true;
-      const ok = this._tryMount();
-      if (ok)
-        return true;
-      if (this._mountTimer)
-        return false;
-      this._mountTries = 0;
-      this._mountTimer = setInterval(() => {
-        this._mountTries++;
-        if (this._tryMount()) {
-          this._clearMountTimer();
-          if (Array.isArray(this._allGifts) && this._allGifts.length) {
-            this._fillSelectsFiltered();
-          } else {
-            this.refresh({ force: false });
-          }
-          return;
-        }
-        if (this._mountTries >= this._maxMountTries) {
-          this._clearMountTimer();
-        }
-      }, 250);
-      return false;
-    },
-    _tryMount() {
-      let root = document.querySelector("#cg-free-choices");
-      if (!root) {
-        const profilePanel = document.getElementById("tab-profile");
-        const container = profilePanel || document.querySelector("#cg-form-container");
-        if (!container)
-          return false;
-        let section = document.getElementById("cg-free-gifts");
-        if (!section) {
-          section = document.createElement("section");
-          section.id = "cg-free-gifts";
-          section.innerHTML = `<h3>Free Gifts (3)</h3><div class="cg-free-row"></div>`;
-          container.appendChild(section);
-        }
-        root = section;
-      }
-      if (!root)
-        return false;
-      let row = root.querySelector(".cg-free-row");
-      if (!row) {
-        row = document.createElement("div");
-        row.className = "cg-free-row";
-        root.appendChild(row);
-      } else {
-        if (!row.classList.contains("cg-free-row"))
-          row.classList.add("cg-free-row");
-      }
-      if (row.getAttribute("style"))
-        row.removeAttribute("style");
-      const ensureSelect = (slot) => {
-        const id = `cg-free-choice-${slot}`;
-        let sel = row.querySelector(`#${id}`);
-        if (!sel) {
-          sel = document.createElement("select");
-          sel.id = id;
-          sel.className = "cg-free-select";
-          sel.setAttribute("data-slot", String(slot));
-          row.appendChild(sel);
-        } else {
-          if (!sel.classList.contains("cg-free-select"))
-            sel.classList.add("cg-free-select");
-        }
-        if (sel.getAttribute("style"))
-          sel.removeAttribute("style");
-        return sel;
-      };
-      const s0 = ensureSelect(0);
-      const s1 = ensureSelect(1);
-      const s2 = ensureSelect(2);
-      this._root = root;
-      this._host = row;
-      this._selects = [s0, s1, s2];
-      this._selects.forEach((sel) => {
-        if ($11) {
-          $11(sel).off("change.cgfree").on("change.cgfree", () => this._onSelectChange(sel));
-        } else {
-          sel.onchange = () => this._onSelectChange(sel);
-        }
-      });
-      this._mounted = true;
-      this._drawPlaceholders();
-      return true;
-    },
-    _drawPlaceholders() {
-      if (!this._mounted)
-        return;
-      const placeholders = [
-        "\u2014 Select gift #1 \u2014",
-        "\u2014 Select gift #2 \u2014",
-        "\u2014 Select gift #3 \u2014"
-      ];
-      this._selects.forEach((sel, idx) => {
-        sel.innerHTML = "";
-        sel.appendChild(new Option(placeholders[idx], ""));
-      });
-    },
-    _readSelections() {
-      let src = null;
-      try {
-        if (formBuilder_default && formBuilder_default._data) {
-          src = formBuilder_default._data.free_gifts || formBuilder_default._data.freeGifts || null;
-        }
-      } catch (_) {
-      }
-      if (!Array.isArray(src)) {
-        try {
-          if (Array.isArray(state_default.selected))
-            src = state_default.selected;
-        } catch (_) {
-        }
-      }
-      if (!Array.isArray(src))
-        src = this._selects.map((s) => s.value || "");
-      const out = (Array.isArray(src) ? src : []).slice(0, 3).map((v) => v ? String(v) : "");
-      while (out.length < 3)
-        out.push("");
-      return out;
-    },
-    _writeSelections(arrStr) {
-      const normalized = (Array.isArray(arrStr) ? arrStr : []).slice(0, 3).map((v) => v ? String(v) : "");
-      while (normalized.length < 3)
-        normalized.push("");
-      try {
-        if (formBuilder_default && formBuilder_default._data) {
-          formBuilder_default._data.free_gifts = normalized.slice();
-          formBuilder_default._data.freeGifts = normalized.slice();
-        }
+        (_d = (_c = state_default2) == null ? void 0 : _c.init) == null ? void 0 : _d.call(_c);
       } catch (_) {
       }
       try {
-        state_default.setSelected(normalized);
+        (_f = (_e = quals_default) == null ? void 0 : _e.init) == null ? void 0 : _f.call(_e);
       } catch (_) {
       }
-      if (this._suppressEmit)
+      this._bindGlobalEventsOnce();
+      this.refresh({ reason: "init", fetch: true });
+    },
+    _bindGlobalEventsOnce() {
+      if (this._bound)
         return;
-      document.dispatchEvent(new CustomEvent("cg:free-gift:changed", {
-        detail: { free_gifts: normalized }
-      }));
-      if ($11)
-        $11(document).trigger("cg:free-gift:changed", [{ free_gifts: normalized }]);
-    },
-    _onSelectChange(sel) {
-      const slot = parseInt(sel.getAttribute("data-slot") || "0", 10);
-      const cur = this._readSelections();
-      cur[slot] = sel.value || "";
-      this._writeSelections(cur);
-      this._fillSelectsFiltered();
-    },
-    _acquiredGiftIdSet(selections) {
-      var _a, _b;
-      const set = /* @__PURE__ */ new Set();
-      ALWAYS_ACQUIRED_GIFT_IDS2.forEach((id) => set.add(String(id)));
-      (selections || []).forEach((id) => {
-        if (id)
-          set.add(String(id));
+      this._bound = true;
+      const rerenderSoon = this._rerenderSoon || ((e) => {
+        this._scheduleRender(e && e.type ? e.type : "event");
       });
-      const sp = ((_a = api_default) == null ? void 0 : _a.currentProfile) || null;
-      if (sp) {
-        ["gift_id_1", "gift_id_2", "gift_id_3"].forEach((k) => {
-          if (sp[k] != null && String(sp[k]))
-            set.add(String(sp[k]));
-        });
-      }
-      const cp = ((_b = api_default2) == null ? void 0 : _b.currentProfile) || null;
-      if (cp) {
-        ["gift_id_1", "gift_id_2", "gift_id_3"].forEach((k) => {
-          if (cp[k] != null && String(cp[k]))
-            set.add(String(cp[k]));
-        });
-      }
-      return set;
-    },
-    _isEligibleGift(g, acquiredSet) {
-      const req = Array.isArray(g.requires) ? g.requires : [];
-      if (!req.length)
-        return true;
-      return req.every((id) => acquiredSet.has(String(id)));
-    },
-    _optionsForSlot(slot, selections, acquiredSet) {
-      const cur = selections[slot] || "";
-      const otherSelected = new Set(
-        selections.map((id, i) => i === slot ? "" : id || "").filter(Boolean)
-      );
-      return (this._allGifts || []).filter((g) => {
-        if (!g || !g.id)
-          return false;
-        if (!this._isEligibleGift(g, acquiredSet))
-          return false;
-        if (!g.allows_multiple && otherSelected.has(String(g.id)) && String(g.id) !== String(cur)) {
-          return false;
-        }
-        return true;
-      }).map((g) => ({ id: String(g.id), name: String(g.name || `Gift #${g.id}`) }));
-    },
-    _fillSelectsFiltered() {
-      if (!this._mounted)
-        return;
-      if (!Array.isArray(this._allGifts) || !this._allGifts.length) {
-        this._drawPlaceholders();
+      this._rerenderSoon = rerenderSoon;
+      if ($11 && $11.fn) {
+        $11(document).off("cg:builder:opened.cgfreechoices cg:tab:changed.cgfreechoices cg:character:loaded.cgfreechoices cg:quals:catalog-updated.cgfreechoices").on("cg:builder:opened.cgfreechoices cg:tab:changed.cgfreechoices cg:character:loaded.cgfreechoices cg:quals:catalog-updated.cgfreechoices", rerenderSoon);
         return;
       }
-      const placeholders = [
-        "\u2014 Select gift #1 \u2014",
-        "\u2014 Select gift #2 \u2014",
-        "\u2014 Select gift #3 \u2014"
-      ];
-      let selections = this._readSelections().slice();
-      for (let pass = 0; pass < 3; pass++) {
-        let changed = false;
-        const acquired = this._acquiredGiftIdSet(selections);
-        for (let slot = 0; slot < this._selects.length; slot++) {
-          const opts = this._optionsForSlot(slot, selections, acquired);
-          const cur = selections[slot] || "";
-          const isCurValid = !cur || opts.some((o) => o.id === String(cur));
-          if (cur && !isCurValid) {
-            log3("Clearing invalid selection", { slot, cur });
-            selections[slot] = "";
-            changed = true;
-          }
-        }
-        if (!changed)
-          break;
-      }
-      const before = this._readSelections().slice();
-      if (selections.join("|") !== before.join("|")) {
-        this._suppressEmit = true;
-        this._writeSelections(selections);
-        this._suppressEmit = false;
-      }
-      const acquiredFinal = this._acquiredGiftIdSet(selections);
-      const fillSelect = (sel, options, placeholder, prior) => {
-        sel.innerHTML = "";
-        sel.appendChild(new Option(placeholder, ""));
-        options.forEach((opt) => sel.appendChild(new Option(opt.name, opt.id)));
-        if (prior && options.some((o) => o.id === String(prior)))
-          sel.value = String(prior);
-        else
-          sel.value = "";
-      };
-      this._selects.forEach((sel, idx) => {
-        const options = this._optionsForSlot(idx, selections, acquiredFinal);
-        fillSelect(sel, options, placeholders[idx], selections[idx]);
-      });
-      const nowSel = this._selects.map((s) => s.value || "");
-      if (nowSel.join("|") !== selections.join("|")) {
-        this._suppressEmit = true;
-        this._writeSelections(nowSel);
-        this._suppressEmit = false;
-      }
-    },
-    refresh({ force = false } = {}) {
-      this._ensureMounted();
-      const now = Date.now();
-      if (!force && now - this._lastRefreshAt < 3e3)
-        return;
-      if (this._refreshInFlight)
-        return;
-      this._refreshInFlight = true;
-      const { url, nonce } = ajaxEnv5();
-      const payload = { action: "cg_get_free_gifts" };
-      if (nonce) {
-        payload.security = nonce;
-        payload.nonce = nonce;
-        payload._ajax_nonce = nonce;
-      }
-      const onDone = (res) => {
-        this._refreshInFlight = false;
-        this._lastRefreshAt = Date.now();
-        const json = parseJsonMaybe2(res);
-        if (!json || json.success !== true || !Array.isArray(json.data)) {
-          warn3("Unexpected response:", json);
-          if (this._mounted)
-            this._drawPlaceholders();
-          this._maybeRetry();
-          return;
-        }
-        const giftRows = json.data.map(normalizeGiftForState).filter(Boolean);
-        this._allGifts = giftRows;
-        try {
-          state_default.setList(giftRows);
-        } catch (_) {
-        }
-        this._retryCount = 0;
-        if (this._mounted)
-          this._fillSelectsFiltered();
-        else
-          this._pendingFill = true;
-      };
-      const onFail = (status, errorText, responseText) => {
-        this._refreshInFlight = false;
-        this._lastRefreshAt = Date.now();
-        err("AJAX failed", status, errorText, responseText || "");
-        if (this._mounted)
-          this._drawPlaceholders();
-        this._maybeRetry();
-      };
-      if ($11 && $11.post) {
-        $11.post(url, payload).done(onDone).fail((xhr, status, e) => onFail(status, e, xhr == null ? void 0 : xhr.responseText));
-      } else {
-        const body = new URLSearchParams(payload).toString();
-        fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
-          body,
-          credentials: "same-origin"
-        }).then((r) => r.text().then((t) => ({ status: r.status, text: t }))).then(({ status, text }) => {
-          let j = null;
+      document.removeEventListener("cg:builder:opened", rerenderSoon);
+      document.addEventListener("cg:builder:opened", rerenderSoon);
+      try {
+        const W3 = window;
+        W3.__CG_EVT__ = W3.__CG_EVT__ || {};
+        const EVT = W3.__CG_EVT__;
+        if (EVT.freeChoicesRerenderSoon) {
           try {
-            j = JSON.parse(text);
+            document.removeEventListener("cg:tab:changed", EVT.freeChoicesRerenderSoon);
           } catch (_) {
           }
-          if (status >= 200 && status < 300)
-            onDone(j);
-          else
-            onFail(status, "http_error", text);
-        }).catch((e) => onFail("fetch_error", (e == null ? void 0 : e.message) || String(e), ""));
+        }
+        EVT.freeChoicesRerenderSoon = rerenderSoon;
+        document.addEventListener("cg:tab:changed", EVT.freeChoicesRerenderSoon);
+      } catch (_) {
+        try {
+          document.addEventListener("cg:tab:changed", rerenderSoon);
+        } catch (_2) {
+        }
+      }
+      document.removeEventListener("cg:character:loaded", rerenderSoon);
+      document.addEventListener("cg:character:loaded", rerenderSoon);
+      document.removeEventListener("cg:quals:catalog-updated", rerenderSoon);
+      document.addEventListener("cg:quals:catalog-updated", rerenderSoon);
+      if ($11 && $11.fn) {
+        $11(document).off("cg:builder:opened.cgfreechoices cg:tab:changed.cgfreechoices cg:character:loaded.cgfreechoices cg:quals:catalog-updated.cgfreechoices").on("cg:builder:opened.cgfreechoices cg:tab:changed.cgfreechoices cg:character:loaded.cgfreechoices cg:quals:catalog-updated.cgfreechoices", rerenderSoon);
       }
     },
-    _maybeRetry() {
-      if (this._retryCount >= this._maxRetries)
-        return;
-      this._retryCount++;
-      const delay = 600 * this._retryCount;
-      setTimeout(() => {
-        if (!this._allGifts || !this._allGifts.length) {
-          this.refresh({ force: true });
+    refresh() {
+      return __async(this, arguments, function* ({ fetch: fetch2 = false } = {}) {
+        if (fetch2)
+          yield this._fetchAllGifts();
+        this._scheduleRender("refresh");
+      });
+    },
+    _fetchAllGifts() {
+      return __async(this, null, function* () {
+        if (this._loading)
+          return;
+        this._loading = true;
+        try {
+          const res = yield ajaxPost({ action: "cg_get_free_gifts" });
+          let list = null;
+          if (Array.isArray(res))
+            list = res;
+          else if (res && Array.isArray(res.data))
+            list = res.data;
+          else if (res && res.data && Array.isArray(res.data.gifts))
+            list = res.data.gifts;
+          else if (res && Array.isArray(res.gifts))
+            list = res.gifts;
+          if (!Array.isArray(list)) {
+            warn3("cg_get_free_gifts returned unexpected payload", res);
+            list = [];
+          }
+          this._allGifts = list.slice();
+          this._byId = /* @__PURE__ */ new Map();
+          this._allGifts.forEach((g) => {
+            const id = giftId(g);
+            if (id)
+              this._byId.set(id, g);
+          });
+          try {
+            state_default.setList(this._allGifts);
+          } catch (_) {
+          }
+          log3("Fetched gifts", { count: this._allGifts.length });
+        } catch (err) {
+          warn3("Failed to fetch gifts", err);
+          this._allGifts = [];
+          this._byId = /* @__PURE__ */ new Map();
+        } finally {
+          this._loading = false;
         }
-      }, delay);
+      });
+    },
+    _getGift(id) {
+      const k = String(id || "");
+      if (!k)
+        return null;
+      if (this._byId && this._byId.get(k))
+        return this._byId.get(k);
+      const list = Array.isArray(this._allGifts) ? this._allGifts : [];
+      return list.find((g) => giftId(g) === k) || null;
+    },
+    render() {
+      const modal = modalRoot();
+      if (!modal)
+        return;
+      const host = modal.querySelector("#cg-free-choices") || document.querySelector("#cg-free-choices");
+      if (!host)
+        return;
+      const section = ensureSectionInHost(host);
+      if (!section)
+        return;
+      this._bindSectionDelegates(section);
+      const slots = getFreeGiftSlotsFromData();
+      const row = section.querySelector(".cg-free-row");
+      if (!row)
+        return;
+      const owned2 = computeOwnedGiftIdSet(slots.filter(Boolean));
+      const htmlSlots = [0, 1, 2].map((i) => {
+        const selectedId = String(slots[i] || "").trim();
+        const others2 = new Set(slots.map((v, idx) => idx === i ? "" : String(v || "").trim()).filter(Boolean));
+        const eligible = (Array.isArray(this._allGifts) ? this._allGifts : []).filter((g) => giftEligible(g, owned2, others2));
+        const curGift = selectedId ? this._getGift(selectedId) : null;
+        const curOpt = curGift ? [{ id: giftId(curGift), name: giftName(curGift), _forced: true }] : [];
+        const seen = /* @__PURE__ */ new Set();
+        const options = [].concat(curOpt.map((o) => ({ _forced: true, id: o.id, name: o.name }))).concat(eligible.map((g) => ({ id: giftId(g), name: giftName(g) }))).filter((o) => o && o.id && o.name).filter((o) => {
+          if (seen.has(o.id))
+            return false;
+          seen.add(o.id);
+          return true;
+        }).map((o) => {
+          const sel = String(selectedId) === String(o.id) ? " selected" : "";
+          const suffix = o._forced ? " (saved)" : "";
+          return `<option value="${String(o.id)}"${sel}>${String(o.name)}${suffix}</option>`;
+        }).join("\n");
+        return `
+        <div class="cg-free-slot" data-slot="${i}" style="display:flex; flex-direction:column;">
+          <label style="display:flex; flex-direction:column; gap:4px; min-width: 220px;">
+            <span style="font-weight:600;">Free Gift ${i + 1}</span>
+            <select id="cg-free-choice-${i}" class="cg-free-gift-select" data-slot="${i}">
+              <option value="">\u2014 Select a gift \u2014</option>
+              ${options}
+            </select>
+          </label>
+          <div class="cg-free-slot-quals" data-slot="${i}"></div>
+        </div>
+      `;
+      });
+      row.innerHTML = htmlSlots.join("\n");
+      this._renderSlotQuals(slots);
+    },
+    _bindSectionDelegates(section) {
+      if (section.__cgBound)
+        return;
+      section.__cgBound = true;
+      section.addEventListener("change", (e) => {
+        const t = e.target;
+        if (!t || !t.classList)
+          return;
+        if (t.classList.contains("cg-free-gift-select")) {
+          const slot = Number(t.getAttribute("data-slot") || "0");
+          const nextId = String(t.value || "").trim();
+          const prevSlots = getFreeGiftSlotsFromData();
+          const nextSlots = prevSlots.slice();
+          nextSlots[slot] = nextId;
+          this._cleanupSlotQualsOnGiftChange({ slot, prevGiftId: prevSlots[slot], nextGiftId: nextId });
+          setFreeGiftSlotsToData(nextSlots, "free-gift-select");
+          this._scheduleRender("free-gift-select");
+          return;
+        }
+        if (t.classList.contains("cg-free-qual-select")) {
+          const slot = String(t.getAttribute("data-slot") || "0");
+          const type = String(t.getAttribute("data-qtype") || "").toLowerCase();
+          const val = String(t.value || "").trim();
+          const map = getSlotQualMap();
+          if (!map[slot] || typeof map[slot] !== "object")
+            map[slot] = {};
+          const prev = String(map[slot][type] || "").trim();
+          if (val)
+            map[slot][type] = val;
+          else
+            delete map[slot][type];
+          if (Object.keys(map[slot] || {}).length === 0)
+            delete map[slot];
+          setSlotQualMap(map);
+          if (prev && canon3(prev) !== canon3(val))
+            qualStateRemoveIfSafe(type, prev, map);
+          if (val)
+            qualStateAdd(type, val);
+          this._scheduleRender("free-qual-select");
+          return;
+        }
+      });
+    },
+    _cleanupSlotQualsOnGiftChange({ slot, prevGiftId, nextGiftId }) {
+      const prevG = prevGiftId ? this._getGift(prevGiftId) : null;
+      const nextG = nextGiftId ? this._getGift(nextGiftId) : null;
+      const prevNeeds = prevG ? detectQualTypesNeeded(prevG) : [];
+      const nextNeeds = nextG ? detectQualTypesNeeded(nextG) : [];
+      const map = getSlotQualMap();
+      const sKey = String(slot);
+      const slotObj = map[sKey] && typeof map[sKey] === "object" ? map[sKey] : null;
+      if (!slotObj)
+        return;
+      prevNeeds.forEach((type) => {
+        if (nextNeeds.includes(type))
+          return;
+        const prevVal = String(slotObj[type] || "").trim();
+        if (!prevVal)
+          return;
+        delete slotObj[type];
+        qualStateRemoveIfSafe(type, prevVal, map);
+      });
+      if (slotObj && Object.keys(slotObj).length === 0)
+        delete map[sKey];
+      setSlotQualMap(map);
+    },
+    _renderSlotQuals(slots) {
+      const section = document.getElementById("cg-free-gifts");
+      if (!section)
+        return;
+      const map = getSlotQualMap();
+      [0, 1, 2].forEach((i) => {
+        const slotId = String(i);
+        const giftIdSel = String(slots[i] || "").trim();
+        const wrap = section.querySelector(`.cg-free-slot-quals[data-slot="${i}"]`);
+        if (!wrap)
+          return;
+        if (!giftIdSel) {
+          wrap.innerHTML = "";
+          return;
+        }
+        const g = this._getGift(giftIdSel);
+        if (!g) {
+          wrap.innerHTML = "";
+          return;
+        }
+        const needs = detectQualTypesNeeded(g);
+        if (!needs.length) {
+          wrap.innerHTML = "";
+          return;
+        }
+        if (!map[slotId] || typeof map[slotId] !== "object")
+          map[slotId] = {};
+        const html = needs.map((type) => {
+          const cur = String(map[slotId][type] || "").trim();
+          return renderQualSelectHtml({ slot: i, type, value: cur, allGifts: this._allGifts });
+        }).join("\n");
+        wrap.innerHTML = html;
+        setSlotQualMap(map);
+      });
+    },
+    debug() {
+      var _a, _b;
+      const sizes = {};
+      ["language", "literacy", "insider", "mystic", "piety"].forEach((t) => {
+        try {
+          sizes[t] = getQualItemsForType(t, this._allGifts).length;
+        } catch (_) {
+          sizes[t] = null;
+        }
+      });
+      return {
+        giftsCount: Array.isArray(this._allGifts) ? this._allGifts.length : 0,
+        slots: getFreeGiftSlotsFromData(),
+        slotQualMap: getSlotQualMap(),
+        qualCatalogSizes: sizes,
+        qualState: ((_b = (_a = state_default2) == null ? void 0 : _a.getAll) == null ? void 0 : _b.call(_a)) || null
+      };
     }
   };
-  window.CG_FreeChoices = FreeChoices;
+  W.CG_FreeChoices = FreeChoices;
   var free_choices_default = FreeChoices;
 
   // assets/js/src/core/gifts/index.js
@@ -3771,10 +4430,6 @@
     }
     try {
       free_choices_default.init();
-    } catch (_) {
-    }
-    try {
-      free_choices_default.refresh({ force: false });
     } catch (_) {
     }
   }
@@ -4075,6 +4730,8 @@
   var TRAITS3 = service_default.TRAITS;
   var MARK_DIE2 = { 1: "d4", 2: "d6", 3: "d8" };
   var SummaryAPI = {
+    _autoBound: false,
+    _renderTimer: null,
     /**
      * Entry point when the Summary tab is shown.
      */
@@ -4083,6 +4740,108 @@
       console.log("[SummaryAPI] init \u2014 builder state:", data);
       this.renderSummary(data);
       this.bindExportButton();
+      this.bindAutoRender();
+      try {
+        if (!window.SummaryAPI)
+          window.SummaryAPI = this;
+      } catch (_) {
+      }
+    },
+    _hasSheet() {
+      return !!document.getElementById("cg-summary-sheet");
+    },
+    _scheduleRender(reason = "event", overrides = null) {
+      if (!this._hasSheet())
+        return;
+      if (this._renderTimer)
+        clearTimeout(this._renderTimer);
+      this._renderTimer = setTimeout(() => {
+        this._renderTimer = null;
+        let data = {};
+        try {
+          data = formBuilder_default.getData ? formBuilder_default.getData() || {} : {};
+        } catch (e) {
+          console.warn("[SummaryAPI] getData() failed:", e);
+          data = {};
+        }
+        if (overrides && typeof overrides === "object") {
+          if (overrides.speciesProfile)
+            data.__speciesProfile = overrides.speciesProfile;
+          if (overrides.careerProfile)
+            data.__careerProfile = overrides.careerProfile;
+        }
+        try {
+          this.renderSummary(data);
+        } catch (e) {
+          console.error("[SummaryAPI] renderSummary failed:", e);
+        }
+      }, 50);
+    },
+    bindAutoRender() {
+      if (this._autoBound)
+        return;
+      this._autoBound = true;
+      const EVT = window.__CG_EVT__ = window.__CG_EVT__ || {};
+      if (EVT.summaryAutoRenderNative) {
+        try {
+          const fn = EVT.summaryAutoRenderNative;
+          [
+            "cg:builder:opened",
+            "cg:builder:rendered",
+            "cg:character:loaded",
+            "cg:species:changed",
+            "cg:career:changed",
+            "cg:traits:changed",
+            "cg:free-gift:changed",
+            "cg:extra-careers:changed",
+            "cg:tab:changed"
+          ].forEach((name) => document.removeEventListener(name, fn));
+        } catch (_) {
+        }
+      }
+      EVT.summaryAutoRenderNative = (e) => {
+        const name = e && e.type ? e.type : "event";
+        const detail = e && e.detail ? e.detail : null;
+        if (name === "cg:species:changed" && detail && detail.profile) {
+          this._scheduleRender(name, { speciesProfile: detail.profile });
+          return;
+        }
+        if (name === "cg:career:changed" && detail && detail.profile) {
+          this._scheduleRender(name, { careerProfile: detail.profile });
+          return;
+        }
+        this._scheduleRender(name);
+      };
+      [
+        "cg:builder:opened",
+        "cg:builder:rendered",
+        "cg:character:loaded",
+        "cg:species:changed",
+        "cg:career:changed",
+        "cg:traits:changed",
+        "cg:free-gift:changed",
+        "cg:extra-careers:changed",
+        "cg:tab:changed"
+      ].forEach((name) => document.addEventListener(name, EVT.summaryAutoRenderNative));
+      if ($15) {
+        $15(document).off(
+          "cg:builder:opened.cgsummary cg:builder:rendered.cgsummary cg:character:loaded.cgsummary cg:species:changed.cgsummary cg:career:changed.cgsummary cg:traits:changed.cgsummary cg:free-gift:changed.cgsummary cg:extra-careers:changed.cgsummary cg:tab:changed.cgsummary"
+        ).on(
+          "cg:builder:opened.cgsummary cg:builder:rendered.cgsummary cg:character:loaded.cgsummary cg:species:changed.cgsummary cg:career:changed.cgsummary cg:traits:changed.cgsummary cg:free-gift:changed.cgsummary cg:extra-careers:changed.cgsummary cg:tab:changed.cgsummary",
+          (evt, payload) => {
+            const name = evt && evt.type ? evt.type : "event";
+            if (name === "cg:species:changed" && payload && payload.profile) {
+              this._scheduleRender(name, { speciesProfile: payload.profile });
+              return;
+            }
+            if (name === "cg:career:changed" && payload && payload.profile) {
+              this._scheduleRender(name, { careerProfile: payload.profile });
+              return;
+            }
+            this._scheduleRender(name);
+          }
+        );
+      }
     },
     /**
      * Build and inject the full summary into #cg-summary-sheet.
@@ -4096,8 +4855,8 @@
       const goals = [1, 2, 3].map((i) => data[`goal${i}`] || "\u2014").filter((v) => v !== "\u2014").join(", ") || "\u2014";
       const description = data.description || "\u2014";
       const backstory = data.backstory || "\u2014";
-      const species = api_default.currentProfile || {};
-      const career = api_default2.currentProfile || {};
+      const species = data.__speciesProfile || api_default.currentProfile || {};
+      const career = data.__careerProfile || api_default2.currentProfile || {};
       const skills = window.CG_SKILLS_LIST || [];
       const marks = data.skillMarks || {};
       const battle = data.battle || [];
@@ -4172,8 +4931,8 @@
           <thead><tr><th>Skill</th><th>Dice Pool</th></tr></thead>
           <tbody>
     `;
-      const spIds = [species.skill_one, species.skill_two, species.skill_three].map(String);
-      const cpIds = [career.skill_one, career.skill_two, career.skill_three].map(String);
+      const spIds = [species.skill_one, species.skill_two, species.skill_three].filter((v) => v != null && String(v).trim() !== "").map((v) => String(v));
+      const cpIds = [career.skill_one, career.skill_two, career.skill_three].filter((v) => v != null && String(v).trim() !== "").map((v) => String(v));
       skills.forEach((skill) => {
         const id = String(skill.id);
         const sp = spIds.includes(id) ? "d4" : "";
@@ -4204,7 +4963,7 @@
      * Open a new window, inject the summary + CSS, and print it.
      */
     bindExportButton() {
-      $15(document).off("click", "#cg-export-pdf").on("click", "#cg-export-pdf", (e) => {
+      $15(document).off("click.cgsummary", "#cg-export-pdf").on("click.cgsummary", "#cg-export-pdf", (e) => {
         e.preventDefault();
         console.log("[SummaryAPI] Export to PDF clicked");
         const sheetHtml = document.getElementById("cg-summary-sheet").outerHTML;
@@ -4363,13 +5122,13 @@
       LOG2(`fetched ${_cacheRows.length} records`);
       finalize(_cacheRows);
     };
-    const onFail = (xhr, status, err2) => {
-      ERR("character list request failed", status, err2, xhr == null ? void 0 : xhr.status, xhr == null ? void 0 : xhr.responseText);
+    const onFail = (xhr, status, err) => {
+      ERR("character list request failed", status, err, xhr == null ? void 0 : xhr.status, xhr == null ? void 0 : xhr.responseText);
       finalize([]);
     };
     if (typeof req.then === "function") {
-      Promise.resolve(req).then(onOk).catch((err2) => {
-        ERR("character list request failed", err2);
+      Promise.resolve(req).then(onOk).catch((err) => {
+        ERR("character list request failed", err);
         finalize([]);
       });
     } else if (typeof req.done === "function" && typeof req.fail === "function") {
@@ -4523,35 +5282,48 @@
 
   // assets/js/src/core/main/builder-events.js
   var $19 = window.jQuery;
-  var LOG4 = (...a) => console.log("[BuilderEvents]", ...a);
+  var LOG4 = (...a) => {
+    try {
+      console.log("[BuilderEvents]", ...a);
+    } catch (_) {
+    }
+  };
+  var ERR2 = (...a) => {
+    try {
+      console.error("[BuilderEvents]", ...a);
+    } catch (_) {
+    }
+  };
   var SEL = {
     species: '#cg-species, select[name="species"], select[data-cg="species"], .cg-species',
     career: '#cg-career,  select[name="career"],  select[data-cg="career"],  .cg-career'
   };
   function firstSelect(selector) {
-    const $sel = $19(selector);
-    const $modalSel = $19("#cg-modal").find(selector);
-    if ($modalSel.length)
-      return $modalSel.first();
-    return $sel.length ? $sel.first() : null;
+    const $inModal = $19("#cg-modal").find(selector);
+    if ($inModal.length)
+      return $inModal.first();
+    const $any = $19(selector);
+    return $any.length ? $any.first() : null;
   }
   function setSelectValue($sel, want) {
-    if (!$sel || !$sel.length || !want)
+    if (!$sel || !$sel.length || want == null)
       return false;
     const valRaw = String(want);
     const val = valRaw.trim();
-    const dice = /* @__PURE__ */ new Set(["d4", "d6", "d8", "d10", "d12", "\u2013", "-"]);
+    if (!val)
+      return false;
+    const dice = /* @__PURE__ */ new Set(["d4", "d6", "d8", "d10", "d12", "\u2013", "-", "\u2014"]);
     if (dice.has(val.toLowerCase()))
       return false;
     $sel.val(val);
-    if (String($sel.val() || "") === val)
+    if (String($sel.val() || "").trim() === val)
       return true;
     const $byText = $sel.find("option").filter(function() {
-      return $19(this).text() === val;
+      return String($19(this).text() || "").trim() === val;
     }).first();
     if ($byText.length) {
       $sel.val($byText.val());
-      return true;
+      return String($sel.val() || "").trim() === String($byText.val() || "").trim();
     }
     return false;
   }
@@ -4559,13 +5331,20 @@
     try {
       if (!toTab)
         return;
-      if (fromTab && String(fromTab) === String(toTab))
+      const from = fromTab ? String(fromTab) : "";
+      const to = String(toTab);
+      if (from && from === to)
         return;
+      const W3 = window;
+      W3.__CG_EVT__ = W3.__CG_EVT__ || {};
+      const EVT = W3.__CG_EVT__;
+      const now = Date.now();
+      const last = EVT.__lastTabChanged || null;
+      if (last && last.to === to && now - last.ts < 100)
+        return;
+      EVT.__lastTabChanged = { from, to, ts: now };
       document.dispatchEvent(new CustomEvent("cg:tab:changed", {
-        detail: {
-          from: fromTab ? String(fromTab) : "",
-          to: String(toTab)
-        }
+        detail: { from, to }
       }));
     } catch (_) {
     }
@@ -4582,19 +5361,24 @@
     const beforeVal = String($sel.val() || "").trim();
     try {
       const Index = kind === "species" ? species_default : career_default;
+      if (Index == null ? void 0 : Index.init)
+        Index.init();
       if (Index == null ? void 0 : Index.refresh)
-        Index.refresh();
-      else if (Index == null ? void 0 : Index.render)
-        Index.render();
+        Index.refresh({ force: !!force });
     } catch (_) {
     }
     const ensureOptions = () => {
-      if (el.options.length > 1 && !force)
+      try {
+        const optCount = el && el.options ? el.options.length : 0;
+        if (optCount > 1 && !force)
+          return $19.Deferred().resolve().promise();
+        const API = kind === "species" ? api_default : api_default2;
+        if (typeof (API == null ? void 0 : API.populateSelect) !== "function")
+          return $19.Deferred().resolve().promise();
+        return API.populateSelect(el, { force: !!force });
+      } catch (_) {
         return $19.Deferred().resolve().promise();
-      const API = kind === "species" ? api_default : api_default2;
-      if (typeof (API == null ? void 0 : API.populateSelect) !== "function")
-        return $19.Deferred().resolve().promise();
-      return API.populateSelect(el, { force: !!force });
+      }
     };
     const doApply = () => {
       var _a, _b;
@@ -4612,12 +5396,15 @@
         }
       }
     };
-    return $19.Deferred(function(dfr) {
+    return $19.Deferred((dfr) => {
       setTimeout(() => {
-        ensureOptions().then(() => {
+        Promise.resolve(ensureOptions()).then(() => {
           doApply();
           dfr.resolve();
-        }).catch(() => dfr.resolve());
+        }).catch(() => {
+          doApply();
+          dfr.resolve();
+        });
       }, 0);
     }).promise();
   }
@@ -4632,19 +5419,44 @@
       hydrateSpeciesAndCareer({ force: true });
     }, 0);
   }
+  function parseWpResponse(resp) {
+    var _a;
+    let parsed = resp;
+    if (typeof resp === "string") {
+      try {
+        parsed = JSON.parse(resp);
+      } catch (_) {
+        parsed = resp;
+      }
+    }
+    if (parsed && typeof parsed === "object" && Object.prototype.hasOwnProperty.call(parsed, "success")) {
+      if (parsed.success !== true)
+        return null;
+      return (_a = parsed.data) != null ? _a : null;
+    }
+    return parsed;
+  }
   function bindUIEvents() {
     var _a, _b;
     LOG4("bindUIEvents() called");
+    try {
+      formBuilder_default._data = formBuilder_default._data || {};
+    } catch (_) {
+    }
     try {
       (_b = (_a = gifts_default) == null ? void 0 : _a.init) == null ? void 0 : _b.call(_a);
     } catch (_) {
     }
     $19(document).off("input.cg change.cg", "#cg-modal input, #cg-modal select, #cg-modal textarea").on("input.cg change.cg", "#cg-modal input, #cg-modal select, #cg-modal textarea", function() {
-      builder_ui_default.markDirty();
+      try {
+        builder_ui_default.markDirty();
+      } catch (_) {
+      }
       const $el = $19(this);
       if ($el.hasClass("skill-marks")) {
         const skillId = $el.data("skill-id");
         const val = parseInt($el.val(), 10) || 0;
+        formBuilder_default._data = formBuilder_default._data || {};
         formBuilder_default._data.skillMarks = formBuilder_default._data.skillMarks || {};
         formBuilder_default._data.skillMarks[skillId] = val;
         return;
@@ -4653,6 +5465,7 @@
       if (!id)
         return;
       const key = id.replace(/^cg-/, "");
+      formBuilder_default._data = formBuilder_default._data || {};
       formBuilder_default._data[key] = $el.val();
     });
     $19(document).off("click.cg", "#cg-open-builder").on("click.cg", "#cg-open-builder", (e) => {
@@ -4671,11 +5484,15 @@
       e.preventDefault();
       $19("#cg-modal-splash").removeClass("visible").addClass("cg-hidden");
       builder_ui_default.openBuilder({ isNew: true, payload: {} });
+      formBuilder_default._data = formBuilder_default._data || {};
       formBuilder_default._data.skillMarks = {};
       formBuilder_default._data.species = "";
       formBuilder_default._data.career = "";
-      if (window.CG_FreeChoicesState) {
-        window.CG_FreeChoicesState.selected = ["", "", ""];
+      try {
+        if (window.CG_FreeChoicesState) {
+          window.CG_FreeChoicesState.selected = ["", "", ""];
+        }
+      } catch (_) {
       }
     });
     $19(document).off("click.cg", "#cg-load-splash").on("click.cg", "#cg-load-splash", (e) => {
@@ -4686,12 +5503,9 @@
         return;
       }
       formBuilder_default.fetchCharacter(charId).done((resp) => {
-        console.log("\u{1F50E} [AJAX] raw cg_get_character response:", resp);
-        const parsed = typeof resp === "string" ? JSON.parse(resp) : resp;
-        console.log("\u{1F50D} [AJAX] parsed.data:", parsed == null ? void 0 : parsed.data);
-        const record = (parsed == null ? void 0 : parsed.data) || parsed;
+        const record = parseWpResponse(resp);
         if (!record || !record.id) {
-          alert("Character could not be loaded.");
+          alert("Character could not be loaded. Check console for details.");
           return;
         }
         $19("#cg-modal-splash").removeClass("visible").addClass("cg-hidden");
@@ -4710,12 +5524,18 @@
       e.preventDefault();
       const fromTab = $19("#cg-modal .cg-tabs li.active").data("tab");
       const tabName = $19(this).data("tab");
+      if (!tabName)
+        return;
       $19("#cg-modal .cg-tabs li").removeClass("active");
       $19(this).addClass("active");
       $19(".tab-panel").removeClass("active");
       $19(`#${tabName}`).addClass("active");
       emitTabChanged(fromTab, tabName);
-      refreshTab();
+      try {
+        refreshTab();
+      } catch (err) {
+        ERR2("refreshTab failed", err);
+      }
       setTimeout(() => {
         hydrateSpeciesAndCareer({ force: false });
       }, 0);
@@ -4762,6 +5582,322 @@
   };
   var main_default = MainAPI;
 
+  // assets/js/src/core/quals/ui.js
+  function cgWin2() {
+    if (typeof globalThis !== "undefined")
+      return globalThis;
+    if (typeof window !== "undefined")
+      return window;
+    return {};
+  }
+  var W2 = cgWin2();
+  var $20 = W2 && W2.jQuery ? W2.jQuery : null;
+  function modalRoot2() {
+    if (typeof document === "undefined")
+      return null;
+    return document.querySelector("#cg-modal") || null;
+  }
+  function stripDiacritics4(s) {
+    return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  }
+  function canon4(s) {
+    return stripDiacritics4(String(s || "")).trim().replace(/\s+/g, " ").toLowerCase();
+  }
+  function uniqSorted(list) {
+    const seen = /* @__PURE__ */ new Set();
+    const out = [];
+    (Array.isArray(list) ? list : []).forEach((v) => {
+      const raw = String(v || "").trim().replace(/\s+/g, " ");
+      if (!raw)
+        return;
+      const k = canon4(raw);
+      if (!k || seen.has(k))
+        return;
+      seen.add(k);
+      out.push(raw);
+    });
+    out.sort((a, b) => canon4(a).localeCompare(canon4(b)));
+    return out;
+  }
+  function removeLegacyQualUIs(modal) {
+    if (!modal)
+      return;
+    try {
+      const oldBox = modal.querySelector("#cg-quals-box");
+      if (oldBox)
+        oldBox.remove();
+    } catch (_) {
+    }
+    try {
+      const oldInline = modal.querySelector("#cg-quals-inline");
+      if (oldInline)
+        oldInline.remove();
+    } catch (_) {
+    }
+  }
+  function getAllGiftsList2() {
+    const FC = W2.CG_FreeChoices;
+    if (FC && Array.isArray(FC._allGifts) && FC._allGifts.length)
+      return FC._allGifts;
+    const GS = W2.CG_GiftsState || W2.CG_Gifts || null;
+    if (GS) {
+      if (Array.isArray(GS._allGifts) && GS._allGifts.length)
+        return GS._allGifts;
+      if (Array.isArray(GS.allGifts) && GS.allGifts.length)
+        return GS.allGifts;
+      if (Array.isArray(GS.gifts) && GS.gifts.length)
+        return GS.gifts;
+    }
+    return [];
+  }
+  function getRequiresSpecial(g) {
+    var _a, _b, _c;
+    return String(
+      (_c = (_b = (_a = g == null ? void 0 : g.requires_special) != null ? _a : g == null ? void 0 : g.ct_gifts_requires_special) != null ? _b : g == null ? void 0 : g.ct_requires_special) != null ? _c : ""
+    );
+  }
+  function extractLanguagesFromGifts(gifts) {
+    const out = [];
+    (Array.isArray(gifts) ? gifts : []).forEach((g) => {
+      const rs = getRequiresSpecial(g);
+      if (!rs)
+        return;
+      const lines = String(rs).split(/\r?\n|•|·/g).map((s) => String(s || "").trim()).filter(Boolean);
+      lines.forEach((line) => {
+        const m = line.match(/^language\s*:\s*(.+)$/i);
+        if (!m)
+          return;
+        const rest = String(m[1] || "").trim();
+        if (!rest)
+          return;
+        const restCanon = canon4(rest);
+        if (restCanon === "any" || restCanon === "varies" || restCanon === "see text")
+          return;
+        rest.split(/\s*[;,]\s*/g).map((x) => String(x || "").trim()).filter(Boolean).forEach((x) => out.push(x));
+      });
+    });
+    return uniqSorted(out);
+  }
+  function findBaseLanguageHost(modal) {
+    if (!modal)
+      return null;
+    const cgLanguage = modal.querySelector("#cg-language");
+    if (cgLanguage)
+      return cgLanguage;
+    const direct = modal.querySelector("#cg-free-language") || modal.querySelector("#cg-language-choice") || modal.querySelector("#cg-gift-language");
+    if (direct)
+      return direct;
+    const freeChoices = modal.querySelector("#cg-free-choices") || document.querySelector("#cg-free-choices");
+    if (freeChoices && freeChoices.parentElement)
+      return freeChoices.parentElement;
+    return null;
+  }
+  function ensureBaseLanguageContainer(modal) {
+    const host = findBaseLanguageHost(modal);
+    if (!host)
+      return null;
+    let wrap = modal.querySelector("#cg-base-language");
+    if (!wrap) {
+      wrap = document.createElement("div");
+      wrap.id = "cg-base-language";
+      wrap.className = "cg-gift-item cg-base-language";
+      wrap.innerHTML = `
+      <div class="cg-base-language-inner" style="display:flex; flex-direction:column; gap:6px;">
+        <div style="font-weight:600;">Language</div>
+        <div class="cg-base-language-control"></div>
+      </div>
+    `;
+    }
+    try {
+      if (host.classList && host.classList.contains("cg-gift-item")) {
+        if (!host.querySelector("#cg-base-language"))
+          host.appendChild(wrap);
+      } else {
+        const freeChoices = modal.querySelector("#cg-free-choices") || document.querySelector("#cg-free-choices");
+        if (freeChoices && freeChoices.parentElement) {
+          if (wrap.parentNode !== freeChoices.parentElement) {
+            freeChoices.parentElement.insertBefore(wrap, freeChoices);
+          }
+        } else if (wrap.parentNode !== host) {
+          host.appendChild(wrap);
+        }
+      }
+    } catch (_) {
+    }
+    return wrap;
+  }
+  function getLanguageLabelsForBaseSelect() {
+    const rawItems = quals_default && typeof quals_default.get === "function" ? quals_default.get("language") || [] : [];
+    const labelsFromCatalog = [];
+    (Array.isArray(rawItems) ? rawItems : []).forEach((it) => {
+      var _a, _b;
+      if (typeof it === "string") {
+        const s2 = String(it || "").trim();
+        if (s2)
+          labelsFromCatalog.push(s2);
+        return;
+      }
+      const s = String((_b = (_a = it == null ? void 0 : it.label) != null ? _a : it == null ? void 0 : it.key) != null ? _b : "").trim();
+      if (s)
+        labelsFromCatalog.push(s);
+    });
+    const uniqCatalog = uniqSorted(labelsFromCatalog);
+    if (uniqCatalog.length)
+      return uniqCatalog;
+    const gifts = getAllGiftsList2();
+    const langs = extractLanguagesFromGifts(gifts);
+    return langs;
+  }
+  function renderLanguageSelect(container) {
+    if (!container)
+      return;
+    const labels = getLanguageLabelsForBaseSelect();
+    const cur = state_default2 && typeof state_default2.get === "function" ? (state_default2.get("language") || [])[0] || "" : "";
+    const finalLabels = uniqSorted([cur, ...labels]);
+    const opts = finalLabels.map((label) => {
+      const sel2 = canon4(cur) === canon4(label) ? " selected" : "";
+      const safe = String(label).replace(/"/g, "&quot;");
+      return `<option value="${safe}"${sel2}>${label}</option>`;
+    }).join("\n");
+    container.innerHTML = `
+    <select id="cg-base-language-select" style="min-width:220px;">
+      <option value="">\u2014 Select Language \u2014</option>
+      ${opts}
+    </select>
+  `;
+    const sel = container.querySelector("#cg-base-language-select");
+    if (!sel)
+      return;
+    sel.addEventListener("change", (e) => {
+      var _a, _b;
+      const nextVal = String(e.target.value || "").trim();
+      try {
+        (_b = (_a = state_default2) == null ? void 0 : _a.init) == null ? void 0 : _b.call(_a);
+      } catch (_) {
+      }
+      try {
+        const current = state_default2 && typeof state_default2.get === "function" ? (state_default2.get("language") || []).slice() : [];
+        const rest = current.filter((v) => canon4(v) !== canon4(nextVal) && canon4(v) !== canon4(current[0] || ""));
+        const next = nextVal ? [nextVal, ...rest] : rest;
+        if (state_default2 && state_default2.data && Array.isArray(state_default2.data.language) && typeof state_default2.persist === "function") {
+          state_default2.data.language = next;
+          state_default2.persist();
+        } else {
+          if (current[0])
+            state_default2.remove("language", current[0]);
+          if (nextVal)
+            state_default2.add("language", nextVal);
+        }
+      } catch (_) {
+      }
+    });
+  }
+  var Existing2 = W2.CG_QualUI;
+  var QualUI = Existing2 && Existing2.__cg_singleton ? Existing2 : {
+    __cg_singleton: true,
+    _inited: false,
+    _observer: null,
+    _lastModalPresent: null,
+    _renderScheduled: false,
+    _rendering: false,
+    _onCatalogUpdated: null,
+    _onBuilderOpened: null,
+    _onTabChanged: null,
+    init() {
+      var _a, _b;
+      if (this._inited)
+        return;
+      this._inited = true;
+      try {
+        (_b = (_a = state_default2) == null ? void 0 : _a.init) == null ? void 0 : _b.call(_a);
+      } catch (_) {
+      }
+      this._bindEvents();
+      this._installObserver();
+      this._scheduleRender("init");
+    },
+    _scheduleRender(reason = "") {
+      if (this._renderScheduled)
+        return;
+      this._renderScheduled = true;
+      const run = () => {
+        this._renderScheduled = false;
+        if (this._rendering)
+          return;
+        this._rendering = true;
+        try {
+          this.render();
+        } catch (err) {
+          console.error("[QualUI] render failed", { reason }, err);
+        } finally {
+          this._rendering = false;
+        }
+      };
+      if (typeof requestAnimationFrame !== "undefined")
+        requestAnimationFrame(run);
+      else
+        setTimeout(run, 0);
+    },
+    _bindEvents() {
+      if (typeof document === "undefined")
+        return;
+      if (!this._onCatalogUpdated)
+        this._onCatalogUpdated = () => this._scheduleRender("catalog-updated");
+      if (!this._onBuilderOpened)
+        this._onBuilderOpened = () => {
+          var _a, _b;
+          try {
+            (_b = (_a = state_default2) == null ? void 0 : _a.init) == null ? void 0 : _b.call(_a);
+          } catch (_) {
+          }
+          this._scheduleRender("builder-opened");
+        };
+      if (!this._onTabChanged)
+        this._onTabChanged = () => this._scheduleRender("tab-changed");
+      document.removeEventListener("cg:quals:catalog-updated", this._onCatalogUpdated);
+      document.addEventListener("cg:quals:catalog-updated", this._onCatalogUpdated);
+      document.removeEventListener("cg:builder:opened", this._onBuilderOpened);
+      document.addEventListener("cg:builder:opened", this._onBuilderOpened);
+      document.removeEventListener("cg:tab:changed", this._onTabChanged);
+      document.addEventListener("cg:tab:changed", this._onTabChanged);
+      if ($20 && $20.fn) {
+        $20(document).off("cg:quals:catalog-updated.cgqualui cg:builder:opened.cgqualui cg:tab:changed.cgqualui").on("cg:quals:catalog-updated.cgqualui", this._onCatalogUpdated).on("cg:builder:opened.cgqualui", this._onBuilderOpened).on("cg:tab:changed.cgqualui", this._onTabChanged);
+      }
+    },
+    _installObserver() {
+      if (this._observer)
+        return;
+      if (typeof MutationObserver === "undefined" || typeof document === "undefined")
+        return;
+      this._lastModalPresent = !!modalRoot2();
+      this._observer = new MutationObserver(() => {
+        const present = !!modalRoot2();
+        if (present !== this._lastModalPresent) {
+          this._lastModalPresent = present;
+          if (present)
+            this._scheduleRender("modal-opened");
+          return;
+        }
+      });
+      this._observer.observe(document.body, { childList: true, subtree: true });
+    },
+    render() {
+      const modal = modalRoot2();
+      if (!modal)
+        return;
+      removeLegacyQualUIs(modal);
+      const wrap = ensureBaseLanguageContainer(modal);
+      if (!wrap)
+        return;
+      const control = wrap.querySelector(".cg-base-language-control");
+      if (!control)
+        return;
+      renderLanguageSelect(control);
+    }
+  };
+  W2.CG_QualUI = QualUI;
+  var ui_default = QualUI;
+
   // assets/js/src/core/index.js
   function cgGlobal() {
     if (typeof globalThis !== "undefined")
@@ -4772,51 +5908,99 @@
   }
   var G = cgGlobal();
   var LOADS_KEY = "__CG_CORE_BUNDLE_LOADS__";
-  var BOOT_KEY = "__CG_CORE_BOOTED__";
+  var BOOTED_KEY = "__CG_CORE_BOOTED__";
+  var BOOTING_KEY = "__CG_CORE_BOOTING__";
+  var BOOT_SCHEDULED_KEY = "__CG_CORE_BOOT_SCHEDULED__";
   var INITCORE_KEY = "__CG_INITCORE_RAN__";
   G[LOADS_KEY] = (G[LOADS_KEY] || 0) + 1;
   console.log(`[Core] bundle loaded (#${G[LOADS_KEY]})`);
+  function onDomReadyOnce(fn) {
+    if (typeof document === "undefined") {
+      fn();
+      return;
+    }
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", fn, { once: true });
+    } else {
+      fn();
+    }
+  }
   var Core = {
     init(reason = "auto") {
       const g = cgGlobal();
-      if (g[BOOT_KEY])
+      if (g[BOOTED_KEY])
         return;
-      g[BOOT_KEY] = true;
-      console.log("[Core] init() called");
-      try {
-        main_default.init();
-      } catch (err2) {
-        console.error("[Core] MainAPI.init() failed", err2);
-        throw err2;
+      if (g[BOOTING_KEY])
+        return;
+      if (g[BOOT_SCHEDULED_KEY])
+        return;
+      const run = () => {
+        if (g[BOOTED_KEY])
+          return;
+        if (g[BOOTING_KEY])
+          return;
+        g[BOOT_SCHEDULED_KEY] = false;
+        g[BOOTING_KEY] = true;
+        console.log(`[Core] init() starting (${reason})`);
+        try {
+          main_default.init();
+        } catch (err) {
+          console.error("[Core] MainAPI.init() failed", err);
+          g[BOOTING_KEY] = false;
+          g[BOOT_SCHEDULED_KEY] = false;
+          try {
+            delete g[BOOTED_KEY];
+          } catch (_) {
+            g[BOOTED_KEY] = false;
+          }
+          throw err;
+        }
+        try {
+          if (ui_default && typeof ui_default.init === "function")
+            ui_default.init();
+        } catch (err) {
+          console.error("[Core] QualUI.init() failed", err);
+        }
+        g[BOOTING_KEY] = false;
+        g[BOOTED_KEY] = true;
+        console.log("[Core] init() complete");
+      };
+      if (typeof document !== "undefined" && document.readyState === "loading") {
+        g[BOOT_SCHEDULED_KEY] = true;
+        document.addEventListener("DOMContentLoaded", run, { once: true });
+        return;
       }
+      run();
     }
   };
-  function bootOnce() {
-    Core.init("domready");
-  }
-  if (typeof document !== "undefined") {
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", bootOnce, { once: true });
-    } else {
-      bootOnce();
-    }
+  try {
+    onDomReadyOnce(() => Core.init("domready"));
+  } catch (err) {
+    console.error("[Core] auto-boot failed", err);
   }
   function initCore() {
     const g = cgGlobal();
     if (g[INITCORE_KEY])
       return;
     g[INITCORE_KEY] = true;
-    Core.init("initCore");
-    try {
-      skills_default.init();
-    } catch (err2) {
-      console.error("[Core] SkillsModule.init() failed", err2);
-    }
+    const run = () => {
+      try {
+        Core.init("initCore");
+      } catch (_) {
+      }
+      try {
+        skills_default.init();
+      } catch (err) {
+        console.error("[Core] SkillsModule.init() failed", err);
+      }
+    };
+    onDomReadyOnce(run);
   }
   if (typeof window !== "undefined") {
     window.SpeciesAPI = api_default;
     window.CG_Core = Core;
     window.CG_initCore = initCore;
+    window.CG_QualUI = ui_default;
   }
 })();
 //# sourceMappingURL=core.bundle.js.map
