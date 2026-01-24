@@ -282,10 +282,12 @@ const SummaryAPI = {
     document.addEventListener('change', this.__cg_auto_handler, true);
   },
 
+  // CG HARDEN: namespaced export click
+
   bindExportButton() {
     $(document)
-      .off('click', '#cg-export-pdf')
-      .on('click', '#cg-export-pdf', e => {
+      .off('click.cg', '#cg-export-pdf')
+      .on('click.cg', '#cg-export-pdf', e => {
         e.preventDefault();
         console.log('[SummaryAPI] Export to PDF clicked');
 

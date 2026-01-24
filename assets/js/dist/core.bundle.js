@@ -610,8 +610,21 @@
       }
       emitRefresh("resync");
     }
-    document.addEventListener("cg:builder:opened", resync);
-    document.addEventListener("cg:character:loaded", resync);
+    try {
+      window.__CG_EVT__ = window.__CG_EVT__ || {};
+      if (window.__CG_EVT__.giftsStateResync) {
+        document.removeEventListener("cg:builder:opened", window.__CG_EVT__.giftsStateResync);
+        document.removeEventListener("cg:character:loaded", window.__CG_EVT__.giftsStateResync);
+      }
+    } catch (_) {
+    }
+    try {
+      window.__CG_EVT__ = window.__CG_EVT__ || {};
+      window.__CG_EVT__.giftsStateResync = resync;
+      document.addEventListener("cg:builder:opened", window.__CG_EVT__.giftsStateResync);
+      document.addEventListener("cg:character:loaded", window.__CG_EVT__.giftsStateResync);
+    } catch (_) {
+    }
   })();
   window.CG_FreeChoicesState = State;
   var state_default = State;
@@ -4877,8 +4890,9 @@
       document.addEventListener("input", this.__cg_auto_handler, true);
       document.addEventListener("change", this.__cg_auto_handler, true);
     },
+    // CG HARDEN: namespaced export click
     bindExportButton() {
-      $15(document).off("click", "#cg-export-pdf").on("click", "#cg-export-pdf", (e) => {
+      $15(document).off("click.cg", "#cg-export-pdf").on("click.cg", "#cg-export-pdf", (e) => {
         e.preventDefault();
         console.log("[SummaryAPI] Export to PDF clicked");
         const sheetHtml = document.getElementById("cg-summary-sheet").outerHTML;

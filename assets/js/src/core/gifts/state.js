@@ -202,9 +202,23 @@ const State = {
     // Non-new: still ensure Traits reacts to hydrated state
     emitRefresh('resync');
   }
+// CG HARDEN: idempotent native listeners (gifts/state resync)
+// Use a stable handler reference so we can remove old listeners if this module is evaluated twice.
+try {
+  window.__CG_EVT__ = window.__CG_EVT__ || {};
+  if (window.__CG_EVT__.giftsStateResync) {
+    document.removeEventListener('cg:builder:opened',  window.__CG_EVT__.giftsStateResync);
+    document.removeEventListener('cg:character:loaded', window.__CG_EVT__.giftsStateResync);
+  }
+} catch (_) {}
 
-  document.addEventListener('cg:builder:opened', resync);
-  document.addEventListener('cg:character:loaded', resync);
+try {
+  window.__CG_EVT__ = window.__CG_EVT__ || {};
+  window.__CG_EVT__.giftsStateResync = resync;
+  document.addEventListener('cg:builder:opened',  window.__CG_EVT__.giftsStateResync);
+  document.addEventListener('cg:character:loaded', window.__CG_EVT__.giftsStateResync);
+} catch (_) {}
+
 })();
 
 window.CG_FreeChoicesState = State;
