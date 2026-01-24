@@ -46,3 +46,10 @@ Last updated: 2026-01-19 05:07:32Z
 - Shell gotcha: with `set -u`, avoid `${var}` in strings unless var is defined (e.g. echoing `cg-free-choice-${i}` can crash with `unbound variable`). Use single quotes or remove `$`.
 - [2026-01-19 04:36:45Z] Lesson: detached npm builds must cd to an absolute path expanded BEFORE bash -lc runs. Using cd '$CG' inside bash -lc fails because inner shell lacks $CG, runs in HOME, and npm reports Missing script: build:core.
 - [2026-01-19 05:07:32Z] Lesson: when reading bg build results, derive RC from the newest LOG timestamp (LOG->TS->RC). Don’t ls -t *.rc separately or you’ll accidentally read an older rc.
+## 2026-01-24 21:37:12Z — core.bundle.js 404 caused by permissions
+
+- **Cause:** `assets/js/dist/core.bundle.js` ended up with `0600` (`-rw-------`) (e.g., after an atomic write). Apache may surface this as **404**.
+- **Symptom:** Builder won’t open; browser shows `core.bundle.js` **404 / ERR_ABORTED**.
+- **Fix:** `chmod 0755 assets assets/js assets/js/dist` and `chmod 0644 assets/js/dist/core.bundle.js assets/js/dist/core.bundle.js.map`; confirm with `curl -I` → 200/304.
+- **Prevention:** npm `postbuild:core` / `postbuild:css` chmod hooks to enforce web-readable perms after builds.
+
