@@ -22,6 +22,13 @@ const SummaryAPI = {
         // Still refresh summary from current builder state on repeated calls
         if (typeof window !== 'undefined' && window.FormBuilderAPI && typeof window.FormBuilderAPI.getData === 'function') {
           this.renderSummary(window.FormBuilderAPI.getData() || {});
+            // Keep Summary bindings alive even on repeated init() calls
+            try { this.bindExportButton();
+
+      // Live updates: keep #cg-summary-sheet in sync while typing on other tabs
+      this.bindLiveUpdates(); } catch (_) {}
+            try { this.bindLiveUpdates(); } catch (_) {}
+
         }
       } catch (_) {}
       return;
@@ -33,7 +40,10 @@ const SummaryAPI = {
     // 1) Render all summary sections
     this.renderSummary(data);
 
-    // 2) Wire up the Export to PDF button
+    
+
+      // CG HARDEN: auto-render on form changes
+      this.bindAutoRender();// 2) Wire up the Export to PDF button
     this.bindExportButton();
   },
 
@@ -175,10 +185,103 @@ const SummaryAPI = {
     // Inject all HTML
     $sheet.html(html);
   },
+  // CG HARDEN: live summary updates across tabs
+  bindLiveUpdates() {
+    // One-time binding
+    if (this.__cg_live_bound) return;
+    this.__cg_live_bound = true;
+  
+    const sel = '#cg-modal input, #cg-modal select, #cg-modal textarea';
+    const self = this;
+  
+    function scheduleRender(e) {
+      try {
+        // Only if the summary sheet exists in DOM
+        if (!document.getElementById('cg-summary-sheet')) return;
+  
+        const t = e && e.target;
+        if (!t) return;
+  
+        // Ignore anything inside the summary sheet itself (avoid feedback loops)
+        if (t.closest && t.closest('#cg-summary-sheet')) return;
+  
+        clearTimeout(self.__cg_live_timer);
+        self.__cg_live_timer = setTimeout(() => {
+          try {
+            const data = (FormBuilderAPI && typeof FormBuilderAPI.getData === 'function')
+              ? (FormBuilderAPI.getData() || {})
+              : ((window.FormBuilderAPI && typeof window.FormBuilderAPI.getData === 'function')
+                ? (window.FormBuilderAPI.getData() || {})
+                : {});
+            self.renderSummary(data);
+          } catch (err) {
+            console.warn('[SummaryAPI] live update failed', err);
+          }
+        }, 200);
+      } catch (_) {}
+    }
+  
+    // Delegated + namespaced (idempotent)
+    $(document)
+      .off('input.cgSummary change.cgSummary', sel)
+      .on('input.cgSummary change.cgSummary', sel, scheduleRender);
+  
+    // First sync (in case user already typed before Summary tab was opened)
+    try { this.renderSummary(FormBuilderAPI.getData() || {}); } catch (_) {}
+  },
+
 
   /**
    * Open a new window, inject the summary + CSS, and print it.
    */
+
+  // CG HARDEN: bindAutoRender (live summary updates)
+  // - Debounced re-render so typing doesn't spam heavy DOM work.
+  _scheduleRender(delayMs = 150) {
+    try {
+      if (this.__cg_render_timer) clearTimeout(this.__cg_render_timer);
+      this.__cg_render_timer = setTimeout(() => {
+        this.__cg_render_timer = null;
+        try {
+          const data = (typeof FormBuilderAPI !== 'undefined' && FormBuilderAPI.getData)
+            ? (FormBuilderAPI.getData() || {})
+            : (window.FormBuilderAPI?.getData?.() || {});
+          this.renderSummary(data);
+        } catch (_) {}
+      }, delayMs);
+    } catch (_) {}
+  },
+
+  bindAutoRender() {
+    // Idempotent: bind only once per page-load
+    if (this.__cg_autobound) return;
+    this.__cg_autobound = true;
+
+    // Remove old listeners if they exist (paranoia / hot reload)
+    try {
+      if (this.__cg_auto_handler) {
+        document.removeEventListener('input',  this.__cg_auto_handler, true);
+        document.removeEventListener('change', this.__cg_auto_handler, true);
+      }
+    } catch (_) {}
+
+    this.__cg_auto_handler = (e) => {
+      try {
+        const t = e && e.target;
+        if (!t) return;
+        const modal = document.getElementById('cg-modal');
+        if (!modal || !modal.contains(t)) return;
+
+        // input = typing (debounce a bit), change = selects/radios (render sooner)
+        const isChange = (e.type === 'change');
+        this._scheduleRender(isChange ? 0 : 150);
+      } catch (_) {}
+    };
+
+    document.addEventListener('input',  this.__cg_auto_handler, true);
+    document.addEventListener('change', this.__cg_auto_handler, true);
+  },
+
   bindExportButton() {
     $(document)
       .off('click', '#cg-export-pdf')

@@ -4658,6 +4658,15 @@
         try {
           if (typeof window !== "undefined" && window.FormBuilderAPI && typeof window.FormBuilderAPI.getData === "function") {
             this.renderSummary(window.FormBuilderAPI.getData() || {});
+            try {
+              this.bindExportButton();
+              this.bindLiveUpdates();
+            } catch (_) {
+            }
+            try {
+              this.bindLiveUpdates();
+            } catch (_) {
+            }
           }
         } catch (_) {
         }
@@ -4667,6 +4676,7 @@
       const data = formBuilder_default.getData();
       console.log("[SummaryAPI] init \u2014 builder state:", data);
       this.renderSummary(data);
+      this.bindAutoRender();
       this.bindExportButton();
     },
     /**
@@ -4785,9 +4795,88 @@
       }
       $sheet.html(html);
     },
+    // CG HARDEN: live summary updates across tabs
+    bindLiveUpdates() {
+      if (this.__cg_live_bound)
+        return;
+      this.__cg_live_bound = true;
+      const sel = "#cg-modal input, #cg-modal select, #cg-modal textarea";
+      const self = this;
+      function scheduleRender(e) {
+        try {
+          if (!document.getElementById("cg-summary-sheet"))
+            return;
+          const t = e && e.target;
+          if (!t)
+            return;
+          if (t.closest && t.closest("#cg-summary-sheet"))
+            return;
+          clearTimeout(self.__cg_live_timer);
+          self.__cg_live_timer = setTimeout(() => {
+            try {
+              const data = formBuilder_default && typeof formBuilder_default.getData === "function" ? formBuilder_default.getData() || {} : window.FormBuilderAPI && typeof window.FormBuilderAPI.getData === "function" ? window.FormBuilderAPI.getData() || {} : {};
+              self.renderSummary(data);
+            } catch (err) {
+              console.warn("[SummaryAPI] live update failed", err);
+            }
+          }, 200);
+        } catch (_) {
+        }
+      }
+      $15(document).off("input.cgSummary change.cgSummary", sel).on("input.cgSummary change.cgSummary", sel, scheduleRender);
+      try {
+        this.renderSummary(formBuilder_default.getData() || {});
+      } catch (_) {
+      }
+    },
     /**
      * Open a new window, inject the summary + CSS, and print it.
      */
+    // CG HARDEN: bindAutoRender (live summary updates)
+    // - Debounced re-render so typing doesn't spam heavy DOM work.
+    _scheduleRender(delayMs = 150) {
+      try {
+        if (this.__cg_render_timer)
+          clearTimeout(this.__cg_render_timer);
+        this.__cg_render_timer = setTimeout(() => {
+          var _a, _b;
+          this.__cg_render_timer = null;
+          try {
+            const data = typeof formBuilder_default !== "undefined" && formBuilder_default.getData ? formBuilder_default.getData() || {} : ((_b = (_a = window.FormBuilderAPI) == null ? void 0 : _a.getData) == null ? void 0 : _b.call(_a)) || {};
+            this.renderSummary(data);
+          } catch (_) {
+          }
+        }, delayMs);
+      } catch (_) {
+      }
+    },
+    bindAutoRender() {
+      if (this.__cg_autobound)
+        return;
+      this.__cg_autobound = true;
+      try {
+        if (this.__cg_auto_handler) {
+          document.removeEventListener("input", this.__cg_auto_handler, true);
+          document.removeEventListener("change", this.__cg_auto_handler, true);
+        }
+      } catch (_) {
+      }
+      this.__cg_auto_handler = (e) => {
+        try {
+          const t = e && e.target;
+          if (!t)
+            return;
+          const modal = document.getElementById("cg-modal");
+          if (!modal || !modal.contains(t))
+            return;
+          const isChange = e.type === "change";
+          this._scheduleRender(isChange ? 0 : 150);
+        } catch (_) {
+        }
+      };
+      document.addEventListener("input", this.__cg_auto_handler, true);
+      document.addEventListener("change", this.__cg_auto_handler, true);
+    },
     bindExportButton() {
       $15(document).off("click", "#cg-export-pdf").on("click", "#cg-export-pdf", (e) => {
         e.preventDefault();
@@ -4830,6 +4919,9 @@
   try {
     if (typeof window !== "undefined") {
       window.SummaryAPI = window.SummaryAPI || api_default3;
+      if (window.SummaryAPI && typeof window.SummaryAPI.bindAutoRender === "function") {
+        window.SummaryAPI.bindAutoRender();
+      }
     }
   } catch (_) {
   }
