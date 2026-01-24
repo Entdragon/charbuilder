@@ -4654,6 +4654,16 @@
      * Entry point when the Summary tab is shown.
      */
     init() {
+      if (this.__cg_inited) {
+        try {
+          if (typeof window !== "undefined" && window.FormBuilderAPI && typeof window.FormBuilderAPI.getData === "function") {
+            this.renderSummary(window.FormBuilderAPI.getData() || {});
+          }
+        } catch (_) {
+        }
+        return;
+      }
+      this.__cg_inited = true;
       const data = formBuilder_default.getData();
       console.log("[SummaryAPI] init \u2014 builder state:", data);
       this.renderSummary(data);

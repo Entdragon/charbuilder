@@ -15,6 +15,18 @@ const SummaryAPI = {
    * Entry point when the Summary tab is shown.
    */
   init() {
+    // CG HARDEN: make init() idempotent
+    // builder-refresh may call init() many times; this prevents duplicate bindings.
+    if (this.__cg_inited) {
+      try {
+        // Still refresh summary from current builder state on repeated calls
+        if (typeof window !== 'undefined' && window.FormBuilderAPI && typeof window.FormBuilderAPI.getData === 'function') {
+          this.renderSummary(window.FormBuilderAPI.getData() || {});
+        }
+      } catch (_) {}
+      return;
+    }
+    this.__cg_inited = true;
     const data = FormBuilderAPI.getData();
     console.log('[SummaryAPI] init — builder state:', data);
 
