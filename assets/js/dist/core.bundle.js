@@ -444,109 +444,13 @@
   }
   var api_default2 = CareerAPI;
 
-  // assets/js/src/core/quals/catalog.js
-  var TYPES = ["language", "literacy", "insider", "mystic", "piety"];
-  function stripDiacritics(s) {
-    return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  }
-  function canon(s) {
-    return stripDiacritics(String(s || "")).trim().replace(/\s+/g, " ").toLowerCase();
-  }
-  function matchCategoryLine(text) {
-    const m = String(text || "").trim().match(/^(Language|Literacy|Insider|Mystic|Piety)\s*:\s*(.+)\s*$/i);
-    if (!m)
-      return null;
-    const type = canon(m[1]);
-    const value = String(m[2] || "").trim();
-    if (!type || !value)
-      return null;
-    const key = canon(value);
-    if (!key)
-      return null;
-    return { type, value, key };
-  }
-  function buildQualCatalogFromGifts(gifts = []) {
-    const catalog = /* @__PURE__ */ Object.create(null);
-    TYPES.forEach((t) => catalog[t] = /* @__PURE__ */ Object.create(null));
-    (Array.isArray(gifts) ? gifts : []).forEach((g) => {
-      var _a, _b;
-      const rs = (_b = (_a = g == null ? void 0 : g.requires_special) != null ? _a : g == null ? void 0 : g.ct_gifts_requires_special) != null ? _b : "";
-      const hit = matchCategoryLine(rs);
-      if (!hit || !catalog[hit.type])
-        return;
-      const bucket = catalog[hit.type];
-      if (!bucket[hit.key]) {
-        bucket[hit.key] = { key: hit.key, forms: /* @__PURE__ */ Object.create(null), count: 0 };
-      }
-      bucket[hit.key].count += 1;
-      bucket[hit.key].forms[hit.value] = (bucket[hit.key].forms[hit.value] || 0) + 1;
-    });
-    const out = /* @__PURE__ */ Object.create(null);
-    TYPES.forEach((type) => {
-      out[type] = Object.values(catalog[type]).map((entry) => {
-        const forms = entry.forms || {};
-        let bestLabel = Object.keys(forms)[0] || entry.key;
-        let bestCount = -1;
-        for (const k of Object.keys(forms)) {
-          const c = forms[k] || 0;
-          if (c > bestCount) {
-            bestCount = c;
-            bestLabel = k;
-          }
-        }
-        return { type, key: entry.key, label: bestLabel, count: entry.count };
-      }).sort((a, b) => a.label.localeCompare(b.label));
-    });
-    return out;
-  }
-
-  // assets/js/src/core/quals/index.js
-  var Quals = {
-    _catalog: { language: [], literacy: [], insider: [], mystic: [], piety: [] },
-    updateFromGifts(gifts) {
-      this._catalog = buildQualCatalogFromGifts(gifts || []);
-      window.CG_QualCatalog = this._catalog;
-    },
-    get(type) {
-      const t = String(type || "").toLowerCase();
-      return this._catalog[t] || [];
-    },
-    debugTop(limit = 30) {
-      const rows = [];
-      Object.keys(this._catalog || {}).forEach((type) => {
-        (this._catalog[type] || []).forEach((o) => {
-          rows.push({ type, count: o.count, text: `${type}: ${o.label}` });
-        });
-      });
-      rows.sort((a, b) => b.count - a.count);
-      const top = rows.slice(0, limit);
-      console.table(top);
-      return top;
-    }
-  };
-  window.CG_Quals = Quals;
-  var quals_default = Quals;
-
   // assets/js/src/core/gifts/state.js
   var $3 = window.jQuery;
-  function emit(name, detail) {
-    try {
-      document.dispatchEvent(new CustomEvent(name, { detail }));
-    } catch (_) {
-    }
-    try {
-      if ($3)
-        $3(document).trigger(name, [detail]);
-    } catch (_) {
-    }
-  }
   var State = {
     // currently selected free-gift IDs (strings; '' means none)
     selected: ["", "", ""],
     // master list of gift objects (must include id; may include ct_gifts_manifold, etc.)
     gifts: [],
-    // guard: avoid rebuilding quals catalog repeatedly for the same sized list
-    _qualCatalogBuiltForCount: 0,
     /**
      * Pull any previously saved free_gifts/freeGifts from the builder’s data.
      */
@@ -559,68 +463,27 @@
         normalized.push("");
       this.selected = normalized;
     },
-    _persistSelected() {
-      try {
-        if (formBuilder_default && formBuilder_default._data) {
-          formBuilder_default._data.free_gifts = this.selected.slice();
-          formBuilder_default._data.freeGifts = this.selected.slice();
-        }
-      } catch (_) {
-      }
-    },
-    _emitSelectedChanged(reason = "set") {
-      const detail = { reason: String(reason || ""), free_gifts: this.selected.slice() };
-      emit("cg:free-gift:changed", detail);
-      emit("cg:free-gifts:changed", detail);
-      emit("cg:traits:changed", detail);
-    },
     /**
      * Update one slot and persist back into FormBuilder’s live _data (when available).
-     * IMPORTANT: emits cg:free-gift:changed so downstream UIs update.
      */
     set(index, id) {
-      const i = Number(index);
-      if (!Number.isFinite(i) || i < 0 || i > 2)
-        return;
-      this.selected[i] = id ? String(id) : "";
-      this._persistSelected();
-      this._emitSelectedChanged("set-slot");
+      this.selected[index] = id ? String(id) : "";
+      if (formBuilder_default && formBuilder_default._data) {
+        formBuilder_default._data.free_gifts = this.selected.slice();
+        formBuilder_default._data.freeGifts = this.selected.slice();
+      }
     },
     /**
      * Replace selected list (normalized), and persist into builder _data if present.
-     * IMPORTANT: emits cg:free-gift:changed so downstream UIs update.
      */
     setSelected(list = []) {
       const normalized = (Array.isArray(list) ? list : []).slice(0, 3).map((v) => v ? String(v) : "");
       while (normalized.length < 3)
         normalized.push("");
       this.selected = normalized;
-      this._persistSelected();
-      this._emitSelectedChanged("set-selected");
-    },
-    /**
-     * Internal: rebuild the Qualifications catalog from the current master gifts list,
-     * then notify the Quals UI to re-render its dropdown options.
-     */
-    _updateQualCatalog(reason = "setList") {
-      try {
-        const q = quals_default || window.CG_Quals;
-        if (!q || typeof q.updateFromGifts !== "function")
-          return;
-        const n = Array.isArray(this.gifts) ? this.gifts.length : 0;
-        if (!n)
-          return;
-        if (this._qualCatalogBuiltForCount === n && window.CG_QualCatalog)
-          return;
-        q.updateFromGifts(this.gifts);
-        this._qualCatalogBuiltForCount = n;
-        const detail = {
-          source: "gifts-state",
-          reason: String(reason || ""),
-          count: n
-        };
-        emit("cg:quals:catalog-updated", detail);
-      } catch (_) {
+      if (formBuilder_default && formBuilder_default._data) {
+        formBuilder_default._data.free_gifts = this.selected.slice();
+        formBuilder_default._data.freeGifts = this.selected.slice();
       }
     },
     /**
@@ -641,7 +504,6 @@
           this.gifts.push(__spreadProps(__spreadValues({}, g), { id: idStr }));
         }
       });
-      this._updateQualCatalog("setList");
     },
     /**
      * Find one gift object by its ID.
@@ -697,13 +559,30 @@
       } catch (_) {
       }
     }
+    function emitRefresh(reason) {
+      try {
+        const detail = { reason: String(reason || ""), free_gifts: State.selected.slice() };
+        document.dispatchEvent(new CustomEvent("cg:free-gift:changed", { detail }));
+        document.dispatchEvent(new CustomEvent("cg:traits:changed", { detail }));
+        document.dispatchEvent(new CustomEvent("cg:species:changed", { detail: { id: "" } }));
+        document.dispatchEvent(new CustomEvent("cg:career:changed", { detail: { id: "" } }));
+        if ($3) {
+          $3(document).trigger("cg:free-gift:changed", [detail]);
+          $3(document).trigger("cg:traits:changed", [detail]);
+          $3(document).trigger("cg:species:changed", [{ id: "" }]);
+          $3(document).trigger("cg:career:changed", [{ id: "" }]);
+        }
+      } catch (_) {
+      }
+    }
     function clearSelectIfPresent(selector) {
       try {
         const el = document.querySelector(selector);
         if (!el)
           return false;
-        if (String(el.value || "") !== "")
+        if (String(el.value || "") !== "") {
           el.value = "";
+        }
         el.dispatchEvent(new Event("change", { bubbles: true }));
         return true;
       } catch (_) {
@@ -725,12 +604,11 @@
         setTimeout(() => {
           clearSelectIfPresent("#cg-species");
           clearSelectIfPresent("#cg-career");
-          emit("cg:species:changed", { id: "" });
-          emit("cg:career:changed", { id: "" });
+          emitRefresh("new-character-reset");
         }, 0);
         return;
       }
-      State._emitSelectedChanged("resync");
+      emitRefresh("resync");
     }
     document.addEventListener("cg:builder:opened", resync);
     document.addEventListener("cg:character:loaded", resync);
@@ -783,15 +661,8 @@
     const d = readFormBuilderData();
     const extraIds = readSelectedExtraCareerIds();
     let assigned = 0;
-    function slotSelect(slot) {
-      try {
-        return document.querySelector(`#cg-free-choices select.cg-free-gift-select[data-slot="${slot}"]`) || document.getElementById(`cg-free-choice-${slot}`);
-      } catch (_) {
-        return document.getElementById(`cg-free-choice-${slot}`);
-      }
-    }
     for (let slot = 0; slot <= 2; slot++) {
-      const sel = slotSelect(slot);
+      const sel = document.getElementById(`cg-free-choice-${slot}`);
       if (!sel)
         continue;
       if (String(sel.value || "") !== "223")
@@ -830,18 +701,13 @@
         if (!id || id === "0")
           return;
         const gift = state_default.getGiftById(id);
-        if (gift) {
-          const traitKey2 = BOOSTS[gift.id];
-          if (!traitKey2)
-            return;
-          const count = parseInt(gift.ct_gifts_manifold, 10) || 1;
-          map[traitKey2] = (map[traitKey2] || 0) + count;
+        if (!gift)
           return;
-        }
-        const traitKey = BOOSTS[id];
+        const traitKey = BOOSTS[gift.id];
         if (!traitKey)
           return;
-        map[traitKey] = (map[traitKey] || 0) + 1;
+        const count = parseInt(gift.ct_gifts_manifold, 10) || 1;
+        map[traitKey] = (map[traitKey] || 0) + count;
       }
       (Array.isArray(state_default.selected) ? state_default.selected : []).forEach(addGift);
       const sp = api_default && api_default.currentProfile ? api_default.currentProfile : null;
@@ -864,15 +730,15 @@
       return map;
     },
     enforceCounts() {
-      const $21 = window.jQuery;
+      const $20 = window.jQuery;
       const freq = { d8: 0, d6: 0, d4: 0 };
-      $21(".cg-trait-select").each(function() {
-        const v = $21(this).val();
+      $20(".cg-trait-select").each(function() {
+        const v = $20(this).val();
         if (v && v in freq)
           freq[v]++;
       });
-      $21(".cg-trait-select").each(function() {
-        const $sel = $21(this);
+      $20(".cg-trait-select").each(function() {
+        const $sel = $20(this);
         const current = $sel.val() || "";
         let options = '<option value="">\u2014 Select \u2014</option>';
         DICE_TYPES.forEach((die) => {
@@ -885,13 +751,13 @@
       });
     },
     updateAdjustedDisplays() {
-      const $21 = window.jQuery;
+      const $20 = window.jQuery;
       const boosts = this.calculateBoostMap();
       const totalCareerBoosts = boosts.trait_career || 0;
       const careerCounts = computeCareerBoostCounts(totalCareerBoosts);
       const careerMainBoosts = careerCounts.main || 0;
       TRAITS.forEach((traitKey) => {
-        const $sel = $21(`#cg-${traitKey}`);
+        const $sel = $20(`#cg-${traitKey}`);
         if (!$sel.length)
           return;
         const rawBase = String($sel.val() || "").trim();
@@ -903,11 +769,11 @@
         if (rawBase) {
           badgeText = count > 0 ? boostedDie(rawBase, count) : rawBase;
         }
-        const $badge = $21(`#cg-${traitKey}-badge`);
+        const $badge = $20(`#cg-${traitKey}-badge`);
         if ($badge.length)
           $badge.text(badgeText);
         if (traitKey === "trait_career") {
-          const $pb = $21("#cg-profile-trait_career-badge");
+          const $pb = $20("#cg-profile-trait_career-badge");
           if ($pb.length)
             $pb.text(badgeText);
         }
@@ -922,11 +788,11 @@
             note = origBoosts === 1 ? "Increased by gift" : `Increased by gift \xD7${origBoosts}`;
           }
         }
-        const $note = $21(`#cg-${traitKey}-adjusted`);
+        const $note = $20(`#cg-${traitKey}-adjusted`);
         if ($note.length)
           $note.text(note);
         if (traitKey === "trait_career") {
-          const $pn = $21("#cg-profile-trait_career-note");
+          const $pn = $20("#cg-profile-trait_career-note");
           if ($pn.length)
             $pn.text(note);
         }
@@ -1629,18 +1495,9 @@
       }
       d.skillMarks = mergedMarks;
       this._data.skillMarks = mergedMarks;
-      const readFreeChoiceSlot = (slot) => {
-        try {
-          const sel = document.querySelector(`#cg-free-choices select.cg-free-gift-select[data-slot="${slot}"]`) || document.querySelector(`select.cg-free-gift-select[data-slot="${slot}"]`) || document.getElementById(`cg-free-choice-${slot}`);
-          if (sel)
-            return String(sel.value || "");
-        } catch (_) {
-        }
-        return readIfExists(`#cg-free-choice-${slot}`);
-      };
-      const s0 = readFreeChoiceSlot(0);
-      const s1 = readFreeChoiceSlot(1);
-      const s2 = readFreeChoiceSlot(2);
+      const s0 = readIfExists("#cg-free-choice-0");
+      const s1 = readIfExists("#cg-free-choice-1");
+      const s2 = readIfExists("#cg-free-choice-2");
       let freeArr;
       if (s0 !== void 0 || s1 !== void 0 || s2 !== void 0) {
         freeArr = normalize32([s0 != null ? s0 : "", s1 != null ? s1 : "", s2 != null ? s2 : ""]);
@@ -2217,19 +2074,9 @@
   }
 
   // assets/js/src/core/career/extra.js
-  var $8 = window.jQuery || null;
-  var LOG = (...a) => {
-    try {
-      console.log("[ExtraCareers]", ...a);
-    } catch (_) {
-    }
-  };
-  var WARN = (...a) => {
-    try {
-      console.warn("[ExtraCareers]", ...a);
-    } catch (_) {
-    }
-  };
+  var $8 = window.jQuery;
+  var LOG = (...a) => console.log("[ExtraCareers]", ...a);
+  var WARN = (...a) => console.warn("[ExtraCareers]", ...a);
   var EXTRA_CAREER_GIFT_ID = "184";
   var INC_TRAIT_CAREER_GIFT_ID = "223";
   var BOOST_TARGET_KEY_LEGACY = "increased_trait_career_target";
@@ -2301,35 +2148,29 @@
       try {
         window.__CG_EVT__ = window.__CG_EVT__ || {};
         const EVT = window.__CG_EVT__;
-        const names = [
-          ["cg:builder:opened", "extraCareersOnBuilderOpened"],
-          ["cg:character:loaded", "extraCareersOnCharacterLoaded"],
-          ["cg:free-gift:changed", "extraCareersOnFreeGiftChanged"],
-          ["cg:tab:changed", "extraCareersOnTabChanged"]
-        ];
-        names.forEach(([evtName, key]) => {
-          if (EVT[key]) {
-            try {
-              document.removeEventListener(evtName, EVT[key]);
-            } catch (_) {
-            }
-          }
-        });
+        if (EVT.extraCareersOnBuilderOpened) {
+          document.removeEventListener("cg:builder:opened", EVT.extraCareersOnBuilderOpened);
+        }
+        if (EVT.extraCareersOnCharacterLoaded) {
+          document.removeEventListener("cg:character:loaded", EVT.extraCareersOnCharacterLoaded);
+        }
+        if (EVT.extraCareersOnFreeGiftChanged) {
+          document.removeEventListener("cg:free-gift:changed", EVT.extraCareersOnFreeGiftChanged);
+        }
         EVT.extraCareersOnBuilderOpened = () => ExtraCareers.render();
         EVT.extraCareersOnCharacterLoaded = () => ExtraCareers.render();
         EVT.extraCareersOnFreeGiftChanged = () => ExtraCareers.render();
-        EVT.extraCareersOnTabChanged = () => ExtraCareers.render();
         document.addEventListener("cg:builder:opened", EVT.extraCareersOnBuilderOpened);
         document.addEventListener("cg:character:loaded", EVT.extraCareersOnCharacterLoaded);
         document.addEventListener("cg:free-gift:changed", EVT.extraCareersOnFreeGiftChanged);
-        document.addEventListener("cg:tab:changed", EVT.extraCareersOnTabChanged);
       } catch (e) {
-        WARN("idempotent native listener bind failed", e);
+        try {
+          WARN("idempotent native listener bind failed", e);
+        } catch (_) {
+        }
       }
       if ($8) {
-        $8(document).off("cg:species:changed.cgextra cg:career:changed.cgextra cg:free-gift:changed.cgextra cg:tab:changed.cgextra").on("cg:species:changed.cgextra cg:career:changed.cgextra cg:free-gift:changed.cgextra cg:tab:changed.cgextra", () => {
-          this.render();
-        });
+        $8(document).off("cg:species:changed.cgextra cg:career:changed.cgextra cg:free-gift:changed.cgextra").on("cg:species:changed.cgextra cg:career:changed.cgextra cg:free-gift:changed.cgextra", () => this.render());
       }
       setTimeout(() => this.render(), 0);
     },
@@ -2610,20 +2451,11 @@
         if (key === this._eligibleCacheKey && Array.isArray(this._eligibleCache)) {
           return this._eligibleCache.slice();
         }
-        let list = [];
-        try {
-          list = yield api_default2.getList(false);
-        } catch (_) {
-          list = [];
-        }
+        let list = yield api_default2.getList(false);
         let careers = Array.isArray(list) ? list : [];
         const listHasExt = careers.some((c) => c && (c.gift_id_1 != null || c.gift_id_2 != null || c.gift_id_3 != null || c.skill_one != null || c.skill_two != null || c.skill_three != null));
         if (!listHasExt) {
-          try {
-            list = yield api_default2.getList(true);
-          } catch (_) {
-            list = [];
-          }
+          list = yield api_default2.getList(true);
           careers = Array.isArray(list) ? list : [];
         }
         const results = [];
@@ -2745,7 +2577,7 @@
     _findFreeChoiceSelectsFor223() {
       const out = [];
       for (let i = 0; i <= 2; i++) {
-        const el = document.querySelector(`#cg-free-choices select.cg-free-gift-select[data-slot="${i}"]`) || document.querySelector(`select.cg-free-gift-select[data-slot="${i}"]`) || document.getElementById(`cg-free-choice-${i}`);
+        const el = document.getElementById(`cg-free-choice-${i}`);
         if (el && String(el.value || "") === INC_TRAIT_CAREER_GIFT_ID)
           out.push({ slot: i, el });
       }
@@ -2991,13 +2823,17 @@
         var _a;
         const wrap = this._getWrap();
         const traitsWrap = this._getTraitsWrap();
+        if (!wrap && traitsWrap) {
+          traitsWrap.innerHTML = "";
+          for (let i = 0; i <= 2; i++)
+            this._removeBoostTargetInlineUIForSlot(i);
+          return;
+        }
+        if (!wrap)
+          return;
         const unlocks = this._countExtraCareerUnlocks();
-        let selectedForUI = this._readExtraCareersFromData().filter((x) => x && x.id);
-        this._ensureBoostTargetInlineUI(selectedForUI);
-        setTimeout(() => this._ensureBoostTargetInlineUI(selectedForUI), 0);
         if (!unlocks) {
-          if (wrap)
-            wrap.innerHTML = "";
+          wrap.innerHTML = "";
           if (traitsWrap)
             traitsWrap.innerHTML = "";
           this._writeExtraCareersToData([]);
@@ -3006,8 +2842,7 @@
             this._removeBoostTargetInlineUIForSlot(i);
           return;
         }
-        if (wrap)
-          wrap.innerHTML = `<div class="cg-extra-careers-loading">Loading eligible extra careers\u2026</div>`;
+        wrap.innerHTML = `<div class="cg-extra-careers-loading">Loading eligible extra careers\u2026</div>`;
         let eligible = [];
         try {
           eligible = yield this._computeEligibleCareers();
@@ -3038,8 +2873,6 @@
         const boostCounts = this._computeCareerBoostCounts(selectedWithId);
         const baseTrait = this._careerTraitBaseDie();
         this._renderTraitsTabExtraCareerDice(unlocks, selected, baseTrait, boostCounts);
-        if (!wrap)
-          return;
         const otherSelectedIds = (slot) => {
           const set = /* @__PURE__ */ new Set();
           selected.forEach((x, i) => {
@@ -3403,6 +3236,89 @@
     getBoostedDie: service_default.getBoostedDie.bind(service_default)
   };
 
+  // assets/js/src/core/quals/catalog.js
+  var TYPES = ["language", "literacy", "insider", "mystic", "piety"];
+  function stripDiacritics(s) {
+    return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  }
+  function canon(s) {
+    return stripDiacritics(String(s || "")).trim().replace(/\s+/g, " ").toLowerCase();
+  }
+  function matchCategoryLine(text) {
+    const m = String(text || "").trim().match(/^(Language|Literacy|Insider|Mystic|Piety)\s*:\s*(.+)\s*$/i);
+    if (!m)
+      return null;
+    const type = canon(m[1]);
+    const value = String(m[2] || "").trim();
+    if (!type || !value)
+      return null;
+    const key = canon(value);
+    if (!key)
+      return null;
+    return { type, value, key };
+  }
+  function buildQualCatalogFromGifts(gifts = []) {
+    const catalog = /* @__PURE__ */ Object.create(null);
+    TYPES.forEach((t) => catalog[t] = /* @__PURE__ */ Object.create(null));
+    (Array.isArray(gifts) ? gifts : []).forEach((g) => {
+      var _a, _b;
+      const rs = (_b = (_a = g == null ? void 0 : g.requires_special) != null ? _a : g == null ? void 0 : g.ct_gifts_requires_special) != null ? _b : "";
+      const hit = matchCategoryLine(rs);
+      if (!hit || !catalog[hit.type])
+        return;
+      const bucket = catalog[hit.type];
+      if (!bucket[hit.key]) {
+        bucket[hit.key] = { key: hit.key, forms: /* @__PURE__ */ Object.create(null), count: 0 };
+      }
+      bucket[hit.key].count += 1;
+      bucket[hit.key].forms[hit.value] = (bucket[hit.key].forms[hit.value] || 0) + 1;
+    });
+    const out = /* @__PURE__ */ Object.create(null);
+    TYPES.forEach((type) => {
+      out[type] = Object.values(catalog[type]).map((entry) => {
+        const forms = entry.forms || {};
+        let bestLabel = Object.keys(forms)[0] || entry.key;
+        let bestCount = -1;
+        for (const k of Object.keys(forms)) {
+          const c = forms[k] || 0;
+          if (c > bestCount) {
+            bestCount = c;
+            bestLabel = k;
+          }
+        }
+        return { type, key: entry.key, label: bestLabel, count: entry.count };
+      }).sort((a, b) => a.label.localeCompare(b.label));
+    });
+    return out;
+  }
+
+  // assets/js/src/core/quals/index.js
+  var Quals = {
+    _catalog: { language: [], literacy: [], insider: [], mystic: [], piety: [] },
+    updateFromGifts(gifts) {
+      this._catalog = buildQualCatalogFromGifts(gifts || []);
+      window.CG_QualCatalog = this._catalog;
+    },
+    get(type) {
+      const t = String(type || "").toLowerCase();
+      return this._catalog[t] || [];
+    },
+    debugTop(limit = 30) {
+      const rows = [];
+      Object.keys(this._catalog || {}).forEach((type) => {
+        (this._catalog[type] || []).forEach((o) => {
+          rows.push({ type, count: o.count, text: `${type}: ${o.label}` });
+        });
+      });
+      rows.sort((a, b) => b.count - a.count);
+      const top = rows.slice(0, limit);
+      console.table(top);
+      return top;
+    }
+  };
+  window.CG_Quals = Quals;
+  var quals_default = Quals;
+
   // assets/js/src/core/quals/state.js
   var TYPES2 = ["language", "literacy", "insider", "mystic", "piety"];
   function stripDiacritics2(s) {
@@ -3470,9 +3386,9 @@
         src.qualifications = payload;
       }
       document.dispatchEvent(new CustomEvent("cg:quals:changed", { detail: { qualifications: payload } }));
-      const $21 = window.jQuery;
-      if ($21)
-        $21(document).trigger("cg:quals:changed", [{ qualifications: payload }]);
+      const $20 = window.jQuery;
+      if ($20)
+        $20(document).trigger("cg:quals:changed", [{ qualifications: payload }]);
     },
     getAll() {
       return JSON.parse(JSON.stringify(this.data || emptyData()));
@@ -4168,9 +4084,9 @@
       document.removeEventListener("cg:builder:opened", rerenderSoon);
       document.addEventListener("cg:builder:opened", rerenderSoon);
       try {
-        const W3 = window;
-        W3.__CG_EVT__ = W3.__CG_EVT__ || {};
-        const EVT = W3.__CG_EVT__;
+        const W2 = window;
+        W2.__CG_EVT__ = W2.__CG_EVT__ || {};
+        const EVT = W2.__CG_EVT__;
         if (EVT.freeChoicesRerenderSoon) {
           try {
             document.removeEventListener("cg:tab:changed", EVT.freeChoicesRerenderSoon);
@@ -4430,6 +4346,10 @@
     }
     try {
       free_choices_default.init();
+    } catch (_) {
+    }
+    try {
+      free_choices_default.refresh({ force: false });
     } catch (_) {
     }
   }
@@ -4730,8 +4650,6 @@
   var TRAITS3 = service_default.TRAITS;
   var MARK_DIE2 = { 1: "d4", 2: "d6", 3: "d8" };
   var SummaryAPI = {
-    _autoBound: false,
-    _renderTimer: null,
     /**
      * Entry point when the Summary tab is shown.
      */
@@ -4740,108 +4658,6 @@
       console.log("[SummaryAPI] init \u2014 builder state:", data);
       this.renderSummary(data);
       this.bindExportButton();
-      this.bindAutoRender();
-      try {
-        if (!window.SummaryAPI)
-          window.SummaryAPI = this;
-      } catch (_) {
-      }
-    },
-    _hasSheet() {
-      return !!document.getElementById("cg-summary-sheet");
-    },
-    _scheduleRender(reason = "event", overrides = null) {
-      if (!this._hasSheet())
-        return;
-      if (this._renderTimer)
-        clearTimeout(this._renderTimer);
-      this._renderTimer = setTimeout(() => {
-        this._renderTimer = null;
-        let data = {};
-        try {
-          data = formBuilder_default.getData ? formBuilder_default.getData() || {} : {};
-        } catch (e) {
-          console.warn("[SummaryAPI] getData() failed:", e);
-          data = {};
-        }
-        if (overrides && typeof overrides === "object") {
-          if (overrides.speciesProfile)
-            data.__speciesProfile = overrides.speciesProfile;
-          if (overrides.careerProfile)
-            data.__careerProfile = overrides.careerProfile;
-        }
-        try {
-          this.renderSummary(data);
-        } catch (e) {
-          console.error("[SummaryAPI] renderSummary failed:", e);
-        }
-      }, 50);
-    },
-    bindAutoRender() {
-      if (this._autoBound)
-        return;
-      this._autoBound = true;
-      const EVT = window.__CG_EVT__ = window.__CG_EVT__ || {};
-      if (EVT.summaryAutoRenderNative) {
-        try {
-          const fn = EVT.summaryAutoRenderNative;
-          [
-            "cg:builder:opened",
-            "cg:builder:rendered",
-            "cg:character:loaded",
-            "cg:species:changed",
-            "cg:career:changed",
-            "cg:traits:changed",
-            "cg:free-gift:changed",
-            "cg:extra-careers:changed",
-            "cg:tab:changed"
-          ].forEach((name) => document.removeEventListener(name, fn));
-        } catch (_) {
-        }
-      }
-      EVT.summaryAutoRenderNative = (e) => {
-        const name = e && e.type ? e.type : "event";
-        const detail = e && e.detail ? e.detail : null;
-        if (name === "cg:species:changed" && detail && detail.profile) {
-          this._scheduleRender(name, { speciesProfile: detail.profile });
-          return;
-        }
-        if (name === "cg:career:changed" && detail && detail.profile) {
-          this._scheduleRender(name, { careerProfile: detail.profile });
-          return;
-        }
-        this._scheduleRender(name);
-      };
-      [
-        "cg:builder:opened",
-        "cg:builder:rendered",
-        "cg:character:loaded",
-        "cg:species:changed",
-        "cg:career:changed",
-        "cg:traits:changed",
-        "cg:free-gift:changed",
-        "cg:extra-careers:changed",
-        "cg:tab:changed"
-      ].forEach((name) => document.addEventListener(name, EVT.summaryAutoRenderNative));
-      if ($15) {
-        $15(document).off(
-          "cg:builder:opened.cgsummary cg:builder:rendered.cgsummary cg:character:loaded.cgsummary cg:species:changed.cgsummary cg:career:changed.cgsummary cg:traits:changed.cgsummary cg:free-gift:changed.cgsummary cg:extra-careers:changed.cgsummary cg:tab:changed.cgsummary"
-        ).on(
-          "cg:builder:opened.cgsummary cg:builder:rendered.cgsummary cg:character:loaded.cgsummary cg:species:changed.cgsummary cg:career:changed.cgsummary cg:traits:changed.cgsummary cg:free-gift:changed.cgsummary cg:extra-careers:changed.cgsummary cg:tab:changed.cgsummary",
-          (evt, payload) => {
-            const name = evt && evt.type ? evt.type : "event";
-            if (name === "cg:species:changed" && payload && payload.profile) {
-              this._scheduleRender(name, { speciesProfile: payload.profile });
-              return;
-            }
-            if (name === "cg:career:changed" && payload && payload.profile) {
-              this._scheduleRender(name, { careerProfile: payload.profile });
-              return;
-            }
-            this._scheduleRender(name);
-          }
-        );
-      }
     },
     /**
      * Build and inject the full summary into #cg-summary-sheet.
@@ -4855,8 +4671,8 @@
       const goals = [1, 2, 3].map((i) => data[`goal${i}`] || "\u2014").filter((v) => v !== "\u2014").join(", ") || "\u2014";
       const description = data.description || "\u2014";
       const backstory = data.backstory || "\u2014";
-      const species = data.__speciesProfile || api_default.currentProfile || {};
-      const career = data.__careerProfile || api_default2.currentProfile || {};
+      const species = api_default.currentProfile || {};
+      const career = api_default2.currentProfile || {};
       const skills = window.CG_SKILLS_LIST || [];
       const marks = data.skillMarks || {};
       const battle = data.battle || [];
@@ -4931,8 +4747,8 @@
           <thead><tr><th>Skill</th><th>Dice Pool</th></tr></thead>
           <tbody>
     `;
-      const spIds = [species.skill_one, species.skill_two, species.skill_three].filter((v) => v != null && String(v).trim() !== "").map((v) => String(v));
-      const cpIds = [career.skill_one, career.skill_two, career.skill_three].filter((v) => v != null && String(v).trim() !== "").map((v) => String(v));
+      const spIds = [species.skill_one, species.skill_two, species.skill_three].map(String);
+      const cpIds = [career.skill_one, career.skill_two, career.skill_three].map(String);
       skills.forEach((skill) => {
         const id = String(skill.id);
         const sp = spIds.includes(id) ? "d4" : "";
@@ -4963,7 +4779,7 @@
      * Open a new window, inject the summary + CSS, and print it.
      */
     bindExportButton() {
-      $15(document).off("click.cgsummary", "#cg-export-pdf").on("click.cgsummary", "#cg-export-pdf", (e) => {
+      $15(document).off("click", "#cg-export-pdf").on("click", "#cg-export-pdf", (e) => {
         e.preventDefault();
         console.log("[SummaryAPI] Export to PDF clicked");
         const sheetHtml = document.getElementById("cg-summary-sheet").outerHTML;
@@ -5001,6 +4817,12 @@
   var api_default3 = SummaryAPI;
 
   // assets/js/src/core/summary/index.js
+  try {
+    if (typeof window !== "undefined") {
+      window.SummaryAPI = window.SummaryAPI || api_default3;
+    }
+  } catch (_) {
+  }
   var summary_default = {
     init() {
       api_default3.init();
@@ -5282,48 +5104,35 @@
 
   // assets/js/src/core/main/builder-events.js
   var $19 = window.jQuery;
-  var LOG4 = (...a) => {
-    try {
-      console.log("[BuilderEvents]", ...a);
-    } catch (_) {
-    }
-  };
-  var ERR2 = (...a) => {
-    try {
-      console.error("[BuilderEvents]", ...a);
-    } catch (_) {
-    }
-  };
+  var LOG4 = (...a) => console.log("[BuilderEvents]", ...a);
   var SEL = {
     species: '#cg-species, select[name="species"], select[data-cg="species"], .cg-species',
     career: '#cg-career,  select[name="career"],  select[data-cg="career"],  .cg-career'
   };
   function firstSelect(selector) {
-    const $inModal = $19("#cg-modal").find(selector);
-    if ($inModal.length)
-      return $inModal.first();
-    const $any = $19(selector);
-    return $any.length ? $any.first() : null;
+    const $sel = $19(selector);
+    const $modalSel = $19("#cg-modal").find(selector);
+    if ($modalSel.length)
+      return $modalSel.first();
+    return $sel.length ? $sel.first() : null;
   }
   function setSelectValue($sel, want) {
-    if (!$sel || !$sel.length || want == null)
+    if (!$sel || !$sel.length || !want)
       return false;
     const valRaw = String(want);
     const val = valRaw.trim();
-    if (!val)
-      return false;
-    const dice = /* @__PURE__ */ new Set(["d4", "d6", "d8", "d10", "d12", "\u2013", "-", "\u2014"]);
+    const dice = /* @__PURE__ */ new Set(["d4", "d6", "d8", "d10", "d12", "\u2013", "-"]);
     if (dice.has(val.toLowerCase()))
       return false;
     $sel.val(val);
-    if (String($sel.val() || "").trim() === val)
+    if (String($sel.val() || "") === val)
       return true;
     const $byText = $sel.find("option").filter(function() {
-      return String($19(this).text() || "").trim() === val;
+      return $19(this).text() === val;
     }).first();
     if ($byText.length) {
       $sel.val($byText.val());
-      return String($sel.val() || "").trim() === String($byText.val() || "").trim();
+      return true;
     }
     return false;
   }
@@ -5331,20 +5140,13 @@
     try {
       if (!toTab)
         return;
-      const from = fromTab ? String(fromTab) : "";
-      const to = String(toTab);
-      if (from && from === to)
+      if (fromTab && String(fromTab) === String(toTab))
         return;
-      const W3 = window;
-      W3.__CG_EVT__ = W3.__CG_EVT__ || {};
-      const EVT = W3.__CG_EVT__;
-      const now = Date.now();
-      const last = EVT.__lastTabChanged || null;
-      if (last && last.to === to && now - last.ts < 100)
-        return;
-      EVT.__lastTabChanged = { from, to, ts: now };
       document.dispatchEvent(new CustomEvent("cg:tab:changed", {
-        detail: { from, to }
+        detail: {
+          from: fromTab ? String(fromTab) : "",
+          to: String(toTab)
+        }
       }));
     } catch (_) {
     }
@@ -5361,24 +5163,19 @@
     const beforeVal = String($sel.val() || "").trim();
     try {
       const Index = kind === "species" ? species_default : career_default;
-      if (Index == null ? void 0 : Index.init)
-        Index.init();
       if (Index == null ? void 0 : Index.refresh)
-        Index.refresh({ force: !!force });
+        Index.refresh();
+      else if (Index == null ? void 0 : Index.render)
+        Index.render();
     } catch (_) {
     }
     const ensureOptions = () => {
-      try {
-        const optCount = el && el.options ? el.options.length : 0;
-        if (optCount > 1 && !force)
-          return $19.Deferred().resolve().promise();
-        const API = kind === "species" ? api_default : api_default2;
-        if (typeof (API == null ? void 0 : API.populateSelect) !== "function")
-          return $19.Deferred().resolve().promise();
-        return API.populateSelect(el, { force: !!force });
-      } catch (_) {
+      if (el.options.length > 1 && !force)
         return $19.Deferred().resolve().promise();
-      }
+      const API = kind === "species" ? api_default : api_default2;
+      if (typeof (API == null ? void 0 : API.populateSelect) !== "function")
+        return $19.Deferred().resolve().promise();
+      return API.populateSelect(el, { force: !!force });
     };
     const doApply = () => {
       var _a, _b;
@@ -5396,15 +5193,12 @@
         }
       }
     };
-    return $19.Deferred((dfr) => {
+    return $19.Deferred(function(dfr) {
       setTimeout(() => {
-        Promise.resolve(ensureOptions()).then(() => {
+        ensureOptions().then(() => {
           doApply();
           dfr.resolve();
-        }).catch(() => {
-          doApply();
-          dfr.resolve();
-        });
+        }).catch(() => dfr.resolve());
       }, 0);
     }).promise();
   }
@@ -5419,44 +5213,19 @@
       hydrateSpeciesAndCareer({ force: true });
     }, 0);
   }
-  function parseWpResponse(resp) {
-    var _a;
-    let parsed = resp;
-    if (typeof resp === "string") {
-      try {
-        parsed = JSON.parse(resp);
-      } catch (_) {
-        parsed = resp;
-      }
-    }
-    if (parsed && typeof parsed === "object" && Object.prototype.hasOwnProperty.call(parsed, "success")) {
-      if (parsed.success !== true)
-        return null;
-      return (_a = parsed.data) != null ? _a : null;
-    }
-    return parsed;
-  }
   function bindUIEvents() {
     var _a, _b;
     LOG4("bindUIEvents() called");
-    try {
-      formBuilder_default._data = formBuilder_default._data || {};
-    } catch (_) {
-    }
     try {
       (_b = (_a = gifts_default) == null ? void 0 : _a.init) == null ? void 0 : _b.call(_a);
     } catch (_) {
     }
     $19(document).off("input.cg change.cg", "#cg-modal input, #cg-modal select, #cg-modal textarea").on("input.cg change.cg", "#cg-modal input, #cg-modal select, #cg-modal textarea", function() {
-      try {
-        builder_ui_default.markDirty();
-      } catch (_) {
-      }
+      builder_ui_default.markDirty();
       const $el = $19(this);
       if ($el.hasClass("skill-marks")) {
         const skillId = $el.data("skill-id");
         const val = parseInt($el.val(), 10) || 0;
-        formBuilder_default._data = formBuilder_default._data || {};
         formBuilder_default._data.skillMarks = formBuilder_default._data.skillMarks || {};
         formBuilder_default._data.skillMarks[skillId] = val;
         return;
@@ -5465,7 +5234,6 @@
       if (!id)
         return;
       const key = id.replace(/^cg-/, "");
-      formBuilder_default._data = formBuilder_default._data || {};
       formBuilder_default._data[key] = $el.val();
     });
     $19(document).off("click.cg", "#cg-open-builder").on("click.cg", "#cg-open-builder", (e) => {
@@ -5484,15 +5252,11 @@
       e.preventDefault();
       $19("#cg-modal-splash").removeClass("visible").addClass("cg-hidden");
       builder_ui_default.openBuilder({ isNew: true, payload: {} });
-      formBuilder_default._data = formBuilder_default._data || {};
       formBuilder_default._data.skillMarks = {};
       formBuilder_default._data.species = "";
       formBuilder_default._data.career = "";
-      try {
-        if (window.CG_FreeChoicesState) {
-          window.CG_FreeChoicesState.selected = ["", "", ""];
-        }
-      } catch (_) {
+      if (window.CG_FreeChoicesState) {
+        window.CG_FreeChoicesState.selected = ["", "", ""];
       }
     });
     $19(document).off("click.cg", "#cg-load-splash").on("click.cg", "#cg-load-splash", (e) => {
@@ -5503,9 +5267,12 @@
         return;
       }
       formBuilder_default.fetchCharacter(charId).done((resp) => {
-        const record = parseWpResponse(resp);
+        console.log("\u{1F50E} [AJAX] raw cg_get_character response:", resp);
+        const parsed = typeof resp === "string" ? JSON.parse(resp) : resp;
+        console.log("\u{1F50D} [AJAX] parsed.data:", parsed == null ? void 0 : parsed.data);
+        const record = (parsed == null ? void 0 : parsed.data) || parsed;
         if (!record || !record.id) {
-          alert("Character could not be loaded. Check console for details.");
+          alert("Character could not be loaded.");
           return;
         }
         $19("#cg-modal-splash").removeClass("visible").addClass("cg-hidden");
@@ -5524,18 +5291,12 @@
       e.preventDefault();
       const fromTab = $19("#cg-modal .cg-tabs li.active").data("tab");
       const tabName = $19(this).data("tab");
-      if (!tabName)
-        return;
       $19("#cg-modal .cg-tabs li").removeClass("active");
       $19(this).addClass("active");
       $19(".tab-panel").removeClass("active");
       $19(`#${tabName}`).addClass("active");
       emitTabChanged(fromTab, tabName);
-      try {
-        refreshTab();
-      } catch (err) {
-        ERR2("refreshTab failed", err);
-      }
+      refreshTab();
       setTimeout(() => {
         hydrateSpeciesAndCareer({ force: false });
       }, 0);
@@ -5582,322 +5343,6 @@
   };
   var main_default = MainAPI;
 
-  // assets/js/src/core/quals/ui.js
-  function cgWin2() {
-    if (typeof globalThis !== "undefined")
-      return globalThis;
-    if (typeof window !== "undefined")
-      return window;
-    return {};
-  }
-  var W2 = cgWin2();
-  var $20 = W2 && W2.jQuery ? W2.jQuery : null;
-  function modalRoot2() {
-    if (typeof document === "undefined")
-      return null;
-    return document.querySelector("#cg-modal") || null;
-  }
-  function stripDiacritics4(s) {
-    return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  }
-  function canon4(s) {
-    return stripDiacritics4(String(s || "")).trim().replace(/\s+/g, " ").toLowerCase();
-  }
-  function uniqSorted(list) {
-    const seen = /* @__PURE__ */ new Set();
-    const out = [];
-    (Array.isArray(list) ? list : []).forEach((v) => {
-      const raw = String(v || "").trim().replace(/\s+/g, " ");
-      if (!raw)
-        return;
-      const k = canon4(raw);
-      if (!k || seen.has(k))
-        return;
-      seen.add(k);
-      out.push(raw);
-    });
-    out.sort((a, b) => canon4(a).localeCompare(canon4(b)));
-    return out;
-  }
-  function removeLegacyQualUIs(modal) {
-    if (!modal)
-      return;
-    try {
-      const oldBox = modal.querySelector("#cg-quals-box");
-      if (oldBox)
-        oldBox.remove();
-    } catch (_) {
-    }
-    try {
-      const oldInline = modal.querySelector("#cg-quals-inline");
-      if (oldInline)
-        oldInline.remove();
-    } catch (_) {
-    }
-  }
-  function getAllGiftsList2() {
-    const FC = W2.CG_FreeChoices;
-    if (FC && Array.isArray(FC._allGifts) && FC._allGifts.length)
-      return FC._allGifts;
-    const GS = W2.CG_GiftsState || W2.CG_Gifts || null;
-    if (GS) {
-      if (Array.isArray(GS._allGifts) && GS._allGifts.length)
-        return GS._allGifts;
-      if (Array.isArray(GS.allGifts) && GS.allGifts.length)
-        return GS.allGifts;
-      if (Array.isArray(GS.gifts) && GS.gifts.length)
-        return GS.gifts;
-    }
-    return [];
-  }
-  function getRequiresSpecial(g) {
-    var _a, _b, _c;
-    return String(
-      (_c = (_b = (_a = g == null ? void 0 : g.requires_special) != null ? _a : g == null ? void 0 : g.ct_gifts_requires_special) != null ? _b : g == null ? void 0 : g.ct_requires_special) != null ? _c : ""
-    );
-  }
-  function extractLanguagesFromGifts(gifts) {
-    const out = [];
-    (Array.isArray(gifts) ? gifts : []).forEach((g) => {
-      const rs = getRequiresSpecial(g);
-      if (!rs)
-        return;
-      const lines = String(rs).split(/\r?\n|•|·/g).map((s) => String(s || "").trim()).filter(Boolean);
-      lines.forEach((line) => {
-        const m = line.match(/^language\s*:\s*(.+)$/i);
-        if (!m)
-          return;
-        const rest = String(m[1] || "").trim();
-        if (!rest)
-          return;
-        const restCanon = canon4(rest);
-        if (restCanon === "any" || restCanon === "varies" || restCanon === "see text")
-          return;
-        rest.split(/\s*[;,]\s*/g).map((x) => String(x || "").trim()).filter(Boolean).forEach((x) => out.push(x));
-      });
-    });
-    return uniqSorted(out);
-  }
-  function findBaseLanguageHost(modal) {
-    if (!modal)
-      return null;
-    const cgLanguage = modal.querySelector("#cg-language");
-    if (cgLanguage)
-      return cgLanguage;
-    const direct = modal.querySelector("#cg-free-language") || modal.querySelector("#cg-language-choice") || modal.querySelector("#cg-gift-language");
-    if (direct)
-      return direct;
-    const freeChoices = modal.querySelector("#cg-free-choices") || document.querySelector("#cg-free-choices");
-    if (freeChoices && freeChoices.parentElement)
-      return freeChoices.parentElement;
-    return null;
-  }
-  function ensureBaseLanguageContainer(modal) {
-    const host = findBaseLanguageHost(modal);
-    if (!host)
-      return null;
-    let wrap = modal.querySelector("#cg-base-language");
-    if (!wrap) {
-      wrap = document.createElement("div");
-      wrap.id = "cg-base-language";
-      wrap.className = "cg-gift-item cg-base-language";
-      wrap.innerHTML = `
-      <div class="cg-base-language-inner" style="display:flex; flex-direction:column; gap:6px;">
-        <div style="font-weight:600;">Language</div>
-        <div class="cg-base-language-control"></div>
-      </div>
-    `;
-    }
-    try {
-      if (host.classList && host.classList.contains("cg-gift-item")) {
-        if (!host.querySelector("#cg-base-language"))
-          host.appendChild(wrap);
-      } else {
-        const freeChoices = modal.querySelector("#cg-free-choices") || document.querySelector("#cg-free-choices");
-        if (freeChoices && freeChoices.parentElement) {
-          if (wrap.parentNode !== freeChoices.parentElement) {
-            freeChoices.parentElement.insertBefore(wrap, freeChoices);
-          }
-        } else if (wrap.parentNode !== host) {
-          host.appendChild(wrap);
-        }
-      }
-    } catch (_) {
-    }
-    return wrap;
-  }
-  function getLanguageLabelsForBaseSelect() {
-    const rawItems = quals_default && typeof quals_default.get === "function" ? quals_default.get("language") || [] : [];
-    const labelsFromCatalog = [];
-    (Array.isArray(rawItems) ? rawItems : []).forEach((it) => {
-      var _a, _b;
-      if (typeof it === "string") {
-        const s2 = String(it || "").trim();
-        if (s2)
-          labelsFromCatalog.push(s2);
-        return;
-      }
-      const s = String((_b = (_a = it == null ? void 0 : it.label) != null ? _a : it == null ? void 0 : it.key) != null ? _b : "").trim();
-      if (s)
-        labelsFromCatalog.push(s);
-    });
-    const uniqCatalog = uniqSorted(labelsFromCatalog);
-    if (uniqCatalog.length)
-      return uniqCatalog;
-    const gifts = getAllGiftsList2();
-    const langs = extractLanguagesFromGifts(gifts);
-    return langs;
-  }
-  function renderLanguageSelect(container) {
-    if (!container)
-      return;
-    const labels = getLanguageLabelsForBaseSelect();
-    const cur = state_default2 && typeof state_default2.get === "function" ? (state_default2.get("language") || [])[0] || "" : "";
-    const finalLabels = uniqSorted([cur, ...labels]);
-    const opts = finalLabels.map((label) => {
-      const sel2 = canon4(cur) === canon4(label) ? " selected" : "";
-      const safe = String(label).replace(/"/g, "&quot;");
-      return `<option value="${safe}"${sel2}>${label}</option>`;
-    }).join("\n");
-    container.innerHTML = `
-    <select id="cg-base-language-select" style="min-width:220px;">
-      <option value="">\u2014 Select Language \u2014</option>
-      ${opts}
-    </select>
-  `;
-    const sel = container.querySelector("#cg-base-language-select");
-    if (!sel)
-      return;
-    sel.addEventListener("change", (e) => {
-      var _a, _b;
-      const nextVal = String(e.target.value || "").trim();
-      try {
-        (_b = (_a = state_default2) == null ? void 0 : _a.init) == null ? void 0 : _b.call(_a);
-      } catch (_) {
-      }
-      try {
-        const current = state_default2 && typeof state_default2.get === "function" ? (state_default2.get("language") || []).slice() : [];
-        const rest = current.filter((v) => canon4(v) !== canon4(nextVal) && canon4(v) !== canon4(current[0] || ""));
-        const next = nextVal ? [nextVal, ...rest] : rest;
-        if (state_default2 && state_default2.data && Array.isArray(state_default2.data.language) && typeof state_default2.persist === "function") {
-          state_default2.data.language = next;
-          state_default2.persist();
-        } else {
-          if (current[0])
-            state_default2.remove("language", current[0]);
-          if (nextVal)
-            state_default2.add("language", nextVal);
-        }
-      } catch (_) {
-      }
-    });
-  }
-  var Existing2 = W2.CG_QualUI;
-  var QualUI = Existing2 && Existing2.__cg_singleton ? Existing2 : {
-    __cg_singleton: true,
-    _inited: false,
-    _observer: null,
-    _lastModalPresent: null,
-    _renderScheduled: false,
-    _rendering: false,
-    _onCatalogUpdated: null,
-    _onBuilderOpened: null,
-    _onTabChanged: null,
-    init() {
-      var _a, _b;
-      if (this._inited)
-        return;
-      this._inited = true;
-      try {
-        (_b = (_a = state_default2) == null ? void 0 : _a.init) == null ? void 0 : _b.call(_a);
-      } catch (_) {
-      }
-      this._bindEvents();
-      this._installObserver();
-      this._scheduleRender("init");
-    },
-    _scheduleRender(reason = "") {
-      if (this._renderScheduled)
-        return;
-      this._renderScheduled = true;
-      const run = () => {
-        this._renderScheduled = false;
-        if (this._rendering)
-          return;
-        this._rendering = true;
-        try {
-          this.render();
-        } catch (err) {
-          console.error("[QualUI] render failed", { reason }, err);
-        } finally {
-          this._rendering = false;
-        }
-      };
-      if (typeof requestAnimationFrame !== "undefined")
-        requestAnimationFrame(run);
-      else
-        setTimeout(run, 0);
-    },
-    _bindEvents() {
-      if (typeof document === "undefined")
-        return;
-      if (!this._onCatalogUpdated)
-        this._onCatalogUpdated = () => this._scheduleRender("catalog-updated");
-      if (!this._onBuilderOpened)
-        this._onBuilderOpened = () => {
-          var _a, _b;
-          try {
-            (_b = (_a = state_default2) == null ? void 0 : _a.init) == null ? void 0 : _b.call(_a);
-          } catch (_) {
-          }
-          this._scheduleRender("builder-opened");
-        };
-      if (!this._onTabChanged)
-        this._onTabChanged = () => this._scheduleRender("tab-changed");
-      document.removeEventListener("cg:quals:catalog-updated", this._onCatalogUpdated);
-      document.addEventListener("cg:quals:catalog-updated", this._onCatalogUpdated);
-      document.removeEventListener("cg:builder:opened", this._onBuilderOpened);
-      document.addEventListener("cg:builder:opened", this._onBuilderOpened);
-      document.removeEventListener("cg:tab:changed", this._onTabChanged);
-      document.addEventListener("cg:tab:changed", this._onTabChanged);
-      if ($20 && $20.fn) {
-        $20(document).off("cg:quals:catalog-updated.cgqualui cg:builder:opened.cgqualui cg:tab:changed.cgqualui").on("cg:quals:catalog-updated.cgqualui", this._onCatalogUpdated).on("cg:builder:opened.cgqualui", this._onBuilderOpened).on("cg:tab:changed.cgqualui", this._onTabChanged);
-      }
-    },
-    _installObserver() {
-      if (this._observer)
-        return;
-      if (typeof MutationObserver === "undefined" || typeof document === "undefined")
-        return;
-      this._lastModalPresent = !!modalRoot2();
-      this._observer = new MutationObserver(() => {
-        const present = !!modalRoot2();
-        if (present !== this._lastModalPresent) {
-          this._lastModalPresent = present;
-          if (present)
-            this._scheduleRender("modal-opened");
-          return;
-        }
-      });
-      this._observer.observe(document.body, { childList: true, subtree: true });
-    },
-    render() {
-      const modal = modalRoot2();
-      if (!modal)
-        return;
-      removeLegacyQualUIs(modal);
-      const wrap = ensureBaseLanguageContainer(modal);
-      if (!wrap)
-        return;
-      const control = wrap.querySelector(".cg-base-language-control");
-      if (!control)
-        return;
-      renderLanguageSelect(control);
-    }
-  };
-  W2.CG_QualUI = QualUI;
-  var ui_default = QualUI;
-
   // assets/js/src/core/index.js
   function cgGlobal() {
     if (typeof globalThis !== "undefined")
@@ -5908,99 +5353,51 @@
   }
   var G = cgGlobal();
   var LOADS_KEY = "__CG_CORE_BUNDLE_LOADS__";
-  var BOOTED_KEY = "__CG_CORE_BOOTED__";
-  var BOOTING_KEY = "__CG_CORE_BOOTING__";
-  var BOOT_SCHEDULED_KEY = "__CG_CORE_BOOT_SCHEDULED__";
+  var BOOT_KEY = "__CG_CORE_BOOTED__";
   var INITCORE_KEY = "__CG_INITCORE_RAN__";
   G[LOADS_KEY] = (G[LOADS_KEY] || 0) + 1;
   console.log(`[Core] bundle loaded (#${G[LOADS_KEY]})`);
-  function onDomReadyOnce(fn) {
-    if (typeof document === "undefined") {
-      fn();
-      return;
-    }
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", fn, { once: true });
-    } else {
-      fn();
-    }
-  }
   var Core = {
     init(reason = "auto") {
       const g = cgGlobal();
-      if (g[BOOTED_KEY])
+      if (g[BOOT_KEY])
         return;
-      if (g[BOOTING_KEY])
-        return;
-      if (g[BOOT_SCHEDULED_KEY])
-        return;
-      const run = () => {
-        if (g[BOOTED_KEY])
-          return;
-        if (g[BOOTING_KEY])
-          return;
-        g[BOOT_SCHEDULED_KEY] = false;
-        g[BOOTING_KEY] = true;
-        console.log(`[Core] init() starting (${reason})`);
-        try {
-          main_default.init();
-        } catch (err) {
-          console.error("[Core] MainAPI.init() failed", err);
-          g[BOOTING_KEY] = false;
-          g[BOOT_SCHEDULED_KEY] = false;
-          try {
-            delete g[BOOTED_KEY];
-          } catch (_) {
-            g[BOOTED_KEY] = false;
-          }
-          throw err;
-        }
-        try {
-          if (ui_default && typeof ui_default.init === "function")
-            ui_default.init();
-        } catch (err) {
-          console.error("[Core] QualUI.init() failed", err);
-        }
-        g[BOOTING_KEY] = false;
-        g[BOOTED_KEY] = true;
-        console.log("[Core] init() complete");
-      };
-      if (typeof document !== "undefined" && document.readyState === "loading") {
-        g[BOOT_SCHEDULED_KEY] = true;
-        document.addEventListener("DOMContentLoaded", run, { once: true });
-        return;
+      g[BOOT_KEY] = true;
+      console.log("[Core] init() called");
+      try {
+        main_default.init();
+      } catch (err) {
+        console.error("[Core] MainAPI.init() failed", err);
+        throw err;
       }
-      run();
     }
   };
-  try {
-    onDomReadyOnce(() => Core.init("domready"));
-  } catch (err) {
-    console.error("[Core] auto-boot failed", err);
+  function bootOnce() {
+    Core.init("domready");
+  }
+  if (typeof document !== "undefined") {
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", bootOnce, { once: true });
+    } else {
+      bootOnce();
+    }
   }
   function initCore() {
     const g = cgGlobal();
     if (g[INITCORE_KEY])
       return;
     g[INITCORE_KEY] = true;
-    const run = () => {
-      try {
-        Core.init("initCore");
-      } catch (_) {
-      }
-      try {
-        skills_default.init();
-      } catch (err) {
-        console.error("[Core] SkillsModule.init() failed", err);
-      }
-    };
-    onDomReadyOnce(run);
+    Core.init("initCore");
+    try {
+      skills_default.init();
+    } catch (err) {
+      console.error("[Core] SkillsModule.init() failed", err);
+    }
   }
   if (typeof window !== "undefined") {
     window.SpeciesAPI = api_default;
     window.CG_Core = Core;
     window.CG_initCore = initCore;
-    window.CG_QualUI = ui_default;
   }
 })();
 //# sourceMappingURL=core.bundle.js.map

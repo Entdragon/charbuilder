@@ -110,6 +110,8 @@ function cg_register_enqueue_core_assets() {
 
     wp_localize_script('cg-core-bundle', 'CG_AJAX', [
         'ajax_url'     => admin_url('admin-ajax.php'),
+        'ajaxurl'      => admin_url('admin-ajax.php'),
+
         'nonce'        => $cg_nonce,
         'security'     => $cg_nonce,
         '_ajax_nonce'  => $cg_nonce,
@@ -157,7 +159,7 @@ function cg_register_enqueue_core_assets() {
   if(!w || !$ || !$.ajaxPrefilter) return;
 
   var env = w.CG_AJAX || {};
-  var url = env.ajax_url || w.ajaxurl || '/wp-admin/admin-ajax.php';
+  var url = env.ajaxurl || env.ajax_url || w.ajaxurl || '/wp-admin/admin-ajax.php';
   var gen = (env.security || env.nonce || env._ajax_nonce || w.CG_NONCE || '');
 
   function isAdminAjax(u){ return /admin-ajax\.php/.test(String(u||'')); }
