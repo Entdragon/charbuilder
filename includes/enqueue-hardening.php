@@ -158,6 +158,10 @@ function cg_register_enqueue_core_assets() {
 (function(w,$){
   if(!w || !$ || !$.ajaxPrefilter) return;
 
+  // CG HARDEN: idempotent ajaxPrefilter
+  if (w.__CG_AJAX_PREFILTER_INSTALLED__) return;
+  w.__CG_AJAX_PREFILTER_INSTALLED__ = true;
+
   var env = w.CG_AJAX || {};
   var url = env.ajaxurl || env.ajax_url || w.ajaxurl || '/wp-admin/admin-ajax.php';
   var gen = (env.security || env.nonce || env._ajax_nonce || w.CG_NONCE || '');
@@ -198,12 +202,14 @@ function cg_register_enqueue_core_assets() {
     var action = getActionFromData(options.data);
     if (!isCgAction(action)) return;
 
-    if (!gen) return;
+    var env2 = w.CG_AJAX || env || {};
+    var gen2 = (env2.security || env2.nonce || env2._ajax_nonce || w.CG_NONCE || gen || "");
+    if (!gen2) return;
 
-    if (typeof options.data === 'string') options.data = setNonceQS(options.data, gen);
+    if (typeof options.data === 'string') options.data = setNonceQS(options.data, gen2);
     else if (options.data && typeof options.data === 'object') {
-      options.data.security = gen; options.data.nonce = gen; options.data._ajax_nonce = gen;
-    } else options.data = setNonceQS('', gen);
+      options.data.security = gen2; options.data.nonce = gen2; options.data._ajax_nonce = gen2;
+    } else options.data = setNonceQS('', gen2);
   });
 })(window, window.jQuery);
 JS;
