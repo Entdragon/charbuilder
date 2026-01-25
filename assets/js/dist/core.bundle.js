@@ -2074,7 +2074,7 @@
         $7(document).trigger("cg:career:changed", [{ id: String(val), profile }]);
       });
     });
-    $7(document).off("cg:species:changed.careergifts").on("cg:species:changed.careergifts", _rerenderFromSpeciesChange);
+    $7(document).off("cg:species:changed.careergifts.cg").on("cg:species:changed.careergifts.cg", _rerenderFromSpeciesChange);
     try {
       window.__CG_EVT__ = window.__CG_EVT__ || {};
       if (window.__CG_EVT__.speciesChangedCareerGiftsNative) {

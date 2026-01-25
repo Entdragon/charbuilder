@@ -362,8 +362,8 @@ export default function bindCareerEvents() {
   // --- Species change: listen via BOTH jQuery + native CustomEvent ---
   // jQuery path (if Species module uses $(document).trigger(...))
   $(document)
-    .off('cg:species:changed.careergifts')
-    .on('cg:species:changed.careergifts', _rerenderFromSpeciesChange);
+    .off('cg:species:changed.careergifts.cg')
+    .on('cg:species:changed.careergifts.cg', _rerenderFromSpeciesChange);
 
   // Native path (if Species module uses document.dispatchEvent(new CustomEvent(...)))
   try {
