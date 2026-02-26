@@ -16,7 +16,14 @@ async function cg_login_user(req, res) {
     [username, username]
   );
 
-  if (!user || !verifyPassword(password, user.user_pass)) {
+  if (!user) {
+    console.log(`[CG] login: no user found for "${username}"`);
+    return res.json({ success: false, data: 'Invalid username or password.' });
+  }
+  const hashPrefix = (user.user_pass || '').slice(0, 12);
+  const passOk = verifyPassword(password, user.user_pass);
+  console.log(`[CG] login: user found, hash prefix="${hashPrefix}", passOk=${passOk}`);
+  if (!passOk) {
     return res.json({ success: false, data: 'Invalid username or password.' });
   }
 
