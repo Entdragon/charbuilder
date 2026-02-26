@@ -1980,7 +1980,7 @@
       </select>`;
       }
       li.push(
-        `<li class="cg-career-gift-line cg-career-gift-line--replace">
+        `<li class="cg-career-gift-line cg-career-gift-line--replace" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
         <strong>${labels[i - 1]}:</strong>
         <span class="cg-career-gift-dup-note">Duplicate: ${escapeHtml(baseName)} \u2192</span>
         ${selectHtml}
