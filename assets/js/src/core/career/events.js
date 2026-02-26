@@ -169,7 +169,6 @@ function renderCareerGiftsWithReplacements(profile) {
   const inc = increaseTraitGifts(all);
 
   if (!all.length) {
-    const labels = ['Career Gift One', 'Career Gift Two', 'Career Gift Three'];
     const li = [];
     for (let i = 1; i <= 3; i++) {
       const name = profile[`gift_${i}`] || '';
@@ -179,7 +178,7 @@ function renderCareerGiftsWithReplacements(profile) {
       const display = name ? String(name) : (gid ? `Gift #${gid}` : '');
       if (!display) continue;
 
-      li.push(`<li><strong>${labels[i-1]}:</strong> ${escapeHtml(mult > 1 ? `${display} × ${mult}` : display)}</li>`);
+      li.push(`<li>${escapeHtml(mult > 1 ? `${display} × ${mult}` : display)}</li>`);
     }
     $ul.html(li.join(''));
 
@@ -222,7 +221,7 @@ function renderCareerGiftsWithReplacements(profile) {
 
     if (!needsReplace) {
       const txt = mult > 1 ? `${baseName} × ${mult}` : baseName;
-      li.push(`<li><strong>${labels[i-1]}:</strong> ${escapeHtml(txt)}</li>`);
+      li.push(`<li>${escapeHtml(txt)}</li>`);
       continue;
     }
 

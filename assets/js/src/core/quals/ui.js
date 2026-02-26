@@ -191,24 +191,46 @@ function ensureBaseLanguageContainer(modal) {
   return wrap;
 }
 
+let _languageListCache = null;
+let _languageListLoading = false;
+
+function fetchLanguageList(onLoaded) {
+  if (_languageListCache !== null) {
+    if (onLoaded) onLoaded(_languageListCache);
+    return;
+  }
+  if (_languageListLoading) return;
+  _languageListLoading = true;
+
+  try {
+    const ajaxUrl = (W.CG_AJAX && W.CG_AJAX.ajax_url) ? W.CG_AJAX.ajax_url : '/api/ajax';
+    fetch(ajaxUrl, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'cg_get_language_list' }),
+    })
+      .then(r => r.json())
+      .then(json => {
+        _languageListLoading = false;
+        _languageListCache = (json && json.success && Array.isArray(json.data)) ? json.data : [];
+        if (onLoaded) onLoaded(_languageListCache);
+      })
+      .catch(() => {
+        _languageListLoading = false;
+        _languageListCache = [];
+        if (onLoaded) onLoaded(_languageListCache);
+      });
+  } catch (_) {
+    _languageListLoading = false;
+    _languageListCache = [];
+  }
+}
+
 function getLanguageLabelsForBaseSelect() {
-  // 1) Prefer the catalog (when it exists)
-  const rawItems = (Quals && typeof Quals.get === 'function') ? (Quals.get('language') || []) : [];
-  const labelsFromCatalog = [];
-  (Array.isArray(rawItems) ? rawItems : []).forEach(it => {
-    if (typeof it === 'string') {
-      const s = String(it || '').trim();
-      if (s) labelsFromCatalog.push(s);
-      return;
-    }
-    const s = String(it?.label ?? it?.key ?? '').trim();
-    if (s) labelsFromCatalog.push(s);
-  });
+  if (_languageListCache !== null && _languageListCache.length) return _languageListCache;
 
-  const uniqCatalog = uniqSorted(labelsFromCatalog);
-  if (uniqCatalog.length) return uniqCatalog;
-
-  // 2) Fallback: derive languages from gifts requires_special
+  // Fallback: derive languages from gifts requires_special (legacy path)
   const gifts = getAllGiftsList();
   const langs = extractLanguagesFromGifts(gifts);
   return langs;

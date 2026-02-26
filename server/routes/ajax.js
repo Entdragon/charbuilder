@@ -32,6 +32,7 @@ const ACTION_MAP = {
   cg_get_local_knowledge: giftsActions.cg_get_local_knowledge,
   cg_get_language_gift:   giftsActions.cg_get_language_gift,
   cg_get_free_gifts:      giftsActions.cg_get_free_gifts,
+  cg_get_language_list:   giftsActions.cg_get_language_list,
 
   cg_get_skills_list:   skillsActions.cg_get_skills_list,
   cg_get_skill_detail:  skillsActions.cg_get_skill_detail,

@@ -43,4 +43,26 @@ async function cg_get_free_gifts(req, res) {
   res.json({ success: true, data: rows });
 }
 
-module.exports = { cg_get_local_knowledge, cg_get_language_gift, cg_get_free_gifts };
+async function cg_get_language_list(req, res) {
+  const p = prefix();
+  const DEFAULT_LANGUAGES = [
+    'Calabrian', 'Common', 'Dwarven', 'Elven', 'Goblin', 'Hesperian',
+    'Kawtaw', 'Mordic', 'Old Calabrian', 'Orcish', 'Sylvan', 'Urathi',
+  ];
+  let fromDb = [];
+  try {
+    const rows = await query(
+      `SELECT DISTINCT language FROM ${p}character_records
+       WHERE language IS NOT NULL AND language <> ''
+       ORDER BY language ASC`
+    );
+    fromDb = rows.map(r => String(r.language || '').trim()).filter(Boolean);
+  } catch (_) {}
+
+  const merged = [...new Set([...DEFAULT_LANGUAGES, ...fromDb])].sort((a, b) =>
+    a.toLowerCase().localeCompare(b.toLowerCase())
+  );
+  res.json({ success: true, data: merged });
+}
+
+module.exports = { cg_get_local_knowledge, cg_get_language_gift, cg_get_free_gifts, cg_get_language_list };
