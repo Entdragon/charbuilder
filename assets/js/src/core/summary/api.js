@@ -82,6 +82,29 @@ const SummaryAPI = {
       try { extraCareers = JSON.parse(data.extra_careers).filter(ec => ec && ec.id); } catch (_) {}
     }
 
+    // Die step helper (shared with ExtraCareers)
+    const DIE_ORDER = ['d4','d6','d8','d10','d12'];
+    function stepDie(die, steps) {
+      const i = DIE_ORDER.indexOf(String(die || '').toLowerCase());
+      if (i === -1) return die || 'd4';
+      return DIE_ORDER[Math.min(DIE_ORDER.length - 1, i + (parseInt(steps, 10) || 0))];
+    }
+
+    // Count Gift-223 (Increased Trait: Career) boosts targeting a given career
+    function boostCountFor(careerId) {
+      let n = 0;
+      const target = String(careerId);
+      for (let slot = 0; slot <= 2; slot++) {
+        const v = data[`increased_trait_career_target_${slot}`];
+        if (v != null && String(v) === target) n++;
+      }
+      if (n === 0) {
+        const leg = data['increased_trait_career_target'];
+        if (leg != null && String(leg) === target) n++;
+      }
+      return n;
+    }
+
     // Skills, Marks, Battle
     const skills = window.CG_SKILLS_LIST || [];
     const marks  = data.skillMarks  || {};
@@ -157,6 +180,18 @@ const SummaryAPI = {
 
       html += `<li><strong>${label}:</strong> ${display}</li>`;
     });
+
+    // Extra career trait rows (one per extra career slot unlocked)
+    if (extraCareers.length) {
+      extraCareers.forEach(ec => {
+        const ecName = ec.name || 'Extra Career';
+        const boosts = boostCountFor(String(ec.id));
+        const ecDie  = boosts > 0 ? stepDie('d4', boosts) : 'd4';
+        const suffix = boosts > 0 ? ` → ${ecDie}` : '';
+        html += `<li><strong>${ecName} (Career):</strong> d4${suffix}</li>`;
+      });
+    }
+
     html += `</ul></div>`;
 
     html += `
@@ -169,20 +204,22 @@ const SummaryAPI = {
     const spIds = [species.skill_one, species.skill_two, species.skill_three].map(String);
     const cpIds = [career.skill_one,  career.skill_two,  career.skill_three].map(String);
 
-    // Extra career skills contribute d4 (one step below main career d6)
-    const ecIds = new Set();
-    extraCareers.forEach(ec => {
-      const ecSkills = Array.isArray(ec.skills) ? ec.skills : [];
-      ecSkills.forEach(s => { if (s) ecIds.add(String(s)); });
-    });
+    // Extra career skill lists — each contributes d4 independently
+    const ecSkillSets = extraCareers.map(ec =>
+      (Array.isArray(ec.skills) ? ec.skills : []).map(String)
+    );
 
     skills.forEach(skill => {
       const id = String(skill.id);
-      const sp = spIds.includes(id) ? 'd4' : '';
-      const cp = cpIds.includes(id) ? 'd6' : '';
-      const ec = (!cpIds.includes(id) && ecIds.has(id)) ? 'd4' : '';
-      const mk = MARK_DIE[marks[id]] || '';
-      const pool = [sp, cp || ec, mk].filter(Boolean).join(' + ') || '—';
+      const spDie = spIds.includes(id) ? 'd4' : '';
+      const cpDie = cpIds.includes(id) ? 'd6' : '';
+      // Each extra career that covers this skill adds its own d4
+      const ecDies = ecSkillSets.map(set => set.includes(id) ? 'd4' : '').filter(Boolean);
+      const mkDie  = MARK_DIE[marks[id]] || '';
+
+      // Stack all contributions — same logic as skills/render.js
+      const poolDice = [spDie, cpDie].concat(ecDies).concat([mkDie]).filter(Boolean);
+      const pool = poolDice.length ? poolDice.join(' + ') : '—';
       html += `<tr><td>${skill.name}</td><td>${pool}</td></tr>`;
     });
     html += `
