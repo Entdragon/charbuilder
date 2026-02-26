@@ -16,6 +16,7 @@
     "sass": "^1.89.2"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "body-parser": "^2.2.2",
     "express": "^5.2.1",
     "express-session": "^1.19.0",

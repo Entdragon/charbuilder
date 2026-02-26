@@ -1,12 +1,6 @@
 const { query, queryOne, prefix } = require('../../db');
-const { verifyPassword } = require('../../auth/wordpress');
+const { verifyPassword, hashPassword } = require('../../auth/wordpress');
 const crypto = require('crypto');
-
-function hashWordPressPassword(plain) {
-  const { PasswordHash } = require('phpass');
-  const h = new PasswordHash();
-  return h.hashPassword(plain);
-}
 
 async function cg_login_user(req, res) {
   const username = (req.body.username || '').trim();
@@ -63,7 +57,7 @@ async function cg_register_user(req, res) {
   const existingEmail = await queryOne(`SELECT ID FROM ${p}users WHERE user_email = ? LIMIT 1`, [email]);
   if (existingEmail) return res.json({ success: false, data: 'Email already registered.' });
 
-  const hash    = hashWordPressPassword(password);
+  const hash    = hashPassword(password);
   const now     = new Date().toISOString().slice(0, 19).replace('T', ' ');
   const userKey = crypto.randomBytes(12).toString('hex');
 
