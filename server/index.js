@@ -1,7 +1,9 @@
 const express    = require('express');
 const session    = require('express-session');
+const FileStore  = require('session-file-store')(session);
 const bodyParser = require('body-parser');
 const path       = require('path');
+const fs         = require('fs');
 
 const ajaxRouter = require('./routes/ajax');
 
@@ -18,7 +20,16 @@ app.use('/assets', express.static(path.join(__dirname, '..', 'assets')));
 app.use('/vendor',  express.static(path.join(__dirname, '..', 'node_modules')));
 
 // ── Session ───────────────────────────────────────────────────────────────────
+const SESSION_DIR = path.join(__dirname, '..', '.sessions');
+if (!fs.existsSync(SESSION_DIR)) fs.mkdirSync(SESSION_DIR, { recursive: true });
+
 app.use(session({
+  store: new FileStore({
+    path:        SESSION_DIR,
+    ttl:         7 * 24 * 60 * 60,
+    retries:     0,
+    logFn:       () => {},
+  }),
   secret:            process.env.SESSION_SECRET || 'cg-dev-secret-change-me',
   resave:            false,
   saveUninitialized: false,
