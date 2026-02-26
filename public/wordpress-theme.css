@@ -1,0 +1,330 @@
+/*
+ * Library of Calabria — WordPress Dark Gold Theme
+ * ─────────────────────────────────────────────────────────────
+ * INSTRUCTIONS:
+ *   1. Go to WordPress Admin → Appearance → Customize
+ *   2. Click "Additional CSS"
+ *   3. Paste everything below (or the sections you need)
+ *
+ * NOTE: Add the @import line at the very top before everything else.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap');
+
+/* ── Custom properties ─────────────────────────────────────── */
+:root {
+  --loc-bg:         #1a1714;
+  --loc-surface:    #242019;
+  --loc-surface-2:  #2d2820;
+  --loc-border:     rgba(201, 168, 76, 0.22);
+  --loc-gold:       #c9a84c;
+  --loc-gold-light: #e5c97a;
+  --loc-gold-dark:  #a8822a;
+  --loc-text:       #e8dcc4;
+  --loc-text-muted: #9a8a6a;
+  --loc-text-dim:   #5a4f3a;
+  --loc-radius:     5px;
+}
+
+/* ── Body & page background ────────────────────────────────── */
+body,
+.site,
+#page,
+#wrapper {
+  background-color: var(--loc-bg) !important;
+  background-image: url("data:image/svg+xml,%3Csvg width='48' height='48' viewBox='0 0 48 48' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M24 2L46 24L24 46L2 24Z' fill='none' stroke='%23c9a84c' stroke-width='0.4' stroke-opacity='0.12'/%3E%3C/svg%3E") !important;
+  color: var(--loc-text) !important;
+}
+
+/* ── Typography ─────────────────────────────────────────────── */
+body, p, li, td, th {
+  color: var(--loc-text);
+  font-family: 'Crimson Pro', Georgia, serif;
+  font-size: 1.05rem;
+  line-height: 1.75;
+}
+
+h1, h2, h3, h4, h5, h6,
+.entry-title,
+.page-title,
+.widget-title {
+  font-family: 'Cinzel', Georgia, serif !important;
+  color: var(--loc-gold-light) !important;
+  letter-spacing: 0.04em;
+}
+
+/* ── Links ─────────────────────────────────────────────────── */
+a {
+  color: var(--loc-gold);
+  text-decoration: none;
+  transition: color 0.18s;
+}
+a:hover, a:focus {
+  color: var(--loc-gold-light);
+  text-decoration: underline;
+}
+
+/* ── Site header ────────────────────────────────────────────── */
+.site-header,
+#masthead,
+header[role="banner"] {
+  background: var(--loc-surface) !important;
+  border-bottom: 1px solid var(--loc-border) !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.5) !important;
+}
+
+.site-title,
+.site-title a {
+  font-family: 'Cinzel', Georgia, serif !important;
+  color: var(--loc-gold-light) !important;
+  letter-spacing: 0.06em !important;
+  text-decoration: none !important;
+}
+.site-title a:hover { color: var(--loc-gold) !important; }
+
+.site-description {
+  font-family: 'Cinzel', Georgia, serif !important;
+  font-size: 0.7rem !important;
+  color: var(--loc-text-dim) !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+}
+
+/* ── Main navigation bar ────────────────────────────────────── */
+.main-navigation,
+#nav-primary,
+.navigation-top {
+  background: var(--loc-surface) !important;
+  border-bottom: 1px solid var(--loc-border) !important;
+}
+.main-navigation a,
+.nav-primary a {
+  color: var(--loc-text-muted) !important;
+  font-family: 'Cinzel', Georgia, serif !important;
+  font-size: 0.82rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+}
+.main-navigation a:hover,
+.main-navigation .current-menu-item > a {
+  color: var(--loc-gold) !important;
+  text-decoration: none !important;
+}
+
+/* ── Sidebar ────────────────────────────────────────────────── */
+#secondary,
+.sidebar,
+.widget-area,
+#sidebar {
+  background: var(--loc-surface) !important;
+  border-right: 1px solid var(--loc-border) !important;
+}
+
+/* ── Widgets ────────────────────────────────────────────────── */
+.widget { background: transparent !important; border: none !important; }
+
+.widget-title {
+  font-family: 'Cinzel', Georgia, serif !important;
+  font-size: 0.68rem !important;
+  color: var(--loc-text-dim) !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
+  padding: 0.75rem 1.25rem 0.3rem !important;
+  margin: 0 !important;
+  border: none !important;
+}
+
+/* ── Sidebar nav menu items (the bordered link boxes) ───────── */
+.widget_nav_menu ul,
+.widget_pages ul,
+.sidebar ul {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.widget_nav_menu ul li,
+.widget_pages ul li,
+.sidebar ul li {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  background: none !important;
+  /* remove any box/button styling the theme adds */
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+.widget_nav_menu ul li a,
+.widget_pages ul li a,
+.sidebar ul li a {
+  display: block !important;
+  padding: 0.55rem 1.25rem !important;
+  font-family: 'Cinzel', Georgia, serif !important;
+  font-size: 0.8rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.05em !important;
+  color: var(--loc-text-muted) !important;
+  text-decoration: none !important;
+  border-left: 3px solid transparent !important;
+  transition: color 0.18s, background 0.18s !important;
+}
+.widget_nav_menu ul li a:hover,
+.sidebar ul li a:hover {
+  color: var(--loc-gold-light) !important;
+  background: rgba(201,168,76,0.06) !important;
+  text-decoration: none !important;
+}
+.widget_nav_menu ul li.current-menu-item > a,
+.widget_nav_menu ul li.current_page_item > a {
+  color: var(--loc-gold) !important;
+  border-left-color: var(--loc-gold) !important;
+  background: rgba(201,168,76,0.08) !important;
+}
+
+/* Sub-items (e.g. Ironclaw children) */
+.widget_nav_menu ul ul li a,
+.sidebar ul ul li a {
+  padding-left: 2rem !important;
+  font-weight: 400 !important;
+  font-size: 0.78rem !important;
+}
+
+/* ── Page / post content ────────────────────────────────────── */
+#primary, #content, .site-content, .content-area, main, article {
+  background: transparent !important;
+  color: var(--loc-text) !important;
+}
+.entry-content, .page-content {
+  color: var(--loc-text) !important;
+}
+
+/* ── Forms ──────────────────────────────────────────────────── */
+input[type="text"],
+input[type="email"],
+input[type="search"],
+input[type="password"],
+input[type="url"],
+textarea,
+select {
+  background: rgba(10,8,5,0.5) !important;
+  border: 1px solid var(--loc-border) !important;
+  color: var(--loc-text) !important;
+  border-radius: var(--loc-radius) !important;
+  padding: 0.55rem 0.8rem !important;
+  font-family: 'Crimson Pro', Georgia, serif !important;
+}
+input:focus, textarea:focus, select:focus {
+  outline: none !important;
+  border-color: var(--loc-gold) !important;
+  box-shadow: 0 0 0 2px rgba(201,168,76,0.15) !important;
+}
+input::placeholder, textarea::placeholder {
+  color: var(--loc-text-dim) !important;
+}
+
+/* ── Buttons ────────────────────────────────────────────────── */
+.button,
+input[type="submit"],
+button[type="submit"],
+.wp-block-button__link,
+.wp-element-button,
+a.button {
+  background: linear-gradient(135deg, var(--loc-gold-dark) 0%, var(--loc-gold) 50%, var(--loc-gold-dark) 100%) !important;
+  color: #1a1410 !important;
+  border: 1px solid var(--loc-gold-dark) !important;
+  border-radius: var(--loc-radius) !important;
+  padding: 0.7rem 1.8rem !important;
+  font-family: 'Cinzel', Georgia, serif !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  text-decoration: none !important;
+  box-shadow: 0 2px 8px rgba(201,168,76,0.25) !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+}
+.button:hover,
+input[type="submit"]:hover,
+.wp-block-button__link:hover,
+a.button:hover {
+  background: linear-gradient(135deg, var(--loc-gold) 0%, var(--loc-gold-light) 50%, var(--loc-gold) 100%) !important;
+  box-shadow: 0 4px 16px rgba(201,168,76,0.35) !important;
+  transform: translateY(-1px) !important;
+  color: #1a1410 !important;
+  text-decoration: none !important;
+}
+
+/* ── Character Generator page ───────────────────────────────── */
+/* Makes the "Open Character Generator →" link look like a big gold button */
+.page-template-character-generator .site-main,
+.page-template-character-generator main {
+  text-align: center !important;
+  padding: 3rem 2rem !important;
+}
+.page-template-character-generator h1 {
+  font-family: 'Cinzel', Georgia, serif !important;
+  font-size: 2.2rem !important;
+  color: var(--loc-gold-light) !important;
+  letter-spacing: 0.06em !important;
+  margin-bottom: 0.5rem !important;
+}
+.page-template-character-generator h1::after {
+  content: '';
+  display: block;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(201,168,76,0.4), transparent);
+  margin: 1rem auto 0;
+  max-width: 360px;
+}
+.page-template-character-generator p {
+  margin-top: 2rem !important;
+}
+
+/* ── Horizontal rules ───────────────────────────────────────── */
+hr, .wp-block-separator {
+  border: none !important;
+  height: 1px !important;
+  background: linear-gradient(90deg, transparent, var(--loc-border), transparent) !important;
+  margin: 1.5rem 0 !important;
+}
+
+/* ── Blockquotes ────────────────────────────────────────────── */
+blockquote, .wp-block-quote {
+  border-left: 3px solid var(--loc-gold) !important;
+  background: rgba(201,168,76,0.05) !important;
+  padding: 0.75rem 1rem !important;
+  color: var(--loc-text-muted) !important;
+  font-style: italic !important;
+}
+
+/* ── Tables ─────────────────────────────────────────────────── */
+table { border-collapse: collapse !important; width: 100% !important; }
+th, td {
+  border: 1px solid var(--loc-border) !important;
+  padding: 0.5rem 0.75rem !important;
+  color: var(--loc-text) !important;
+}
+th {
+  background: var(--loc-surface) !important;
+  font-family: 'Cinzel', Georgia, serif !important;
+  color: var(--loc-gold) !important;
+  font-size: 0.82rem !important;
+  letter-spacing: 0.04em !important;
+}
+tr:nth-child(odd) td {
+  background: rgba(240, 232, 208, 0.04) !important;
+}
+
+/* ── Footer ─────────────────────────────────────────────────── */
+.site-footer,
+#colophon,
+footer[role="contentinfo"] {
+  background: #100e0b !important;
+  border-top: 1px solid var(--loc-border) !important;
+  color: var(--loc-text-muted) !important;
+}
+.site-footer a, #colophon a { color: var(--loc-gold) !important; }
+.site-footer a:hover { color: var(--loc-gold-light) !important; }
