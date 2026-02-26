@@ -9,7 +9,8 @@
     "watch:core": "esbuild assets/js/src/core/index.js --bundle --outfile=assets/js/dist/core.bundle.js --platform=browser --target=es2015 --format=iife --sourcemap --watch",
     "watch:css": "sass --watch assets/css/src/main.scss:assets/css/dist/core.css --no-source-map",
     "postbuild:core": "chmod 0755 assets assets/js assets/js/dist 2>/dev/null || true; chmod 0644 assets/js/dist/core.bundle.js assets/js/dist/core.bundle.js.map 2>/dev/null || true",
-    "postbuild:css": "chmod 0755 assets assets/css assets/css/dist 2>/dev/null || true; chmod 0644 assets/css/dist/core.css 2>/dev/null || true"
+    "postbuild:css": "chmod 0755 assets assets/css assets/css/dist 2>/dev/null || true; chmod 0644 assets/css/dist/core.css 2>/dev/null || true",
+    "test": "node tests/run.js"
   },
   "devDependencies": {
     "esbuild": "^0.19.0",
