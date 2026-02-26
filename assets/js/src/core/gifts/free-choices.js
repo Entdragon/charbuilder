@@ -227,10 +227,11 @@ function extractTraitMinimaFromRequiresSpecial(rs) {
   if (!text) return [];
 
   const traits = [
-    { key: 'mind', re: /\bmind\b/i },
-    { key: 'body', re: /\bbody\b/i },
-    { key: 'speed', re: /\bspeed\b/i },
-    { key: 'will', re: /\bwill\b/i },
+    { key: 'mind',    re: /\bmind\b/i },
+    { key: 'body',    re: /\bbody\b/i },
+    { key: 'speed',   re: /\bspeed\b/i },
+    { key: 'will',    re: /\bwill\b/i },
+    { key: 'species', re: /\bspecies\b/i },
   ];
 
   const mins = [];
@@ -269,11 +270,38 @@ function traitMinimaSatisfied(g) {
   return true;
 }
 
+/**
+ * Handles comparative trait requirements, e.g.:
+ *   "Speed must be greater than Body"
+ *   "Species Trait must be higher than your Mind Trait"
+ */
+function comparativeTraitsSatisfied(g) {
+  const rs = requiresSpecialText(g);
+  if (!rs) return true;
+
+  const TRAIT_NAMES = ['mind', 'body', 'speed', 'will', 'species'];
+
+  const lines = rs.split(/[\n\r.;]+/).map(s => s.trim()).filter(Boolean);
+  for (const line of lines) {
+    // Match "X must be greater than Y" / "X must be higher than Y"
+    const m = line.match(/\b(mind|body|speed|will|species)[^\w]*(trait)?\s+must\s+be\s+(greater|higher)\s+than\s+(your\s+)?(mind|body|speed|will|species)/i);
+    if (!m) continue;
+    const leftKey  = m[1].toLowerCase();
+    const rightKey = m[5].toLowerCase();
+    const leftVal  = getTraitDieValue(leftKey);
+    const rightVal = getTraitDieValue(rightKey);
+    // If either trait is unknown, don't block (give benefit of the doubt)
+    if (leftVal == null || rightVal == null) continue;
+    if (leftVal <= rightVal) return false;
+  }
+  return true;
+}
+
 function extractQualReqLinesFromRequiresSpecial(rs) {
   const lines = String(rs || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean);
   const out = [];
   for (const line of lines) {
-    const m = line.match(/^(language|literacy|insider|mystic|piety)\s*:\s*(.+)$/i);
+    const m = line.match(/^(language|literacy|insider|mystic|piety|ordainment)\s*:\s*(.+)$/i);
     if (!m || !m[1] || !m[2]) continue;
     out.push({ type: String(m[1]).toLowerCase(), raw: String(m[2]).trim() });
   }
@@ -397,6 +425,10 @@ if (!id || !name) { if (__DBG471) console.log('[FreeChoices][DBG471] FAIL: missi
   }
 
   if (!traitMinimaSatisfied(g)) { if (__DBG471) { try { const rs = requiresSpecialText(g); const mins = extractTraitMinimaFromRequiresSpecial(rs); const tv = {}; mins.forEach(t => tv[t.trait] = getTraitDieValue(t.trait)); console.log('[FreeChoices][DBG471] FAIL: trait minima', { rs, mins, tv }); } catch (_) {} } return false; }
+
+  if (!comparativeTraitsSatisfied(g)) return false;
+
+  if (!qualPrereqsSatisfied(g)) return false;
 
   if (otherSelectedIds.has(id) && !allowsMultiple(g)) return false;
 

@@ -1,0 +1,134 @@
+
+requires_special Ascending 1
+A bound supernatural Creature
+A copy of the book Superior Theory of Archery
+A copy of the book Volcano Fighting Methods
+A Favorite Use with [Skill of Choice]
+A noble bloodline or patent of nobility, traceable...
+A successful roll of Speed & Stealth vs. 3 that sc...
+Absolutely no gifts that have the “Magic” descript...
+An appropriate background and career.
+An endorsement from a religious organization.
+An unedited copy of The Romance of Chien Tang And ...
+Any eight Gifts which have both the “Magic” and “J...
+Any magical Talisman from any Trappings Gift
+Any three “White Magic Journeyman” Gifts
+Any three gifts that have dragon and Jadeite descr...
+Any two Gifts which have both the “Air” and “Journ...
+Any two Gifts which have both the “Earth” and “Jou...
+Any two Gifts which have both the “Fire” and “Jour...
+Any two Gifts which have both the “Green & Purple”...
+Any two Gifts which have both the “Psychic” and “J...
+Any two Gifts which have both the “Unholy” and “Jo...
+Any two Gifts which have both the “Water” and “Jou...
+At least one other battle gift with the Nine Drago...
+Authorization from a recognized legal authority.
+Bite Attack
+Body of d8 or better
+Body Trait of d12
+Cleric’s Trappings: Any
+Cognoscenti’s Trappings: Any
+Craft: Fishing
+Dragon Species Trait of d4 or better
+Dragon Species Trait of d8 or better
+Elementalist’s Trappings: Any
+Favor Bonus with Dodge
+Have killed a foe with a rending weapon
+Insider: any s'Allumer faith
+Insider: Aos Daoine
+Insider: Athanasians or Monophysites
+Insider: Beggars’ Gang
+Insider: Black Tortoise School
+Insider: Budjaduyi
+Insider: Church of Penitence
+Insider: Cognoscenti
+Insider: Cognoscenti Literacy
+Insider: Drunken Fists
+Insider: Dunwasser Academy
+Insider: Dunwasser Academy Literacy
+Insider: either the Dunwasser Academy or the Helio...
+Insider: Forest Ghosts
+Insider: Goblins
+Insider: Shen Xian
+Insider: Shen Zian
+Insider: Sword Dancers
+Insider: Vagrant Warriors
+Insider: White Crane School
+Knack for Academics
+Knack for Brawling
+Knack for Deceit
+Knack for Digging
+Knack for Endurance
+Knack for Inquiry
+Knack for Jumping
+Knack for Leadership
+Knack for Melee Combat
+Knack for negotiation
+Knack for Observation
+Knack for Searching
+Knack for Stealth
+Knack for Supernatural
+Knack for Weather Sense
+Language: Berla Feini
+Language: Magniloquentia
+Language: Zhonggese
+Literacy: Zhonggese
+Literacy: Zhongwén
+Mind of d8 or better
+Must be a centipede, scorpion, or spider
+Must be a centipede, scorpion, spider, toad, or vi...
+Must be a snake
+Must be an elephant
+Must be an Zhuque
+Must be at least 17 years of age
+Must be Female
+Must have killed a foe with Chopping weapon
+Must have overkilled a foe in battle with your ren...
+Must have overkilled a foe with Chopping weapon
+Must not already be a dragon
+Must own a wizards rod
+Must successfully survive someone else’s attempt t...
+Must win a drinking contest against someone who al...
+Mystic: Changes Magic
+Mystic: Cognoscenti
+Mystic: Cognoscenti Magic
+Mystic: Druidism
+Mystic: Elementalism
+Mystic: Immortal Magic
+Mystic: Necromancy
+Mystic: Purity Magic
+Mystic: Taoist Magic
+Mystic: Tawas
+Mystic: Thaumaturgy
+requires_special Ascending 1
+ 
+Mystic: White Magic
+Natural Weapon of Claws
+No Influence Gifts.
+Not to be Unholy
+One Gift with both “Air” & “Journeyman” descriptor...
+One Gift with both “Earth” & “Journeyman” descript...
+One Gift with both “Fire” & “Journeyman” descripto...
+One Gift with both “Water” & “Journeyman” descript...
+One other Battle Gift with the trait Rope
+One other battle gift with the trait Soft
+One other battle gift with the trait Spring-loaded
+One other battle gift with the trait Vast-As-Heave...
+Ordainment: any s'Allumer faith
+Performance: Dance
+Permission from the Game Host
+Piety: Malachism
+Piety: s'Allumer
+Piety: s'Allumer faith
+Species of d8 or better
+Species Trait must be higher than your Mind Trait
+Species Trait of d8 or better
+Specific permission from the Game Host
+Speed must be greater than Body
+Speed of d8 or better
+Successfully finding a Gnome and winning a contest...
+Successfully finding a Salamander and winning a co...
+Successfully finding a Sylph and winning a contest...
+Successfully finding an Undine and winning a conte...
+The three starting Gifts of that Career
+Will of d8 or better

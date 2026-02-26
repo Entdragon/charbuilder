@@ -3671,7 +3671,8 @@
       { key: "mind", re: /\bmind\b/i },
       { key: "body", re: /\bbody\b/i },
       { key: "speed", re: /\bspeed\b/i },
-      { key: "will", re: /\bwill\b/i }
+      { key: "will", re: /\bwill\b/i },
+      { key: "species", re: /\bspecies\b/i }
     ];
     const mins = [];
     const parts = text.split(/[\n\r.;]+/).map((s) => s.trim()).filter(Boolean);
@@ -3706,6 +3707,79 @@
       if (have == null)
         return false;
       if (have < m.need)
+        return false;
+    }
+    return true;
+  }
+  function comparativeTraitsSatisfied(g) {
+    const rs = requiresSpecialText(g);
+    if (!rs)
+      return true;
+    const TRAIT_NAMES = ["mind", "body", "speed", "will", "species"];
+    const lines = rs.split(/[\n\r.;]+/).map((s) => s.trim()).filter(Boolean);
+    for (const line of lines) {
+      const m = line.match(/\b(mind|body|speed|will|species)[^\w]*(trait)?\s+must\s+be\s+(greater|higher)\s+than\s+(your\s+)?(mind|body|speed|will|species)/i);
+      if (!m)
+        continue;
+      const leftKey = m[1].toLowerCase();
+      const rightKey = m[5].toLowerCase();
+      const leftVal = getTraitDieValue(leftKey);
+      const rightVal = getTraitDieValue(rightKey);
+      if (leftVal == null || rightVal == null)
+        continue;
+      if (leftVal <= rightVal)
+        return false;
+    }
+    return true;
+  }
+  function extractQualReqLinesFromRequiresSpecial(rs) {
+    const lines = String(rs || "").split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+    const out = [];
+    for (const line of lines) {
+      const m = line.match(/^(language|literacy|insider|mystic|piety|ordainment)\s*:\s*(.+)$/i);
+      if (!m || !m[1] || !m[2])
+        continue;
+      out.push({ type: String(m[1]).toLowerCase(), raw: String(m[2]).trim() });
+    }
+    return out;
+  }
+  function qualPrereqsSatisfied(g) {
+    const rs = requiresSpecialText(g);
+    if (!rs)
+      return true;
+    if (/permission\s+from\s+the\s+game\s+host/i.test(rs))
+      return true;
+    const reqs = extractQualReqLinesFromRequiresSpecial(rs);
+    if (!reqs.length)
+      return true;
+    try {
+      ensureQualStateInit();
+    } catch (_) {
+    }
+    for (const r of reqs) {
+      const type = r.type;
+      const raw = String(r.raw || "").trim();
+      if (!type || !raw)
+        continue;
+      if (/\[\s*choice\s*\]/i.test(raw) || /\bchoice\b/i.test(raw))
+        continue;
+      const parts = raw.split(/,|\/|;|\bor\b/ig).map((s) => String(s || "").trim()).filter(Boolean);
+      if (!parts.length)
+        continue;
+      let ok = false;
+      for (const p of parts) {
+        if (!p)
+          continue;
+        if (/^any\b/i.test(p)) {
+          ok = true;
+          break;
+        }
+        if (qualStateHas(type, p)) {
+          ok = true;
+          break;
+        }
+      }
+      if (!ok)
         return false;
     }
     return true;
@@ -3814,6 +3888,10 @@
       }
       return false;
     }
+    if (!comparativeTraitsSatisfied(g))
+      return false;
+    if (!qualPrereqsSatisfied(g))
+      return false;
     if (otherSelectedIds.has(id) && !allowsMultiple(g))
       return false;
     return true;
