@@ -1,7 +1,10 @@
 # Character Generator – WordPress Plugin
 
-## Overview
+## Project Overview
 This is a WordPress plugin that provides a modular character creation system for tabletop RPGs. It features a dynamic AJAX-driven UI for managing character details, skills, species, careers, and gifts.
+
+- **Staging URL**: https://stage.libraryofcalbria.com/character-generator/
+- **Production URL**: https://libraryofcalbria.com/character-generator/
 
 ## Technology Stack
 - **PHP 8.2** – WordPress plugin backend (AJAX handlers, database, shortcodes)
