@@ -1,0 +1,78 @@
+Publish your app
+Publish to domain
+Available
+charbuilder
+.replit.app
+Who can access your app
+Engagement tools
+Enable feedback widget
+Add a feedback widget to the corner of your published app. Review submissions in your inbox and send to Agent for fixes. Available for web-based apps only.
+
+"Made with Replit" badge
+Display a "Made with Replit" referral badge on your published app, when someone signs up using your referral link, you earn credits. Learn more.
+
+Adjust settings
+Manually configure machine settings, secrets, build commands, ports, and more.
+Deployment type
+Technology used to publish your app. Learn more
+
+Reserved VM
+Ensures high uptime, minimizing disruptions for apps requiring persistent session data.
+Machine configuration
+The power of the servers running your app
+
+0.5 vCPU / 2 GiB RAM
+$20
+per month
+($0.028/hour)
+Build command
+Optional
+Compiles your app before it deploys
+npm run build
+Run command
+Starts your app after it deploys
+node server/index.js
+SESSION_SECRET
+••••••••
+DB_NAME
+••••••••
+DB_PASS
+••••••••
+DB_USER
+••••••••
+DB_HOST
+••••••••
+CG_PROXY_URL
+••••••••
+CG_TEST_PASS
+••••••••
+CG_TEST_USER
+••••••••
+CG_PROXY_SECRET
+••••••••
+GITHUB_PERSONAL_ACCESS_TOKEN
+••••••••
+Deployment forwarding to External Port :80. Open the 
+Deployment expects:
+Host
+External Port
+0.0.0.0
+:80
+Your External Port configuration(s):
+Host
+External Port
+0.0.0.0
+:80
+App type
+Configure your app based on whether it needs to serve traffic from the web.
+
+Security scan before publishing
+Beta
+We always run a security scan before publishing. This setting controls whether publishing is blocked when critical vulnerabilities are found. Some high-risk issues may still block publishing. Learn more
+
+Configure how your production database is created and populated when you publish. Learn more
+Create production database
+A production database will only be created if you have data in your development database.
+Set up your production database with your current development data
+This will initialize your production database with the data and schemas from your development database.
+What does publishing do?
