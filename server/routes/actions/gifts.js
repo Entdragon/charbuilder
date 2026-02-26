@@ -49,17 +49,42 @@ async function cg_get_language_list(req, res) {
     'Calabrian', 'Common', 'Dwarven', 'Elven', 'Goblin', 'Hesperian',
     'Kawtaw', 'Mordic', 'Old Calabrian', 'Orcish', 'Sylvan', 'Urathi',
   ];
-  let fromDb = [];
+  const extraLangs = [];
+
+  // Attempt 1: dedicated cg_character_language table (staging/future prod)
+  try {
+    const cols = await query(`DESCRIBE \`${p}cg_character_language\``);
+    // Find the column that holds language text — prefer one with 'language' in the name,
+    // skip id columns and any column that looks like a foreign key (ends in _id or _character)
+    const langCol = cols
+      .map(c => c.Field || c.field || '')
+      .find(f => /language/i.test(f) && !/^ct_id$/i.test(f) && !/_character$/i.test(f));
+
+    if (langCol) {
+      const rows = await query(
+        `SELECT DISTINCT \`${langCol}\` AS lang FROM \`${p}cg_character_language\`
+         WHERE \`${langCol}\` IS NOT NULL AND \`${langCol}\` <> ''`
+      );
+      rows.forEach(r => {
+        const v = String(r.lang || '').trim();
+        if (v) extraLangs.push(v);
+      });
+    }
+  } catch (_) {}
+
+  // Attempt 2: language column in character_records
   try {
     const rows = await query(
       `SELECT DISTINCT language FROM ${p}character_records
-       WHERE language IS NOT NULL AND language <> ''
-       ORDER BY language ASC`
+       WHERE language IS NOT NULL AND language <> ''`
     );
-    fromDb = rows.map(r => String(r.language || '').trim()).filter(Boolean);
+    rows.forEach(r => {
+      const v = String(r.language || '').trim();
+      if (v) extraLangs.push(v);
+    });
   } catch (_) {}
 
-  const merged = [...new Set([...DEFAULT_LANGUAGES, ...fromDb])].sort((a, b) =>
+  const merged = [...new Set([...DEFAULT_LANGUAGES, ...extraLangs])].sort((a, b) =>
     a.toLowerCase().localeCompare(b.toLowerCase())
   );
   res.json({ success: true, data: merged });

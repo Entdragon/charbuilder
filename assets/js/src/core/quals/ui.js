@@ -395,6 +395,12 @@ const QualUI = (Existing && Existing.__cg_singleton) ? Existing : {
     const control = wrap.querySelector('.cg-base-language-control');
     if (!control) return;
 
+    // If language list not yet loaded, fetch it then re-render.
+    if (_languageListCache === null) {
+      fetchLanguageList(() => this._scheduleRender('language-list-loaded'));
+      return;
+    }
+
     renderLanguageSelect(control);
   }
 };

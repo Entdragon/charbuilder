@@ -743,15 +743,15 @@
       return map;
     },
     enforceCounts() {
-      const $20 = window.jQuery;
+      const $21 = window.jQuery;
       const freq = { d8: 0, d6: 0, d4: 0 };
-      $20(".cg-trait-select").each(function() {
-        const v = $20(this).val();
+      $21(".cg-trait-select").each(function() {
+        const v = $21(this).val();
         if (v && v in freq)
           freq[v]++;
       });
-      $20(".cg-trait-select").each(function() {
-        const $sel = $20(this);
+      $21(".cg-trait-select").each(function() {
+        const $sel = $21(this);
         const current = $sel.val() || "";
         let options = '<option value="">\u2014 Select \u2014</option>';
         DICE_TYPES.forEach((die) => {
@@ -764,13 +764,13 @@
       });
     },
     updateAdjustedDisplays() {
-      const $20 = window.jQuery;
+      const $21 = window.jQuery;
       const boosts = this.calculateBoostMap();
       const totalCareerBoosts = boosts.trait_career || 0;
       const careerCounts = computeCareerBoostCounts(totalCareerBoosts);
       const careerMainBoosts = careerCounts.main || 0;
       TRAITS.forEach((traitKey) => {
-        const $sel = $20(`#cg-${traitKey}`);
+        const $sel = $21(`#cg-${traitKey}`);
         if (!$sel.length)
           return;
         const rawBase = String($sel.val() || "").trim();
@@ -782,11 +782,11 @@
         if (rawBase) {
           badgeText = count > 0 ? boostedDie(rawBase, count) : rawBase;
         }
-        const $badge = $20(`#cg-${traitKey}-badge`);
+        const $badge = $21(`#cg-${traitKey}-badge`);
         if ($badge.length)
           $badge.text(badgeText);
         if (traitKey === "trait_career") {
-          const $pb = $20("#cg-profile-trait_career-badge");
+          const $pb = $21("#cg-profile-trait_career-badge");
           if ($pb.length)
             $pb.text(badgeText);
         }
@@ -801,11 +801,11 @@
             note = origBoosts === 1 ? "Increased by gift" : `Increased by gift \xD7${origBoosts}`;
           }
         }
-        const $note = $20(`#cg-${traitKey}-adjusted`);
+        const $note = $21(`#cg-${traitKey}-adjusted`);
         if ($note.length)
           $note.text(note);
         if (traitKey === "trait_career") {
-          const $pn = $20("#cg-profile-trait_career-note");
+          const $pn = $21("#cg-profile-trait_career-note");
           if ($pn.length)
             $pn.text(note);
         }
@@ -1919,7 +1919,6 @@
     const idMap = byIdMap(all);
     const inc = increaseTraitGifts(all);
     if (!all.length) {
-      const labels2 = ["Career Gift One", "Career Gift Two", "Career Gift Three"];
       const li2 = [];
       for (let i = 1; i <= 3; i++) {
         const name = profile[`gift_${i}`] || "";
@@ -1928,7 +1927,7 @@
         const display = name ? String(name) : gid ? `Gift #${gid}` : "";
         if (!display)
           continue;
-        li2.push(`<li><strong>${labels2[i - 1]}:</strong> ${escapeHtml(mult > 1 ? `${display} \xD7 ${mult}` : display)}</li>`);
+        li2.push(`<li>${escapeHtml(mult > 1 ? `${display} \xD7 ${mult}` : display)}</li>`);
       }
       $ul.html(li2.join(""));
       if (_giftWaitTries < 10) {
@@ -1960,7 +1959,7 @@
       const needsReplace = !!(dupeWithSpecies && !repeatable);
       if (!needsReplace) {
         const txt = mult > 1 ? `${baseName} \xD7 ${mult}` : baseName;
-        li.push(`<li><strong>${labels[i - 1]}:</strong> ${escapeHtml(txt)}</li>`);
+        li.push(`<li>${escapeHtml(txt)}</li>`);
         continue;
       }
       neededSlots.add(String(i));
@@ -3399,9 +3398,9 @@
         src.qualifications = payload;
       }
       document.dispatchEvent(new CustomEvent("cg:quals:changed", { detail: { qualifications: payload } }));
-      const $20 = window.jQuery;
-      if ($20)
-        $20(document).trigger("cg:quals:changed", [{ qualifications: payload }]);
+      const $21 = window.jQuery;
+      if ($21)
+        $21(document).trigger("cg:quals:changed", [{ qualifications: payload }]);
     },
     getAll() {
       return JSON.parse(JSON.stringify(this.data || emptyData()));
@@ -4097,9 +4096,9 @@
       document.removeEventListener("cg:builder:opened", rerenderSoon);
       document.addEventListener("cg:builder:opened", rerenderSoon);
       try {
-        const W2 = window;
-        W2.__CG_EVT__ = W2.__CG_EVT__ || {};
-        const EVT = W2.__CG_EVT__;
+        const W3 = window;
+        W3.__CG_EVT__ = W3.__CG_EVT__ || {};
+        const EVT = W3.__CG_EVT__;
         if (EVT.freeChoicesRerenderSoon) {
           try {
             document.removeEventListener("cg:tab:changed", EVT.freeChoicesRerenderSoon);
@@ -4351,6 +4350,345 @@
   W.CG_FreeChoices = FreeChoices;
   var free_choices_default = FreeChoices;
 
+  // assets/js/src/core/quals/ui.js
+  function cgWin2() {
+    if (typeof globalThis !== "undefined")
+      return globalThis;
+    if (typeof window !== "undefined")
+      return window;
+    return {};
+  }
+  var W2 = cgWin2();
+  var $12 = W2 && W2.jQuery ? W2.jQuery : null;
+  function modalRoot2() {
+    if (typeof document === "undefined")
+      return null;
+    return document.querySelector("#cg-modal") || null;
+  }
+  function stripDiacritics4(s) {
+    return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  }
+  function canon4(s) {
+    return stripDiacritics4(String(s || "")).trim().replace(/\s+/g, " ").toLowerCase();
+  }
+  function uniqSorted(list) {
+    const seen = /* @__PURE__ */ new Set();
+    const out = [];
+    (Array.isArray(list) ? list : []).forEach((v) => {
+      const raw = String(v || "").trim().replace(/\s+/g, " ");
+      if (!raw)
+        return;
+      const k = canon4(raw);
+      if (!k || seen.has(k))
+        return;
+      seen.add(k);
+      out.push(raw);
+    });
+    out.sort((a, b) => canon4(a).localeCompare(canon4(b)));
+    return out;
+  }
+  function removeLegacyQualUIs(modal) {
+    if (!modal)
+      return;
+    try {
+      const oldBox = modal.querySelector("#cg-quals-box");
+      if (oldBox)
+        oldBox.remove();
+    } catch (_) {
+    }
+    try {
+      const oldInline = modal.querySelector("#cg-quals-inline");
+      if (oldInline)
+        oldInline.remove();
+    } catch (_) {
+    }
+  }
+  function getAllGiftsList2() {
+    const FC = W2.CG_FreeChoices;
+    if (FC && Array.isArray(FC._allGifts) && FC._allGifts.length)
+      return FC._allGifts;
+    const GS = W2.CG_GiftsState || W2.CG_Gifts || null;
+    if (GS) {
+      if (Array.isArray(GS._allGifts) && GS._allGifts.length)
+        return GS._allGifts;
+      if (Array.isArray(GS.allGifts) && GS.allGifts.length)
+        return GS.allGifts;
+      if (Array.isArray(GS.gifts) && GS.gifts.length)
+        return GS.gifts;
+    }
+    return [];
+  }
+  function getRequiresSpecial(g) {
+    var _a, _b, _c;
+    return String(
+      (_c = (_b = (_a = g == null ? void 0 : g.requires_special) != null ? _a : g == null ? void 0 : g.ct_gifts_requires_special) != null ? _b : g == null ? void 0 : g.ct_requires_special) != null ? _c : ""
+    );
+  }
+  function extractLanguagesFromGifts(gifts) {
+    const out = [];
+    (Array.isArray(gifts) ? gifts : []).forEach((g) => {
+      const rs = getRequiresSpecial(g);
+      if (!rs)
+        return;
+      const lines = String(rs).split(/\r?\n|•|·/g).map((s) => String(s || "").trim()).filter(Boolean);
+      lines.forEach((line) => {
+        const m = line.match(/^language\s*:\s*(.+)$/i);
+        if (!m)
+          return;
+        const rest = String(m[1] || "").trim();
+        if (!rest)
+          return;
+        const restCanon = canon4(rest);
+        if (restCanon === "any" || restCanon === "varies" || restCanon === "see text")
+          return;
+        rest.split(/\s*[;,]\s*/g).map((x) => String(x || "").trim()).filter(Boolean).forEach((x) => out.push(x));
+      });
+    });
+    return uniqSorted(out);
+  }
+  function findBaseLanguageHost(modal) {
+    if (!modal)
+      return null;
+    const cgLanguage = modal.querySelector("#cg-language");
+    if (cgLanguage)
+      return cgLanguage;
+    const direct = modal.querySelector("#cg-free-language") || modal.querySelector("#cg-language-choice") || modal.querySelector("#cg-gift-language");
+    if (direct)
+      return direct;
+    const freeChoices = modal.querySelector("#cg-free-choices") || document.querySelector("#cg-free-choices");
+    if (freeChoices && freeChoices.parentElement)
+      return freeChoices.parentElement;
+    return null;
+  }
+  function ensureBaseLanguageContainer(modal) {
+    const host = findBaseLanguageHost(modal);
+    if (!host)
+      return null;
+    let wrap = modal.querySelector("#cg-base-language");
+    if (!wrap) {
+      wrap = document.createElement("div");
+      wrap.id = "cg-base-language";
+      wrap.className = "cg-gift-item cg-base-language";
+      wrap.innerHTML = `
+      <div class="cg-base-language-inner" style="display:flex; flex-direction:column; gap:6px;">
+        <div style="font-weight:600;">Language</div>
+        <div class="cg-base-language-control"></div>
+      </div>
+    `;
+    }
+    try {
+      if (host.classList && host.classList.contains("cg-gift-item")) {
+        if (!host.querySelector("#cg-base-language"))
+          host.appendChild(wrap);
+      } else {
+        const freeChoices = modal.querySelector("#cg-free-choices") || document.querySelector("#cg-free-choices");
+        if (freeChoices && freeChoices.parentElement) {
+          if (wrap.parentNode !== freeChoices.parentElement) {
+            freeChoices.parentElement.insertBefore(wrap, freeChoices);
+          }
+        } else if (wrap.parentNode !== host) {
+          host.appendChild(wrap);
+        }
+      }
+    } catch (_) {
+    }
+    return wrap;
+  }
+  var _languageListCache = null;
+  var _languageListLoading = false;
+  function fetchLanguageList(onLoaded) {
+    if (_languageListCache !== null) {
+      if (onLoaded)
+        onLoaded(_languageListCache);
+      return;
+    }
+    if (_languageListLoading)
+      return;
+    _languageListLoading = true;
+    try {
+      const ajaxUrl = W2.CG_AJAX && W2.CG_AJAX.ajax_url ? W2.CG_AJAX.ajax_url : "/api/ajax";
+      fetch(ajaxUrl, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "cg_get_language_list" })
+      }).then((r) => r.json()).then((json) => {
+        _languageListLoading = false;
+        _languageListCache = json && json.success && Array.isArray(json.data) ? json.data : [];
+        if (onLoaded)
+          onLoaded(_languageListCache);
+      }).catch(() => {
+        _languageListLoading = false;
+        _languageListCache = [];
+        if (onLoaded)
+          onLoaded(_languageListCache);
+      });
+    } catch (_) {
+      _languageListLoading = false;
+      _languageListCache = [];
+    }
+  }
+  function getLanguageLabelsForBaseSelect() {
+    if (_languageListCache !== null && _languageListCache.length)
+      return _languageListCache;
+    const gifts = getAllGiftsList2();
+    const langs = extractLanguagesFromGifts(gifts);
+    return langs;
+  }
+  function renderLanguageSelect(container) {
+    if (!container)
+      return;
+    const labels = getLanguageLabelsForBaseSelect();
+    const cur = state_default2 && typeof state_default2.get === "function" ? (state_default2.get("language") || [])[0] || "" : "";
+    const finalLabels = uniqSorted([cur, ...labels]);
+    const opts = finalLabels.map((label) => {
+      const sel2 = canon4(cur) === canon4(label) ? " selected" : "";
+      const safe = String(label).replace(/"/g, "&quot;");
+      return `<option value="${safe}"${sel2}>${label}</option>`;
+    }).join("\n");
+    container.innerHTML = `
+    <select id="cg-base-language-select" style="min-width:220px;">
+      <option value="">\u2014 Select Language \u2014</option>
+      ${opts}
+    </select>
+  `;
+    const sel = container.querySelector("#cg-base-language-select");
+    if (!sel)
+      return;
+    sel.addEventListener("change", (e) => {
+      var _a, _b;
+      const nextVal = String(e.target.value || "").trim();
+      try {
+        (_b = (_a = state_default2) == null ? void 0 : _a.init) == null ? void 0 : _b.call(_a);
+      } catch (_) {
+      }
+      try {
+        const current = state_default2 && typeof state_default2.get === "function" ? (state_default2.get("language") || []).slice() : [];
+        const rest = current.filter((v) => canon4(v) !== canon4(nextVal) && canon4(v) !== canon4(current[0] || ""));
+        const next = nextVal ? [nextVal, ...rest] : rest;
+        if (state_default2 && state_default2.data && Array.isArray(state_default2.data.language) && typeof state_default2.persist === "function") {
+          state_default2.data.language = next;
+          state_default2.persist();
+        } else {
+          if (current[0])
+            state_default2.remove("language", current[0]);
+          if (nextVal)
+            state_default2.add("language", nextVal);
+        }
+      } catch (_) {
+      }
+    });
+  }
+  var Existing2 = W2.CG_QualUI;
+  var QualUI = Existing2 && Existing2.__cg_singleton ? Existing2 : {
+    __cg_singleton: true,
+    _inited: false,
+    _observer: null,
+    _lastModalPresent: null,
+    _renderScheduled: false,
+    _rendering: false,
+    _onCatalogUpdated: null,
+    _onBuilderOpened: null,
+    _onTabChanged: null,
+    init() {
+      var _a, _b;
+      if (this._inited)
+        return;
+      this._inited = true;
+      try {
+        (_b = (_a = state_default2) == null ? void 0 : _a.init) == null ? void 0 : _b.call(_a);
+      } catch (_) {
+      }
+      this._bindEvents();
+      this._installObserver();
+      this._scheduleRender("init");
+    },
+    _scheduleRender(reason = "") {
+      if (this._renderScheduled)
+        return;
+      this._renderScheduled = true;
+      const run = () => {
+        this._renderScheduled = false;
+        if (this._rendering)
+          return;
+        this._rendering = true;
+        try {
+          this.render();
+        } catch (err) {
+          console.error("[QualUI] render failed", { reason }, err);
+        } finally {
+          this._rendering = false;
+        }
+      };
+      if (typeof requestAnimationFrame !== "undefined")
+        requestAnimationFrame(run);
+      else
+        setTimeout(run, 0);
+    },
+    _bindEvents() {
+      if (typeof document === "undefined")
+        return;
+      if (!this._onCatalogUpdated)
+        this._onCatalogUpdated = () => this._scheduleRender("catalog-updated");
+      if (!this._onBuilderOpened)
+        this._onBuilderOpened = () => {
+          var _a, _b;
+          try {
+            (_b = (_a = state_default2) == null ? void 0 : _a.init) == null ? void 0 : _b.call(_a);
+          } catch (_) {
+          }
+          this._scheduleRender("builder-opened");
+        };
+      if (!this._onTabChanged)
+        this._onTabChanged = () => this._scheduleRender("tab-changed");
+      document.removeEventListener("cg:quals:catalog-updated", this._onCatalogUpdated);
+      document.addEventListener("cg:quals:catalog-updated", this._onCatalogUpdated);
+      document.removeEventListener("cg:builder:opened", this._onBuilderOpened);
+      document.addEventListener("cg:builder:opened", this._onBuilderOpened);
+      document.removeEventListener("cg:tab:changed", this._onTabChanged);
+      document.addEventListener("cg:tab:changed", this._onTabChanged);
+      if ($12 && $12.fn) {
+        $12(document).off("cg:quals:catalog-updated.cgqualui cg:builder:opened.cgqualui cg:tab:changed.cgqualui").on("cg:quals:catalog-updated.cgqualui", this._onCatalogUpdated).on("cg:builder:opened.cgqualui", this._onBuilderOpened).on("cg:tab:changed.cgqualui", this._onTabChanged);
+      }
+    },
+    _installObserver() {
+      if (this._observer)
+        return;
+      if (typeof MutationObserver === "undefined" || typeof document === "undefined")
+        return;
+      this._lastModalPresent = !!modalRoot2();
+      this._observer = new MutationObserver(() => {
+        const present = !!modalRoot2();
+        if (present !== this._lastModalPresent) {
+          this._lastModalPresent = present;
+          if (present)
+            this._scheduleRender("modal-opened");
+          return;
+        }
+      });
+      this._observer.observe(document.body, { childList: true, subtree: true });
+    },
+    render() {
+      const modal = modalRoot2();
+      if (!modal)
+        return;
+      removeLegacyQualUIs(modal);
+      const wrap = ensureBaseLanguageContainer(modal);
+      if (!wrap)
+        return;
+      const control = wrap.querySelector(".cg-base-language-control");
+      if (!control)
+        return;
+      if (_languageListCache === null) {
+        fetchLanguageList(() => this._scheduleRender("language-list-loaded"));
+        return;
+      }
+      renderLanguageSelect(control);
+    }
+  };
+  W2.CG_QualUI = QualUI;
+  var ui_default = QualUI;
+
   // assets/js/src/core/gifts/index.js
   function init() {
     try {
@@ -4359,6 +4697,10 @@
     }
     try {
       free_choices_default.init();
+    } catch (_) {
+    }
+    try {
+      ui_default.init();
     } catch (_) {
     }
     try {
@@ -4379,7 +4721,7 @@
   var gifts_default = GiftsAPI;
 
   // assets/js/src/core/skills/render.js
-  var $12 = window.jQuery;
+  var $13 = window.jQuery;
   var MARK_DIE = {
     1: "d4",
     2: "d6",
@@ -4479,9 +4821,9 @@
     render() {
       if (!isSkillsTabActive())
         return;
-      let $table = $12("#tab-skills #skills-table");
+      let $table = $13("#tab-skills #skills-table");
       if (!$table.length)
-        $table = $12("#skills-table");
+        $table = $13("#skills-table");
       if (!$table.length)
         return;
       const data = formBuilder_default.getData();
@@ -4497,21 +4839,21 @@
       const MAX_MARKS = 13;
       const usedMarks = Object.values(data.skillMarks).reduce((sum, v) => sum + (parseInt(v, 10) || 0), 0);
       const marksRemain = Math.max(0, MAX_MARKS - usedMarks);
-      $12("#tab-skills #marks-remaining, #marks-remaining").remove();
+      $13("#tab-skills #marks-remaining, #marks-remaining").remove();
       $table.before(`
       <div id="marks-remaining" class="marks-remaining">
         Marks Remaining: <strong>${marksRemain}</strong>
       </div>
     `);
-      const $thead = $12("<thead>");
-      const $tr = $12("<tr>").append("<th>Skill</th>").append(`<th>${speciesNameOf(species) || ""}</th>`).append(`<th>${careerNameOf(career) || ""}</th>`);
+      const $thead = $13("<thead>");
+      const $tr = $13("<tr>").append("<th>Skill</th>").append(`<th>${speciesNameOf(species) || ""}</th>`).append(`<th>${careerNameOf(career) || ""}</th>`);
       extraCareers.forEach((ec) => {
         $tr.append(`<th>${ec.name || "Extra Career"}</th>`);
       });
       $tr.append("<th>Marks</th>").append("<th>Dice Pool</th>").appendTo($thead);
       const spSkills = extractSkillTripletFromAny(species).map(String);
       const cpSkills = extractSkillTripletFromAny(career).map(String);
-      const $tbody = $12("<tbody>");
+      const $tbody = $13("<tbody>");
       skills.forEach((skill) => {
         const id = String(skill.id);
         const name = skill.name;
@@ -4535,7 +4877,7 @@
         const markDisplay = markDie || "\u2013";
         const poolDice = [spDie, cpDie].concat(extraDies).concat([markDie]).filter(Boolean);
         const poolStr = poolDice.length ? poolDice.join(" + ") : "\u2013";
-        const $row = $12("<tr>").append(`<td>${name}</td>`).append(`<td>${spDie || "\u2013"}</td>`).append(`<td>${cpDie || "\u2013"}</td>`);
+        const $row = $13("<tr>").append(`<td>${name}</td>`).append(`<td>${spDie || "\u2013"}</td>`).append(`<td>${cpDie || "\u2013"}</td>`);
         extraDies.forEach((die) => {
           $row.append(`<td>${die || "\u2013"}</td>`);
         });
@@ -4550,11 +4892,11 @@
   };
 
   // assets/js/src/core/skills/events.js
-  var $13 = window.jQuery;
+  var $14 = window.jQuery;
   var _pendingRender = false;
   function isSkillsTabActive2() {
     try {
-      return String($13("#cg-modal .cg-tabs li.active").data("tab") || "") === "tab-skills";
+      return String($14("#cg-modal .cg-tabs li.active").data("tab") || "") === "tab-skills";
     } catch (_) {
       return false;
     }
@@ -4577,17 +4919,17 @@
   }
   var events_default2 = {
     bind() {
-      $13(document).off("cg:tab:changed.cgskills").on("cg:tab:changed.cgskills", onTabChanged);
-      $13(document).off("change.cgskills", "#cg-species, #cg-career").on("change.cgskills", "#cg-species, #cg-career", () => {
+      $14(document).off("cg:tab:changed.cgskills").on("cg:tab:changed.cgskills", onTabChanged);
+      $14(document).off("change.cgskills", "#cg-species, #cg-career").on("change.cgskills", "#cg-species, #cg-career", () => {
         requestRender("species/career change");
       });
-      $13(document).off("cg:extra-careers:changed.cgskills").on("cg:extra-careers:changed.cgskills", () => {
+      $14(document).off("cg:extra-careers:changed.cgskills").on("cg:extra-careers:changed.cgskills", () => {
         requestRender("extra careers changed");
       });
-      $13(document).off("click.cgskills", ".skill-mark-btn").on("click.cgskills", ".skill-mark-btn", function() {
+      $14(document).off("click.cgskills", ".skill-mark-btn").on("click.cgskills", ".skill-mark-btn", function() {
         var _a;
-        const skillId = String((_a = $13(this).data("skill-id")) != null ? _a : "");
-        const markRaw = parseInt($13(this).data("mark"), 10);
+        const skillId = String((_a = $14(this).data("skill-id")) != null ? _a : "");
+        const markRaw = parseInt($14(this).data("mark"), 10);
         if (!skillId)
           return;
         const mark = Number.isFinite(markRaw) ? markRaw : 0;
@@ -4614,7 +4956,7 @@
   };
 
   // assets/js/src/core/skills/index.js
-  var $14 = window.jQuery;
+  var $15 = window.jQuery;
   var _inited = false;
   function isSkillsTabActive3() {
     try {
@@ -4659,7 +5001,7 @@
   }
 
   // assets/js/src/core/summary/api.js
-  var $15 = window.jQuery;
+  var $16 = window.jQuery;
   var TRAITS3 = service_default.TRAITS;
   var MARK_DIE2 = { 1: "d4", 2: "d6", 3: "d8" };
   var SummaryAPI = {
@@ -4696,7 +5038,7 @@
      * Build and inject the full summary into #cg-summary-sheet.
      */
     renderSummary(data = {}) {
-      const $sheet = $15("#cg-summary-sheet").empty();
+      const $sheet = $16("#cg-summary-sheet").empty();
       const name = data.name || "\u2014";
       const age = data.age || "\u2014";
       const gender = data.gender || "\u2014";
@@ -4836,7 +5178,7 @@
         } catch (_) {
         }
       }
-      $15(document).off("input.cgSummary change.cgSummary", sel).on("input.cgSummary change.cgSummary", sel, scheduleRender);
+      $16(document).off("input.cgSummary change.cgSummary", sel).on("input.cgSummary change.cgSummary", sel, scheduleRender);
       try {
         this.renderSummary(formBuilder_default.getData() || {});
       } catch (_) {
@@ -4892,7 +5234,7 @@
     },
     // CG HARDEN: namespaced export click
     bindExportButton() {
-      $15(document).off("click.cg", "#cg-export-pdf").on("click.cg", "#cg-export-pdf", (e) => {
+      $16(document).off("click.cg", "#cg-export-pdf").on("click.cg", "#cg-export-pdf", (e) => {
         e.preventDefault();
         console.log("[SummaryAPI] Export to PDF clicked");
         const sheetHtml = document.getElementById("cg-summary-sheet").outerHTML;
@@ -4946,9 +5288,9 @@
   };
 
   // assets/js/src/core/main/builder-refresh.js
-  var $16 = window.jQuery;
+  var $17 = window.jQuery;
   function refreshTab() {
-    const tab = String($16("#cg-modal .cg-tabs li.active").data("tab") || "");
+    const tab = String($17("#cg-modal .cg-tabs li.active").data("tab") || "");
     switch (tab) {
       case "tab-details":
         break;
@@ -4980,7 +5322,7 @@
   }
 
   // assets/js/src/core/main/builder-load.js
-  var $17 = window.jQuery;
+  var $18 = window.jQuery;
   var LOG2 = (...a) => console.log("[BuilderLoad]", ...a);
   var ERR = (...a) => console.error("[BuilderLoad]", ...a);
   var _inited2 = false;
@@ -5034,18 +5376,18 @@
       return _inFlight;
     const now = Date.now();
     if (force && now - _lastForceFetchAt < FORCE_THROTTLE_MS && _cacheRows) {
-      return $17.Deferred().resolve(_cacheRows).promise();
+      return $18.Deferred().resolve(_cacheRows).promise();
     }
     if (!force && _cacheRows && now - _cacheAt < CACHE_MS) {
-      return $17.Deferred().resolve(_cacheRows).promise();
+      return $18.Deferred().resolve(_cacheRows).promise();
     }
     LOG2("fetching characters via AJAX\u2026", force ? "(force)" : "");
     const req = _getListRequest();
     if (!req) {
       ERR("No listCharacters()/fetchCharacters() available on FormBuilderAPI");
-      return $17.Deferred().resolve([]).promise();
+      return $18.Deferred().resolve([]).promise();
     }
-    const d = $17.Deferred();
+    const d = $18.Deferred();
     _inFlight = d.promise();
     if (force)
       _lastForceFetchAt = now;
@@ -5078,7 +5420,7 @@
     return _inFlight;
   }
   function populateLoadSelect(rows) {
-    const $sel = $17("#cg-splash-load-select");
+    const $sel = $18("#cg-splash-load-select");
     if (!$sel.length)
       return;
     _populating = true;
@@ -5086,14 +5428,14 @@
     try {
       const current = String($sel.val() || "");
       $sel.empty();
-      $sel.append($17("<option>", { value: "", text: "-- Select a character --" }));
+      $sel.append($18("<option>", { value: "", text: "-- Select a character --" }));
       (rows || []).forEach((r) => {
         var _a, _b;
         const id = String((_a = r == null ? void 0 : r.id) != null ? _a : "");
         const name = String((_b = r == null ? void 0 : r.name) != null ? _b : "");
         if (!id)
           return;
-        $sel.append($17("<option>", { value: id, text: name || `#${id}` }));
+        $sel.append($18("<option>", { value: id, text: name || `#${id}` }));
       });
       if (current)
         $sel.val(current);
@@ -5111,7 +5453,7 @@
     _lastEnsureAt = now;
     if (_populating || _suppressObserver)
       return;
-    const $sel = $17("#cg-splash-load-select");
+    const $sel = $18("#cg-splash-load-select");
     if (!$sel.length)
       return;
     const count = $sel.find("option").length;
@@ -5186,22 +5528,22 @@
   }
 
   // assets/js/src/core/main/builder-save.js
-  var $18 = window.jQuery;
+  var $19 = window.jQuery;
   var LOG3 = (...a) => console.log("[BuilderSave]", ...a);
   var WARN2 = (...a) => console.warn("[BuilderSave]", ...a);
   function setSaveButtonsDisabled(disabled) {
     try {
-      $18("#cg-modal .cg-save-button").prop("disabled", !!disabled).toggleClass("cg-disabled", !!disabled);
+      $19("#cg-modal .cg-save-button").prop("disabled", !!disabled).toggleClass("cg-disabled", !!disabled);
     } catch (_) {
     }
   }
   function bindSaveEvents() {
-    $18(document).off("click", ".cg-save-button");
-    $18(document).off("click", ".cg-close-after-save");
-    $18(document).on("click.cg", ".cg-save-button", function(e) {
+    $19(document).off("click", ".cg-save-button");
+    $19(document).off("click", ".cg-close-after-save");
+    $19(document).on("click.cg", ".cg-save-button", function(e) {
       e.preventDefault();
       e.stopImmediatePropagation();
-      const $btn = $18(this);
+      const $btn = $19(this);
       const shouldClose = $btn.hasClass("cg-close-after-save");
       if (window.CG_SAVE_IN_FLIGHT) {
         WARN2("Save click ignored: CG_SAVE_IN_FLIGHT already true", { shouldClose });
@@ -5219,15 +5561,15 @@
   }
 
   // assets/js/src/core/main/builder-events.js
-  var $19 = window.jQuery;
+  var $20 = window.jQuery;
   var LOG4 = (...a) => console.log("[BuilderEvents]", ...a);
   var SEL = {
     species: '#cg-species, select[name="species"], select[data-cg="species"], .cg-species',
     career: '#cg-career,  select[name="career"],  select[data-cg="career"],  .cg-career'
   };
   function firstSelect(selector) {
-    const $sel = $19(selector);
-    const $modalSel = $19("#cg-modal").find(selector);
+    const $sel = $20(selector);
+    const $modalSel = $20("#cg-modal").find(selector);
     if ($modalSel.length)
       return $modalSel.first();
     return $sel.length ? $sel.first() : null;
@@ -5244,7 +5586,7 @@
     if (String($sel.val() || "") === val)
       return true;
     const $byText = $sel.find("option").filter(function() {
-      return $19(this).text() === val;
+      return $20(this).text() === val;
     }).first();
     if ($byText.length) {
       $sel.val($byText.val());
@@ -5273,7 +5615,7 @@
     const $sel = firstSelect(selector);
     if (!$sel) {
       LOG4(`no ${kind} select found`);
-      return $19.Deferred().resolve().promise();
+      return $20.Deferred().resolve().promise();
     }
     const el = $sel.get(0);
     const beforeVal = String($sel.val() || "").trim();
@@ -5287,10 +5629,10 @@
     }
     const ensureOptions = () => {
       if (el.options.length > 1 && !force)
-        return $19.Deferred().resolve().promise();
+        return $20.Deferred().resolve().promise();
       const API = kind === "species" ? api_default : api_default2;
       if (typeof (API == null ? void 0 : API.populateSelect) !== "function")
-        return $19.Deferred().resolve().promise();
+        return $20.Deferred().resolve().promise();
       return API.populateSelect(el, { force: !!force });
     };
     const doApply = () => {
@@ -5309,7 +5651,7 @@
         }
       }
     };
-    return $19.Deferred(function(dfr) {
+    return $20.Deferred(function(dfr) {
       setTimeout(() => {
         ensureOptions().then(() => {
           doApply();
@@ -5319,7 +5661,7 @@
     }).promise();
   }
   function hydrateSpeciesAndCareer(opts = {}) {
-    return $19.when(
+    return $20.when(
       hydrateSelect("species", opts),
       hydrateSelect("career", opts)
     );
@@ -5336,9 +5678,9 @@
       (_b = (_a = gifts_default) == null ? void 0 : _a.init) == null ? void 0 : _b.call(_a);
     } catch (_) {
     }
-    $19(document).off("input.cg change.cg", "#cg-modal input, #cg-modal select, #cg-modal textarea").on("input.cg change.cg", "#cg-modal input, #cg-modal select, #cg-modal textarea", function() {
+    $20(document).off("input.cg change.cg", "#cg-modal input, #cg-modal select, #cg-modal textarea").on("input.cg change.cg", "#cg-modal input, #cg-modal select, #cg-modal textarea", function() {
       builder_ui_default.markDirty();
-      const $el = $19(this);
+      const $el = $20(this);
       if ($el.hasClass("skill-marks")) {
         const skillId = $el.data("skill-id");
         const val = parseInt($el.val(), 10) || 0;
@@ -5352,11 +5694,11 @@
       const key = id.replace(/^cg-/, "");
       formBuilder_default._data[key] = $el.val();
     });
-    $19(document).off("click.cg", "#cg-open-builder").on("click.cg", "#cg-open-builder", (e) => {
+    $20(document).off("click.cg", "#cg-open-builder").on("click.cg", "#cg-open-builder", (e) => {
       e.preventDefault();
-      $19("#cg-modal-splash").removeClass("cg-hidden").addClass("visible");
+      $20("#cg-modal-splash").removeClass("cg-hidden").addClass("visible");
       try {
-        const $sel = $19("#cg-splash-load-select");
+        const $sel = $20("#cg-splash-load-select");
         const optCount = $sel.length ? $sel.find("option").length : 0;
         if ($sel.length && optCount <= 1) {
           document.dispatchEvent(new CustomEvent("cg:characters:refresh", { detail: { source: "splash-open" } }));
@@ -5364,9 +5706,9 @@
       } catch (_) {
       }
     });
-    $19(document).off("click.cg", "#cg-new-splash").on("click.cg", "#cg-new-splash", (e) => {
+    $20(document).off("click.cg", "#cg-new-splash").on("click.cg", "#cg-new-splash", (e) => {
       e.preventDefault();
-      $19("#cg-modal-splash").removeClass("visible").addClass("cg-hidden");
+      $20("#cg-modal-splash").removeClass("visible").addClass("cg-hidden");
       builder_ui_default.openBuilder({ isNew: true, payload: {} });
       formBuilder_default._data.skillMarks = {};
       formBuilder_default._data.species = "";
@@ -5375,9 +5717,9 @@
         window.CG_FreeChoicesState.selected = ["", "", ""];
       }
     });
-    $19(document).off("click.cg", "#cg-load-splash").on("click.cg", "#cg-load-splash", (e) => {
+    $20(document).off("click.cg", "#cg-load-splash").on("click.cg", "#cg-load-splash", (e) => {
       e.preventDefault();
-      const charId = $19("#cg-splash-load-select").val();
+      const charId = $20("#cg-splash-load-select").val();
       if (!charId) {
         alert("Please select a character to load.");
         return;
@@ -5391,7 +5733,7 @@
           alert("Character could not be loaded.");
           return;
         }
-        $19("#cg-modal-splash").removeClass("visible").addClass("cg-hidden");
+        $20("#cg-modal-splash").removeClass("visible").addClass("cg-hidden");
         builder_ui_default.openBuilder({ isNew: false, payload: record });
         setTimeout(() => {
           hydrateSpeciesAndCareer({ force: true, record });
@@ -5403,39 +5745,39 @@
     });
     bindLoadEvents();
     bindSaveEvents();
-    $19(document).off("click.cg", "#cg-modal .cg-tabs li").on("click.cg", "#cg-modal .cg-tabs li", function(e) {
+    $20(document).off("click.cg", "#cg-modal .cg-tabs li").on("click.cg", "#cg-modal .cg-tabs li", function(e) {
       e.preventDefault();
-      const fromTab = $19("#cg-modal .cg-tabs li.active").data("tab");
-      const tabName = $19(this).data("tab");
-      $19("#cg-modal .cg-tabs li").removeClass("active");
-      $19(this).addClass("active");
-      $19(".tab-panel").removeClass("active");
-      $19(`#${tabName}`).addClass("active");
+      const fromTab = $20("#cg-modal .cg-tabs li.active").data("tab");
+      const tabName = $20(this).data("tab");
+      $20("#cg-modal .cg-tabs li").removeClass("active");
+      $20(this).addClass("active");
+      $20(".tab-panel").removeClass("active");
+      $20(`#${tabName}`).addClass("active");
       emitTabChanged(fromTab, tabName);
       refreshTab();
       setTimeout(() => {
         hydrateSpeciesAndCareer({ force: false });
       }, 0);
     });
-    $19(document).off("click.cg", "#cg-modal-close").on("click.cg", "#cg-modal-close", (e) => {
+    $20(document).off("click.cg", "#cg-modal-close").on("click.cg", "#cg-modal-close", (e) => {
       e.preventDefault();
       builder_ui_default.showUnsaved();
     });
-    $19(document).off("click.cg", "#cg-modal-overlay").on("click.cg", "#cg-modal-overlay", function(e) {
+    $20(document).off("click.cg", "#cg-modal-overlay").on("click.cg", "#cg-modal-overlay", function(e) {
       if (e.target !== this)
         return;
       builder_ui_default.showUnsaved();
     });
-    $19(document).off("click.cg", "#unsaved-save").on("click.cg", "#unsaved-save", (e) => {
+    $20(document).off("click.cg", "#unsaved-save").on("click.cg", "#unsaved-save", (e) => {
       e.preventDefault();
       console.log("[BuilderEvents] Prompt: SAVE & EXIT clicked");
       formBuilder_default.save(true);
     });
-    $19(document).off("click.cg", "#unsaved-exit").on("click.cg", "#unsaved-exit", (e) => {
+    $20(document).off("click.cg", "#unsaved-exit").on("click.cg", "#unsaved-exit", (e) => {
       e.preventDefault();
       builder_ui_default.closeBuilder();
     });
-    $19(document).off("click.cg", "#unsaved-cancel").on("click.cg", "#unsaved-cancel", (e) => {
+    $20(document).off("click.cg", "#unsaved-cancel").on("click.cg", "#unsaved-cancel", (e) => {
       e.preventDefault();
       builder_ui_default.hideUnsaved();
     });

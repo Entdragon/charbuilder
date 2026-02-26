@@ -11,10 +11,12 @@
 
 import FreeChoices from './free-choices.js';
 import State from './state.js';
+import QualUI from '../quals/ui.js';
 
 export function init() {
   try { State.init(); } catch (_) {}
   try { FreeChoices.init(); } catch (_) {}
+  try { QualUI.init(); } catch (_) {}
 
   // Ensure data is fetched + UI fills when Gifts tab is opened the first time.
   // refresh() is safe to call anytime; it will only touch DOM when Gifts tab is active.
