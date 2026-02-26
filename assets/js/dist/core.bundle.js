@@ -4969,6 +4969,8 @@
   // assets/js/src/core/skills/index.js
   var $15 = window.jQuery;
   var _inited = false;
+  var _fetching = false;
+  var _fetchDone = false;
   function isSkillsTabActive3() {
     try {
       const li = document.querySelector("#cg-modal .cg-tabs li.active");
@@ -4982,24 +4984,82 @@
     }
     return false;
   }
+  function ajaxEnv5() {
+    var _a, _b;
+    const env = window.CG_AJAX || window.CG_Ajax || window.cgAjax || {};
+    const ajax_url = env.ajax_url || window.ajaxurl || ((_b = (_a = document.body) == null ? void 0 : _a.dataset) == null ? void 0 : _b.ajaxUrl) || "/wp-admin/admin-ajax.php";
+    const nonce = env.nonce || env.security || window.CG_NONCE || null;
+    return { ajax_url, nonce };
+  }
+  function fetchSkillsList() {
+    if (_fetchDone || _fetching)
+      return;
+    _fetching = true;
+    const { ajax_url, nonce } = ajaxEnv5();
+    const payload = {
+      action: "cg_get_skills_list",
+      security: nonce,
+      _ajax_nonce: nonce,
+      nonce
+    };
+    $15.post(ajax_url, payload).then((res) => {
+      _fetching = false;
+      _fetchDone = true;
+      let list = [];
+      if (res && res.success && Array.isArray(res.data)) {
+        list = res.data;
+      } else if (Array.isArray(res)) {
+        list = res;
+      }
+      list = list.map((s) => {
+        var _a, _b, _c, _d, _e;
+        return {
+          id: String((_b = (_a = s.id) != null ? _a : s.skill_id) != null ? _b : ""),
+          name: String((_e = (_d = (_c = s.name) != null ? _c : s.ct_skill_name) != null ? _d : s.skill_name) != null ? _e : "")
+        };
+      }).filter((s) => s.id && s.name);
+      window.CG_SKILLS_LIST = list;
+      formBuilder_default._data = formBuilder_default._data || {};
+      formBuilder_default._data.skillsList = list;
+      if (isSkillsTabActive3()) {
+        render_default.render();
+      }
+    }).catch((err) => {
+      _fetching = false;
+      console.warn("[SkillsIndex] cg_get_skills_list fetch failed:", err);
+    });
+  }
   var skills_default = {
     init() {
       if (!_inited) {
         _inited = true;
-        if (window.CG_DEBUG_SKILLS) {
-          console.log("[SkillsIndex] init \u2014 builder state:", formBuilder_default._data);
-        }
-        if (!Array.isArray(formBuilder_default._data.skillsList)) {
-          formBuilder_default._data.skillsList = window.CG_SKILLS_LIST || [];
+        formBuilder_default._data = formBuilder_default._data || {};
+        if (!Array.isArray(formBuilder_default._data.skillsList) || !formBuilder_default._data.skillsList.length) {
+          if (Array.isArray(window.CG_SKILLS_LIST) && window.CG_SKILLS_LIST.length) {
+            formBuilder_default._data.skillsList = window.CG_SKILLS_LIST;
+            _fetchDone = true;
+          }
+        } else {
+          _fetchDone = true;
         }
         if (typeof formBuilder_default._data.skillMarks !== "object" || !formBuilder_default._data.skillMarks) {
           formBuilder_default._data.skillMarks = {};
         }
         events_default2.bind();
       }
+      if (!_fetchDone) {
+        fetchSkillsList();
+        return;
+      }
       if (isSkillsTabActive3()) {
         render_default.render();
       }
+    },
+    // Allow external callers (e.g. character load) to reset the fetch gate
+    // so a fresh skills list is re-fetched if the DB changes.
+    reset() {
+      _fetchDone = false;
+      _fetching = false;
     }
   };
 
