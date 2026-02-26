@@ -841,6 +841,12 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
 
     row.innerHTML = htmlSlots.join('\n');
     this._renderSlotQuals(slots);
+
+    // Let ExtraCareers re-inject per-slot UI (e.g. "Applies to:" for gift 223)
+    // after this render has settled, since our innerHTML wipes any injected elements.
+    try {
+      document.dispatchEvent(new CustomEvent('cg:free-choices:rendered'));
+    } catch (_) {}
   },
 
   _bindSectionDelegates(section) {

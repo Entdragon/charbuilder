@@ -2148,6 +2148,8 @@
     // careerId -> in-flight promise
     _eligibleCacheKey: "",
     _eligibleCache: [],
+    _lastSelectedWithId: [],
+    // cached after each render for re-injection
     init() {
       var _a, _b;
       if (this._inited)
@@ -2173,9 +2175,16 @@
         EVT.extraCareersOnBuilderOpened = () => ExtraCareers.render();
         EVT.extraCareersOnCharacterLoaded = () => ExtraCareers.render();
         EVT.extraCareersOnFreeGiftChanged = () => ExtraCareers.render();
+        if (EVT.extraCareersOnFreeChoicesRendered) {
+          document.removeEventListener("cg:free-choices:rendered", EVT.extraCareersOnFreeChoicesRendered);
+        }
+        EVT.extraCareersOnFreeChoicesRendered = () => {
+          ExtraCareers._ensureBoostTargetInlineUI(ExtraCareers._lastSelectedWithId || []);
+        };
         document.addEventListener("cg:builder:opened", EVT.extraCareersOnBuilderOpened);
         document.addEventListener("cg:character:loaded", EVT.extraCareersOnCharacterLoaded);
         document.addEventListener("cg:free-gift:changed", EVT.extraCareersOnFreeGiftChanged);
+        document.addEventListener("cg:free-choices:rendered", EVT.extraCareersOnFreeChoicesRendered);
       } catch (e) {
         try {
           WARN("idempotent native listener bind failed", e);
@@ -2883,6 +2892,7 @@
           this._emitChanged();
         }
         const selectedWithId = selected.filter((x) => x && x.id);
+        this._lastSelectedWithId = selectedWithId;
         const boostCounts = this._computeCareerBoostCounts(selectedWithId);
         const baseTrait = this._careerTraitBaseDie();
         this._renderTraitsTabExtraCareerDice(unlocks, selected, baseTrait, boostCounts);
@@ -4228,6 +4238,10 @@
       });
       row.innerHTML = htmlSlots.join("\n");
       this._renderSlotQuals(slots);
+      try {
+        document.dispatchEvent(new CustomEvent("cg:free-choices:rendered"));
+      } catch (_) {
+      }
     },
     _bindSectionDelegates(section) {
       if (section.__cgBound)

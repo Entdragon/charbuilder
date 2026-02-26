@@ -106,6 +106,8 @@ const ExtraCareers = {
   _eligibleCacheKey: '',
   _eligibleCache: [],
 
+  _lastSelectedWithId: [],   // cached after each render for re-injection
+
   init() {
     if (this._inited) return;
     this._inited = true;
@@ -133,9 +135,19 @@ const ExtraCareers = {
       EVT.extraCareersOnCharacterLoaded  = () => ExtraCareers.render();
       EVT.extraCareersOnFreeGiftChanged  = () => ExtraCareers.render();
 
-      document.addEventListener('cg:builder:opened',   EVT.extraCareersOnBuilderOpened);
-      document.addEventListener('cg:character:loaded', EVT.extraCareersOnCharacterLoaded);
-      document.addEventListener('cg:free-gift:changed', EVT.extraCareersOnFreeGiftChanged);
+      // Re-inject "Applies to:" selects after FreeChoices re-renders its slots,
+      // since its innerHTML wipe destroys any previously injected elements.
+      if (EVT.extraCareersOnFreeChoicesRendered) {
+        document.removeEventListener('cg:free-choices:rendered', EVT.extraCareersOnFreeChoicesRendered);
+      }
+      EVT.extraCareersOnFreeChoicesRendered = () => {
+        ExtraCareers._ensureBoostTargetInlineUI(ExtraCareers._lastSelectedWithId || []);
+      };
+
+      document.addEventListener('cg:builder:opened',       EVT.extraCareersOnBuilderOpened);
+      document.addEventListener('cg:character:loaded',     EVT.extraCareersOnCharacterLoaded);
+      document.addEventListener('cg:free-gift:changed',    EVT.extraCareersOnFreeGiftChanged);
+      document.addEventListener('cg:free-choices:rendered', EVT.extraCareersOnFreeChoicesRendered);
     } catch (e) {
       try { WARN('idempotent native listener bind failed', e); } catch (_) {}
     }
@@ -906,6 +918,7 @@ const ExtraCareers = {
     }
 
     const selectedWithId = selected.filter(x => x && x.id);
+    this._lastSelectedWithId = selectedWithId;
     const boostCounts = this._computeCareerBoostCounts(selectedWithId);
 
     const baseTrait = this._careerTraitBaseDie();
