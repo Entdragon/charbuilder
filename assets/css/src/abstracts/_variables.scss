@@ -1,43 +1,43 @@
 :root {
   /* ── Colour tokens ──────────────────────────────────────────── */
-  --cg-bg:            #1a1714;
-  --cg-surface:       #242019;
-  --cg-surface-2:     #2e2820;
-  --cg-border:        rgba(201, 168, 76, 0.22);
-  --cg-border-light:  rgba(201, 168, 76, 0.12);
+  --cg-bg:            #f4f6f4;
+  --cg-surface:       #ffffff;
+  --cg-surface-2:     #f7f7f7;
+  --cg-border:        rgba(0, 0, 0, 0.14);
+  --cg-border-light:  rgba(0, 0, 0, 0.08);
 
-  --cg-gold:          #c9a84c;
-  --cg-gold-light:    #e5c97a;
-  --cg-gold-dark:     #a8822a;
-  --cg-gold-dim:      rgba(201, 168, 76, 0.12);
+  --cg-gold:          #5a8f5c;
+  --cg-gold-light:    #7aad7c;
+  --cg-gold-dark:     #3d6b3f;
+  --cg-gold-dim:      rgba(90, 143, 92, 0.10);
 
-  --cg-parchment:     #f5f0e4;
-  --cg-parchment-2:   #ece5d0;
-  --cg-parchment-3:   #e0d8c0;
+  --cg-parchment:     #ffffff;
+  --cg-parchment-2:   #f7f7f7;
+  --cg-parchment-3:   #e0e0e0;
 
-  --cg-text:          #2c2316;
-  --cg-text-muted:    #6a5b3e;
-  --cg-text-light:    #e8dcc4;
-  --cg-text-dim:      #9a8a6a;
+  --cg-text:          #333333;
+  --cg-text-muted:    #666666;
+  --cg-text-light:    #f7f7f7;
+  --cg-text-dim:      #999999;
 
-  --cg-primary:       #c9a84c;
-  --cg-primary-dark:  #a8822a;
+  --cg-primary:       #5a8f5c;
+  --cg-primary-dark:  #3d6b3f;
   --cg-error:         #c0392b;
-  --cg-info:          #5d7e9e;
+  --cg-info:          #195faa;
 
   /* ── Tabs ───────────────────────────────────────────────────── */
   --cg-tab-font-size:      0.9rem;
   --cg-tab-padding:        0.55em 1.1em;
   --cg-tab-color:          var(--cg-text-muted);
   --cg-tab-bg:             transparent;
-  --cg-tab-hover-bg:       rgba(201, 168, 76, 0.08);
+  --cg-tab-hover-bg:       rgba(90, 143, 92, 0.08);
   --cg-tab-active-bg:      transparent;
   --cg-tab-active-color:   var(--cg-gold);
   --cg-tab-border-radius:  4px;
   --cg-tab-gap:            0;
 
   /* ── Modal ──────────────────────────────────────────────────── */
-  --cg-modal-overlay-bg:   rgba(15, 12, 8, 0.82);
+  --cg-modal-overlay-bg:   rgba(0, 0, 0, 0.65);
   --cg-modal-bg:           var(--cg-parchment);
   --cg-modal-width:        92%;
   --cg-modal-max-width:    1060px;
@@ -45,7 +45,7 @@
   --cg-modal-max-height:   820px;
   --cg-modal-padding:      1.5em;
   --cg-modal-border-radius:10px;
-  --cg-modal-shadow:       0 24px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(201,168,76,0.25);
+  --cg-modal-shadow:       0 8px 32px rgba(0,0,0,0.18), 0 0 0 1px rgba(90,143,92,0.25);
   --cg-close-font-size:    1.1em;
 
   /* ── Common UI ──────────────────────────────────────────────── */
