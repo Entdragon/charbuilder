@@ -13,6 +13,13 @@ app.set('trust proxy', 1);
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`, req.body?.action || '');
+  }
+  next();
+});
+
 const isProduction = process.env.NODE_ENV === 'production';
 
 app.use(session({

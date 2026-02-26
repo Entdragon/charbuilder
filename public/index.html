@@ -158,34 +158,34 @@
       <button class="auth-tab" data-tab="register">Register</button>
     </div>
 
-    <form class="auth-form active" id="login-form">
+    <form class="auth-form active" id="login-form" onsubmit="return false;">
       <div>
         <label for="login-username">Username or Email</label>
-        <input type="text" id="login-username" name="username" autocomplete="username" required>
+        <input type="text" id="login-username" name="username" autocomplete="username">
       </div>
       <div>
         <label for="login-password">Password</label>
-        <input type="password" id="login-password" name="password" autocomplete="current-password" required>
+        <input type="password" id="login-password" name="password" autocomplete="current-password">
       </div>
       <div class="auth-error" id="login-error"></div>
-      <button type="submit" class="auth-submit">Sign In</button>
+      <button type="button" id="login-btn" class="auth-submit">Sign In</button>
     </form>
 
-    <form class="auth-form" id="register-form">
+    <form class="auth-form" id="register-form" onsubmit="return false;">
       <div>
         <label for="reg-username">Username</label>
-        <input type="text" id="reg-username" name="username" autocomplete="username" required>
+        <input type="text" id="reg-username" name="username" autocomplete="username">
       </div>
       <div>
         <label for="reg-email">Email</label>
-        <input type="email" id="reg-email" name="email" autocomplete="email" required>
+        <input type="email" id="reg-email" name="email" autocomplete="email">
       </div>
       <div>
         <label for="reg-password">Password</label>
-        <input type="password" id="reg-password" name="password" autocomplete="new-password" required>
+        <input type="password" id="reg-password" name="password" autocomplete="new-password">
       </div>
       <div class="auth-error" id="register-error"></div>
-      <button type="submit" class="auth-submit">Create Account</button>
+      <button type="button" id="register-btn" class="auth-submit">Create Account</button>
     </form>
   </div>
 </div>
@@ -247,13 +247,24 @@
 
 <script>
 (function () {
+  console.log('[CG] app script starting');
   const authScreen  = document.getElementById('cg-auth-screen');
   const appScreen   = document.getElementById('cg-app-screen');
+  console.log('[CG] authScreen:', !!authScreen, 'appScreen:', !!appScreen);
 
   async function ajax(action, data) {
     const body = new URLSearchParams({ action, nonce: '1', security: '1', ...data });
-    const r = await fetch('/api/ajax', { method: 'POST', body });
-    return r.json();
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 10000);
+    try {
+      const r = await fetch('/api/ajax', { method: 'POST', body, signal: controller.signal });
+      clearTimeout(timer);
+      return r.json();
+    } catch (e) {
+      clearTimeout(timer);
+      console.error('[CG] ajax error:', action, e.message);
+      return { success: false, data: e.name === 'AbortError' ? 'Request timed out. Please try again.' : 'Network error. Please try again.' };
+    }
   }
 
   function showAuth() {
@@ -290,44 +301,49 @@
     });
   });
 
-  document.getElementById('login-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = e.target.querySelector('.auth-submit');
+  async function doLogin() {
+    console.log('[CG] doLogin called');
+    const btn = document.getElementById('login-btn');
     const err = document.getElementById('login-error');
+    const username = document.getElementById('login-username').value.trim();
+    const password = document.getElementById('login-password').value;
+    if (!username || !password) { err.textContent = 'Please enter your username and password.'; return; }
     btn.disabled = true;
-    err.textContent = '';
-    const res = await ajax('cg_login_user', {
-      username: document.getElementById('login-username').value,
-      password: document.getElementById('login-password').value,
-    });
+    err.textContent = 'Signing in…';
+    const res = await ajax('cg_login_user', { username, password });
+    console.log('[CG] login response:', res);
     btn.disabled = false;
     if (res.success) {
-      authScreen.style.display = 'none';
-      showApp(document.getElementById('login-username').value);
+      showApp(username);
     } else {
       err.textContent = res.data || 'Login failed.';
     }
-  });
+  }
 
-  document.getElementById('register-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = e.target.querySelector('.auth-submit');
+  async function doRegister() {
+    console.log('[CG] doRegister called');
+    const btn = document.getElementById('register-btn');
     const err = document.getElementById('register-error');
+    const username = document.getElementById('reg-username').value.trim();
+    const email    = document.getElementById('reg-email').value.trim();
+    const password = document.getElementById('reg-password').value;
+    if (!username || !email || !password) { err.textContent = 'All fields are required.'; return; }
     btn.disabled = true;
-    err.textContent = '';
-    const res = await ajax('cg_register_user', {
-      username: document.getElementById('reg-username').value,
-      email:    document.getElementById('reg-email').value,
-      password: document.getElementById('reg-password').value,
-    });
+    err.textContent = 'Creating account…';
+    const res = await ajax('cg_register_user', { username, email, password });
     btn.disabled = false;
     if (res.success) {
-      authScreen.style.display = 'none';
-      showApp(document.getElementById('reg-username').value);
+      showApp(username);
     } else {
       err.textContent = res.data || 'Registration failed.';
     }
-  });
+  }
+
+  document.getElementById('login-btn').addEventListener('click', doLogin);
+  document.getElementById('login-username').addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
+  document.getElementById('login-password').addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
+
+  document.getElementById('register-btn').addEventListener('click', doRegister);
 
   document.getElementById('cg-logout-btn').addEventListener('click', async () => {
     await ajax('cg_logout_user', {});
