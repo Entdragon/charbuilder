@@ -34,9 +34,10 @@ localPort = 5000
 externalPort = 80
 
 [deployment]
-deploymentTarget = "static"
+deploymentTarget = "vm"
 build = ["npm", "run", "build"]
 publicDir = "dev-preview"
+run = ["node", "server/index.js"]
 
 [userenv]
 
