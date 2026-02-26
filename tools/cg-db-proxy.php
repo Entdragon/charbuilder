@@ -36,6 +36,57 @@ if ( ! hash_equals( PROXY_SECRET, $provided ) ) {
 // ── Parse request ────────────────────────────────────────────────────────────
 
 $body   = json_decode( file_get_contents( 'php://input' ), true );
+$action = trim( $body['action'] ?? '' );
+
+// ── WordPress auth check (delegates to wp_authenticate) ──────────────────────
+
+if ( $action === 'wp_auth_check' ) {
+    $username = trim( $body['username'] ?? '' );
+    $password = $body['password'] ?? '';
+
+    if ( empty( $username ) || $password === '' ) {
+        http_response_code( 400 );
+        echo json_encode( [ 'error' => 'Username and password required' ] );
+        exit;
+    }
+
+    // Load WordPress so we can use wp_authenticate() natively.
+    if ( ! defined( 'ABSPATH' ) ) {
+        $wp_load = __DIR__ . '/wp-load.php';
+        if ( ! file_exists( $wp_load ) ) {
+            $wp_load = dirname( __DIR__ ) . '/wp-load.php';
+        }
+        if ( file_exists( $wp_load ) ) {
+            // Suppress any output WordPress might produce during bootstrap.
+            ob_start();
+            require_once $wp_load;
+            ob_end_clean();
+        }
+    }
+
+    if ( ! function_exists( 'wp_authenticate' ) ) {
+        http_response_code( 500 );
+        echo json_encode( [ 'error' => 'WordPress not available for auth check' ] );
+        exit;
+    }
+
+    $result = wp_authenticate( $username, $password );
+
+    if ( is_wp_error( $result ) ) {
+        echo json_encode( [ 'success' => false ] );
+    } else {
+        echo json_encode( [
+            'success'    => true,
+            'user_id'    => $result->ID,
+            'user_login' => $result->user_login,
+            'user_email' => $result->user_email,
+        ] );
+    }
+    exit;
+}
+
+// ── SQL proxy ────────────────────────────────────────────────────────────────
+
 $sql    = trim( $body['sql']    ?? '' );
 $params = $body['params'] ?? [];
 

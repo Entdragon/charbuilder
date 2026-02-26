@@ -1,5 +1,5 @@
 const { query, queryOne, prefix } = require('../../db');
-const { verifyPassword, hashPassword } = require('../../auth/wordpress');
+const { verifyPassword, hashPassword, verifyViaProxy } = require('../../auth/wordpress');
 const crypto = require('crypto');
 
 async function cg_login_user(req, res) {
@@ -16,7 +16,19 @@ async function cg_login_user(req, res) {
     [username, username]
   );
 
-  if (!user || !verifyPassword(password, user.user_pass)) {
+  let authenticated = user && verifyPassword(password, user.user_pass);
+
+  // Fallback: if local $wp$ bcrypt check fails, delegate to the PHP proxy
+  // which uses WordPress's native wp_authenticate(). This handles plugin hooks
+  // and bcryptjs $2y$ compatibility issues.
+  if (!authenticated && user && user.user_pass && user.user_pass.startsWith('$wp$')) {
+    const proxyResult = await verifyViaProxy(username, password);
+    if (proxyResult && proxyResult.success) {
+      authenticated = true;
+    }
+  }
+
+  if (!authenticated) {
     return res.json({ success: false, data: 'Invalid username or password.' });
   }
 

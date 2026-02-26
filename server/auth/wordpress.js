@@ -7,8 +7,6 @@ function verifyPassword(plaintext, hash) {
   if (!hash || !plaintext) return false;
 
   if (hash.startsWith('$wp$')) {
-    // WordPress 6+ bcrypt: "$wp$" + bcrypt hash without its leading "$"
-    // e.g. "$wp$2y$10$..." → prepend "$" → "$2y$10$..." → swap to "$2b$..."
     const bcryptHash = ('$' + hash.slice(4)).replace('$2y$', '$2b$');
     return bcrypt.compareSync(plaintext, bcryptHash);
   }
@@ -26,9 +24,38 @@ function verifyPassword(plaintext, hash) {
 }
 
 function hashPassword(plaintext) {
-  // Store in WP6 format: "$wp$" + bcrypt without its leading "$"
   const bcryptHash = bcrypt.hashSync(plaintext, 10);
   return '$wp$' + bcryptHash.slice(1).replace('2b$', '2y$');
 }
 
-module.exports = { verifyPassword, hashPassword };
+/**
+ * Delegate authentication to the PHP proxy, which uses WordPress's native
+ * wp_authenticate(). Used as fallback when local bcrypt verify fails for
+ * $wp$ hashes (e.g. bcryptjs $2y$ compatibility issues).
+ *
+ * Returns an object { success, user_id, user_login, user_email } or null if
+ * the proxy is not configured or the request fails.
+ */
+async function verifyViaProxy(username, password) {
+  const proxyUrl    = process.env.CG_PROXY_URL    || '';
+  const proxySecret = process.env.CG_PROXY_SECRET || '';
+  if (!proxyUrl || !proxySecret) return null;
+
+  try {
+    const res = await fetch(proxyUrl, {
+      method:  'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CG-Secret':  proxySecret,
+      },
+      body: JSON.stringify({ action: 'wp_auth_check', username, password }),
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json;
+  } catch (_) {
+    return null;
+  }
+}
+
+module.exports = { verifyPassword, hashPassword, verifyViaProxy };
