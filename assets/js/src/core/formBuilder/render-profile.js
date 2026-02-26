@@ -25,7 +25,7 @@ export default {
           <div class="cg-gift-label">Career Gifts</div>
           <ul id="career-gifts" class="cg-gift-item"></ul>
 
-          <div class="cg-gift-label">Chosen</div>
+          <div class="cg-gift-label">Gifts</div>
           <div id="cg-free-choices" class="cg-gift-item"></div>
         </div>
 

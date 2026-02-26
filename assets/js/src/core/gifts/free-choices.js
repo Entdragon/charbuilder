@@ -406,10 +406,9 @@ function ensureSectionInHost(host) {
   if (!section) {
     section = document.createElement('div');
     section.id = 'cg-free-gifts';
-    section.className = 'cg-profile-box cg-free-gifts';
+    section.className = 'cg-free-gifts';
     section.innerHTML = `
-      <h3>Free Gifts (3)</h3>
-      <div class="cg-free-row" style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;"></div>
+      <div class="cg-free-row" style="display:flex; flex-direction:column; gap:6px;"></div>
     `;
   }
 
@@ -823,14 +822,14 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
         .join('\n');
 
       return `
-        <div class="cg-free-slot" data-slot="${i}" style="display:flex; flex-direction:column;">
-          <label style="display:flex; flex-direction:column; gap:4px; min-width: 220px;">
-            <span style="font-weight:600;">Free Gift ${i + 1}</span>
+        <div class="cg-free-slot" data-slot="${i}">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="font-weight:600; white-space:nowrap; font-size:0.88rem; color:var(--cg-text-muted); text-transform:uppercase; letter-spacing:0.05em;">Gift</span>
             <select id="cg-free-choice-${i}" class="cg-free-gift-select" data-slot="${i}">
               <option value="">— Select a gift —</option>
               ${options}
             </select>
-          </label>
+          </div>
           <div class="cg-free-slot-quals" data-slot="${i}"></div>
         </div>
       `;

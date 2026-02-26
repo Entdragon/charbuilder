@@ -1019,7 +1019,7 @@
           <div class="cg-gift-label">Career Gifts</div>
           <ul id="career-gifts" class="cg-gift-item"></ul>
 
-          <div class="cg-gift-label">Chosen</div>
+          <div class="cg-gift-label">Gifts</div>
           <div id="cg-free-choices" class="cg-gift-item"></div>
         </div>
 
@@ -3813,10 +3813,9 @@
     if (!section) {
       section = document.createElement("div");
       section.id = "cg-free-gifts";
-      section.className = "cg-profile-box cg-free-gifts";
+      section.className = "cg-free-gifts";
       section.innerHTML = `
-      <h3>Free Gifts (3)</h3>
-      <div class="cg-free-row" style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;"></div>
+      <div class="cg-free-row" style="display:flex; flex-direction:column; gap:6px;"></div>
     `;
     }
     try {
@@ -4213,14 +4212,14 @@
           return `<option value="${String(o.id)}"${sel}>${String(o.name)}${suffix}</option>`;
         }).join("\n");
         return `
-        <div class="cg-free-slot" data-slot="${i}" style="display:flex; flex-direction:column;">
-          <label style="display:flex; flex-direction:column; gap:4px; min-width: 220px;">
-            <span style="font-weight:600;">Free Gift ${i + 1}</span>
+        <div class="cg-free-slot" data-slot="${i}">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="font-weight:600; white-space:nowrap; font-size:0.88rem; color:var(--cg-text-muted); text-transform:uppercase; letter-spacing:0.05em;">Gift</span>
             <select id="cg-free-choice-${i}" class="cg-free-gift-select" data-slot="${i}">
               <option value="">\u2014 Select a gift \u2014</option>
               ${options}
             </select>
-          </label>
+          </div>
           <div class="cg-free-slot-quals" data-slot="${i}"></div>
         </div>
       `;
