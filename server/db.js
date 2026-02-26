@@ -1,7 +1,12 @@
 const mysql = require('mysql2/promise');
 
+const rawHost = process.env.DB_HOST || 'localhost';
+const [dbHost, dbPortStr] = rawHost.includes(':') ? rawHost.split(':') : [rawHost, '3306'];
+const dbPort = parseInt(dbPortStr, 10) || 3306;
+
 const pool = mysql.createPool({
-  host:     process.env.DB_HOST     || 'localhost',
+  host:     dbHost,
+  port:     dbPort,
   user:     process.env.DB_USER     || '',
   password: process.env.DB_PASS     || '',
   database: process.env.DB_NAME     || '',

@@ -290,6 +290,7 @@
     loading.style.display   = 'none';
     appScreen.style.display = 'block';
     document.getElementById('cg-username-display').textContent = username;
+    loadBundle();
   }
 
   document.querySelectorAll('.auth-tab').forEach(tab => {
@@ -346,10 +347,16 @@
     showAuth();
   });
 
+  let bundleLoaded = false;
+  function loadBundle() {
+    if (bundleLoaded) return;
+    bundleLoaded = true;
+    const s = document.createElement('script');
+    s.src = '/assets/js/dist/core.bundle.js';
+    document.body.appendChild(s);
+  }
+
   init();
 })();
-</script>
-
-<script src="/assets/js/dist/core.bundle.js"></script>
 </body>
 </html>
