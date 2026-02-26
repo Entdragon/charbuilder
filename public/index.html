@@ -153,6 +153,7 @@
     <h1>Library of Calbria</h1>
     <p class="subtitle">Character Generator</p>
 
+    <div id="js-status" style="font-size:0.7rem;text-align:center;color:#888;margin-bottom:4px;">Checking…</div>
     <div class="auth-tabs">
       <button class="auth-tab active" data-tab="login">Sign In</button>
       <button class="auth-tab" data-tab="register">Register</button>
@@ -168,7 +169,7 @@
         <input type="password" id="login-password" name="password" autocomplete="current-password">
       </div>
       <div class="auth-error" id="login-error"></div>
-      <button type="button" id="login-btn" class="auth-submit">Sign In</button>
+      <button type="button" id="login-btn" class="auth-submit" onclick="window.doLogin()">Sign In</button>
     </form>
 
     <form class="auth-form" id="register-form" onsubmit="return false;">
@@ -185,7 +186,7 @@
         <input type="password" id="reg-password" name="password" autocomplete="new-password">
       </div>
       <div class="auth-error" id="register-error"></div>
-      <button type="button" id="register-btn" class="auth-submit">Create Account</button>
+      <button type="button" id="register-btn" class="auth-submit" onclick="window.doRegister()">Create Account</button>
     </form>
   </div>
 </div>
@@ -250,6 +251,8 @@
   console.log('[CG] app script starting');
   const authScreen  = document.getElementById('cg-auth-screen');
   const appScreen   = document.getElementById('cg-app-screen');
+  const jsStatus    = document.getElementById('js-status');
+  if (jsStatus) jsStatus.textContent = '✓ Ready';
   console.log('[CG] authScreen:', !!authScreen, 'appScreen:', !!appScreen);
 
   async function ajax(action, data) {
@@ -338,6 +341,9 @@
       err.textContent = res.data || 'Registration failed.';
     }
   }
+
+  window.doLogin    = doLogin;
+  window.doRegister = doRegister;
 
   document.getElementById('login-btn').addEventListener('click', doLogin);
   document.getElementById('login-username').addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
