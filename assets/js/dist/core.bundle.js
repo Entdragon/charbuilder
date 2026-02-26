@@ -1980,9 +1980,8 @@
       </select>`;
       }
       li.push(
-        `<li class="cg-career-gift-line cg-career-gift-line--replace" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-        <strong>${labels[i - 1]}:</strong>
-        <span class="cg-career-gift-dup-note">Duplicate: ${escapeHtml(baseName)} \u2192</span>
+        `<li class="cg-career-gift-line cg-career-gift-line--replace" style="display:flex; align-items:center; gap:6px;">
+        <span style="white-space:nowrap;"><strong>${labels[i - 1]}:</strong> Duplicate: ${escapeHtml(baseName)} \u2192</span>
         ${selectHtml}
       </li>`
       );
