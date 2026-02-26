@@ -197,6 +197,7 @@ const SummaryAPI = {
     html += `
       <div class="summary-section summary-skills">
         <h3>Skills</h3>
+        <div class="cg-summary-skills-wrap">
         <table class="cg-summary-skills">
           <thead><tr><th>Skill</th><th>Dice Pool</th></tr></thead>
           <tbody>
@@ -225,6 +226,7 @@ const SummaryAPI = {
     html += `
           </tbody>
         </table>
+        </div>
       </div>
     `;
 
@@ -361,8 +363,8 @@ const SummaryAPI = {
         .map(link => link.outerHTML)
         .join('\n');
 
-        // 3) Open a print window and write minimal HTML
-        const printWin = window.open('', '_blank', 'width=800,height=600');
+        // 3) Open a print window and write clean HTML
+        const printWin = window.open('', '_blank', 'width=900,height=700');
         printWin.document.open();
         printWin.document.write(`
           <!doctype html>
@@ -370,13 +372,16 @@ const SummaryAPI = {
             <head>
               <meta charset="utf-8">
               <title>Character Sheet</title>
+              <link rel="preconnect" href="https://fonts.googleapis.com">
+              <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+              <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap">
               ${cssLinks}
               <style>
-                @page { margin: 1cm; }
-                body { margin:0; padding:0; }
+                @page { size: A4; margin: 1.4cm 1.8cm; }
+                body  { margin: 0; padding: 0; background: white; }
               </style>
             </head>
-            <body>
+            <body class="cg-print-window">
               ${sheetHtml}
             </body>
           </html>
@@ -384,11 +389,10 @@ const SummaryAPI = {
         printWin.document.close();
         printWin.focus();
 
-        // 4) Trigger print and close window
+        // 4) Wait for fonts to load, then print
         setTimeout(() => {
           printWin.print();
-          printWin.close();
-        }, 300);
+        }, 800);
       });
   }
 };
