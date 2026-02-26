@@ -1,0 +1,31 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap');
+
+/* Apply Cinzel to all headings inside the builder/modal */
+#cg-modal,
+.cg-modal-splash__content {
+  font-family: 'Crimson Pro', Georgia, serif;
+  font-size: 1.05rem;
+  color: var(--cg-text);
+
+  h1, h2, h3, h4, h5 {
+    font-family: 'Cinzel', Georgia, serif;
+    font-weight: 600;
+    color: var(--cg-text);
+    letter-spacing: 0.02em;
+  }
+
+  h2 {
+    font-size: 1.25rem;
+    margin: 0 0 1rem;
+  }
+
+  h3 {
+    font-size: 1.05rem;
+    margin-bottom: 0.6rem;
+  }
+
+  label {
+    font-family: 'Crimson Pro', Georgia, serif;
+    font-weight: 600;
+  }
+}

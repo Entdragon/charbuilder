@@ -2,114 +2,140 @@
 
 // Overlay
 #cg-modal-overlay {
-  position: fixed;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  background: var(--cg-modal-overlay-bg, rgba(0, 0, 0, 0.5));
-  z-index: 1000;
-  display: none;
+  position:   fixed;
+  inset:      0;
+  width:      100%;
+  height:     100%;
+  background: var(--cg-modal-overlay-bg, rgba(0,0,0,0.75));
+  z-index:    1000;
+  display:    none;
 }
 
 // Modal Window
 #cg-modal {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: var(--cg-modal-width, 90%);
-  max-width: var(--cg-modal-max-width, 1000px);
-  height: var(--cg-modal-height, 90%);
-  max-height: var(--cg-modal-max-height, 800px);
-  background: var(--cg-modal-bg, #fff);
-  padding: var(--cg-modal-padding, 1.5em);
-  border-radius: var(--cg-modal-border-radius, 12px);
-  box-shadow: var(--cg-modal-shadow, 0 2px 10px rgba(0, 0, 0, 0.3));
-  overflow-y: auto;
-  display: none;
-  z-index: 1001;
+  position:      absolute;
+  top:           50%;
+  left:          50%;
+  transform:     translate(-50%, -50%);
+  width:         var(--cg-modal-width,     92%);
+  max-width:     var(--cg-modal-max-width, 1060px);
+  height:        var(--cg-modal-height,    92%);
+  max-height:    var(--cg-modal-max-height,820px);
+  background:    var(--cg-modal-bg,        #f5f0e4);
+  padding:       var(--cg-modal-padding,   1.5em);
+  border-radius: var(--cg-modal-border-radius, 10px);
+  box-shadow:    var(--cg-modal-shadow);
+  border:        1px solid rgba(201,168,76,0.3);
+  overflow-y:    auto;
+  display:       none;
+  z-index:       1001;
+
+  // Gold top accent bar
+  &::before {
+    content:    '';
+    display:    block;
+    height:     3px;
+    background: linear-gradient(90deg, transparent, var(--cg-gold), transparent);
+    margin:     -1.5em -1.5em 1.25em;
+    border-radius: 10px 10px 0 0;
+  }
 }
 
 // Close Button
 .cg-modal-close {
-  position: absolute;
-  top: 1em;
-  right: 1em;
+  position:   absolute;
+  top:        0.9em;
+  right:      0.9em;
   background: transparent;
-  border: none;
-  font-size: var(--cg-close-font-size, 1.2em);
-  cursor: pointer;
-  color: #666;
-  transition: color 0.2s;
+  border:     1px solid var(--cg-parchment-3);
+  font-size:  var(--cg-close-font-size, 1.1em);
+  width:      2rem;
+  height:     2rem;
+  display:    flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  cursor:     pointer;
+  color:      var(--cg-text-muted);
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+  line-height: 1;
 }
 
 .cg-modal-close:hover {
-  color: #000;
+  color:         var(--cg-gold-dark);
+  border-color:  var(--cg-gold);
+  background:    rgba(201,168,76,0.08);
 }
 
 // Visibility Toggles
 .cg-hidden {
-  display: none !important;
+  display:    none !important;
   visibility: hidden !important;
-  opacity: 0 !important;
+  opacity:    0 !important;
 }
 
 .cg-visible {
-  display: block !important;
+  display:    block !important;
   visibility: visible !important;
-  opacity: 1 !important;
+  opacity:    1 !important;
 }
 
-// A mini‐backdrop just for the unsaved‐changes prompt
+// Unsaved-changes backdrop
 #cg-unsaved-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 1001;
-  display: none;
+  position:   fixed;
+  inset:      0;
+  background: rgba(0,0,0,0.5);
+  z-index:    1001;
+  display:    none;
 }
 
-// The actual unsaved‐changes prompt container
+// Unsaved-changes dialog
 #cg-unsaved-confirm {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: #fff;
-  padding: 1.5rem;
+  position:      fixed;
+  top:           50%;
+  left:          50%;
+  transform:     translate(-50%, -50%);
+  background:    var(--cg-parchment);
+  border:        1px solid var(--cg-border);
+  padding:       2rem;
   border-radius: var(--cg-radius);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-  z-index: 1002;
-  display: none;
+  box-shadow:    0 8px 32px rgba(0,0,0,0.4);
+  z-index:       1002;
+  display:       none;
+  min-width:     320px;
+  text-align:    center;
+
+  p {
+    font-family: 'Crimson Pro', Georgia, serif;
+    font-size:   1.1rem;
+    color:       var(--cg-text);
+    margin:      0 0 1.25rem;
+  }
 
   &.cg-hidden {
-    display: none !important;
+    display:    none !important;
     visibility: hidden !important;
-    opacity: 0 !important;
+    opacity:    0 !important;
   }
 
   &.cg-visible {
-    display: block !important;
+    display:    block !important;
     visibility: visible !important;
-    opacity: 1 !important;
+    opacity:    1 !important;
   }
 }
 
-// ——— Final: New/Load Splash Overlay ———
-
+// Splash Overlay
 #cg-modal-splash {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.6);
-  display: none;
-  align-items: center;
+  position:        fixed;
+  inset:           0;
+  width:           100vw;
+  height:          100vh;
+  background:      rgba(15, 12, 8, 0.85);
+  display:         none;
+  align-items:     center;
   justify-content: center;
-  z-index: 1003;
+  z-index:         1003;
 }
 
 #cg-modal-splash.visible {
@@ -117,22 +143,67 @@
 }
 
 #cg-modal-splash.cg-hidden {
-  display: none !important;
+  display:    none !important;
   visibility: hidden !important;
-  opacity: 0 !important;
+  opacity:    0 !important;
 }
 
-// Correct class selector for content box
 .cg-modal-splash__content {
-  background: #fff;
-  padding: 2rem;
-  border-radius: 4px;
-  max-width: 90%;
-  width: 400px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-  text-align: center;
+  background:    var(--cg-parchment);
+  padding:       2.5rem 2rem;
+  border-radius: 10px;
+  border:        1px solid rgba(201,168,76,0.35);
+  box-shadow:    0 24px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(201,168,76,0.15);
+  max-width:     90%;
+  width:         420px;
+  text-align:    center;
+  position:      relative;
+
+  &::before {
+    content:    '';
+    display:    block;
+    height:     3px;
+    background: linear-gradient(90deg, transparent, var(--cg-gold), transparent);
+    margin:     -2.5rem -2rem 2rem;
+    border-radius: 10px 10px 0 0;
+  }
+
+  h2 {
+    font-family: 'Cinzel', Georgia, serif;
+    font-size:   1.3rem;
+    font-weight: 600;
+    color:       var(--cg-text);
+    margin:      0 0 0.25rem;
+    letter-spacing: 0.04em;
+  }
+}
+
+#cg-modal-splash .cg-splash-load {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--cg-parchment-3);
+
+  label {
+    display:     block;
+    font-family: 'Crimson Pro', Georgia, serif;
+    font-size:   0.9rem;
+    color:       var(--cg-text-muted);
+    margin-bottom: 0.5rem;
+  }
+
+  select {
+    width:         100%;
+    padding:       0.55rem 0.75rem;
+    border:        1px solid var(--cg-parchment-3);
+    border-radius: var(--cg-radius);
+    background:    #fff;
+    color:         var(--cg-text);
+    font-family:   'Crimson Pro', Georgia, serif;
+    font-size:     1rem;
+    margin-bottom: 0.75rem;
+  }
 }
 
 #cg-modal-splash button {
-  margin: 0.5rem;
+  margin: 0.35rem;
 }

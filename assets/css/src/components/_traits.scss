@@ -1,14 +1,19 @@
 .cg-traits-box {
-  background: var(--cg-gray-light);
-  border: 1px solid var(--cg-gray);
-  padding: var(--cg-space);
+  background:    var(--cg-parchment-2);
+  border:        1px solid var(--cg-parchment-3);
+  padding:       var(--cg-space);
   border-radius: var(--cg-radius);
 }
 
 .cg-traits-box h3 {
   margin-bottom: var(--cg-space);
-  font-size: 1.2rem;
-  border-bottom: 1px solid var(--cg-gray);
+  font-size:     1rem;
+  font-family:   'Cinzel', Georgia, serif;
+  font-weight:   600;
+  letter-spacing: 0.03em;
+  border-bottom: 1px solid var(--cg-parchment-3);
+  padding-bottom: var(--cg-space-sm);
+  color:         var(--cg-text);
 }
 
 .cg-trait {
@@ -16,149 +21,151 @@
 }
 
 .cg-trait label {
-  font-weight: bold;
-  display: block;
+  font-weight:    600;
+  font-size:      0.88rem;
+  color:          var(--cg-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display:        block;
 }
 
 .cg-trait-select {
-  width: 100%;
-  padding: var(--cg-space-sm);
-  margin-top: var(--cg-space-sm);
-  border: 1px solid var(--cg-gray);
+  width:         100%;
+  padding:       var(--cg-space-sm);
+  margin-top:    var(--cg-space-sm);
+  border:        1px solid var(--cg-parchment-3);
   border-radius: var(--cg-radius);
+  background:    #fff;
+  color:         var(--cg-text);
+  font-family:   'Crimson Pro', Georgia, serif;
+  font-size:     1rem;
+
+  &:focus {
+    outline:      none;
+    border-color: var(--cg-gold);
+    box-shadow:   0 0 0 2px rgba(201,168,76,0.15);
+  }
 }
 
 /* Dropdown + badge row */
 .cg-trait-control {
-  display: flex;
+  display:     flex;
   align-items: center;
-  gap: var(--cg-space-sm);
-  margin-top: var(--cg-space-sm);
+  gap:         var(--cg-space-sm);
+  margin-top:  var(--cg-space-sm);
 }
 
 /* override the default 100% width when in a flex row */
 .cg-trait-control .cg-trait-select,
 .cg-trait-control .cg-profile-select {
-  flex: 1 1 auto;
-  width: auto;
-  margin-top: 0;
+  flex:      1 1 auto;
+  width:     auto;
+  margin-top:0;
 }
 
 /* Circular die badge */
 .cg-trait-badge {
-  width: 2.2rem;
-  height: 2.2rem;
-  border-radius: 50%;
-  border: 1px solid var(--cg-gray);
-  background: #fff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  line-height: 1;
-  color: #111;
+  width:          2.4rem;
+  height:         2.4rem;
+  border-radius:  50%;
+  border:         2px solid var(--cg-gold);
+  background:     linear-gradient(135deg, #fff 60%, var(--cg-parchment-2));
+  display:        inline-flex;
+  align-items:    center;
+  justify-content:center;
+  font-weight:    700;
+  font-family:    'Cinzel', Georgia, serif;
+  font-size:      0.8rem;
+  line-height:    1;
+  color:          var(--cg-gold-dark);
+  box-shadow:     0 1px 3px rgba(0,0,0,0.15);
 }
 
 .cg-trait-badge--sm {
-  width: 1.9rem;
-  height: 1.9rem;
-  font-size: 0.95rem;
+  width:      2rem;
+  height:     2rem;
+  font-size:  0.75rem;
 }
 
-/* Note line under dropdown (used for "Increased by gift") */
+/* Note line under dropdown */
 .trait-adjusted {
-  margin-top: var(--cg-space-sm);
-  color: #0073aa;
+  margin-top:  var(--cg-space-sm);
+  color:       var(--cg-gold-dark);
   font-weight: 600;
-  font-style: normal;
-  font-size: 0.95rem;
-  min-height: 1em; /* keeps layout stable when empty */
+  font-style:  normal;
+  font-size:   0.9rem;
+  min-height:  1em;
 }
 
-/* Extra career trait display (Traits tab, read-only) */
+/* Extra career trait display */
 .cg-extra-career-traits-box {
-  margin-top: var(--cg-space);
+  margin-top:  var(--cg-space);
   padding-top: var(--cg-space);
-  border-top: 1px solid var(--cg-gray);
+  border-top:  1px solid var(--cg-parchment-3);
 }
 
 .cg-extra-career-traits-box h4 {
-  margin: 0 0 var(--cg-space-sm);
-  font-size: 1rem;
+  margin:     0 0 var(--cg-space-sm);
+  font-size:  0.95rem;
+  font-family:'Cinzel', Georgia, serif;
 }
 
 .cg-extra-career-trait-row {
-  display: flex;
-  align-items: center;
+  display:         flex;
+  align-items:     center;
   justify-content: space-between;
-  gap: var(--cg-space-sm);
-  padding: 0.15rem 0;
+  gap:             var(--cg-space-sm);
+  padding:         0.15rem 0;
 }
 
 .cg-extra-career-trait-name {
   font-weight: 600;
 }
 
-/* EXTRA CAREER BADGE OVERRIDE
-   Traits tab: make the extra-career die badge a bit larger (scoped, so other badges stay unchanged). */
 #cg-extra-career-traits .cg-trait-badge--sm {
-  width: 2.2rem;
-  height: 2.2rem;
-  font-size: 1rem;
+  width:     2.4rem;
+  height:    2.4rem;
+  font-size: 0.85rem;
 }
 
-/* EXTRA CAREER SELECT FULL WIDTH
-   Make the Extra Career dropdown match Species/Career dropdown width. */
 #cg-extra-careers select,
 #cg-extra-careers .cg-profile-select {
-  display: block;
-  width: 100%;
-  max-width: none;
-  flex: 1 1 auto;
-  min-width: 0;
+  display:    block;
+  width:      100%;
+  max-width:  none;
+  flex:       1 1 auto;
+  min-width:  0;
 }
 
-/* EXTRA CAREER SELECT FULL WIDTH (FORCED)
-   Make the Extra Career dropdown match Species/Career dropdown width. */
 #cg-extra-careers select,
 #cg-extra-careers .cg-profile-select {
-  width: 100% !important;
-  max-width: none !important;
-  flex: 1 1 auto;
-  min-width: 0;
+  width:      100% !important;
+  max-width:  none !important;
+  flex:       1 1 auto;
+  min-width:  0;
   box-sizing: border-box;
 }
 
-/* EXTRA CAREER WRAPPER FULL WIDTH
-   The select is already 100%, but its container is constrained (often 50% in a grid/flex layout).
-   Force the extra-career block + control row to span full width, scoped to Extra Careers only. */
 #cg-extra-careers .cg-extra-career-block,
 #cg-extra-careers .cg-trait-control--extra {
-  width: 100% !important;
-  max-width: none !important;
-  flex: 1 1 100% !important;
+  width:      100% !important;
+  max-width:  none !important;
+  flex:       1 1 100% !important;
   flex-basis: 100% !important;
   grid-column: 1 / -1 !important;
 }
 
-/* Make sure the select can actually grow inside the control row */
 #cg-extra-careers .cg-trait-control--extra .cg-profile-select,
 #cg-extra-careers .cg-trait-control--extra select {
-  flex: 1 1 auto !important;
+  flex:      1 1 auto !important;
   min-width: 0 !important;
 }
 
-/* EXTRA CAREER SELECT HIDE BADGE
-   The Extra Careers *selection* UI should not show a die badge.
-   (Traits tab extra-career trait dice live under #cg-extra-career-traits and are unaffected.) */
 #cg-extra-careers .cg-trait-badge,
 #cg-extra-careers .cg-trait-badge--sm {
   display: none !important;
 }
 
-/* PROFILE SELECTS HIDE DIE BADGE
-   Species/Career/Extra Career selection dropdowns should NEVER show die badges.
-   Badges remain for trait dice selectors and for #cg-extra-career-traits display. */
 .cg-trait-control--profile .cg-trait-badge,
 .cg-trait-control--profile .cg-trait-badge--sm {
   display: none !important;

@@ -1,85 +1,97 @@
 .cg-profile-box {
-  border: 1px solid var(--cg-gray);
+  border:        1px solid var(--cg-parchment-3);
   border-radius: var(--cg-radius);
-  background: var(--cg-gray-light);
-  padding: var(--cg-space);
+  background:    var(--cg-parchment-2);
+  padding:       var(--cg-space);
   margin-bottom: var(--cg-space-lg);
 }
+
 .cg-profile-box h3 {
-  margin-top: 0;
-  font-size: 1.2rem;
-  border-bottom: 1px solid var(--cg-gray);
-  padding-bottom: 0.25rem;
-}
-.cg-profile-box label {
-  display: block;
-  margin: 0.5em 0 0.25em;
-  font-weight: bold;
+  margin-top:    0;
+  font-size:     1rem;
+  font-family:   'Cinzel', Georgia, serif;
+  font-weight:   600;
+  letter-spacing:0.03em;
+  color:         var(--cg-text);
+  border-bottom: 1px solid var(--cg-parchment-3);
+  padding-bottom:0.4rem;
 }
 
-/* Match styling for Profile selects + Free-choice selects */
+.cg-profile-box label {
+  display:        block;
+  margin:         0.5em 0 0.25em;
+  font-weight:    600;
+  font-size:      0.85rem;
+  color:          var(--cg-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
 .cg-profile-select,
 .cg-free-select {
-  width: 100%;
-  padding: 0.5em;
-  font-size: 1rem;
-  border: 1px solid var(--cg-gray);
+  width:         100%;
+  padding:       0.5em 0.65em;
+  font-size:     1rem;
+  font-family:   'Crimson Pro', Georgia, serif;
+  color:         var(--cg-text);
+  border:        1px solid var(--cg-parchment-3);
   border-radius: var(--cg-radius);
+  background:    #fff;
   margin-bottom: 0.5em;
+  transition:    border-color 0.18s, box-shadow 0.18s;
+
+  &:focus {
+    outline:      none;
+    border-color: var(--cg-gold);
+    box-shadow:   0 0 0 2px rgba(201,168,76,0.15);
+  }
 }
 
 .cg-profile-grid {
-  display: grid;
+  display:               grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--cg-space);
+  gap:                   var(--cg-space);
 }
 
 .cg-gift-label {
-  font-weight: bold;
-  margin-top: 1em;
+  font-weight: 600;
+  margin-top:  1em;
+  font-size:   0.88rem;
+  color:       var(--cg-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
+
 .cg-gift-item {
   margin: 0.25em 0;
+  font-family: 'Crimson Pro', Georgia, serif;
 }
 
-/* === Free-choice gift dropdown layout (vertical stack) === */
 .cg-free-row {
-  display: flex;
+  display:        flex;
   flex-direction: column;
-  flex-wrap: nowrap;
-  gap: var(--cg-space);
-  margin-top: 0.5em;
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  align-items: stretch;
+  flex-wrap:      nowrap;
+  gap:            var(--cg-space);
+  margin-top:     0.5em;
+  width:          100%;
+  max-width:      100%;
+  box-sizing:     border-box;
+  align-items:    stretch;
 }
 
-/* When stacking, let the gap control spacing (avoid double-spacing from margin-bottom) */
 .cg-free-row .cg-free-select {
   margin-bottom: 0;
 }
 
-#species-gift-block {
-  list-style-type: none;
-  margin: 0;
-  padding: 0;
-}
-
-#species-gift-block li {
-  list-style: none;
-  margin-left: 0;
-  padding-left: 0;
-}
-
+#species-gift-block,
 #career-gifts {
   list-style-type: none;
-  margin: 0;
-  padding: 0;
-}
+  margin:          0;
+  padding:         0;
 
-#career-gifts li {
-  list-style: none;
-  margin-left: 0;
-  padding-left: 0;
+  li {
+    list-style: none;
+    margin-left: 0;
+    padding-left: 0;
+  }
 }

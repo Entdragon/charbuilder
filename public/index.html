@@ -4,154 +4,452 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Character Generator – Library of Calbria</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap">
   <link rel="stylesheet" href="/assets/css/dist/core.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; }
 
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #1a1a2e;
-      color: #e0e0e0;
-      min-height: 100vh;
+    /* ── Design tokens ─────────────────────────────────── */
+    :root {
+      --bg:          #1a1714;
+      --surface:     #242019;
+      --surface-2:   #2d2820;
+      --gold:        #c9a84c;
+      --gold-light:  #e5c97a;
+      --gold-dark:   #a8822a;
+      --gold-border: rgba(201,168,76,0.28);
+      --gold-glow:   rgba(201,168,76,0.12);
+      --text:        #e8dcc4;
+      --text-muted:  #9a8a6a;
+      --text-dim:    #5a4f3a;
+      --error:       #d9534f;
     }
 
-    #cg-auth-screen {
-      display: flex;
-      align-items: center;
+    /* ── Base ──────────────────────────────────────────── */
+    body {
+      margin:      0;
+      font-family: 'Crimson Pro', Georgia, serif;
+      background:  var(--bg);
+      color:       var(--text);
+      min-height:  100vh;
+      /* Subtle diamond trellis pattern */
+      background-image: url("data:image/svg+xml,%3Csvg width='48' height='48' viewBox='0 0 48 48' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M24 2L46 24L24 46L2 24Z' fill='none' stroke='%23c9a84c' stroke-width='0.4' stroke-opacity='0.12'/%3E%3C/svg%3E");
+    }
+
+    /* ── Shared button styles ───────────────────────────── */
+    .btn {
+      display:       inline-flex;
+      align-items:   center;
       justify-content: center;
-      min-height: 100vh;
-      padding: 2rem;
+      gap:           0.5rem;
+      padding:       0.6rem 1.4rem;
+      font-family:   'Cinzel', Georgia, serif;
+      font-size:     0.82rem;
+      font-weight:   600;
+      letter-spacing:0.06em;
+      border-radius: 5px;
+      cursor:        pointer;
+      transition:    all 0.2s;
+      text-transform:uppercase;
+    }
+
+    .btn-gold {
+      background:    linear-gradient(135deg, var(--gold-dark) 0%, var(--gold) 50%, var(--gold-dark) 100%);
+      color:         #1a1410;
+      border:        1px solid var(--gold-dark);
+      box-shadow:    0 2px 8px rgba(201,168,76,0.25);
+    }
+
+    .btn-gold:hover:not(:disabled) {
+      background:    linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 50%, var(--gold) 100%);
+      box-shadow:    0 4px 16px rgba(201,168,76,0.35);
+      transform:     translateY(-1px);
+    }
+
+    .btn-gold:disabled {
+      opacity: 0.5;
+      cursor:  not-allowed;
+      transform: none;
+    }
+
+    .btn-ghost {
+      background:    transparent;
+      color:         var(--text-muted);
+      border:        1px solid rgba(201,168,76,0.2);
+      font-family:   'Cinzel', Georgia, serif;
+      font-size:     0.75rem;
+      letter-spacing:0.05em;
+      padding:       0.4rem 0.9rem;
+      border-radius: 4px;
+      cursor:        pointer;
+      text-transform:uppercase;
+      transition:    all 0.2s;
+    }
+
+    .btn-ghost:hover {
+      color:        var(--gold-light);
+      border-color: var(--gold-border);
+    }
+
+    .btn-outline {
+      background:    transparent;
+      color:         var(--gold);
+      border:        1px solid var(--gold-border);
+      font-family:   'Cinzel', Georgia, serif;
+      font-size:     0.82rem;
+      letter-spacing:0.06em;
+      padding:       0.6rem 1.4rem;
+      border-radius: 5px;
+      cursor:        pointer;
+      text-transform:uppercase;
+      transition:    all 0.2s;
+    }
+
+    .btn-outline:hover {
+      background:   var(--gold-glow);
+      border-color: var(--gold);
+      color:        var(--gold-light);
+    }
+
+    /* ── Auth screen ────────────────────────────────────── */
+    #cg-auth-screen {
+      display:         flex;
+      align-items:     center;
+      justify-content: center;
+      min-height:      100vh;
+      padding:         2rem;
     }
 
     .auth-card {
-      background: #24243e;
-      border: 1px solid #3a3a5c;
-      border-radius: 10px;
-      padding: 2.5rem 2rem;
-      width: 100%;
-      max-width: 400px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      background:    var(--surface);
+      border:        1px solid var(--gold-border);
+      border-radius: 12px;
+      padding:       0 2rem 2.5rem;
+      width:         100%;
+      max-width:     400px;
+      box-shadow:    0 24px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(201,168,76,0.1);
+      overflow:      hidden;
+    }
+
+    .auth-card-accent {
+      height:     3px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      margin:     0 -2rem 2.5rem;
+    }
+
+    .auth-emblem {
+      text-align:    center;
+      font-family:   'Cinzel', Georgia, serif;
+      font-size:     1.5rem;
+      color:         var(--gold);
+      letter-spacing:0.12em;
+      margin-bottom: 0.35rem;
+      line-height:   1;
     }
 
     .auth-card h1 {
-      margin: 0 0 0.25rem;
-      font-size: 1.6rem;
-      color: #a9a4ff;
-      text-align: center;
+      margin:        0 0 0.2rem;
+      font-family:   'Cinzel', Georgia, serif;
+      font-size:     1.5rem;
+      font-weight:   700;
+      color:         var(--gold-light);
+      text-align:    center;
+      letter-spacing:0.06em;
     }
 
     .auth-card .subtitle {
-      text-align: center;
-      color: #888;
-      font-size: 0.9rem;
-      margin-bottom: 1.75rem;
+      text-align:    center;
+      color:         var(--text-muted);
+      font-size:     0.9rem;
+      font-family:   'Cinzel', Georgia, serif;
+      letter-spacing:0.1em;
+      text-transform:uppercase;
+      margin-bottom: 2rem;
+    }
+
+    .auth-divider {
+      height:     1px;
+      background: linear-gradient(90deg, transparent, var(--gold-border), transparent);
+      margin:     0 -2rem 1.75rem;
     }
 
     .auth-tabs {
-      display: flex;
-      border-bottom: 1px solid #3a3a5c;
+      display:       flex;
+      border-bottom: 1px solid rgba(201,168,76,0.15);
       margin-bottom: 1.5rem;
     }
 
     .auth-tab {
-      flex: 1;
-      background: none;
-      border: none;
-      color: #888;
-      padding: 0.6rem;
-      font-size: 0.95rem;
-      cursor: pointer;
+      flex:          1;
+      background:    none;
+      border:        none;
       border-bottom: 2px solid transparent;
-      transition: all 0.2s;
+      margin-bottom: -1px;
+      color:         var(--text-dim);
+      padding:       0.5rem;
+      font-family:   'Cinzel', Georgia, serif;
+      font-size:     0.8rem;
+      font-weight:   600;
+      letter-spacing:0.08em;
+      text-transform:uppercase;
+      cursor:        pointer;
+      transition:    all 0.2s;
     }
 
     .auth-tab.active {
-      color: #a9a4ff;
-      border-bottom-color: #a9a4ff;
+      color:             var(--gold);
+      border-bottom-color: var(--gold);
     }
 
-    .auth-form { display: none; flex-direction: column; gap: 0.9rem; }
+    .auth-tab:hover:not(.active) {
+      color: var(--text-muted);
+    }
+
+    .auth-form { display: none; flex-direction: column; gap: 1rem; }
     .auth-form.active { display: flex; }
 
-    .auth-form label {
-      font-size: 0.85rem;
-      color: #aaa;
-      margin-bottom: 0.25rem;
-      display: block;
+    .auth-field label {
+      font-family:   'Cinzel', Georgia, serif;
+      font-size:     0.72rem;
+      font-weight:   600;
+      letter-spacing:0.08em;
+      text-transform:uppercase;
+      color:         var(--text-muted);
+      display:       block;
+      margin-bottom: 0.4rem;
     }
 
-    .auth-form input {
-      width: 100%;
-      padding: 0.65rem 0.85rem;
-      background: #1a1a2e;
-      border: 1px solid #3a3a5c;
+    .auth-field input {
+      width:         100%;
+      padding:       0.65rem 0.9rem;
+      background:    rgba(10,8,5,0.5);
+      border:        1px solid rgba(201,168,76,0.18);
       border-radius: 5px;
-      color: #e0e0e0;
-      font-size: 0.95rem;
-      outline: none;
-      transition: border-color 0.2s;
+      color:         var(--text);
+      font-family:   'Crimson Pro', Georgia, serif;
+      font-size:     1rem;
+      outline:       none;
+      transition:    border-color 0.2s, box-shadow 0.2s;
     }
 
-    .auth-form input:focus { border-color: #6c63ff; }
+    .auth-field input:focus {
+      border-color: var(--gold);
+      box-shadow:   0 0 0 2px rgba(201,168,76,0.12);
+    }
+
+    .auth-field input::placeholder {
+      color: var(--text-dim);
+    }
 
     .auth-submit {
-      background: #6c63ff;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      padding: 0.75rem;
-      font-size: 1rem;
-      cursor: pointer;
+      width:      100%;
+      padding:    0.8rem;
       margin-top: 0.25rem;
-      transition: background 0.2s;
     }
-
-    .auth-submit:hover { background: #574fd4; }
-    .auth-submit:disabled { background: #444; cursor: not-allowed; }
 
     .auth-error {
-      color: #ff6b6b;
-      font-size: 0.85rem;
+      color:      var(--error);
+      font-size:  0.9rem;
       text-align: center;
       min-height: 1.2em;
+      font-style: italic;
     }
 
-    #cg-app-screen { display: none; padding: 2rem; }
+    /* ── App screen ─────────────────────────────────────── */
+    #cg-app-screen {
+      display:    none;
+      min-height: 100vh;
+      flex-direction: column;
+    }
 
     .app-header {
-      display: flex;
-      align-items: center;
+      display:         flex;
+      align-items:     center;
       justify-content: space-between;
-      margin-bottom: 2rem;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid #3a3a5c;
+      padding:         0.9rem 2rem;
+      background:      var(--surface);
+      border-bottom:   1px solid var(--gold-border);
+      box-shadow:      0 2px 16px rgba(0,0,0,0.3);
+      position:        sticky;
+      top:             0;
+      z-index:         100;
     }
 
-    .app-header h1 { margin: 0; color: #a9a4ff; font-size: 1.5rem; }
-    .app-header .user-info { color: #888; font-size: 0.9rem; }
-
-    .logout-btn {
-      background: none;
-      border: 1px solid #3a3a5c;
-      color: #aaa;
-      padding: 0.4rem 0.9rem;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 0.85rem;
-      transition: all 0.2s;
+    .app-header__brand {
+      display:     flex;
+      align-items: center;
+      gap:         0.85rem;
     }
 
-    .logout-btn:hover { border-color: #ff6b6b; color: #ff6b6b; }
+    .app-header__emblem {
+      font-size:  1.3rem;
+      color:      var(--gold);
+      line-height:1;
+    }
 
+    .app-header__title {
+      font-family:   'Cinzel', Georgia, serif;
+      font-size:     1.1rem;
+      font-weight:   700;
+      color:         var(--gold-light);
+      letter-spacing:0.05em;
+      margin:        0;
+      line-height:   1.2;
+    }
+
+    .app-header__sub {
+      display:       block;
+      font-family:   'Cinzel', Georgia, serif;
+      font-size:     0.65rem;
+      color:         var(--text-dim);
+      letter-spacing:0.12em;
+      text-transform:uppercase;
+    }
+
+    .app-header__user {
+      display:     flex;
+      align-items: center;
+      gap:         1rem;
+    }
+
+    .app-header__username {
+      font-size:  0.9rem;
+      color:      var(--text-muted);
+    }
+
+    .app-header__username strong {
+      color:      var(--text);
+      font-weight:600;
+    }
+
+    /* ── App main content ───────────────────────────────── */
+    .app-main {
+      flex:            1;
+      display:         flex;
+      align-items:     center;
+      justify-content: center;
+      padding:         3rem 2rem;
+    }
+
+    .app-hero {
+      text-align: center;
+      max-width:  480px;
+    }
+
+    .app-hero__ornament {
+      font-size:     2rem;
+      color:         var(--gold);
+      display:       block;
+      margin-bottom: 1rem;
+      opacity:       0.7;
+    }
+
+    .app-hero__title {
+      font-family:   'Cinzel', Georgia, serif;
+      font-size:     2rem;
+      font-weight:   700;
+      color:         var(--gold-light);
+      letter-spacing:0.05em;
+      margin:        0 0 0.4rem;
+      line-height:   1.2;
+    }
+
+    .app-hero__subtitle {
+      font-family:   'Cinzel', Georgia, serif;
+      font-size:     0.8rem;
+      color:         var(--text-muted);
+      letter-spacing:0.15em;
+      text-transform:uppercase;
+      margin:        0 0 2rem;
+    }
+
+    .app-hero__rule {
+      height:        1px;
+      background:    linear-gradient(90deg, transparent, var(--gold-border), transparent);
+      margin:        0 auto 2.5rem;
+      width:         80%;
+    }
+
+    .app-hero__cta {
+      padding:    0.9rem 2.5rem;
+      font-size:  0.9rem;
+    }
+
+    /* ── The builder button (hidden visually but kept for JS) ── */
+    #cg-open-builder-trigger {
+      display: none;
+    }
+
+    /* ── Splash + builder modals inherit from core.css ─── */
+    /* Button overrides within the bundle-generated UI */
+    .button,
+    .button.primary,
+    .button.secondary {
+      display:       inline-flex;
+      align-items:   center;
+      justify-content: center;
+      font-family:   'Cinzel', Georgia, serif;
+      font-size:     0.78rem;
+      font-weight:   600;
+      letter-spacing:0.06em;
+      text-transform:uppercase;
+      border-radius: 5px;
+      padding:       0.55rem 1.2rem;
+      cursor:        pointer;
+      transition:    all 0.18s;
+      border:        1px solid var(--gold-border);
+      background:    linear-gradient(135deg, var(--gold-dark) 0%, var(--gold) 50%, var(--gold-dark) 100%);
+      color:         #1a1410;
+      box-shadow:    0 2px 6px rgba(201,168,76,0.2);
+    }
+
+    .button:hover,
+    .button.primary:hover {
+      background:  linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 50%, var(--gold) 100%);
+      box-shadow:  0 4px 12px rgba(201,168,76,0.3);
+      transform:   translateY(-1px);
+    }
+
+    .button.secondary {
+      background:   transparent;
+      color:        var(--gold);
+      border-color: var(--gold-border);
+      box-shadow:   none;
+    }
+
+    .button.secondary:hover {
+      background:  rgba(201,168,76,0.08);
+      color:       var(--gold-light);
+      border-color:var(--gold);
+    }
+
+    /* unsaved dialog buttons */
+    .unsaved-dialog {
+      font-family: 'Crimson Pro', Georgia, serif;
+    }
+
+    .unsaved-buttons {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
   </style>
 </head>
 <body>
 
+<!-- ── Auth Screen ───────────────────────────────────────────── -->
 <div id="cg-auth-screen" style="display:flex">
   <div class="auth-card">
+    <div class="auth-card-accent"></div>
+
+    <div class="auth-emblem">◆</div>
     <h1>Library of Calbria</h1>
     <p class="subtitle">Character Generator</p>
+
+    <div class="auth-divider"></div>
 
     <div class="auth-tabs">
       <button class="auth-tab active" data-tab="login">Sign In</button>
@@ -159,54 +457,74 @@
     </div>
 
     <form class="auth-form active" id="login-form" onsubmit="return false;">
-      <div>
+      <div class="auth-field">
         <label for="login-username">Username or Email</label>
-        <input type="text" id="login-username" name="username" autocomplete="username">
+        <input type="text" id="login-username" name="username" autocomplete="username" placeholder="Enter your username">
       </div>
-      <div>
+      <div class="auth-field">
         <label for="login-password">Password</label>
-        <input type="password" id="login-password" name="password" autocomplete="current-password">
+        <input type="password" id="login-password" name="password" autocomplete="current-password" placeholder="Enter your password">
       </div>
       <div class="auth-error" id="login-error"></div>
-      <button type="button" id="login-btn" class="auth-submit" onclick="window.doLogin()">Sign In</button>
+      <button type="button" id="login-btn" class="btn btn-gold auth-submit">Sign In</button>
     </form>
 
     <form class="auth-form" id="register-form" onsubmit="return false;">
-      <div>
+      <div class="auth-field">
         <label for="reg-username">Username</label>
-        <input type="text" id="reg-username" name="username" autocomplete="username">
+        <input type="text" id="reg-username" name="username" autocomplete="username" placeholder="Choose a username">
       </div>
-      <div>
+      <div class="auth-field">
         <label for="reg-email">Email</label>
-        <input type="email" id="reg-email" name="email" autocomplete="email">
+        <input type="email" id="reg-email" name="email" autocomplete="email" placeholder="your@email.com">
       </div>
-      <div>
+      <div class="auth-field">
         <label for="reg-password">Password</label>
-        <input type="password" id="reg-password" name="password" autocomplete="new-password">
+        <input type="password" id="reg-password" name="password" autocomplete="new-password" placeholder="Choose a password">
       </div>
       <div class="auth-error" id="register-error"></div>
-      <button type="button" id="register-btn" class="auth-submit" onclick="window.doRegister()">Create Account</button>
+      <button type="button" id="register-btn" class="btn btn-gold auth-submit">Create Account</button>
     </form>
   </div>
 </div>
 
-<div id="cg-app-screen" style="display:none">
-  <div class="app-header">
-    <h1>Library of Calbria – Character Generator</h1>
-    <div style="display:flex;align-items:center;gap:1rem">
-      <span class="user-info">Signed in as <strong id="cg-username-display"></strong></span>
-      <button class="logout-btn" id="cg-logout-btn">Sign Out</button>
+<!-- ── App Screen ────────────────────────────────────────────── -->
+<div id="cg-app-screen" style="display:none; flex-direction:column; min-height:100vh">
+
+  <header class="app-header">
+    <div class="app-header__brand">
+      <span class="app-header__emblem">◆</span>
+      <div>
+        <h1 class="app-header__title">Library of Calbria</h1>
+        <span class="app-header__sub">Character Generator</span>
+      </div>
     </div>
-  </div>
+    <div class="app-header__user">
+      <span class="app-header__username">Signed in as <strong id="cg-username-display"></strong></span>
+      <button class="btn-ghost" id="cg-logout-btn">Sign Out</button>
+    </div>
+  </header>
 
-  <button id="cg-open-builder" class="button">Open Character Builder</button>
+  <main class="app-main">
+    <div class="app-hero">
+      <span class="app-hero__ornament">✦ ◆ ✦</span>
+      <h2 class="app-hero__title">Your Characters</h2>
+      <p class="app-hero__subtitle">Library of Calbria &mdash; Character Records</p>
+      <div class="app-hero__rule"></div>
+      <button id="cg-open-builder" class="btn btn-gold app-hero__cta">
+        ✦ &nbsp; Open Character Builder
+      </button>
+    </div>
+  </main>
 
+  <!-- Splash modal (New / Load) — shown by bundle JS -->
   <div id="cg-modal-splash" class="cg-modal-splash cg-hidden">
     <div class="cg-modal-splash__content">
       <h2>Character Builder</h2>
-      <button id="cg-new-splash" class="button primary">New Character</button>
+      <p style="color:var(--text-muted);font-family:'Crimson Pro',Georgia,serif;font-size:0.95rem;margin:0 0 1.5rem">Begin a new tale or continue an existing one.</p>
+      <button id="cg-new-splash" class="button primary">✦ &nbsp; New Character</button>
       <div class="cg-splash-load">
-        <label for="cg-splash-load-select">Or load existing:</label>
+        <label for="cg-splash-load-select">Load an existing character</label>
         <select id="cg-splash-load-select">
           <option value="">— Loading… —</option>
         </select>
@@ -215,6 +533,7 @@
     </div>
   </div>
 
+  <!-- Builder modal -->
   <div id="cg-modal-overlay" class="cg-hidden">
     <div id="cg-modal">
       <button id="cg-modal-close" class="cg-modal-close">✕</button>
@@ -231,8 +550,10 @@
       </div>
     </div>
   </div>
+
 </div>
 
+<!-- ── Scripts ───────────────────────────────────────────────── -->
 <script src="/vendor/jquery/dist/jquery.js"></script>
 <script>
   window.CG_AJAX = {
@@ -247,10 +568,8 @@
 
 <script>
 (function () {
-  console.log('[CG] app script starting');
-  const authScreen  = document.getElementById('cg-auth-screen');
-  const appScreen   = document.getElementById('cg-app-screen');
-  console.log('[CG] authScreen:', !!authScreen, 'appScreen:', !!appScreen);
+  const authScreen = document.getElementById('cg-auth-screen');
+  const appScreen  = document.getElementById('cg-app-screen');
 
   async function ajax(action, data) {
     const body = new URLSearchParams({ action, nonce: '1', security: '1', ...data });
@@ -262,8 +581,7 @@
       return r.json();
     } catch (e) {
       clearTimeout(timer);
-      console.error('[CG] ajax error:', action, e.message);
-      return { success: false, data: e.name === 'AbortError' ? 'Request timed out. Please try again.' : 'Network error. Please try again.' };
+      return { success: false, data: e.name === 'AbortError' ? 'Request timed out.' : 'Network error.' };
     }
   }
 
@@ -274,12 +592,11 @@
 
   function showApp(username) {
     authScreen.style.display = 'none';
-    appScreen.style.display  = 'block';
+    appScreen.style.display  = 'flex';
     document.getElementById('cg-username-display').textContent = username;
     loadBundle();
   }
 
-  // Silently check if already logged in — show app if so, stay on login if not
   async function init() {
     try {
       const controller = new AbortController();
@@ -287,9 +604,7 @@
       const r = await fetch('/api/auth/me', { signal: controller.signal });
       const d = await r.json();
       if (d.success) showApp(d.data.username);
-    } catch (e) {
-      // Stay on auth screen (already visible)
-    }
+    } catch (e) {}
   }
 
   document.querySelectorAll('.auth-tab').forEach(tab => {
@@ -302,18 +617,17 @@
   });
 
   async function doLogin() {
-    console.log('[CG] doLogin called');
-    const btn = document.getElementById('login-btn');
-    const err = document.getElementById('login-error');
+    const btn      = document.getElementById('login-btn');
+    const err      = document.getElementById('login-error');
     const username = document.getElementById('login-username').value.trim();
     const password = document.getElementById('login-password').value;
     if (!username || !password) { err.textContent = 'Please enter your username and password.'; return; }
     btn.disabled = true;
     err.textContent = 'Signing in…';
     const res = await ajax('cg_login_user', { username, password });
-    console.log('[CG] login response:', res);
     btn.disabled = false;
     if (res.success) {
+      err.textContent = '';
       showApp(username);
     } else {
       err.textContent = res.data || 'Login failed.';
@@ -321,9 +635,8 @@
   }
 
   async function doRegister() {
-    console.log('[CG] doRegister called');
-    const btn = document.getElementById('register-btn');
-    const err = document.getElementById('register-error');
+    const btn      = document.getElementById('register-btn');
+    const err      = document.getElementById('register-error');
     const username = document.getElementById('reg-username').value.trim();
     const email    = document.getElementById('reg-email').value.trim();
     const password = document.getElementById('reg-password').value;
@@ -333,6 +646,7 @@
     const res = await ajax('cg_register_user', { username, email, password });
     btn.disabled = false;
     if (res.success) {
+      err.textContent = '';
       showApp(username);
     } else {
       err.textContent = res.data || 'Registration failed.';
@@ -343,14 +657,12 @@
   window.doRegister = doRegister;
 
   document.getElementById('login-btn').addEventListener('click', doLogin);
-  document.getElementById('login-username').addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
-  document.getElementById('login-password').addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
-
+  document.getElementById('login-username').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  document.getElementById('login-password').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
   document.getElementById('register-btn').addEventListener('click', doRegister);
 
   document.getElementById('cg-logout-btn').addEventListener('click', async () => {
     await ajax('cg_logout_user', {});
-    appScreen.style.display  = 'none';
     showAuth();
   });
 

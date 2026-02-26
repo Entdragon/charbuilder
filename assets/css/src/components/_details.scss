@@ -1,25 +1,49 @@
 .cg-details-box {
-  background: var(--cg-gray-light);
-  border: 1px solid var(--cg-gray);
-  padding: var(--cg-space);
+  background:    var(--cg-parchment-2);
+  border:        1px solid var(--cg-parchment-3);
+  padding:       var(--cg-space);
   border-radius: var(--cg-radius);
 }
+
 .cg-details-box h3 {
   margin-bottom: var(--cg-space);
-  font-size: 1.2rem;
-  border-bottom: 1px solid var(--cg-gray);
+  font-size:     1rem;
+  font-family:   'Cinzel', Georgia, serif;
+  font-weight:   600;
+  letter-spacing: 0.03em;
+  border-bottom: 1px solid var(--cg-parchment-3);
+  padding-bottom: var(--cg-space-sm);
+  color:         var(--cg-text);
 }
+
 .cg-details-box label {
-  display: block;
-  margin-top: var(--cg-space-sm);
-  font-weight: bold;
+  display:     block;
+  margin-top:  var(--cg-space-sm);
+  font-weight: 600;
+  font-size:   0.88rem;
+  color:       var(--cg-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
+
 .cg-details-box input[type=text],
-.cg-details-box select {
-  width: 100%;
-  padding: var(--cg-space-sm);
-  margin-top: var(--cg-space-sm);
-  border: 1px solid var(--cg-gray);
+.cg-details-box input[type=number],
+.cg-details-box select,
+.cg-details-box textarea {
+  width:         100%;
+  padding:       0.5rem 0.65rem;
+  margin-top:    0.3rem;
+  border:        1px solid var(--cg-parchment-3);
   border-radius: var(--cg-radius);
-  font-size: 1rem;
+  background:    #fff;
+  color:         var(--cg-text);
+  font-family:   'Crimson Pro', Georgia, serif;
+  font-size:     1rem;
+  transition:    border-color 0.18s, box-shadow 0.18s;
+
+  &:focus {
+    outline:      none;
+    border-color: var(--cg-gold);
+    box-shadow:   0 0 0 2px rgba(201,168,76,0.15);
+  }
 }

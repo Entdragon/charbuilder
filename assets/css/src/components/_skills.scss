@@ -1,60 +1,52 @@
 .cg-skills-table {
-  width: 100%;
+  width:           100%;
   border-collapse: collapse;
 }
 
 .cg-skills-table th,
 .cg-skills-table td {
-  padding: 0.5em 1em;
-  border: 1px solid #ddd;
+  padding: 0.5em 0.85em;
+  border:  1px solid var(--cg-parchment-3);
 }
 
 .cg-skills-table th {
-  background: #f2f2f2;
+  background:    var(--cg-parchment-2);
+  font-family:   'Cinzel', Georgia, serif;
+  font-size:     0.8rem;
+  font-weight:   600;
+  letter-spacing:0.04em;
+  color:         var(--cg-text-muted);
+  text-transform:uppercase;
 }
 
+.cg-skills-table tr:nth-child(even) td {
+  background: rgba(240, 232, 208, 0.35);
+}
+
+/* dot markers */
 .skill-mark-btn {
-  background: var(--cg-gray-light);
-  border: 1px solid var(--cg-gray);
-  border-radius: 4px;
-  padding: 0.25em 0.5em;
+  width:         1em;
+  height:        1em;
+  margin-right:  0.25em;
+  border:        1.5px solid var(--cg-gold-dark);
+  background:    transparent;
+  padding:       0;
+  border-radius: 50%;
+  cursor:        pointer;
+  transition:    background 0.15s, border-color 0.15s;
 }
 
 .skill-mark-btn.active {
-  background: var(--cg-primary);
-  color: #fff;
+  background:    var(--cg-gold);
+  border-color:  var(--cg-gold-dark);
 }
 
 .skill-mark-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-/* make the three buttons look like empty dots/squares */
-.skill-mark-btn {
-  width: 1em;
-  height: 1em;
-  margin-right: 0.25em;
-  border: 1px solid var(--cg-gray);
-  background: transparent;
-  padding: 0;
-  border-radius: 50%;       /* circle; use 4px for squares */
-  cursor: pointer;
-}
-
-/* filled blue when active */
-.skill-mark-btn.active {
-  background: var(--cg-primary);
-  border-color: var(--cg-primary);
-}
-
-/* dim & unclickable when budget exhausted */
-.skill-mark-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+  opacity: 0.35;
+  cursor:  not-allowed;
 }
 
 .marks-display {
   margin-top: 0.25em;
-  font-size: 0.9em;
+  font-size:  0.9em;
 }
