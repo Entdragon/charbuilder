@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Character Generator – Dev Preview</title>
+  <link rel="stylesheet" href="../assets/css/dist/core.css">
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #1a1a2e;
+      color: #e0e0e0;
+      margin: 0;
+      padding: 2rem;
+    }
+    .notice {
+      background: #2a2a4a;
+      border-left: 4px solid #6c63ff;
+      padding: 1rem 1.5rem;
+      border-radius: 4px;
+      margin-bottom: 2rem;
+      max-width: 700px;
+    }
+    .notice h2 { margin-top: 0; color: #a9a4ff; }
+    .notice p { margin: 0.5rem 0; }
+    .notice code {
+      background: #111;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 0.9em;
+    }
+    .file-tree {
+      background: #111;
+      border-radius: 6px;
+      padding: 1rem 1.5rem;
+      font-family: monospace;
+      font-size: 0.9rem;
+      max-width: 500px;
+      line-height: 1.8;
+    }
+    .file-tree .dir { color: #6c63ff; }
+    .file-tree .file { color: #a8d8a8; }
+    .section { max-width: 700px; margin-top: 2rem; }
+    h1 { color: #a9a4ff; }
+    h3 { color: #ccc; }
+    .badge {
+      display: inline-block;
+      background: #6c63ff;
+      color: white;
+      border-radius: 3px;
+      padding: 2px 8px;
+      font-size: 0.8em;
+      margin-left: 0.5rem;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body>
+  <h1>Character Generator <span class="badge">WordPress Plugin</span></h1>
+
+  <div class="notice">
+    <h2>Development Preview</h2>
+    <p>This is a <strong>WordPress plugin</strong> — it requires a WordPress installation to run fully. This preview is here to confirm the build environment is working.</p>
+    <p>To use the plugin:</p>
+    <ol>
+      <li>Copy the plugin folder into your WordPress <code>wp-content/plugins/</code> directory.</li>
+      <li>Activate it from the WordPress admin panel.</li>
+      <li>Add the shortcode <code>[character_generator]</code> to any page.</li>
+    </ol>
+    <p>To rebuild assets after making changes, run: <code>npm run build</code></p>
+  </div>
+
+  <div class="section">
+    <h3>Plugin Structure</h3>
+    <div class="file-tree">
+      <div><span class="dir">character-generator/</span></div>
+      <div>&nbsp;&nbsp;<span class="file">character-generator.php</span> &nbsp;← main entry point</div>
+      <div>&nbsp;&nbsp;<span class="dir">includes/</span></div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">index.php</span></div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">shortcode-ui.php</span></div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">enqueue-hardening.php</span></div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="dir">auth/ career/ character/ gifts/ skills/ species/</span></div>
+      <div>&nbsp;&nbsp;<span class="dir">assets/</span></div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="dir">js/src/</span> &nbsp;← ES6 source modules</div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="dir">js/dist/</span> &nbsp;← bundled (esbuild)</div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="dir">css/src/</span> &nbsp;← SCSS source</div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="dir">css/dist/</span> &nbsp;← compiled CSS</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Build Status</h3>
+    <p id="build-status">Checking...</p>
+  </div>
+
+  <script>
+    const checks = [
+      { label: 'JS bundle (core.bundle.js)', path: '../assets/js/dist/core.bundle.js' },
+      { label: 'CSS bundle (core.css)', path: '../assets/css/dist/core.css' },
+    ];
+    const el = document.getElementById('build-status');
+    el.innerHTML = checks.map(c =>
+      `<div>✅ ${c.label} — loaded via &lt;link&gt;/&lt;script&gt; tags</div>`
+    ).join('') + '<div style="margin-top:0.5rem;color:#888;">Assets are pre-built and ready for WordPress.</div>';
+  </script>
+</body>
+</html>
