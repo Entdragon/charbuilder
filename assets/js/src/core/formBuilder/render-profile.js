@@ -14,8 +14,10 @@ export default {
           <div class="cg-gift-label">Local Knowledge</div>
           <div id="cg-local-knowledge" class="cg-gift-item"></div>
 
-          <div class="cg-gift-label">Language</div>
-          <div id="cg-language" class="cg-gift-item"></div>
+          <div style="display:flex; align-items:center; gap:10px; margin-top:1em;">
+            <div class="cg-gift-label" style="margin-top:0;">Language</div>
+            <div id="cg-language" class="cg-gift-item" style="margin:0;"></div>
+          </div>
 
           <div class="cg-gift-label">Species Gifts</div>
           <ul id="species-gift-block" class="cg-gift-item"></ul>

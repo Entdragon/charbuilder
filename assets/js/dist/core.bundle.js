@@ -1008,8 +1008,10 @@
           <div class="cg-gift-label">Local Knowledge</div>
           <div id="cg-local-knowledge" class="cg-gift-item"></div>
 
-          <div class="cg-gift-label">Language</div>
-          <div id="cg-language" class="cg-gift-item"></div>
+          <div style="display:flex; align-items:center; gap:10px; margin-top:1em;">
+            <div class="cg-gift-label" style="margin-top:0;">Language</div>
+            <div id="cg-language" class="cg-gift-item" style="margin:0;"></div>
+          </div>
 
           <div class="cg-gift-label">Species Gifts</div>
           <ul id="species-gift-block" class="cg-gift-item"></ul>
@@ -4469,12 +4471,7 @@
       wrap = document.createElement("div");
       wrap.id = "cg-base-language";
       wrap.className = "cg-gift-item cg-base-language";
-      wrap.innerHTML = `
-      <div class="cg-base-language-inner" style="display:flex; flex-direction:column; gap:6px;">
-        <div style="font-weight:600;">Language</div>
-        <div class="cg-base-language-control"></div>
-      </div>
-    `;
+      wrap.innerHTML = `<div class="cg-base-language-control"></div>`;
     }
     try {
       if (host.classList && host.classList.contains("cg-gift-item")) {

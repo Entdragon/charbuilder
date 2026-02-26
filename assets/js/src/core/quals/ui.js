@@ -164,12 +164,7 @@ function ensureBaseLanguageContainer(modal) {
     wrap = document.createElement('div');
     wrap.id = 'cg-base-language';
     wrap.className = 'cg-gift-item cg-base-language';
-    wrap.innerHTML = `
-      <div class="cg-base-language-inner" style="display:flex; flex-direction:column; gap:6px;">
-        <div style="font-weight:600;">Language</div>
-        <div class="cg-base-language-control"></div>
-      </div>
-    `;
+    wrap.innerHTML = `<div class="cg-base-language-control"></div>`;
   }
 
   // If host is a gift-item, append inside it; otherwise insert before free choices.
