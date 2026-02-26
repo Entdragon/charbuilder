@@ -16,6 +16,11 @@
     "sass": "^1.89.2"
   },
   "dependencies": {
-    "jquery": "^3.7.1"
+    "body-parser": "^2.2.2",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "jquery": "^3.7.1",
+    "mysql2": "^3.18.1",
+    "phpass": "^0.1.1"
   }
 }

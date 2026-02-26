@@ -1,0 +1,27 @@
+const mysql = require('mysql2/promise');
+
+const pool = mysql.createPool({
+  host:     process.env.DB_HOST     || 'localhost',
+  user:     process.env.DB_USER     || '',
+  password: process.env.DB_PASS     || '',
+  database: process.env.DB_NAME     || '',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+});
+
+function prefix() {
+  return process.env.DB_PREFIX || 'wp_';
+}
+
+async function query(sql, params = []) {
+  const [rows] = await pool.execute(sql, params);
+  return rows;
+}
+
+async function queryOne(sql, params = []) {
+  const rows = await query(sql, params);
+  return rows[0] || null;
+}
+
+module.exports = { pool, query, queryOne, prefix };
