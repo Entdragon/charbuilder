@@ -74,6 +74,14 @@ const SummaryAPI = {
     const species = SpeciesAPI.currentProfile || {};
     const career  = CareerAPI.currentProfile  || {};
 
+    // Extra careers
+    let extraCareers = [];
+    if (Array.isArray(data.extraCareers) && data.extraCareers.length) {
+      extraCareers = data.extraCareers.filter(ec => ec && ec.id);
+    } else if (typeof data.extra_careers === 'string' && data.extra_careers.trim()) {
+      try { extraCareers = JSON.parse(data.extra_careers).filter(ec => ec && ec.id); } catch (_) {}
+    }
+
     // Skills, Marks, Battle
     const skills = window.CG_SKILLS_LIST || [];
     const marks  = data.skillMarks  || {};
@@ -113,9 +121,14 @@ const SummaryAPI = {
     });
     html += `</ul></div>`;
 
+    // Career names for display (main + extras)
+    const allCareerNames = [career.careerName].filter(Boolean);
+    extraCareers.forEach(ec => { if (ec.name) allCareerNames.push(ec.name); });
+    const careerLabel = allCareerNames.length ? allCareerNames.join(' / ') : '—';
+
     html += `
       <div class="summary-section summary-career">
-        <h3>Career: ${career.careerName || '—'}</h3>
+        <h3>Career: ${careerLabel}</h3>
         <ul>
     `;
     ['gift_1','gift_2','gift_3'].forEach((_, idx) => {
@@ -156,12 +169,20 @@ const SummaryAPI = {
     const spIds = [species.skill_one, species.skill_two, species.skill_three].map(String);
     const cpIds = [career.skill_one,  career.skill_two,  career.skill_three].map(String);
 
+    // Extra career skills contribute d4 (one step below main career d6)
+    const ecIds = new Set();
+    extraCareers.forEach(ec => {
+      const ecSkills = Array.isArray(ec.skills) ? ec.skills : [];
+      ecSkills.forEach(s => { if (s) ecIds.add(String(s)); });
+    });
+
     skills.forEach(skill => {
       const id = String(skill.id);
       const sp = spIds.includes(id) ? 'd4' : '';
       const cp = cpIds.includes(id) ? 'd6' : '';
+      const ec = (!cpIds.includes(id) && ecIds.has(id)) ? 'd4' : '';
       const mk = MARK_DIE[marks[id]] || '';
-      const pool = [sp, cp, mk].filter(Boolean).join(' + ') || '—';
+      const pool = [sp, cp || ec, mk].filter(Boolean).join(' + ') || '—';
       html += `<tr><td>${skill.name}</td><td>${pool}</td></tr>`;
     });
     html += `
