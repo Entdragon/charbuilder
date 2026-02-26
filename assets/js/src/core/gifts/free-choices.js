@@ -167,6 +167,10 @@ function requiresSpecialText(g) {
 }
 
 function allowsMultiple(g) {
+  // Gift 223 (Increased Trait: Career) is always allowed multiple times so each
+  // free-choice copy can independently target a different extra career.
+  if (g && (String(g.id || '') === '223' || String(g.ct_id || '') === '223')) return true;
+
   const v = g?.allows_multiple ?? g?.ct_gifts_manifold ?? g?.manifold ?? null;
   if (v === true) return true;
   const n = Number(v);

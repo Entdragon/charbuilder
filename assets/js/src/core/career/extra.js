@@ -802,7 +802,9 @@ const ExtraCareers = {
   },
 
   _careerTraitDisplayWithCounts(targetKey, boostCounts) {
-    const base = this._careerTraitBaseDie();
+    // Extra career traits always start from d4 — only the main career uses the
+    // primary career trait die as its base.
+    const base = (targetKey === 'main') ? this._careerTraitBaseDie() : 'd4';
     const count = Math.max(0, parseInt((boostCounts && boostCounts[targetKey]) || 0, 10) || 0);
 
     if (count <= 0) return { base, adjusted: base, boosts: 0, suffix: '' };
@@ -831,9 +833,9 @@ const ExtraCareers = {
 
       const traitInfo = curId
         ? this._careerTraitDisplayWithCounts(String(curId), boostCounts)
-        : { adjusted: baseTrait, suffix: '' };
+        : { adjusted: 'd4', suffix: '' };
 
-      const shownDie = traitInfo.adjusted || baseTrait || 'd4';
+      const shownDie = traitInfo.adjusted || 'd4';
       const note = (curId && traitInfo.suffix) ? traitInfo.suffix : '';
 
       rows.push(`

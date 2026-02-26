@@ -2794,7 +2794,7 @@
       return counts;
     },
     _careerTraitDisplayWithCounts(targetKey, boostCounts) {
-      const base = this._careerTraitBaseDie();
+      const base = targetKey === "main" ? this._careerTraitBaseDie() : "d4";
       const count = Math.max(0, parseInt(boostCounts && boostCounts[targetKey] || 0, 10) || 0);
       if (count <= 0)
         return { base, adjusted: base, boosts: 0, suffix: "" };
@@ -2815,8 +2815,8 @@
       for (let i = 0; i < unlocks; i++) {
         const curId = ((_a = selected[i]) == null ? void 0 : _a.id) ? String(selected[i].id) : "";
         const name = curId ? String(selected[i].name || `Extra Career ${i + 1}`) : `Extra Career ${i + 1}`;
-        const traitInfo = curId ? this._careerTraitDisplayWithCounts(String(curId), boostCounts) : { adjusted: baseTrait, suffix: "" };
-        const shownDie = traitInfo.adjusted || baseTrait || "d4";
+        const traitInfo = curId ? this._careerTraitDisplayWithCounts(String(curId), boostCounts) : { adjusted: "d4", suffix: "" };
+        const shownDie = traitInfo.adjusted || "d4";
         const note = curId && traitInfo.suffix ? traitInfo.suffix : "";
         rows.push(`
         <div class="cg-extra-career-trait-row">
@@ -3598,6 +3598,8 @@
   }
   function allowsMultiple(g) {
     var _a, _b, _c;
+    if (g && (String(g.id || "") === "223" || String(g.ct_id || "") === "223"))
+      return true;
     const v = (_c = (_b = (_a = g == null ? void 0 : g.allows_multiple) != null ? _a : g == null ? void 0 : g.ct_gifts_manifold) != null ? _b : g == null ? void 0 : g.manifold) != null ? _c : null;
     if (v === true)
       return true;
