@@ -6,39 +6,55 @@
  * It relays authenticated SQL queries from the Replit app
  * to your local MySQL database over HTTPS.
  *
- * SETUP:
+ * SETUP (first time):
  *   1. Upload this file to your WordPress root (same folder as wp-config.php)
- *   2. Set PROXY_SECRET below to match your CG_PROXY_SECRET Replit secret
+ *   2. Create cg-proxy-config.php in the same folder (see below)
  *   3. Set CG_PROXY_URL in Replit to: https://yourdomain.com/cg-db-proxy.php
+ *
+ * cg-proxy-config.php should contain exactly one line:
+ *   <?php define('CG_PROXY_SECRET', 'paste-your-CG_PROXY_SECRET-value-here');
+ *
+ * UPDATING: You can re-upload this file at any time without touching
+ * cg-proxy-config.php — the secret lives only in that file.
  */
 
-define( 'PROXY_SECRET', 'YOUR_SECRET_HERE' );
+// ── Load secret from config file ─────────────────────────────────────────────
 
-// ── Security ────────────────────────────────────────────────────────────────
+$config_file = __DIR__ . '/cg-proxy-config.php';
+if ( file_exists( $config_file ) ) {
+    require_once $config_file;
+}
+
+if ( ! defined( 'CG_PROXY_SECRET' ) || CG_PROXY_SECRET === '' ) {
+    http_response_code( 500 );
+    header( 'Content-Type: application/json' );
+    echo json_encode( [ 'error' => 'Proxy not configured: cg-proxy-config.php missing or empty' ] );
+    exit;
+}
+
+// ── Security ──────────────────────────────────────────────────────────────────
 
 header( 'Content-Type: application/json' );
 
-// Only allow POST
 if ( $_SERVER['REQUEST_METHOD'] !== 'POST' ) {
     http_response_code( 405 );
     echo json_encode( [ 'error' => 'Method not allowed' ] );
     exit;
 }
 
-// Verify secret header
 $provided = $_SERVER['HTTP_X_CG_SECRET'] ?? '';
-if ( ! hash_equals( PROXY_SECRET, $provided ) ) {
+if ( ! hash_equals( CG_PROXY_SECRET, $provided ) ) {
     http_response_code( 403 );
     echo json_encode( [ 'error' => 'Forbidden' ] );
     exit;
 }
 
-// ── Parse request ────────────────────────────────────────────────────────────
+// ── Parse request ─────────────────────────────────────────────────────────────
 
 $body   = json_decode( file_get_contents( 'php://input' ), true );
 $action = trim( $body['action'] ?? '' );
 
-// ── WordPress auth check (delegates to wp_authenticate) ──────────────────────
+// ── WordPress auth check (delegates to wp_authenticate) ───────────────────────
 
 if ( $action === 'wp_auth_check' ) {
     $username = trim( $body['username'] ?? '' );
@@ -50,14 +66,12 @@ if ( $action === 'wp_auth_check' ) {
         exit;
     }
 
-    // Load WordPress so we can use wp_authenticate() natively.
     if ( ! defined( 'ABSPATH' ) ) {
         $wp_load = __DIR__ . '/wp-load.php';
         if ( ! file_exists( $wp_load ) ) {
             $wp_load = dirname( __DIR__ ) . '/wp-load.php';
         }
         if ( file_exists( $wp_load ) ) {
-            // Suppress any output WordPress might produce during bootstrap.
             ob_start();
             require_once $wp_load;
             ob_end_clean();
@@ -85,7 +99,7 @@ if ( $action === 'wp_auth_check' ) {
     exit;
 }
 
-// ── SQL proxy ────────────────────────────────────────────────────────────────
+// ── SQL proxy ─────────────────────────────────────────────────────────────────
 
 $sql    = trim( $body['sql']    ?? '' );
 $params = $body['params'] ?? [];
@@ -96,11 +110,10 @@ if ( empty( $sql ) ) {
     exit;
 }
 
-// ── Load WordPress DB credentials ────────────────────────────────────────────
+// ── Load WordPress DB credentials ─────────────────────────────────────────────
 
 $wp_config = __DIR__ . '/wp-config.php';
 if ( ! file_exists( $wp_config ) ) {
-    // Try one level up (if placed in a subdirectory)
     $wp_config = dirname( __DIR__ ) . '/wp-config.php';
 }
 
@@ -110,7 +123,6 @@ if ( ! file_exists( $wp_config ) ) {
     exit;
 }
 
-// Extract DB constants without fully executing wp-config (safe parse)
 $config_content = file_get_contents( $wp_config );
 function extract_wp_const( $content, $name ) {
     if ( preg_match( "/define\s*\(\s*['\"]" . preg_quote( $name, '/' ) . "['\"]\s*,\s*['\"]([^'\"]*)['\"]/" , $content, $m ) ) {
@@ -124,10 +136,9 @@ $db_user = extract_wp_const( $config_content, 'DB_USER' );
 $db_pass = extract_wp_const( $config_content, 'DB_PASSWORD' );
 $db_host = extract_wp_const( $config_content, 'DB_HOST' );
 
-// ── Connect and execute ───────────────────────────────────────────────────────
+// ── Connect and execute ────────────────────────────────────────────────────────
 
 try {
-    // Parse host:port
     $port = 3306;
     if ( strpos( $db_host, ':' ) !== false ) {
         [ $db_host, $port ] = explode( ':', $db_host, 2 );
