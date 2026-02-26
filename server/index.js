@@ -14,9 +14,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 app.use((req, res, next) => {
-  if (req.path.startsWith('/api')) {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`, req.body?.action || '');
-  }
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`, req.body?.action || '');
   next();
 });
 
@@ -52,6 +50,7 @@ app.get('/api/auth/me', (req, res) => {
 });
 
 app.get('/{*path}', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
 
