@@ -1,7 +1,7 @@
 # Character Generator – Standalone Node.js App
 
 ## Project Overview
-A standalone Express.js web application converted from a WordPress plugin. Provides a character creation system for the Library of Calbria tabletop RPG. Connects to the existing WordPress MySQL database via a PHP proxy (shared hosting firewall blocks direct MySQL access from outside).
+A standalone Express.js web application converted from a WordPress plugin. Provides a character creation system for the Library of Calabria tabletop RPG. Connects to the existing WordPress MySQL database via a PHP proxy (shared hosting firewall blocks direct MySQL access from outside).
 
 - **Staging URL**: https://stage.libraryofcalbria.com/character-generator/
 - **Production URL**: https://libraryofcalbria.com/character-generator/

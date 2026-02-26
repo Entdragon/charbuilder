@@ -13,15 +13,11 @@ app.set('trust proxy', 1);
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-app.use((req, res, next) => {
-  if (req.path.startsWith('/api')) {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`, req.body?.action || '');
-  }
-  next();
-});
+// ── Static assets (no session needed, serve first) ────────────────────────────
+app.use('/assets', express.static(path.join(__dirname, '..', 'assets')));
+app.use('/vendor',  express.static(path.join(__dirname, '..', 'node_modules')));
 
-const isProduction = process.env.NODE_ENV === 'production';
-
+// ── Session ───────────────────────────────────────────────────────────────────
 app.use(session({
   secret:            process.env.SESSION_SECRET || 'cg-dev-secret-change-me',
   resave:            false,
@@ -34,13 +30,18 @@ app.use(session({
   },
 }));
 
-app.use('/assets', express.static(path.join(__dirname, '..', 'assets')));
-app.use('/vendor', express.static(path.join(__dirname, '..', 'node_modules')));
+// ── Request logging (API only) ────────────────────────────────────────────────
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`, req.body?.action || '');
+  }
+  next();
+});
 
+// ── API routes ────────────────────────────────────────────────────────────────
 app.use('/api/ajax', ajaxRouter);
 
 // ── Setup / password reset (protected by proxy secret) ────────────────────────
-
 app.get('/setup', (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8">
@@ -68,7 +69,7 @@ function doReset(){
   var msg=document.getElementById('msg');
   if(!secret||!uname||!pw1){msg.style.display='block';msg.style.background='#5a2020';msg.textContent='All fields required.';return;}
   if(pw1!==pw2){msg.style.display='block';msg.style.background='#5a2020';msg.textContent='Passwords do not match.';return;}
-  msg.style.display='block';msg.style.background='#2a3a2a';msg.textContent='Working…';
+  msg.style.display='block';msg.style.background='#2a3a2a';msg.textContent='Working\u2026';
   fetch('/api/admin/reset-password',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({secret:secret,username:uname,password:pw1})})
   .then(r=>r.json()).then(d=>{
@@ -79,27 +80,29 @@ function doReset(){
 </script></body></html>`);
 });
 
-app.post('/api/admin/reset-password', async (req, res) => {
-  const { secret, username, password } = req.body;
-  if (!secret || secret !== process.env.CG_PROXY_SECRET) {
-    return res.json({ success: false, data: 'Invalid secret.' });
-  }
-  if (!username || !password || password.length < 6) {
-    return res.json({ success: false, data: 'Username and password (min 6 chars) required.' });
-  }
+app.post('/api/admin/reset-password', async (req, res, next) => {
   try {
+    const { secret, username, password } = req.body;
+    if (!secret || secret !== process.env.CG_PROXY_SECRET) {
+      return res.json({ success: false, data: 'Invalid secret.' });
+    }
+    if (!username || !password || password.length < 6) {
+      return res.json({ success: false, data: 'Username and password (min 6 chars) required.' });
+    }
     const { query, queryOne, prefix } = require('./db');
     const { hashPassword } = require('./auth/wordpress');
     const p = prefix();
-    const user = await queryOne(`SELECT ID FROM ${p}users WHERE user_login = ? OR user_email = ? LIMIT 1`, [username, username]);
+    const user = await queryOne(
+      `SELECT ID FROM ${p}users WHERE user_login = ? OR user_email = ? LIMIT 1`,
+      [username, username]
+    );
     if (!user) return res.json({ success: false, data: `No user found: "${username}"` });
     const hash = hashPassword(password);
     await query(`UPDATE ${p}users SET user_pass = ? WHERE ID = ?`, [hash, user.ID]);
     console.log(`[CG] Password reset for user ID ${user.ID} (${username})`);
     res.json({ success: true });
   } catch (e) {
-    console.error('[CG] reset-password error:', e);
-    res.json({ success: false, data: 'Server error: ' + (e.message || e) });
+    next(e);
   }
 });
 
@@ -108,16 +111,31 @@ app.get('/api/auth/me', (req, res) => {
     return res.json({ success: false, data: 'Not logged in.' });
   }
   res.json({ success: true, data: {
-    id:       req.session.userId,
-    username: req.session.username,
-    email:    req.session.email,
-    isAdmin:  req.session.isAdmin,
+    id:      req.session.userId,
+    username:req.session.username,
+    email:   req.session.email,
+    isAdmin: req.session.isAdmin,
   }});
 });
 
-app.get('/{*path}', (req, res) => {
+// ── SPA catch-all ─────────────────────────────────────────────────────────────
+app.get('/{*path}', (req, res, next) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
-  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'), err => {
+    if (err) next(err);
+  });
+});
+
+// ── Global error handler ──────────────────────────────────────────────────────
+app.use((err, req, res, next) => {
+  console.error('[CG] Unhandled error:', err.message || err);
+  if (res.headersSent) return next(err);
+  const status = err.status || err.statusCode || 500;
+  if (req.path.startsWith('/api')) {
+    res.status(status).json({ success: false, data: 'Server error. Please try again.' });
+  } else {
+    res.status(status).send('Server error. Please try again.');
+  }
 });
 
 app.listen(PORT, '0.0.0.0', () => {

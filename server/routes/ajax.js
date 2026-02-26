@@ -23,7 +23,6 @@ const ACTION_MAP = {
   cg_get_current_user:  authActions.cg_get_current_user,
 
   cg_load_characters:   charActions.cg_load_characters,
-  cg_list_characters:   charActions.cg_load_characters,
   cg_get_character:     charActions.cg_get_character,
   cg_save_character:    charActions.cg_save_character,
 
