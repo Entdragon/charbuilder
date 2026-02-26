@@ -153,7 +153,6 @@
     <h1>Library of Calbria</h1>
     <p class="subtitle">Character Generator</p>
 
-    <div id="js-status" style="font-size:0.85rem;text-align:center;color:#f90;margin-bottom:8px;font-weight:bold;">⚙ Loading…</div>
     <div class="auth-tabs">
       <button class="auth-tab active" data-tab="login">Sign In</button>
       <button class="auth-tab" data-tab="register">Register</button>
@@ -251,8 +250,6 @@
   console.log('[CG] app script starting');
   const authScreen  = document.getElementById('cg-auth-screen');
   const appScreen   = document.getElementById('cg-app-screen');
-  const jsStatus    = document.getElementById('js-status');
-  if (jsStatus) { jsStatus.textContent = '✓ JS Ready'; jsStatus.style.color = '#4f4'; }
   console.log('[CG] authScreen:', !!authScreen, 'appScreen:', !!appScreen);
 
   async function ajax(action, data) {
@@ -368,5 +365,6 @@
 
   init();
 })();
+</script>
 </body>
 </html>
