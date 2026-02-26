@@ -13,13 +13,16 @@ app.set('trust proxy', 1);
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 app.use(session({
   secret:            process.env.SESSION_SECRET || 'cg-dev-secret-change-me',
   resave:            false,
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
-    sameSite: 'lax',
+    sameSite: 'none',
+    secure:   true,
     maxAge:   7 * 24 * 60 * 60 * 1000,
   },
 }));

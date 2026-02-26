@@ -144,21 +144,11 @@
 
     .logout-btn:hover { border-color: #ff6b6b; color: #ff6b6b; }
 
-    #cg-loading {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      color: #666;
-      font-size: 1rem;
-    }
   </style>
 </head>
 <body>
 
-<div id="cg-loading">Loading…</div>
-
-<div id="cg-auth-screen" style="display:none">
+<div id="cg-auth-screen" style="display:flex">
   <div class="auth-card">
     <h1>Library of Calbria</h1>
     <p class="subtitle">Character Generator</p>
@@ -257,40 +247,38 @@
 
 <script>
 (function () {
-  const loading     = document.getElementById('cg-loading');
   const authScreen  = document.getElementById('cg-auth-screen');
   const appScreen   = document.getElementById('cg-app-screen');
 
   async function ajax(action, data) {
     const body = new URLSearchParams({ action, nonce: '1', security: '1', ...data });
-    const r = await fetch('/api/ajax', { method: 'POST', body, credentials: 'same-origin' });
+    const r = await fetch('/api/ajax', { method: 'POST', body });
     return r.json();
   }
 
-  async function init() {
-    try {
-      const r = await fetch('/api/auth/me', { credentials: 'same-origin' });
-      const d = await r.json();
-      if (d.success) {
-        showApp(d.data.username);
-      } else {
-        showAuth();
-      }
-    } catch (e) {
-      showAuth();
-    }
-  }
-
   function showAuth() {
-    loading.style.display    = 'none';
     authScreen.style.display = 'flex';
+    appScreen.style.display  = 'none';
   }
 
   function showApp(username) {
-    loading.style.display   = 'none';
-    appScreen.style.display = 'block';
+    authScreen.style.display = 'none';
+    appScreen.style.display  = 'block';
     document.getElementById('cg-username-display').textContent = username;
     loadBundle();
+  }
+
+  // Silently check if already logged in — show app if so, stay on login if not
+  async function init() {
+    try {
+      const controller = new AbortController();
+      setTimeout(() => controller.abort(), 4000);
+      const r = await fetch('/api/auth/me', { signal: controller.signal });
+      const d = await r.json();
+      if (d.success) showApp(d.data.username);
+    } catch (e) {
+      // Stay on auth screen (already visible)
+    }
   }
 
   document.querySelectorAll('.auth-tab').forEach(tab => {
