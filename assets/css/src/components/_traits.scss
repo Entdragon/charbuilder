@@ -43,7 +43,7 @@
   &:focus {
     outline:      none;
     border-color: var(--cg-gold);
-    box-shadow:   0 0 0 2px rgba(90,143,92,0.15);
+    box-shadow:   0 0 0 2px rgba(201,168,76,0.15);
   }
 }
 
@@ -69,7 +69,7 @@
   height:         2.4rem;
   border-radius:  50%;
   border:         2px solid var(--cg-gold);
-  background:     #ffffff;
+  background:     linear-gradient(135deg, #fff 60%, var(--cg-parchment-2));
   display:        inline-flex;
   align-items:    center;
   justify-content:center;

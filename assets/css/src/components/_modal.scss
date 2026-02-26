@@ -21,16 +21,16 @@
   max-width:     var(--cg-modal-max-width, 1060px);
   height:        var(--cg-modal-height,    92%);
   max-height:    var(--cg-modal-max-height,820px);
-  background:    var(--cg-modal-bg,        #ffffff);
+  background:    var(--cg-modal-bg,        #f5f0e4);
   padding:       var(--cg-modal-padding,   1.5em);
   border-radius: var(--cg-modal-border-radius, 10px);
   box-shadow:    var(--cg-modal-shadow);
-  border:        1px solid rgba(90,143,92,0.3);
+  border:        1px solid rgba(201,168,76,0.3);
   overflow-y:    auto;
   display:       none;
   z-index:       1001;
 
-  // Green top accent bar
+  // Gold top accent bar
   &::before {
     content:    '';
     display:    block;
@@ -64,7 +64,7 @@
 .cg-modal-close:hover {
   color:         var(--cg-gold-dark);
   border-color:  var(--cg-gold);
-  background:    rgba(90,143,92,0.08);
+  background:    rgba(201,168,76,0.08);
 }
 
 // Visibility Toggles
@@ -152,8 +152,8 @@
   background:    var(--cg-parchment);
   padding:       2.5rem 2rem;
   border-radius: 10px;
-  border:        1px solid rgba(90,143,92,0.3);
-  box-shadow:    0 8px 32px rgba(0,0,0,0.15), 0 0 0 1px rgba(90,143,92,0.2);
+  border:        1px solid rgba(201,168,76,0.3);
+  box-shadow:    0 24px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(201,168,76,0.15);
   max-width:     90%;
   width:         420px;
   text-align:    center;

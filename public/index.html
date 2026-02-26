@@ -13,27 +13,148 @@
 
     /* ── Design tokens ─────────────────────────────────── */
     :root {
-      --bg:          #f4f6f4;
-      --surface:     #ffffff;
-      --surface-2:   #f7f7f7;
-      --gold:        #5a8f5c;
-      --gold-light:  #7aad7c;
-      --gold-dark:   #3d6b3f;
-      --gold-border: rgba(90,143,92,0.3);
-      --gold-glow:   rgba(90,143,92,0.10);
-      --text:        #333333;
-      --text-muted:  #666666;
-      --text-dim:    #999999;
-      --error:       #c0392b;
+      --bg:          #1a1714;
+      --surface:     #242019;
+      --surface-2:   #2d2820;
+      --gold:        #c9a84c;
+      --gold-light:  #e5c97a;
+      --gold-dark:   #a8822a;
+      --gold-border: rgba(201,168,76,0.28);
+      --gold-glow:   rgba(201,168,76,0.12);
+      --text:        #e8dcc4;
+      --text-muted:  #9a8a6a;
+      --text-dim:    #5a4f3a;
+      --error:       #d9534f;
+      --nav-bg:      #1e1a16;
+      --nav-border:  rgba(201,168,76,0.15);
+      --nav-width:   220px;
+      --header-h:    52px;
     }
 
     /* ── Base ──────────────────────────────────────────── */
-    body {
+    html, body {
       margin:      0;
+      height:      100%;
       font-family: 'Crimson Pro', Georgia, serif;
       background:  var(--bg);
       color:       var(--text);
-      min-height:  100vh;
+    }
+
+    body {
+      background-image: url("data:image/svg+xml,%3Csvg width='48' height='48' viewBox='0 0 48 48' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M24 2L46 24L24 46L2 24Z' fill='none' stroke='%23c9a84c' stroke-width='0.4' stroke-opacity='0.12'/%3E%3C/svg%3E");
+    }
+
+    /* ── Site layout ────────────────────────────────────── */
+    #site-wrapper {
+      display:    flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* ── Site header bar ────────────────────────────────── */
+    #site-header {
+      height:        var(--header-h);
+      background:    var(--surface);
+      border-bottom: 1px solid var(--gold-border);
+      box-shadow:    0 2px 12px rgba(0,0,0,0.4);
+      display:       flex;
+      align-items:   center;
+      padding:       0 1.5rem;
+      position:      sticky;
+      top:           0;
+      z-index:       200;
+      flex-shrink:   0;
+    }
+
+    #site-header a.site-title {
+      font-family:    'Cinzel', Georgia, serif;
+      font-size:      1.05rem;
+      font-weight:    700;
+      color:          var(--gold-light);
+      letter-spacing: 0.06em;
+      text-decoration:none;
+      transition:     color 0.2s;
+    }
+
+    #site-header a.site-title:hover {
+      color: var(--gold);
+    }
+
+    #site-header .site-title-sub {
+      display:     block;
+      font-size:   0.6rem;
+      color:       var(--text-dim);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-weight: 400;
+    }
+
+    /* ── Body row (sidebar + content) ──────────────────── */
+    #site-body {
+      display:  flex;
+      flex:     1;
+    }
+
+    /* ── Sidebar navigation ─────────────────────────────── */
+    #site-nav {
+      width:        var(--nav-width);
+      min-width:    var(--nav-width);
+      background:   var(--nav-bg);
+      border-right: 1px solid var(--nav-border);
+      padding:      1rem 0;
+      overflow-y:   auto;
+      flex-shrink:  0;
+    }
+
+    .nav-item {
+      display:        block;
+      padding:        0.55rem 1.25rem;
+      font-family:    'Cinzel', Georgia, serif;
+      font-size:      0.8rem;
+      font-weight:    600;
+      letter-spacing: 0.05em;
+      color:          var(--text-muted);
+      text-decoration:none;
+      transition:     color 0.18s, background 0.18s;
+      border-left:    3px solid transparent;
+    }
+
+    .nav-item:hover {
+      color:      var(--gold-light);
+      background: rgba(201,168,76,0.06);
+    }
+
+    .nav-item.active {
+      color:       var(--gold);
+      border-left-color: var(--gold);
+      background:  rgba(201,168,76,0.08);
+    }
+
+    .nav-item.parent {
+      font-size:   0.75rem;
+      color:       var(--text-dim);
+      cursor:      default;
+      padding-top: 1rem;
+    }
+
+    .nav-item.child {
+      padding-left: 2rem;
+      font-weight:  400;
+      font-size:    0.78rem;
+    }
+
+    .nav-divider {
+      height:     1px;
+      background: var(--nav-border);
+      margin:     0.5rem 1.25rem;
+    }
+
+    /* ── Main content area ──────────────────────────────── */
+    #site-content {
+      flex:       1;
+      display:    flex;
+      flex-direction: column;
+      min-width:  0;
     }
 
     /* ── Shared button styles ───────────────────────────── */
@@ -54,15 +175,15 @@
     }
 
     .btn-gold {
-      background:    var(--gold);
-      color:         #ffffff;
+      background:    linear-gradient(135deg, var(--gold-dark) 0%, var(--gold) 50%, var(--gold-dark) 100%);
+      color:         #1a1410;
       border:        1px solid var(--gold-dark);
-      box-shadow:    0 2px 8px rgba(90,143,92,0.25);
+      box-shadow:    0 2px 8px rgba(201,168,76,0.25);
     }
 
     .btn-gold:hover:not(:disabled) {
-      background:    var(--gold-light);
-      box-shadow:    0 4px 16px rgba(90,143,92,0.35);
+      background:    linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 50%, var(--gold) 100%);
+      box-shadow:    0 4px 16px rgba(201,168,76,0.35);
       transform:     translateY(-1px);
     }
 
@@ -75,7 +196,7 @@
     .btn-ghost {
       background:    transparent;
       color:         var(--text-muted);
-      border:        1px solid var(--gold-border);
+      border:        1px solid rgba(201,168,76,0.2);
       font-family:   'Cinzel', Georgia, serif;
       font-size:     0.75rem;
       letter-spacing:0.05em;
@@ -87,8 +208,8 @@
     }
 
     .btn-ghost:hover {
-      color:        var(--gold-dark);
-      border-color: var(--gold);
+      color:        var(--gold-light);
+      border-color: var(--gold-border);
     }
 
     .btn-outline {
@@ -108,7 +229,7 @@
     .btn-outline:hover {
       background:   var(--gold-glow);
       border-color: var(--gold);
-      color:        var(--gold-dark);
+      color:        var(--gold-light);
     }
 
     /* ── Auth screen ────────────────────────────────────── */
@@ -116,8 +237,8 @@
       display:         flex;
       align-items:     center;
       justify-content: center;
-      min-height:      100vh;
-      padding:         2rem;
+      flex:            1;
+      padding:         3rem 2rem;
     }
 
     .auth-card {
@@ -127,7 +248,7 @@
       padding:       0 2rem 2.5rem;
       width:         100%;
       max-width:     400px;
-      box-shadow:    0 8px 32px rgba(0,0,0,0.12), 0 0 0 1px rgba(90,143,92,0.15);
+      box-shadow:    0 24px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(201,168,76,0.1);
       overflow:      hidden;
     }
 
@@ -175,7 +296,7 @@
 
     .auth-tabs {
       display:       flex;
-      border-bottom: 1px solid rgba(90,143,92,0.2);
+      border-bottom: 1px solid rgba(201,168,76,0.15);
       margin-bottom: 1.5rem;
     }
 
@@ -222,8 +343,8 @@
     .auth-field input {
       width:         100%;
       padding:       0.65rem 0.9rem;
-      background:    #ffffff;
-      border:        1px solid rgba(0,0,0,0.15);
+      background:    rgba(10,8,5,0.5);
+      border:        1px solid rgba(201,168,76,0.18);
       border-radius: 5px;
       color:         var(--text);
       font-family:   'Crimson Pro', Georgia, serif;
@@ -234,7 +355,7 @@
 
     .auth-field input:focus {
       border-color: var(--gold);
-      box-shadow:   0 0 0 2px rgba(90,143,92,0.15);
+      box-shadow:   0 0 0 2px rgba(201,168,76,0.12);
     }
 
     .auth-field input::placeholder {
@@ -257,67 +378,27 @@
 
     /* ── App screen ─────────────────────────────────────── */
     #cg-app-screen {
-      display:    none;
-      min-height: 100vh;
+      display:        none;
+      flex:           1;
       flex-direction: column;
     }
 
-    .app-header {
+    .app-topbar {
       display:         flex;
       align-items:     center;
-      justify-content: space-between;
-      padding:         0.9rem 2rem;
+      justify-content: flex-end;
+      padding:         0.5rem 1.5rem;
       background:      var(--surface);
       border-bottom:   1px solid var(--gold-border);
-      box-shadow:      0 2px 16px rgba(0,0,0,0.3);
-      position:        sticky;
-      top:             0;
-      z-index:         100;
+      gap:             1rem;
     }
 
-    .app-header__brand {
-      display:     flex;
-      align-items: center;
-      gap:         0.85rem;
-    }
-
-    .app-header__emblem {
-      font-size:  1.3rem;
-      color:      var(--gold);
-      line-height:1;
-    }
-
-    .app-header__title {
-      font-family:   'Cinzel', Georgia, serif;
-      font-size:     1.1rem;
-      font-weight:   700;
-      color:         var(--gold-light);
-      letter-spacing:0.05em;
-      margin:        0;
-      line-height:   1.2;
-    }
-
-    .app-header__sub {
-      display:       block;
-      font-family:   'Cinzel', Georgia, serif;
-      font-size:     0.65rem;
-      color:         var(--text-dim);
-      letter-spacing:0.12em;
-      text-transform:uppercase;
-    }
-
-    .app-header__user {
-      display:     flex;
-      align-items: center;
-      gap:         1rem;
-    }
-
-    .app-header__username {
+    .app-topbar__username {
       font-size:  0.9rem;
       color:      var(--text-muted);
     }
 
-    .app-header__username strong {
+    .app-topbar__username strong {
       color:      var(--text);
       font-weight:600;
     }
@@ -398,15 +479,15 @@
       cursor:        pointer;
       transition:    all 0.18s;
       border:        1px solid var(--gold-border);
-      background:    var(--gold);
-      color:         #ffffff;
-      box-shadow:    0 2px 6px rgba(90,143,92,0.2);
+      background:    linear-gradient(135deg, var(--gold-dark) 0%, var(--gold) 50%, var(--gold-dark) 100%);
+      color:         #1a1410;
+      box-shadow:    0 2px 6px rgba(201,168,76,0.2);
     }
 
     .button:hover,
     .button.primary:hover {
-      background:  var(--gold-light);
-      box-shadow:  0 4px 12px rgba(90,143,92,0.3);
+      background:  linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 50%, var(--gold) 100%);
+      box-shadow:  0 4px 12px rgba(201,168,76,0.3);
       transform:   translateY(-1px);
     }
 
@@ -418,7 +499,7 @@
     }
 
     .button.secondary:hover {
-      background:  rgba(90,143,92,0.08);
+      background:  rgba(201,168,76,0.08);
       color:       var(--gold-light);
       border-color:var(--gold);
     }
@@ -434,122 +515,153 @@
       justify-content: center;
       flex-wrap: wrap;
     }
+
+    /* ── Responsive: collapse sidebar on narrow screens ─── */
+    @media (max-width: 640px) {
+      #site-nav { display: none; }
+    }
   </style>
 </head>
 <body>
 
-<!-- ── Auth Screen ───────────────────────────────────────────── -->
-<div id="cg-auth-screen" style="display:flex">
-  <div class="auth-card">
-    <div class="auth-card-accent"></div>
+<div id="site-wrapper">
 
-    <div class="auth-emblem">◆</div>
-    <h1>Library of Calabria</h1>
-    <p class="subtitle">Character Generator</p>
-
-    <div class="auth-divider"></div>
-
-    <div class="auth-tabs">
-      <button class="auth-tab active" data-tab="login">Sign In</button>
-      <button class="auth-tab" data-tab="register">Register</button>
-    </div>
-
-    <form class="auth-form active" id="login-form" onsubmit="return false;">
-      <div class="auth-field">
-        <label for="login-username">Username or Email</label>
-        <input type="text" id="login-username" name="username" autocomplete="username" placeholder="Enter your username">
-      </div>
-      <div class="auth-field">
-        <label for="login-password">Password</label>
-        <input type="password" id="login-password" name="password" autocomplete="current-password" placeholder="Enter your password">
-      </div>
-      <div class="auth-error" id="login-error"></div>
-      <button type="button" id="login-btn" class="btn btn-gold auth-submit">Sign In</button>
-    </form>
-
-    <form class="auth-form" id="register-form" onsubmit="return false;">
-      <div class="auth-field">
-        <label for="reg-username">Username</label>
-        <input type="text" id="reg-username" name="username" autocomplete="username" placeholder="Choose a username">
-      </div>
-      <div class="auth-field">
-        <label for="reg-email">Email</label>
-        <input type="email" id="reg-email" name="email" autocomplete="email" placeholder="your@email.com">
-      </div>
-      <div class="auth-field">
-        <label for="reg-password">Password</label>
-        <input type="password" id="reg-password" name="password" autocomplete="new-password" placeholder="Choose a password">
-      </div>
-      <div class="auth-error" id="register-error"></div>
-      <button type="button" id="register-btn" class="btn btn-gold auth-submit">Create Account</button>
-    </form>
-  </div>
-</div>
-
-<!-- ── App Screen ────────────────────────────────────────────── -->
-<div id="cg-app-screen" style="display:none; flex-direction:column; min-height:100vh">
-
-  <header class="app-header">
-    <div class="app-header__brand">
-      <span class="app-header__emblem">◆</span>
-      <div>
-        <h1 class="app-header__title">Library of Calabria</h1>
-        <span class="app-header__sub">Character Generator</span>
-      </div>
-    </div>
-    <div class="app-header__user">
-      <span class="app-header__username">Signed in as <strong id="cg-username-display"></strong></span>
-      <button class="btn-ghost" id="cg-logout-btn">Sign Out</button>
-    </div>
+  <!-- ── Site-wide header ────────────────────────────────── -->
+  <header id="site-header">
+    <a href="https://libraryofcalbria.com" class="site-title">
+      The Library of Calabria
+      <span class="site-title-sub">Character Generator</span>
+    </a>
   </header>
 
-  <main class="app-main">
-    <div class="app-hero">
-      <span class="app-hero__ornament">✦ ◆ ✦</span>
-      <h2 class="app-hero__title">Your Characters</h2>
-      <p class="app-hero__subtitle">Library of Calabria &mdash; Character Records</p>
-      <div class="app-hero__rule"></div>
-      <button id="cg-open-builder" class="btn btn-gold app-hero__cta">
-        ✦ &nbsp; Open Character Builder
-      </button>
-    </div>
-  </main>
+  <!-- ── Body row ───────────────────────────────────────── -->
+  <div id="site-body">
 
-  <!-- Splash modal (New / Load) — shown by bundle JS -->
-  <div id="cg-modal-splash" class="cg-modal-splash cg-hidden">
-    <div class="cg-modal-splash__content">
-      <h2>Character Builder</h2>
-      <p style="color:var(--text-muted);font-family:'Crimson Pro',Georgia,serif;font-size:0.95rem;margin:0 0 1.5rem">Begin a new tale or continue an existing one.</p>
-      <button id="cg-new-splash" class="button primary">✦ &nbsp; New Character</button>
-      <div class="cg-splash-load">
-        <label for="cg-splash-load-select">Load an existing character</label>
-        <select id="cg-splash-load-select">
-          <option value="">— Loading… —</option>
-        </select>
-        <button id="cg-load-splash" class="button">Load Character</button>
-      </div>
-    </div>
-  </div>
+    <!-- ── Sidebar navigation ──────────────────────────── -->
+    <nav id="site-nav" aria-label="Site navigation">
+      <a href="https://libraryofcalbria.com/" class="nav-item parent">Ironclaw</a>
+      <a href="https://libraryofcalbria.com/ironclaw-books/" class="nav-item child">Ironclaw Books</a>
+      <a href="https://libraryofcalbria.com/species/" class="nav-item child">Species</a>
+      <a href="https://libraryofcalbria.com/careers/" class="nav-item child">Careers</a>
+      <a href="https://libraryofcalbria.com/gifts/" class="nav-item child">Gifts</a>
+      <a href="https://libraryofcalbria.com/skills/" class="nav-item child">Skills</a>
+      <a href="https://libraryofcalbria.com/index/" class="nav-item child">Index</a>
+      <div class="nav-divider"></div>
+      <a href="https://characters.libraryofcalbria.com/" class="nav-item active">Character Generator</a>
+      <a href="https://libraryofcalbria.com/corrections-log/" class="nav-item">Corrections Log</a>
+      <a href="https://libraryofcalbria.com/updates/" class="nav-item">Updates</a>
+    </nav>
 
-  <!-- Builder modal -->
-  <div id="cg-modal-overlay" class="cg-hidden">
-    <div id="cg-modal">
-      <button id="cg-modal-close" class="cg-modal-close">✕</button>
-      <div id="cg-form-container"></div>
-      <div id="cg-unsaved-confirm" class="cg-hidden">
-        <div class="unsaved-dialog">
-          <p>You have unsaved changes. What would you like to do?</p>
-          <div class="unsaved-buttons">
-            <button id="unsaved-save"   class="button primary">Save &amp; Exit</button>
-            <button id="unsaved-exit"   class="button secondary">Exit Without Saving</button>
-            <button id="unsaved-cancel" class="button">Cancel</button>
+    <!-- ── Main content area ───────────────────────────── -->
+    <div id="site-content">
+
+      <!-- ── Auth Screen ─────────────────────────────────── -->
+      <div id="cg-auth-screen" style="display:flex">
+        <div class="auth-card">
+          <div class="auth-card-accent"></div>
+
+          <div class="auth-emblem">◆</div>
+          <h1>Library of Calabria</h1>
+          <p class="subtitle">Character Generator</p>
+
+          <div class="auth-divider"></div>
+
+          <div class="auth-tabs">
+            <button class="auth-tab active" data-tab="login">Sign In</button>
+            <button class="auth-tab" data-tab="register">Register</button>
           </div>
+
+          <form class="auth-form active" id="login-form" onsubmit="return false;">
+            <div class="auth-field">
+              <label for="login-username">Username or Email</label>
+              <input type="text" id="login-username" name="username" autocomplete="username" placeholder="Enter your username">
+            </div>
+            <div class="auth-field">
+              <label for="login-password">Password</label>
+              <input type="password" id="login-password" name="password" autocomplete="current-password" placeholder="Enter your password">
+            </div>
+            <div class="auth-error" id="login-error"></div>
+            <button type="button" id="login-btn" class="btn btn-gold auth-submit">Sign In</button>
+          </form>
+
+          <form class="auth-form" id="register-form" onsubmit="return false;">
+            <div class="auth-field">
+              <label for="reg-username">Username</label>
+              <input type="text" id="reg-username" name="username" autocomplete="username" placeholder="Choose a username">
+            </div>
+            <div class="auth-field">
+              <label for="reg-email">Email</label>
+              <input type="email" id="reg-email" name="email" autocomplete="email" placeholder="your@email.com">
+            </div>
+            <div class="auth-field">
+              <label for="reg-password">Password</label>
+              <input type="password" id="reg-password" name="password" autocomplete="new-password" placeholder="Choose a password">
+            </div>
+            <div class="auth-error" id="register-error"></div>
+            <button type="button" id="register-btn" class="btn btn-gold auth-submit">Create Account</button>
+          </form>
         </div>
       </div>
-    </div>
-  </div>
 
-</div>
+      <!-- ── App Screen ──────────────────────────────────── -->
+      <div id="cg-app-screen" style="display:none; flex-direction:column; flex:1">
+
+        <div class="app-topbar">
+          <span class="app-topbar__username">Signed in as <strong id="cg-username-display"></strong></span>
+          <button class="btn-ghost" id="cg-logout-btn">Sign Out</button>
+        </div>
+
+        <main class="app-main">
+          <div class="app-hero">
+            <span class="app-hero__ornament">✦ ◆ ✦</span>
+            <h2 class="app-hero__title">Your Characters</h2>
+            <p class="app-hero__subtitle">Library of Calabria &mdash; Character Records</p>
+            <div class="app-hero__rule"></div>
+            <button id="cg-open-builder" class="btn btn-gold app-hero__cta">
+              ✦ &nbsp; Open Character Builder
+            </button>
+          </div>
+        </main>
+
+        <!-- Splash modal (New / Load) — shown by bundle JS -->
+        <div id="cg-modal-splash" class="cg-modal-splash cg-hidden">
+          <div class="cg-modal-splash__content">
+            <h2>Character Builder</h2>
+            <p style="color:var(--text-muted);font-family:'Crimson Pro',Georgia,serif;font-size:0.95rem;margin:0 0 1.5rem">Begin a new tale or continue an existing one.</p>
+            <button id="cg-new-splash" class="button primary">✦ &nbsp; New Character</button>
+            <div class="cg-splash-load">
+              <label for="cg-splash-load-select">Load an existing character</label>
+              <select id="cg-splash-load-select">
+                <option value="">— Loading… —</option>
+              </select>
+              <button id="cg-load-splash" class="button">Load Character</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Builder modal -->
+        <div id="cg-modal-overlay" class="cg-hidden">
+          <div id="cg-modal">
+            <button id="cg-modal-close" class="cg-modal-close">✕</button>
+            <div id="cg-form-container"></div>
+            <div id="cg-unsaved-confirm" class="cg-hidden">
+              <div class="unsaved-dialog">
+                <p>You have unsaved changes. What would you like to do?</p>
+                <div class="unsaved-buttons">
+                  <button id="unsaved-save"   class="button primary">Save &amp; Exit</button>
+                  <button id="unsaved-exit"   class="button secondary">Exit Without Saving</button>
+                  <button id="unsaved-cancel" class="button">Cancel</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /#cg-app-screen -->
+
+    </div><!-- /#site-content -->
+  </div><!-- /#site-body -->
+</div><!-- /#site-wrapper -->
 
 <!-- ── Scripts ───────────────────────────────────────────────── -->
 <script src="/vendor/jquery/dist/jquery.js"></script>
