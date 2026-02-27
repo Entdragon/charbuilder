@@ -44,7 +44,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 p, li, td, th, label {
-  color: var(--text);
+  color: var(--text) !important;
   font-family: 'Crimson Pro', Georgia, serif;
 }
 
@@ -378,52 +378,21 @@ img[style*="border: 2px solid #ccc"] {
 
 /* ──────────────────────────────────────────────────────────────
    BOOK CATALOG — description text visibility
-   The catalog uses Gutenberg blocks/shortcodes that may apply
-   background colours inline or via Gutenberg palette classes.
-   Ensure all description text is always readable.
+   The Twenty Twenty-Four parent theme sets its own colour on <p>
+   elements via a more specific selector, making text dark-on-dark.
+   These rules ensure the abstract text inside each card stays readable.
 ────────────────────────────────────────────────────────────── */
 
-/* Force all text inside block content to use the theme palette */
-.entry-content p,
-.entry-content div,
-.entry-content span,
-.wp-block-column p,
-.wp-block-column div,
-.wp-block-group p,
-.wp-block-group div,
-.wp-block-cover p,
-.wp-block-cover div,
-.wp-block-cover__inner-container,
-.wp-block-cover__inner-container p {
+/* Target the exact structure the PHP template renders */
+.skill-grid .skill-card p,
+.skill-card p,
+.site-main .skill-card p {
   color: var(--text) !important;
 }
 
-/* Override any Gutenberg palette background colours that would
-   clash with the dark theme — replace them with the surface colour */
-[class*="has-"][class*="background-color"] {
-  background-color: var(--surface) !important;
-}
-
-/* Gutenberg inline style background overrides — keep the dark look */
-[style*="background-color"] p,
-[style*="background-color"] div,
-[style*="background-color"] span {
-  color: var(--text) !important;
-}
-
-/* Specifically for the Book Catalog page layout */
-.book-catalog-card,
-.book-description,
-.book-excerpt,
-.book-summary {
-  color: var(--text) !important;
-  background: transparent !important;
-}
-
-.book-catalog-card p,
-.book-description p,
-.book-excerpt p,
-.book-summary p {
+/* Also cover any other content paragraphs on dark-background pages */
+.site-main p,
+.entry-content p {
   color: var(--text) !important;
 }
 
