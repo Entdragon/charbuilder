@@ -377,6 +377,57 @@ img[style*="border: 2px solid #ccc"] {
 }
 
 /* ──────────────────────────────────────────────────────────────
+   BOOK CATALOG — description text visibility
+   The catalog uses Gutenberg blocks/shortcodes that may apply
+   background colours inline or via Gutenberg palette classes.
+   Ensure all description text is always readable.
+────────────────────────────────────────────────────────────── */
+
+/* Force all text inside block content to use the theme palette */
+.entry-content p,
+.entry-content div,
+.entry-content span,
+.wp-block-column p,
+.wp-block-column div,
+.wp-block-group p,
+.wp-block-group div,
+.wp-block-cover p,
+.wp-block-cover div,
+.wp-block-cover__inner-container,
+.wp-block-cover__inner-container p {
+  color: var(--text) !important;
+}
+
+/* Override any Gutenberg palette background colours that would
+   clash with the dark theme — replace them with the surface colour */
+[class*="has-"][class*="background-color"] {
+  background-color: var(--surface) !important;
+}
+
+/* Gutenberg inline style background overrides — keep the dark look */
+[style*="background-color"] p,
+[style*="background-color"] div,
+[style*="background-color"] span {
+  color: var(--text) !important;
+}
+
+/* Specifically for the Book Catalog page layout */
+.book-catalog-card,
+.book-description,
+.book-excerpt,
+.book-summary {
+  color: var(--text) !important;
+  background: transparent !important;
+}
+
+.book-catalog-card p,
+.book-description p,
+.book-excerpt p,
+.book-summary p {
+  color: var(--text) !important;
+}
+
+/* ──────────────────────────────────────────────────────────────
    BLOCK EDITOR NAVIGATION (header nav)
 ────────────────────────────────────────────────────────────── */
 .wp-block-navigation,

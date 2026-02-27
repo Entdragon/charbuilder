@@ -18,6 +18,7 @@ app.use(bodyParser.json());
 // ── Static assets (no session needed, serve first) ────────────────────────────
 app.use('/assets', express.static(path.join(__dirname, '..', 'assets')));
 app.use('/vendor',  express.static(path.join(__dirname, '..', 'node_modules')));
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // ── Session ───────────────────────────────────────────────────────────────────
 const SESSION_DIR = path.join(__dirname, '..', '.sessions');
