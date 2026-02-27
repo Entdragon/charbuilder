@@ -44,7 +44,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 p, li, td, th, label {
-  color: var(--text) !important;
+  color: var(--text);
   font-family: 'Crimson Pro', Georgia, serif;
 }
 
