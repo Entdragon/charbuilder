@@ -44,7 +44,6 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 p, li, td, th, label {
-  color: var(--text);
   font-family: 'Crimson Pro', Georgia, serif;
 }
 
@@ -383,16 +382,10 @@ img[style*="border: 2px solid #ccc"] {
    These rules ensure the abstract text inside each card stays readable.
 ────────────────────────────────────────────────────────────── */
 
-/* Target the exact structure the PHP template renders */
-.skill-grid .skill-card p,
+/* Force readable text only inside dark-background cards */
 .skill-card p,
-.site-main .skill-card p {
-  color: var(--text) !important;
-}
-
-/* Also cover any other content paragraphs on dark-background pages */
-.site-main p,
-.entry-content p {
+.skill-card li,
+.skill-grid .skill-card p {
   color: var(--text) !important;
 }
 
