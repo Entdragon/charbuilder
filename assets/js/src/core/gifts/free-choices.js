@@ -858,10 +858,10 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
         .join('\n');
 
       const extraCareerHint = selectedId === '184'
-        ? `<div class="cg-gift-extra-career-hint">
+        ? `<span class="cg-gift-extra-career-hint">
              Extra Career unlocked — go to the <strong>Traits</strong> tab and look under
              <em>Species &amp; Career</em> to choose which career to add.
-           </div>`
+           </span>`
         : '';
 
       return `

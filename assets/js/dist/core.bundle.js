@@ -4370,10 +4370,10 @@
           const suffix = o._forced ? " (saved)" : "";
           return `<option value="${String(o.id)}"${sel}>${String(o.name)}${suffix}</option>`;
         }).join("\n");
-        const extraCareerHint = selectedId === "184" ? `<div class="cg-gift-extra-career-hint">
+        const extraCareerHint = selectedId === "184" ? `<span class="cg-gift-extra-career-hint">
              Extra Career unlocked \u2014 go to the <strong>Traits</strong> tab and look under
              <em>Species &amp; Career</em> to choose which career to add.
-           </div>` : "";
+           </span>` : "";
         return `
         <div class="cg-free-slot" data-slot="${i}">
           <div style="display:flex; align-items:center; gap:6px;">
