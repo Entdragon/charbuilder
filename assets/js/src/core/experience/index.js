@@ -6,6 +6,7 @@
 
 import FormBuilderAPI from '../formBuilder';
 import { marksToDice } from '../../utils/marks-dice.js';
+import FreeChoices from '../gifts/free-choices.js';
 
 const $ = window.jQuery;
 
@@ -178,22 +179,56 @@ async function renderXpGifts() {
     return;
   }
 
-  const gifts    = await fetchGiftList();
-  const selected = getXpGifts();
+  // Ensure FreeChoices has its gift list loaded; fall back to raw list if not
+  const fcReady = Array.isArray(FreeChoices._allGifts) && FreeChoices._allGifts.length > 0;
+  if (!fcReady) {
+    await fetchGiftList(); // warm the cache
+  }
+
+  const selected = getXpGifts(); // array of gift ID strings
 
   let html = `<div class="xp-gift-label">Experience Gifts (${slots} slot${slots > 1 ? 's' : ''})</div>`;
+
   for (let i = 0; i < slots; i++) {
-    const curId = String(selected[i] || '');
-    const options = gifts.map(g =>
-      `<option value="${g.id}" ${g.id === curId ? 'selected' : ''}>${g.name}</option>`
-    ).join('');
+    const curId = String(selected[i] || '').trim();
+
+    // Use FreeChoices eligibility filtering when its catalogue is ready
+    let eligible;
+    if (Array.isArray(FreeChoices._allGifts) && FreeChoices._allGifts.length > 0) {
+      eligible = FreeChoices.getEligibleGiftsForSlot(selected, i);
+    } else {
+      // Fallback: unfiltered list from cache
+      const raw = await fetchGiftList();
+      eligible = raw.map(g => ({ ct_id: g.id, ct_gift_name: g.name }));
+    }
+
+    // Always keep the currently saved gift visible even if it no longer qualifies
+    const curGift = curId
+      ? (FreeChoices._allGifts || []).find(g => String(g.ct_id || g.id || '') === curId) || null
+      : null;
+
+    const seen = new Set();
+    const options = []
+      .concat(curGift ? [{ _saved: true, id: curId, name: String(curGift.ct_gift_name || curGift.name || curId) }] : [])
+      .concat(eligible.map(g => ({ id: String(g.ct_id || g.id || ''), name: String(g.ct_gift_name || g.name || '') })))
+      .filter(o => o.id && o.name)
+      .filter(o => { if (seen.has(o.id)) return false; seen.add(o.id); return true; })
+      .map(o => {
+        const sel    = o.id === curId ? ' selected' : '';
+        const suffix = o._saved ? ' (saved)' : '';
+        return `<option value="${o.id}"${sel}>${o.name}${suffix}</option>`;
+      })
+      .join('\n');
 
     html += `
       <div class="cg-free-slot xp-gift-slot" data-xp-slot="${i}">
-        <select id="cg-xp-gift-${i}" class="cg-free-gift-select xp-gift-select" data-xp-slot="${i}">
-          <option value="">— Choose a gift —</option>
-          ${options}
-        </select>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span style="font-weight:600; white-space:nowrap; font-size:0.88rem; color:var(--cg-text-muted); text-transform:uppercase; letter-spacing:0.05em;">Gift</span>
+          <select id="cg-xp-gift-${i}" class="cg-free-gift-select xp-gift-select" data-xp-slot="${i}">
+            <option value="">— Select a gift —</option>
+            ${options}
+          </select>
+        </div>
       </div>
     `;
   }
@@ -202,14 +237,15 @@ async function renderXpGifts() {
 
   // Bind change events for XP gift selects
   $container.off('change.cgxpgifts').on('change.cgxpgifts', '.xp-gift-select', function() {
-    const slot  = parseInt($(this).data('xp-slot'), 10);
-    const val   = String($(this).val() || '');
-    const arr   = getXpGifts().slice();
+    const slot = parseInt($(this).data('xp-slot'), 10);
+    const val  = String($(this).val() || '');
+    const arr  = getXpGifts().slice();
     while (arr.length <= slot) arr.push('');
     arr[slot] = val;
-    // Trim trailing empty
     while (arr.length && !arr[arr.length - 1]) arr.pop();
     setData({ xpGifts: arr });
+    // Re-render so other slots' eligibility lists update
+    renderXpGifts();
   });
 }
 

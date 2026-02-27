@@ -1006,6 +1006,17 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
     });
   },
 
+  getEligibleGiftsForSlot(allSelectedIds = [], slotIndex = 0) {
+    if (!Array.isArray(this._allGifts) || !this._allGifts.length) return [];
+    const owned  = computeOwnedGiftIdSet(allSelectedIds.filter(Boolean));
+    const others = new Set(
+      allSelectedIds
+        .map((v, idx) => (idx === slotIndex ? '' : String(v || '').trim()))
+        .filter(Boolean)
+    );
+    return this._allGifts.filter(g => giftEligible(g, owned, others));
+  },
+
   debug() {
     const sizes = {};
     ['language','literacy','insider','mystic','piety'].forEach(t => {

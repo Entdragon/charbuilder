@@ -4496,6 +4496,15 @@
         setSlotQualMap(map);
       });
     },
+    getEligibleGiftsForSlot(allSelectedIds = [], slotIndex = 0) {
+      if (!Array.isArray(this._allGifts) || !this._allGifts.length)
+        return [];
+      const owned2 = computeOwnedGiftIdSet(allSelectedIds.filter(Boolean));
+      const others2 = new Set(
+        allSelectedIds.map((v, idx) => idx === slotIndex ? "" : String(v || "").trim()).filter(Boolean)
+      );
+      return this._allGifts.filter((g) => giftEligible(g, owned2, others2));
+    },
     debug() {
       var _a, _b;
       const sizes = {};
@@ -5817,20 +5826,42 @@
         $container.html('<p class="xp-gifts-empty">Buy extra gift slots on the Details tab using Experience Points.</p>');
         return;
       }
-      const gifts = yield fetchGiftList();
+      const fcReady = Array.isArray(free_choices_default._allGifts) && free_choices_default._allGifts.length > 0;
+      if (!fcReady) {
+        yield fetchGiftList();
+      }
       const selected = getXpGifts();
       let html = `<div class="xp-gift-label">Experience Gifts (${slots} slot${slots > 1 ? "s" : ""})</div>`;
       for (let i = 0; i < slots; i++) {
-        const curId = String(selected[i] || "");
-        const options = gifts.map(
-          (g) => `<option value="${g.id}" ${g.id === curId ? "selected" : ""}>${g.name}</option>`
-        ).join("");
+        const curId = String(selected[i] || "").trim();
+        let eligible;
+        if (Array.isArray(free_choices_default._allGifts) && free_choices_default._allGifts.length > 0) {
+          eligible = free_choices_default.getEligibleGiftsForSlot(selected, i);
+        } else {
+          const raw = yield fetchGiftList();
+          eligible = raw.map((g) => ({ ct_id: g.id, ct_gift_name: g.name }));
+        }
+        const curGift = curId ? (free_choices_default._allGifts || []).find((g) => String(g.ct_id || g.id || "") === curId) || null : null;
+        const seen = /* @__PURE__ */ new Set();
+        const options = [].concat(curGift ? [{ _saved: true, id: curId, name: String(curGift.ct_gift_name || curGift.name || curId) }] : []).concat(eligible.map((g) => ({ id: String(g.ct_id || g.id || ""), name: String(g.ct_gift_name || g.name || "") }))).filter((o) => o.id && o.name).filter((o) => {
+          if (seen.has(o.id))
+            return false;
+          seen.add(o.id);
+          return true;
+        }).map((o) => {
+          const sel = o.id === curId ? " selected" : "";
+          const suffix = o._saved ? " (saved)" : "";
+          return `<option value="${o.id}"${sel}>${o.name}${suffix}</option>`;
+        }).join("\n");
         html += `
       <div class="cg-free-slot xp-gift-slot" data-xp-slot="${i}">
-        <select id="cg-xp-gift-${i}" class="cg-free-gift-select xp-gift-select" data-xp-slot="${i}">
-          <option value="">\u2014 Choose a gift \u2014</option>
-          ${options}
-        </select>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span style="font-weight:600; white-space:nowrap; font-size:0.88rem; color:var(--cg-text-muted); text-transform:uppercase; letter-spacing:0.05em;">Gift</span>
+          <select id="cg-xp-gift-${i}" class="cg-free-gift-select xp-gift-select" data-xp-slot="${i}">
+            <option value="">\u2014 Select a gift \u2014</option>
+            ${options}
+          </select>
+        </div>
       </div>
     `;
       }
@@ -5845,6 +5876,7 @@
         while (arr.length && !arr[arr.length - 1])
           arr.pop();
         setData({ xpGifts: arr });
+        renderXpGifts();
       });
     });
   }
