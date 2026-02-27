@@ -84,6 +84,15 @@ New passwords are stored in `$wp$` format for WordPress compatibility.
 - Accepts `{ sql, params }` POST body
 - Runs the query against the WordPress database and returns JSON
 
+## Character Data – XP Fields (added Feb 2026)
+Three new columns added automatically to `character_records` on server startup via migration:
+- `experience_points` INT – Total XP earned through play
+- `xp_skill_marks` TEXT (JSON) – Extra marks bought with XP `{skillId: count}` (on top of 13-mark creation budget)
+- `xp_gifts` TEXT (JSON) – Gifts bought with XP `[{id, name}]`
+
+Costs: 4 XP per skill mark, 10 XP per gift. Total marks per skill capped at 3 (d4→d6→d8).
+The Experience tab (`tab-experience`) lives between Skills and Trappings in the builder.
+
 ## Build System
 - `npm run build` – Rebuild JS bundle and CSS (after source changes)
 - `npm run watch:core` / `npm run watch:css` – Watch modes for development

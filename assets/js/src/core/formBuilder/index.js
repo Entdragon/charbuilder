@@ -378,6 +378,11 @@ function buildPayload(raw) {
   // Career gift replacements (duplicate -> increase trait selections)
   character.career_gift_replacements = core.career_gift_replacements || {};
 
+  // Experience Points
+  character.experience_points = parseInt(core.experience_points, 10) || 0;
+  character.xp_skill_marks    = core.xpSkillMarks || {};
+  character.xp_gifts          = Array.isArray(core.xpGifts) ? core.xpGifts : [];
+
   flat.character = character;
 
   flat.character_json = JSON.stringify({ ...core });
@@ -678,6 +683,15 @@ const FormBuilderAPI = {
     } catch (_) {
       d.career_gift_replacements = this._data?.career_gift_replacements || {};
     }
+
+    // XP data — ExperienceAPI writes directly into this._data; #xp-earned is the only DOM field
+    const xpEarnedDom = readIfExists('#xp-earned');
+    d.experience_points = xpEarnedDom !== undefined
+      ? (parseInt(xpEarnedDom, 10) || 0)
+      : (parseInt(this._data.experience_points, 10) || 0);
+    d.xpSkillMarks = this._data.xpSkillMarks || {};
+    d.xpGifts      = Array.isArray(this._data.xpGifts) ? this._data.xpGifts : [];
+    this._data.experience_points = d.experience_points;
 
     return d;
   },

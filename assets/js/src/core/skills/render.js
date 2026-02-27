@@ -186,7 +186,10 @@ export default {
       const extraDies = extraCareers.map(ec => (ec.skills || []).includes(id) ? 'd4' : '');
 
       // mark buttons: empty content, active if mark index ≤ myMarks
-      const myMarks = parseInt(data.skillMarks[id], 10) || 0;
+      const myMarks  = parseInt(data.skillMarks[id], 10) || 0;
+      const xpMarksMap = data.xpSkillMarks || {};
+      const xpMarks  = parseInt(xpMarksMap[id], 10) || 0;
+      const totalMks = Math.min(3, myMarks + xpMarks);
       let buttonsHtml = '';
       [1, 2, 3].forEach(n => {
         // disable any button above remaining budget (unless already active)
@@ -201,10 +204,12 @@ export default {
         ></button>`;
       });
 
-      const markDie= myMarks ? MARK_DIE[myMarks] : '';
-      const markDisplay = markDie || '–';
+      const markDie     = totalMks ? MARK_DIE[totalMks] : '';
+      const markDisplay = markDie
+        ? (xpMarks > 0 ? `${markDie} <span class="xp-mark-tag">+${xpMarks}XP</span>` : markDie)
+        : '–';
 
-      // dice pool = species + career + extra careers + marks
+      // dice pool = species + career + extra careers + marks (creation + XP)
       const poolDice = [spDie, cpDie].concat(extraDies).concat([markDie]).filter(Boolean);
       const poolStr  = poolDice.length ? poolDice.join(' + ') : '–';
 

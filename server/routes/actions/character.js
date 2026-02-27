@@ -33,6 +33,28 @@ function normalizeRow(row) {
     row.career_gift_replacements = {};
   }
 
+  row.experience_points = parseInt(row.experience_points, 10) || 0;
+
+  if (row.xp_skill_marks) {
+    try {
+      if (typeof row.xp_skill_marks === 'string') row.xp_skill_marks = JSON.parse(row.xp_skill_marks);
+      if (typeof row.xp_skill_marks !== 'object' || Array.isArray(row.xp_skill_marks)) row.xp_skill_marks = {};
+    } catch (e) { row.xp_skill_marks = {}; }
+  } else {
+    row.xp_skill_marks = {};
+  }
+  row.xpSkillMarks = row.xp_skill_marks;
+
+  if (row.xp_gifts) {
+    try {
+      if (typeof row.xp_gifts === 'string') row.xp_gifts = JSON.parse(row.xp_gifts);
+      if (!Array.isArray(row.xp_gifts)) row.xp_gifts = [];
+    } catch (e) { row.xp_gifts = []; }
+  } else {
+    row.xp_gifts = [];
+  }
+  row.xpGifts = row.xp_gifts;
+
   return row;
 }
 
@@ -110,6 +132,9 @@ async function cg_save_character(req, res) {
     trait_species:                (data.trait_species || '').toString().slice(0, 10),
     trait_career:                 (data.trait_career  || '').toString().slice(0, 10),
     increased_trait_career_target:(data.increased_trait_career_target || null),
+    experience_points:            parseInt(data.experience_points, 10) || 0,
+    xp_skill_marks:               JSON.stringify(data.xp_skill_marks || data.xpSkillMarks || {}),
+    xp_gifts:                     JSON.stringify(Array.isArray(data.xp_gifts) ? data.xp_gifts : (Array.isArray(data.xpGifts) ? data.xpGifts : [])),
     updated:                      new Date().toISOString().slice(0, 19).replace('T', ' '),
   };
 

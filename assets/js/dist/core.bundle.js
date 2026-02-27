@@ -743,15 +743,15 @@
       return map;
     },
     enforceCounts() {
-      const $21 = window.jQuery;
+      const $22 = window.jQuery;
       const freq = { d8: 0, d6: 0, d4: 0 };
-      $21(".cg-trait-select").each(function() {
-        const v = $21(this).val();
+      $22(".cg-trait-select").each(function() {
+        const v = $22(this).val();
         if (v && v in freq)
           freq[v]++;
       });
-      $21(".cg-trait-select").each(function() {
-        const $sel = $21(this);
+      $22(".cg-trait-select").each(function() {
+        const $sel = $22(this);
         const current = $sel.val() || "";
         let options = '<option value="">\u2014 Select \u2014</option>';
         DICE_TYPES.forEach((die) => {
@@ -764,13 +764,13 @@
       });
     },
     updateAdjustedDisplays() {
-      const $21 = window.jQuery;
+      const $22 = window.jQuery;
       const boosts = this.calculateBoostMap();
       const totalCareerBoosts = boosts.trait_career || 0;
       const careerCounts = computeCareerBoostCounts(totalCareerBoosts);
       const careerMainBoosts = careerCounts.main || 0;
       TRAITS.forEach((traitKey) => {
-        const $sel = $21(`#cg-${traitKey}`);
+        const $sel = $22(`#cg-${traitKey}`);
         if (!$sel.length)
           return;
         const rawBase = String($sel.val() || "").trim();
@@ -782,11 +782,11 @@
         if (rawBase) {
           badgeText = count > 0 ? boostedDie(rawBase, count) : rawBase;
         }
-        const $badge = $21(`#cg-${traitKey}-badge`);
+        const $badge = $22(`#cg-${traitKey}-badge`);
         if ($badge.length)
           $badge.text(badgeText);
         if (traitKey === "trait_career") {
-          const $pb = $21("#cg-profile-trait_career-badge");
+          const $pb = $22("#cg-profile-trait_career-badge");
           if ($pb.length)
             $pb.text(badgeText);
         }
@@ -801,11 +801,11 @@
             note = origBoosts === 1 ? "Increased by gift" : `Increased by gift \xD7${origBoosts}`;
           }
         }
-        const $note = $21(`#cg-${traitKey}-adjusted`);
+        const $note = $22(`#cg-${traitKey}-adjusted`);
         if ($note.length)
           $note.text(note);
         if (traitKey === "trait_career") {
-          const $pn = $21("#cg-profile-trait_career-note");
+          const $pn = $22("#cg-profile-trait_career-note");
           if ($pn.length)
             $pn.text(note);
         }
@@ -849,6 +849,7 @@
         <li data-tab="tab-traits">Traits, Species, Careers</li>
         <li data-tab="tab-gifts">Gifts</li>
         <li data-tab="tab-skills">Skills</li>
+        <li data-tab="tab-experience">Experience</li>
         <li data-tab="tab-trappings">Trappings &amp; Equipment</li>
         <li data-tab="tab-description">Description</li>
         <li data-tab="tab-summary">Character Sheet</li>
@@ -1065,6 +1066,80 @@
     }
   };
 
+  // assets/js/src/core/experience/render.js
+  var render_default = {
+    renderContent() {
+      return `
+      <div id="tab-experience" class="tab-panel">
+
+        <div class="xp-balance-panel">
+          <div class="xp-earned-wrap">
+            <label class="xp-label" for="xp-earned">Total XP Earned</label>
+            <input type="number" id="xp-earned" class="xp-earned-input" min="0" value="0" placeholder="0">
+          </div>
+          <div class="xp-balance-grid">
+            <div class="xp-balance-cell">
+              <span class="xp-balance-label">Spent on Marks</span>
+              <span class="xp-balance-val" id="xp-marks-cost">0</span>
+            </div>
+            <div class="xp-balance-cell">
+              <span class="xp-balance-label">Spent on Gifts</span>
+              <span class="xp-balance-val" id="xp-gifts-cost">0</span>
+            </div>
+            <div class="xp-balance-cell xp-balance-cell--total">
+              <span class="xp-balance-label">Total Spent</span>
+              <span class="xp-balance-val" id="xp-total-cost">0</span>
+            </div>
+            <div class="xp-balance-cell xp-balance-cell--avail" id="xp-avail-cell">
+              <span class="xp-balance-label">Available</span>
+              <span class="xp-balance-val" id="xp-available">0</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="xp-section">
+          <div class="xp-section-header">
+            <h4>Extra Skill Marks</h4>
+            <span class="xp-cost-badge">4 XP each</span>
+          </div>
+          <p class="xp-section-note">
+            Marks bought here stack with your starting marks. Total marks per skill cap at 3 (d4 \u2192 d6 \u2192 d8).
+          </p>
+          <div id="xp-marks-list" class="xp-marks-list"></div>
+          <div class="xp-add-row">
+            <select id="xp-add-skill-select" class="xp-add-select">
+              <option value="">\u2014 Choose a skill to mark \u2014</option>
+            </select>
+            <button type="button" id="xp-add-skill-btn" class="btn btn-outline xp-add-btn" disabled>
+              + Add Mark
+            </button>
+          </div>
+        </div>
+
+        <div class="xp-section">
+          <div class="xp-section-header">
+            <h4>Experience Gifts</h4>
+            <span class="xp-cost-badge">10 XP each</span>
+          </div>
+          <p class="xp-section-note">
+            These gifts are purchased post-character-creation with earned XP.
+          </p>
+          <div id="xp-gifts-list" class="xp-gifts-list"></div>
+          <div class="xp-add-row">
+            <select id="xp-add-gift-select" class="xp-add-select">
+              <option value="">\u2014 Choose a gift \u2014</option>
+            </select>
+            <button type="button" id="xp-add-gift-btn" class="btn btn-outline xp-add-btn" disabled>
+              + Add Gift
+            </button>
+          </div>
+        </div>
+
+      </div>
+    `;
+    }
+  };
+
   // assets/js/src/core/formBuilder/form-builder.js
   var $4 = window.jQuery;
   var FormBuilder = {
@@ -1078,6 +1153,7 @@
     ${render_details_default.renderContent(data)}
     ${render_profile_default.renderContent(data)}
     ${render_skills_default.renderContent(data)}
+    ${render_default.renderContent()}
     ${render_summary_default.renderContent(data)}
   </div>
 
@@ -1356,6 +1432,9 @@
     character["free-choice-1"] = core["free-choice-1"];
     character["free-choice-2"] = core["free-choice-2"];
     character.career_gift_replacements = core.career_gift_replacements || {};
+    character.experience_points = parseInt(core.experience_points, 10) || 0;
+    character.xp_skill_marks = core.xpSkillMarks || {};
+    character.xp_gifts = Array.isArray(core.xpGifts) ? core.xpGifts : [];
     flat.character = character;
     flat.character_json = JSON.stringify(__spreadValues({}, core));
     return flat;
@@ -1603,6 +1682,11 @@
       } catch (_) {
         d.career_gift_replacements = ((_A = this._data) == null ? void 0 : _A.career_gift_replacements) || {};
       }
+      const xpEarnedDom = readIfExists("#xp-earned");
+      d.experience_points = xpEarnedDom !== void 0 ? parseInt(xpEarnedDom, 10) || 0 : parseInt(this._data.experience_points, 10) || 0;
+      d.xpSkillMarks = this._data.xpSkillMarks || {};
+      d.xpGifts = Array.isArray(this._data.xpGifts) ? this._data.xpGifts : [];
+      this._data.experience_points = d.experience_points;
       return d;
     },
     /**
@@ -3409,9 +3493,9 @@
         src.qualifications = payload;
       }
       document.dispatchEvent(new CustomEvent("cg:quals:changed", { detail: { qualifications: payload } }));
-      const $21 = window.jQuery;
-      if ($21)
-        $21(document).trigger("cg:quals:changed", [{ qualifications: payload }]);
+      const $22 = window.jQuery;
+      if ($22)
+        $22(document).trigger("cg:quals:changed", [{ qualifications: payload }]);
     },
     getAll() {
       return JSON.parse(JSON.stringify(this.data || emptyData()));
@@ -4906,7 +4990,7 @@
     }
     return [];
   }
-  var render_default = {
+  var render_default2 = {
     render() {
       if (!isSkillsTabActive())
         return;
@@ -4925,9 +5009,9 @@
         skills: Array.isArray(x.skills) ? x.skills.map(String) : []
       }));
       data.skillMarks = data.skillMarks || {};
-      const MAX_MARKS = 13;
+      const MAX_MARKS2 = 13;
       const usedMarks = Object.values(data.skillMarks).reduce((sum, v) => sum + (parseInt(v, 10) || 0), 0);
-      const marksRemain = Math.max(0, MAX_MARKS - usedMarks);
+      const marksRemain = Math.max(0, MAX_MARKS2 - usedMarks);
       $13("#tab-skills #marks-remaining, #marks-remaining").remove();
       $table.before(`
       <div id="marks-remaining" class="marks-remaining">
@@ -4950,9 +5034,12 @@
         const cpDie = cpSkills.includes(id) ? "d6" : "";
         const extraDies = extraCareers.map((ec) => (ec.skills || []).includes(id) ? "d4" : "");
         const myMarks = parseInt(data.skillMarks[id], 10) || 0;
+        const xpMarksMap = data.xpSkillMarks || {};
+        const xpMarks = parseInt(xpMarksMap[id], 10) || 0;
+        const totalMks = Math.min(3, myMarks + xpMarks);
         let buttonsHtml = "";
         [1, 2, 3].forEach((n) => {
-          const disabled = usedMarks >= MAX_MARKS && myMarks < n ? " disabled" : "";
+          const disabled = usedMarks >= MAX_MARKS2 && myMarks < n ? " disabled" : "";
           const active = myMarks >= n ? " active" : "";
           buttonsHtml += `<button
           type="button"
@@ -4962,8 +5049,8 @@
           ${disabled}
         ></button>`;
         });
-        const markDie = myMarks ? MARK_DIE[myMarks] : "";
-        const markDisplay = markDie || "\u2013";
+        const markDie = totalMks ? MARK_DIE[totalMks] : "";
+        const markDisplay = markDie ? xpMarks > 0 ? `${markDie} <span class="xp-mark-tag">+${xpMarks}XP</span>` : markDie : "\u2013";
         const poolDice = [spDie, cpDie].concat(extraDies).concat([markDie]).filter(Boolean);
         const poolStr = poolDice.length ? poolDice.join(" + ") : "\u2013";
         const $row = $13("<tr>").append(`<td>${name}</td>`).append(`<td>${spDie || "\u2013"}</td>`).append(`<td>${cpDie || "\u2013"}</td>`);
@@ -4993,7 +5080,7 @@
   function requestRender(_reason = "") {
     if (isSkillsTabActive2()) {
       _pendingRender = false;
-      render_default.render();
+      render_default2.render();
     } else {
       _pendingRender = true;
     }
@@ -5003,7 +5090,7 @@
     const to = String(detail.to || "");
     if (to === "tab-skills") {
       _pendingRender = false;
-      render_default.render();
+      render_default2.render();
     }
   }
   var events_default2 = {
@@ -5035,11 +5122,11 @@
           builder_ui_default.markDirty();
         } catch (_) {
         }
-        render_default.render();
+        render_default2.render();
       });
       if (isSkillsTabActive2() || _pendingRender) {
         _pendingRender = false;
-        render_default.render();
+        render_default2.render();
       }
     }
   };
@@ -5100,7 +5187,7 @@
       formBuilder_default._data = formBuilder_default._data || {};
       formBuilder_default._data.skillsList = list;
       if (isSkillsTabActive3()) {
-        render_default.render();
+        render_default2.render();
       }
     }).catch((err) => {
       _fetching = false;
@@ -5130,7 +5217,7 @@
         return;
       }
       if (isSkillsTabActive3()) {
-        render_default.render();
+        render_default2.render();
       }
     },
     // Allow external callers (e.g. character load) to reset the fetch gate
@@ -5230,6 +5317,9 @@
       }
       const skills = window.CG_SKILLS_LIST || [];
       const marks = data.skillMarks || {};
+      const xpMarks = data.xpSkillMarks || {};
+      const xpGifts = Array.isArray(data.xpGifts) ? data.xpGifts : [];
+      const xpEarned = parseInt(data.experience_points, 10) || 0;
       const battle = data.battle || [];
       let html = `
       <div class="summary-section summary-basic">
@@ -5328,7 +5418,8 @@
         const spDie = spIds.includes(id) ? "d4" : "";
         const cpDie = cpIds.includes(id) ? "d6" : "";
         const ecDies = ecSkillSets.map((set) => set.includes(id) ? "d4" : "").filter(Boolean);
-        const mkDie = MARK_DIE2[marks[id]] || "";
+        const totalMk = Math.min(3, (parseInt(marks[id], 10) || 0) + (parseInt(xpMarks[id], 10) || 0));
+        const mkDie = MARK_DIE2[totalMk] || "";
         const poolDice = [spDie, cpDie].concat(ecDies).concat([mkDie]).filter(Boolean);
         const pool = poolDice.length ? poolDice.join(" + ") : "\u2014";
         html += `<tr><td>${skill.name}</td><td>${pool}</td></tr>`;
@@ -5339,6 +5430,16 @@
         </div>
       </div>
     `;
+      if (xpGifts.length > 0 || xpEarned > 0) {
+        const xpSpent = Object.values(xpMarks).reduce((s, v) => s + (parseInt(v, 10) || 0), 0) * 4 + xpGifts.length * 10;
+        html += `
+        <div class="summary-section summary-xp">
+          <h3>Experience Points</h3>
+          <p><strong>Earned:</strong> ${xpEarned} &nbsp;|&nbsp; <strong>Spent:</strong> ${xpSpent} &nbsp;|&nbsp; <strong>Available:</strong> ${xpEarned - xpSpent}</p>
+          ${xpGifts.length > 0 ? `<ul>${xpGifts.map((g) => `<li>${g.name}</li>`).join("")}</ul>` : ""}
+        </div>
+      `;
+      }
       if (battle.length) {
         html += `
         <div class="summary-section summary-battle">
@@ -5491,10 +5592,262 @@
     }
   };
 
-  // assets/js/src/core/main/builder-refresh.js
+  // assets/js/src/core/experience/index.js
   var $17 = window.jQuery;
+  var XP_MARK_COST = 4;
+  var XP_GIFT_COST = 10;
+  var MAX_MARKS = 3;
+  var MARK_DIE3 = { 1: "d4", 2: "d6", 3: "d8" };
+  function getData() {
+    return formBuilder_default._data || {};
+  }
+  function getXpEarned() {
+    return parseInt(getData().experience_points, 10) || 0;
+  }
+  function getXpSkillMarks() {
+    return getData().xpSkillMarks || {};
+  }
+  function getXpGifts() {
+    return Array.isArray(getData().xpGifts) ? getData().xpGifts : [];
+  }
+  function getCreationMarks() {
+    return getData().skillMarks || {};
+  }
+  function setXpEarned(val) {
+    formBuilder_default._data = __spreadProps(__spreadValues({}, formBuilder_default._data), { experience_points: Math.max(0, parseInt(val, 10) || 0) });
+  }
+  function setXpSkillMarks(marks) {
+    formBuilder_default._data = __spreadProps(__spreadValues({}, formBuilder_default._data), { xpSkillMarks: __spreadValues({}, marks) });
+  }
+  function setXpGifts(gifts) {
+    formBuilder_default._data = __spreadProps(__spreadValues({}, formBuilder_default._data), { xpGifts: [...gifts] });
+  }
+  function xpMarksFor(skillId) {
+    const id = String(skillId);
+    const c = parseInt(getCreationMarks()[id], 10) || 0;
+    const x = parseInt(getXpSkillMarks()[id], 10) || 0;
+    return Math.min(x, Math.max(0, MAX_MARKS - c));
+  }
+  function calcMarksCost() {
+    const marks = getXpSkillMarks();
+    return Object.values(marks).reduce((sum, v) => sum + (parseInt(v, 10) || 0) * XP_MARK_COST, 0);
+  }
+  function calcGiftsCost() {
+    return getXpGifts().length * XP_GIFT_COST;
+  }
+  var _giftsCache = null;
+  function fetchGiftList() {
+    return __async(this, null, function* () {
+      if (_giftsCache)
+        return _giftsCache;
+      const env = window.CG_AJAX || {};
+      const url = env.ajax_url || "/api/ajax";
+      try {
+        const res = yield fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({ action: "cg_get_free_gifts", nonce: env.nonce || "1" })
+        });
+        const json = yield res.json();
+        const list = json.success && Array.isArray(json.data) ? json.data : [];
+        _giftsCache = list.map((g) => ({
+          id: String(g.ct_id || g.id || ""),
+          name: String(g.ct_gift_name || g.name || g.gift_name || "")
+        })).filter((g) => g.id && g.name).sort((a, b) => a.name.localeCompare(b.name));
+        return _giftsCache;
+      } catch (_) {
+        return [];
+      }
+    });
+  }
+  function renderBalance() {
+    const mc = calcMarksCost();
+    const gc = calcGiftsCost();
+    const tc = mc + gc;
+    const av = getXpEarned() - tc;
+    const $earned = $17("#xp-earned");
+    if ($earned.length && $earned.val() !== String(getXpEarned())) {
+      $earned.val(getXpEarned());
+    }
+    $17("#xp-marks-cost").text(mc);
+    $17("#xp-gifts-cost").text(gc);
+    $17("#xp-total-cost").text(tc);
+    $17("#xp-available").text(av);
+    const $avail = $17("#xp-avail-cell");
+    $avail.toggleClass("xp-balance-cell--negative", av < 0);
+    $avail.toggleClass("xp-balance-cell--ok", av >= 0);
+  }
+  function renderMarksList() {
+    const skills = window.CG_SKILLS_LIST || [];
+    const xpMarks = getXpSkillMarks();
+    const skillsById = {};
+    skills.forEach((s) => {
+      skillsById[String(s.id)] = s.name;
+    });
+    const activeSkills = Object.keys(xpMarks).filter((id) => parseInt(xpMarks[id], 10) > 0).map((id) => ({ id, name: skillsById[id] || `Skill #${id}` })).sort((a, b) => a.name.localeCompare(b.name));
+    const $list = $17("#xp-marks-list").empty();
+    if (!activeSkills.length) {
+      $list.append('<p class="xp-empty">No extra marks yet. Use the dropdown below to add some.</p>');
+      return;
+    }
+    activeSkills.forEach(({ id, name }) => {
+      const creationMk = parseInt(getCreationMarks()[id], 10) || 0;
+      const xpMk = xpMarksFor(id);
+      const maxMore = MAX_MARKS - creationMk;
+      let btnsHtml = "";
+      for (let n = 1; n <= maxMore; n++) {
+        const active = n <= xpMk ? " active" : "";
+        btnsHtml += `<button type="button" class="skill-mark-btn xp-mark-btn${active}"
+        data-skill-id="${id}" data-mark="${n}" title="${n} mark${n > 1 ? "s" : ""} (${n * XP_MARK_COST} XP)"></button>`;
+      }
+      const totalDie = MARK_DIE3[Math.min(MAX_MARKS, creationMk + xpMk)] || "\u2014";
+      const xpCost = xpMk * XP_MARK_COST;
+      $list.append(`
+      <div class="xp-mark-row" data-skill-id="${id}">
+        <span class="xp-mark-name">${name}</span>
+        <div class="xp-mark-info">
+          <span class="xp-mark-creation" title="Starting marks: ${creationMk}">Start: ${creationMk > 0 ? MARK_DIE3[creationMk] : "\u2014"}</span>
+          <div class="xp-mark-btns">${btnsHtml}</div>
+          <span class="xp-mark-die" title="Total die">= ${totalDie}</span>
+          <span class="xp-mark-cost">${xpCost} XP</span>
+          <button type="button" class="xp-remove-mark btn-ghost" data-skill-id="${id}" title="Remove XP marks for this skill">\u2715</button>
+        </div>
+      </div>
+    `);
+    });
+  }
+  function renderGiftsList() {
+    const gifts = getXpGifts();
+    const $list = $17("#xp-gifts-list").empty();
+    if (!gifts.length) {
+      $list.append('<p class="xp-empty">No gifts purchased yet. Use the dropdown below to add one.</p>');
+      return;
+    }
+    gifts.forEach((gift, idx) => {
+      $list.append(`
+      <div class="xp-gift-row" data-index="${idx}">
+        <span class="xp-gift-name">${gift.name}</span>
+        <span class="xp-gift-cost">${XP_GIFT_COST} XP</span>
+        <button type="button" class="xp-remove-gift btn-ghost" data-index="${idx}" title="Remove gift">\u2715</button>
+      </div>
+    `);
+    });
+  }
+  function render() {
+    renderBalance();
+    renderMarksList();
+    renderGiftsList();
+  }
+  function populateSkillDropdown() {
+    const skills = window.CG_SKILLS_LIST || [];
+    const $select = $17("#xp-add-skill-select").empty();
+    $select.append('<option value="">\u2014 Choose a skill to mark \u2014</option>');
+    skills.slice().sort((a, b) => String(a.name).localeCompare(String(b.name))).forEach((s) => {
+      const id = String(s.id);
+      const creationMk = parseInt(getCreationMarks()[id], 10) || 0;
+      const maxMore = MAX_MARKS - creationMk;
+      if (maxMore <= 0)
+        return;
+      $select.append(`<option value="${id}">${s.name}</option>`);
+    });
+  }
+  function populateGiftDropdown() {
+    return __async(this, null, function* () {
+      const gifts = yield fetchGiftList();
+      const $select = $17("#xp-add-gift-select").empty();
+      $select.append('<option value="">\u2014 Choose a gift \u2014</option>');
+      gifts.forEach((g) => {
+        $select.append(`<option value="${g.id}" data-name="${g.name}">${g.name}</option>`);
+      });
+    });
+  }
+  var _bound3 = false;
+  function bindEvents() {
+    if (_bound3)
+      return;
+    _bound3 = true;
+    $17(document).on("input.cgxp change.cgxp", "#xp-earned", function() {
+      setXpEarned(parseInt($17(this).val(), 10) || 0);
+      render();
+    });
+    $17(document).on("click.cgxp", ".xp-mark-btn", function() {
+      const id = String($17(this).data("skill-id"));
+      const n = parseInt($17(this).data("mark"), 10);
+      const cur = xpMarksFor(id);
+      const marks = __spreadValues({}, getXpSkillMarks());
+      marks[id] = cur === n ? Math.max(0, n - 1) : n;
+      if (marks[id] <= 0)
+        delete marks[id];
+      setXpSkillMarks(marks);
+      render();
+    });
+    $17(document).on("click.cgxp", ".xp-remove-mark", function() {
+      const id = String($17(this).data("skill-id"));
+      const marks = __spreadValues({}, getXpSkillMarks());
+      delete marks[id];
+      setXpSkillMarks(marks);
+      render();
+    });
+    $17(document).on("change.cgxp", "#xp-add-skill-select", function() {
+      $17("#xp-add-skill-btn").prop("disabled", !$17(this).val());
+    });
+    $17(document).on("change.cgxp", "#xp-add-gift-select", function() {
+      $17("#xp-add-gift-btn").prop("disabled", !$17(this).val());
+    });
+    $17(document).on("click.cgxp", "#xp-add-skill-btn", function() {
+      const id = String($17("#xp-add-skill-select").val() || "");
+      if (!id)
+        return;
+      const creationMk = parseInt(getCreationMarks()[id], 10) || 0;
+      const maxMore = MAX_MARKS - creationMk;
+      if (maxMore <= 0)
+        return;
+      const marks = __spreadValues({}, getXpSkillMarks());
+      const cur = parseInt(marks[id], 10) || 0;
+      const next = Math.min(maxMore, cur + 1);
+      if (next > cur)
+        marks[id] = next;
+      setXpSkillMarks(marks);
+      $17("#xp-add-skill-select").val("");
+      $17("#xp-add-skill-btn").prop("disabled", true);
+      populateSkillDropdown();
+      render();
+    });
+    $17(document).on("click.cgxp", "#xp-add-gift-btn", function() {
+      const $opt = $17("#xp-add-gift-select option:selected");
+      const id = String($opt.val() || "");
+      const name = String($opt.data("name") || $opt.text() || "");
+      if (!id || !name)
+        return;
+      const gifts = [...getXpGifts(), { id, name }];
+      setXpGifts(gifts);
+      $17("#xp-add-gift-select").val("");
+      $17("#xp-add-gift-btn").prop("disabled", true);
+      render();
+    });
+    $17(document).on("click.cgxp", ".xp-remove-gift", function() {
+      const idx = parseInt($17(this).data("index"), 10);
+      const gifts = getXpGifts().filter((_, i) => i !== idx);
+      setXpGifts(gifts);
+      render();
+    });
+  }
+  var ExperienceAPI = {
+    init() {
+      return __async(this, null, function* () {
+        bindEvents();
+        populateSkillDropdown();
+        populateGiftDropdown();
+        render();
+      });
+    }
+  };
+  var experience_default = ExperienceAPI;
+
+  // assets/js/src/core/main/builder-refresh.js
+  var $18 = window.jQuery;
   function refreshTab() {
-    const tab = String($17("#cg-modal .cg-tabs li.active").data("tab") || "");
+    const tab = String($18("#cg-modal .cg-tabs li.active").data("tab") || "");
     switch (tab) {
       case "tab-details":
         break;
@@ -5515,6 +5868,9 @@
       case "tab-skills":
         skills_default.init();
         break;
+      case "tab-experience":
+        experience_default.init();
+        break;
       case "tab-trappings":
         break;
       case "tab-description":
@@ -5526,7 +5882,7 @@
   }
 
   // assets/js/src/core/main/builder-load.js
-  var $18 = window.jQuery;
+  var $19 = window.jQuery;
   var LOG2 = (...a) => console.log("[BuilderLoad]", ...a);
   var ERR = (...a) => console.error("[BuilderLoad]", ...a);
   var _inited2 = false;
@@ -5580,18 +5936,18 @@
       return _inFlight;
     const now = Date.now();
     if (force && now - _lastForceFetchAt < FORCE_THROTTLE_MS && _cacheRows) {
-      return $18.Deferred().resolve(_cacheRows).promise();
+      return $19.Deferred().resolve(_cacheRows).promise();
     }
     if (!force && _cacheRows && now - _cacheAt < CACHE_MS) {
-      return $18.Deferred().resolve(_cacheRows).promise();
+      return $19.Deferred().resolve(_cacheRows).promise();
     }
     LOG2("fetching characters via AJAX\u2026", force ? "(force)" : "");
     const req = _getListRequest();
     if (!req) {
       ERR("No listCharacters()/fetchCharacters() available on FormBuilderAPI");
-      return $18.Deferred().resolve([]).promise();
+      return $19.Deferred().resolve([]).promise();
     }
-    const d = $18.Deferred();
+    const d = $19.Deferred();
     _inFlight = d.promise();
     if (force)
       _lastForceFetchAt = now;
@@ -5624,7 +5980,7 @@
     return _inFlight;
   }
   function populateLoadSelect(rows) {
-    const $sel = $18("#cg-splash-load-select");
+    const $sel = $19("#cg-splash-load-select");
     if (!$sel.length)
       return;
     _populating = true;
@@ -5632,14 +5988,14 @@
     try {
       const current = String($sel.val() || "");
       $sel.empty();
-      $sel.append($18("<option>", { value: "", text: "-- Select a character --" }));
+      $sel.append($19("<option>", { value: "", text: "-- Select a character --" }));
       (rows || []).forEach((r) => {
         var _a, _b;
         const id = String((_a = r == null ? void 0 : r.id) != null ? _a : "");
         const name = String((_b = r == null ? void 0 : r.name) != null ? _b : "");
         if (!id)
           return;
-        $sel.append($18("<option>", { value: id, text: name || `#${id}` }));
+        $sel.append($19("<option>", { value: id, text: name || `#${id}` }));
       });
       if (current)
         $sel.val(current);
@@ -5657,7 +6013,7 @@
     _lastEnsureAt = now;
     if (_populating || _suppressObserver)
       return;
-    const $sel = $18("#cg-splash-load-select");
+    const $sel = $19("#cg-splash-load-select");
     if (!$sel.length)
       return;
     const count = $sel.find("option").length;
@@ -5732,22 +6088,22 @@
   }
 
   // assets/js/src/core/main/builder-save.js
-  var $19 = window.jQuery;
+  var $20 = window.jQuery;
   var LOG3 = (...a) => console.log("[BuilderSave]", ...a);
   var WARN2 = (...a) => console.warn("[BuilderSave]", ...a);
   function setSaveButtonsDisabled(disabled) {
     try {
-      $19("#cg-modal .cg-save-button").prop("disabled", !!disabled).toggleClass("cg-disabled", !!disabled);
+      $20("#cg-modal .cg-save-button").prop("disabled", !!disabled).toggleClass("cg-disabled", !!disabled);
     } catch (_) {
     }
   }
   function bindSaveEvents() {
-    $19(document).off("click", ".cg-save-button");
-    $19(document).off("click", ".cg-close-after-save");
-    $19(document).on("click.cg", ".cg-save-button", function(e) {
+    $20(document).off("click", ".cg-save-button");
+    $20(document).off("click", ".cg-close-after-save");
+    $20(document).on("click.cg", ".cg-save-button", function(e) {
       e.preventDefault();
       e.stopImmediatePropagation();
-      const $btn = $19(this);
+      const $btn = $20(this);
       const shouldClose = $btn.hasClass("cg-close-after-save");
       if (window.CG_SAVE_IN_FLIGHT) {
         WARN2("Save click ignored: CG_SAVE_IN_FLIGHT already true", { shouldClose });
@@ -5765,15 +6121,15 @@
   }
 
   // assets/js/src/core/main/builder-events.js
-  var $20 = window.jQuery;
+  var $21 = window.jQuery;
   var LOG4 = (...a) => console.log("[BuilderEvents]", ...a);
   var SEL = {
     species: '#cg-species, select[name="species"], select[data-cg="species"], .cg-species',
     career: '#cg-career,  select[name="career"],  select[data-cg="career"],  .cg-career'
   };
   function firstSelect(selector) {
-    const $sel = $20(selector);
-    const $modalSel = $20("#cg-modal").find(selector);
+    const $sel = $21(selector);
+    const $modalSel = $21("#cg-modal").find(selector);
     if ($modalSel.length)
       return $modalSel.first();
     return $sel.length ? $sel.first() : null;
@@ -5790,7 +6146,7 @@
     if (String($sel.val() || "") === val)
       return true;
     const $byText = $sel.find("option").filter(function() {
-      return $20(this).text() === val;
+      return $21(this).text() === val;
     }).first();
     if ($byText.length) {
       $sel.val($byText.val());
@@ -5819,7 +6175,7 @@
     const $sel = firstSelect(selector);
     if (!$sel) {
       LOG4(`no ${kind} select found`);
-      return $20.Deferred().resolve().promise();
+      return $21.Deferred().resolve().promise();
     }
     const el = $sel.get(0);
     const beforeVal = String($sel.val() || "").trim();
@@ -5833,10 +6189,10 @@
     }
     const ensureOptions = () => {
       if (el.options.length > 1 && !force)
-        return $20.Deferred().resolve().promise();
+        return $21.Deferred().resolve().promise();
       const API = kind === "species" ? api_default : api_default2;
       if (typeof (API == null ? void 0 : API.populateSelect) !== "function")
-        return $20.Deferred().resolve().promise();
+        return $21.Deferred().resolve().promise();
       return API.populateSelect(el, { force: !!force });
     };
     const doApply = () => {
@@ -5855,7 +6211,7 @@
         }
       }
     };
-    return $20.Deferred(function(dfr) {
+    return $21.Deferred(function(dfr) {
       setTimeout(() => {
         ensureOptions().then(() => {
           doApply();
@@ -5865,7 +6221,7 @@
     }).promise();
   }
   function hydrateSpeciesAndCareer(opts = {}) {
-    return $20.when(
+    return $21.when(
       hydrateSelect("species", opts),
       hydrateSelect("career", opts)
     );
@@ -5882,9 +6238,9 @@
       (_b = (_a = gifts_default) == null ? void 0 : _a.init) == null ? void 0 : _b.call(_a);
     } catch (_) {
     }
-    $20(document).off("input.cg change.cg", "#cg-modal input, #cg-modal select, #cg-modal textarea").on("input.cg change.cg", "#cg-modal input, #cg-modal select, #cg-modal textarea", function() {
+    $21(document).off("input.cg change.cg", "#cg-modal input, #cg-modal select, #cg-modal textarea").on("input.cg change.cg", "#cg-modal input, #cg-modal select, #cg-modal textarea", function() {
       builder_ui_default.markDirty();
-      const $el = $20(this);
+      const $el = $21(this);
       if ($el.hasClass("skill-marks")) {
         const skillId = $el.data("skill-id");
         const val = parseInt($el.val(), 10) || 0;
@@ -5898,11 +6254,11 @@
       const key = id.replace(/^cg-/, "");
       formBuilder_default._data[key] = $el.val();
     });
-    $20(document).off("click.cg", "#cg-open-builder").on("click.cg", "#cg-open-builder", (e) => {
+    $21(document).off("click.cg", "#cg-open-builder").on("click.cg", "#cg-open-builder", (e) => {
       e.preventDefault();
-      $20("#cg-modal-splash").removeClass("cg-hidden").addClass("visible");
+      $21("#cg-modal-splash").removeClass("cg-hidden").addClass("visible");
       try {
-        const $sel = $20("#cg-splash-load-select");
+        const $sel = $21("#cg-splash-load-select");
         const optCount = $sel.length ? $sel.find("option").length : 0;
         if ($sel.length && optCount <= 1) {
           document.dispatchEvent(new CustomEvent("cg:characters:refresh", { detail: { source: "splash-open" } }));
@@ -5910,9 +6266,9 @@
       } catch (_) {
       }
     });
-    $20(document).off("click.cg", "#cg-new-splash").on("click.cg", "#cg-new-splash", (e) => {
+    $21(document).off("click.cg", "#cg-new-splash").on("click.cg", "#cg-new-splash", (e) => {
       e.preventDefault();
-      $20("#cg-modal-splash").removeClass("visible").addClass("cg-hidden");
+      $21("#cg-modal-splash").removeClass("visible").addClass("cg-hidden");
       builder_ui_default.openBuilder({ isNew: true, payload: {} });
       formBuilder_default._data.skillMarks = {};
       formBuilder_default._data.species = "";
@@ -5921,9 +6277,9 @@
         window.CG_FreeChoicesState.selected = ["", "", ""];
       }
     });
-    $20(document).off("click.cg", "#cg-load-splash").on("click.cg", "#cg-load-splash", (e) => {
+    $21(document).off("click.cg", "#cg-load-splash").on("click.cg", "#cg-load-splash", (e) => {
       e.preventDefault();
-      const charId = $20("#cg-splash-load-select").val();
+      const charId = $21("#cg-splash-load-select").val();
       if (!charId) {
         alert("Please select a character to load.");
         return;
@@ -5937,7 +6293,7 @@
           alert("Character could not be loaded.");
           return;
         }
-        $20("#cg-modal-splash").removeClass("visible").addClass("cg-hidden");
+        $21("#cg-modal-splash").removeClass("visible").addClass("cg-hidden");
         builder_ui_default.openBuilder({ isNew: false, payload: record });
         setTimeout(() => {
           hydrateSpeciesAndCareer({ force: true, record });
@@ -5949,39 +6305,39 @@
     });
     bindLoadEvents();
     bindSaveEvents();
-    $20(document).off("click.cg", "#cg-modal .cg-tabs li").on("click.cg", "#cg-modal .cg-tabs li", function(e) {
+    $21(document).off("click.cg", "#cg-modal .cg-tabs li").on("click.cg", "#cg-modal .cg-tabs li", function(e) {
       e.preventDefault();
-      const fromTab = $20("#cg-modal .cg-tabs li.active").data("tab");
-      const tabName = $20(this).data("tab");
-      $20("#cg-modal .cg-tabs li").removeClass("active");
-      $20(this).addClass("active");
-      $20(".tab-panel").removeClass("active");
-      $20(`#${tabName}`).addClass("active");
+      const fromTab = $21("#cg-modal .cg-tabs li.active").data("tab");
+      const tabName = $21(this).data("tab");
+      $21("#cg-modal .cg-tabs li").removeClass("active");
+      $21(this).addClass("active");
+      $21(".tab-panel").removeClass("active");
+      $21(`#${tabName}`).addClass("active");
       emitTabChanged(fromTab, tabName);
       refreshTab();
       setTimeout(() => {
         hydrateSpeciesAndCareer({ force: false });
       }, 0);
     });
-    $20(document).off("click.cg", "#cg-modal-close").on("click.cg", "#cg-modal-close", (e) => {
+    $21(document).off("click.cg", "#cg-modal-close").on("click.cg", "#cg-modal-close", (e) => {
       e.preventDefault();
       builder_ui_default.showUnsaved();
     });
-    $20(document).off("click.cg", "#cg-modal-overlay").on("click.cg", "#cg-modal-overlay", function(e) {
+    $21(document).off("click.cg", "#cg-modal-overlay").on("click.cg", "#cg-modal-overlay", function(e) {
       if (e.target !== this)
         return;
       builder_ui_default.showUnsaved();
     });
-    $20(document).off("click.cg", "#unsaved-save").on("click.cg", "#unsaved-save", (e) => {
+    $21(document).off("click.cg", "#unsaved-save").on("click.cg", "#unsaved-save", (e) => {
       e.preventDefault();
       console.log("[BuilderEvents] Prompt: SAVE & EXIT clicked");
       formBuilder_default.save(true);
     });
-    $20(document).off("click.cg", "#unsaved-exit").on("click.cg", "#unsaved-exit", (e) => {
+    $21(document).off("click.cg", "#unsaved-exit").on("click.cg", "#unsaved-exit", (e) => {
       e.preventDefault();
       builder_ui_default.closeBuilder();
     });
-    $20(document).off("click.cg", "#unsaved-cancel").on("click.cg", "#unsaved-cancel", (e) => {
+    $21(document).off("click.cg", "#unsaved-cancel").on("click.cg", "#unsaved-cancel", (e) => {
       e.preventDefault();
       builder_ui_default.hideUnsaved();
     });

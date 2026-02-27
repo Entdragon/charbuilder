@@ -27,6 +27,7 @@ export default {
         <li data-tab="tab-traits">Traits, Species, Careers</li>
         <li data-tab="tab-gifts">Gifts</li>
         <li data-tab="tab-skills">Skills</li>
+        <li data-tab="tab-experience">Experience</li>
         <li data-tab="tab-trappings">Trappings &amp; Equipment</li>
         <li data-tab="tab-description">Description</li>
         <li data-tab="tab-summary">Character Sheet</li>

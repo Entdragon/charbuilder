@@ -1,10 +1,11 @@
 // assets/js/src/core/formBuilder/form-builder.js
 const $ = window.jQuery;
 
-import DetailsTabRenderer   from './render-details.js';
-import ProfileTabRenderer   from './render-profile.js';
-import SkillsTabRenderer    from './render-skills.js';
-import SummaryTabRenderer   from './render-summary.js';
+import DetailsTabRenderer    from './render-details.js';
+import ProfileTabRenderer    from './render-profile.js';
+import SkillsTabRenderer     from './render-skills.js';
+import SummaryTabRenderer    from './render-summary.js';
+import ExperienceTabRenderer from '../experience/render.js';
 
 const FormBuilder = {
   buildForm(data = {}) {
@@ -19,6 +20,7 @@ const FormBuilder = {
     ${DetailsTabRenderer.renderContent(data)}
     ${ProfileTabRenderer.renderContent(data)}
     ${SkillsTabRenderer.renderContent(data)}
+    ${ExperienceTabRenderer.renderContent()}
     ${SummaryTabRenderer.renderContent(data)}
   </div>
 

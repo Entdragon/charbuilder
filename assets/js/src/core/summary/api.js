@@ -106,9 +106,12 @@ const SummaryAPI = {
     }
 
     // Skills, Marks, Battle
-    const skills = window.CG_SKILLS_LIST || [];
-    const marks  = data.skillMarks  || {};
-    const battle = data.battle      || [];
+    const skills   = window.CG_SKILLS_LIST || [];
+    const marks    = data.skillMarks   || {};
+    const xpMarks  = data.xpSkillMarks || {};
+    const xpGifts  = Array.isArray(data.xpGifts) ? data.xpGifts : [];
+    const xpEarned = parseInt(data.experience_points, 10) || 0;
+    const battle   = data.battle       || [];
 
     // Assemble HTML
     let html = `
@@ -216,7 +219,8 @@ const SummaryAPI = {
       const cpDie = cpIds.includes(id) ? 'd6' : '';
       // Each extra career that covers this skill adds its own d4
       const ecDies = ecSkillSets.map(set => set.includes(id) ? 'd4' : '').filter(Boolean);
-      const mkDie  = MARK_DIE[marks[id]] || '';
+      const totalMk = Math.min(3, (parseInt(marks[id], 10) || 0) + (parseInt(xpMarks[id], 10) || 0));
+      const mkDie   = MARK_DIE[totalMk] || '';
 
       // Stack all contributions — same logic as skills/render.js
       const poolDice = [spDie, cpDie].concat(ecDies).concat([mkDie]).filter(Boolean);
@@ -229,6 +233,18 @@ const SummaryAPI = {
         </div>
       </div>
     `;
+
+    if (xpGifts.length > 0 || xpEarned > 0) {
+      const xpSpent = Object.values(xpMarks).reduce((s, v) => s + (parseInt(v, 10) || 0), 0) * 4
+                    + xpGifts.length * 10;
+      html += `
+        <div class="summary-section summary-xp">
+          <h3>Experience Points</h3>
+          <p><strong>Earned:</strong> ${xpEarned} &nbsp;|&nbsp; <strong>Spent:</strong> ${xpSpent} &nbsp;|&nbsp; <strong>Available:</strong> ${xpEarned - xpSpent}</p>
+          ${xpGifts.length > 0 ? `<ul>${xpGifts.map(g => `<li>${g.name}</li>`).join('')}</ul>` : ''}
+        </div>
+      `;
+    }
 
     if (battle.length) {
       html += `

@@ -149,6 +149,35 @@ app.use((err, req, res, next) => {
   }
 });
 
+// ── Database migrations ───────────────────────────────────────────────────────
+async function runMigrations() {
+  const { query, prefix } = require('./db');
+  const p = prefix();
+  const table = `${p}character_records`;
+
+  const newCols = [
+    { name: 'experience_points', def: 'INT NOT NULL DEFAULT 0' },
+    { name: 'xp_skill_marks',    def: 'TEXT NULL DEFAULT NULL' },
+    { name: 'xp_gifts',          def: 'TEXT NULL DEFAULT NULL' },
+  ];
+
+  for (const col of newCols) {
+    try {
+      await query(`ALTER TABLE \`${table}\` ADD COLUMN \`${col.name}\` ${col.def}`, []);
+      console.log(`[CG] Migration: added column ${col.name} to ${table}`);
+    } catch (e) {
+      if (e.message && e.message.includes('Duplicate column name')) {
+        // Column already exists — fine
+      } else if (e.message && e.message.toLowerCase().includes('already exists')) {
+        // Alternative phrasing — fine
+      } else {
+        console.warn(`[CG] Migration warning for ${col.name}:`, e.message);
+      }
+    }
+  }
+}
+
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Character Generator running at http://0.0.0.0:${PORT}`);
+  runMigrations().catch(e => console.warn('[CG] Migration failed (non-fatal):', e.message));
 });

@@ -4,10 +4,11 @@ import CareerIndex    from '../career';
 import GiftsAPI       from '../gifts';
 import SkillsAPI      from '../skills';
 import SummaryAPI     from '../summary';
+import ExperienceAPI  from '../experience';
 
 const $ = window.jQuery;
 
-// Only re-init the active tab’s logic (no DOM→state merging here)
+// Only re-init the active tab's logic (no DOM→state merging here)
 export default function refreshTab() {
   const tab = String($('#cg-modal .cg-tabs li.active').data('tab') || '');
 
@@ -37,6 +38,10 @@ export default function refreshTab() {
 
     case 'tab-skills':
       SkillsAPI.init();
+      break;
+
+    case 'tab-experience':
+      ExperienceAPI.init();
       break;
 
     case 'tab-trappings':
