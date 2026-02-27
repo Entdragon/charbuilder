@@ -194,10 +194,10 @@
   select {
     width:         100%;
     padding:       0.55rem 0.75rem;
-    border:        1px solid var(--cg-parchment-3);
+    border:        1px solid var(--cg-border);
     border-radius: var(--cg-radius);
-    background:    #fff;
-    color:         var(--cg-text);
+    background:    var(--cg-surface);
+    color:         var(--cg-text-light);
     font-family:   'Crimson Pro', Georgia, serif;
     font-size:     1rem;
     margin-bottom: 0.75rem;

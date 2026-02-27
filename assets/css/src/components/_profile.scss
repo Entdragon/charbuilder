@@ -28,15 +28,16 @@
 }
 
 .cg-profile-select,
-.cg-free-select {
+.cg-free-select,
+.cg-free-gift-select {
   width:         100%;
   padding:       0.5em 0.65em;
   font-size:     1rem;
   font-family:   'Crimson Pro', Georgia, serif;
-  color:         var(--cg-text);
-  border:        1px solid var(--cg-parchment-3);
+  color:         var(--cg-text-light);
+  border:        1px solid var(--cg-border);
   border-radius: var(--cg-radius);
-  background:    #fff;
+  background:    var(--cg-surface);
   margin-bottom: 0.5em;
   transition:    border-color 0.18s, box-shadow 0.18s;
 

@@ -265,10 +265,10 @@
 #cg-modal-splash .cg-splash-load select {
   width: 100%;
   padding: 0.55rem 0.75rem;
-  border: 1px solid var(--cg-parchment-3);
+  border: 1px solid var(--cg-border);
   border-radius: var(--cg-radius);
-  background: #fff;
-  color: var(--cg-text);
+  background: var(--cg-surface);
+  color: var(--cg-text-light);
   font-family: "Crimson Pro", Georgia, serif;
   font-size: 1rem;
   margin-bottom: 0.75rem;
@@ -448,20 +448,22 @@
 }
 
 .cg-profile-select,
-.cg-free-select {
+.cg-free-select,
+.cg-free-gift-select {
   width: 100%;
   padding: 0.5em 0.65em;
   font-size: 1rem;
   font-family: "Crimson Pro", Georgia, serif;
-  color: var(--cg-text);
-  border: 1px solid var(--cg-parchment-3);
+  color: var(--cg-text-light);
+  border: 1px solid var(--cg-border);
   border-radius: var(--cg-radius);
-  background: #fff;
+  background: var(--cg-surface);
   margin-bottom: 0.5em;
   transition: border-color 0.18s, box-shadow 0.18s;
 }
 .cg-profile-select:focus,
-.cg-free-select:focus {
+.cg-free-select:focus,
+.cg-free-gift-select:focus {
   outline: none;
   border-color: var(--cg-gold);
   box-shadow: 0 0 0 2px rgba(201, 168, 76, 0.15);
@@ -564,10 +566,10 @@
   width: 100%;
   padding: var(--cg-space-sm);
   margin-top: var(--cg-space-sm);
-  border: 1px solid var(--cg-parchment-3);
+  border: 1px solid var(--cg-border);
   border-radius: var(--cg-radius);
-  background: #fff;
-  color: var(--cg-text);
+  background: var(--cg-surface);
+  color: var(--cg-text-light);
   font-family: "Crimson Pro", Georgia, serif;
   font-size: 1rem;
 }
@@ -1000,16 +1002,17 @@
 .xp-gift-select {
   width: 100%;
   padding: 0.55rem 0.75rem;
-  background: #fff;
-  border: 1px solid var(--cg-parchment-3);
+  background: var(--cg-surface);
+  border: 1px solid var(--cg-border);
   border-radius: var(--cg-radius, 5px);
-  color: var(--cg-text);
+  color: var(--cg-text-light);
   font-family: "Crimson Pro", Georgia, serif;
   font-size: 1rem;
 }
 .xp-gift-select:focus {
   outline: none;
   border-color: var(--cg-gold);
+  box-shadow: 0 0 0 2px rgba(201, 168, 76, 0.15);
 }
 
 .summary-xp h3 {

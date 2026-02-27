@@ -268,16 +268,17 @@
 .xp-gift-select {
   width: 100%;
   padding: .55rem .75rem;
-  background: #fff;
-  border: 1px solid var(--cg-parchment-3);
+  background: var(--cg-surface);
+  border: 1px solid var(--cg-border);
   border-radius: var(--cg-radius, 5px);
-  color: var(--cg-text);
+  color: var(--cg-text-light);
   font-family: 'Crimson Pro', Georgia, serif;
   font-size: 1rem;
 
   &:focus {
     outline: none;
     border-color: var(--cg-gold);
+    box-shadow: 0 0 0 2px rgba(201,168,76,0.15);
   }
 }
 

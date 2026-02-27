@@ -33,10 +33,10 @@
   width:         100%;
   padding:       var(--cg-space-sm);
   margin-top:    var(--cg-space-sm);
-  border:        1px solid var(--cg-parchment-3);
+  border:        1px solid var(--cg-border);
   border-radius: var(--cg-radius);
-  background:    #fff;
-  color:         var(--cg-text);
+  background:    var(--cg-surface);
+  color:         var(--cg-text-light);
   font-family:   'Crimson Pro', Georgia, serif;
   font-size:     1rem;
 
