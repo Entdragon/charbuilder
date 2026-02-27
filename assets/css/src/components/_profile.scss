@@ -95,3 +95,19 @@
     padding-left: 0;
   }
 }
+
+// Extra Career gift hint (Gifts tab)
+
+.cg-gift-extra-career-hint {
+  margin-top: .45rem;
+  padding: .45rem .7rem;
+  background: rgba(201, 168, 76, 0.1);
+  border: 1px solid rgba(201, 168, 76, 0.35);
+  border-radius: 5px;
+  font-size: .82rem;
+  color: #c9a84c;
+  line-height: 1.45;
+
+  strong { font-weight: 700; }
+  em     { font-style: italic; color: #e8dcc4; }
+}

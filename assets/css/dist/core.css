@@ -516,6 +516,24 @@
   padding-left: 0;
 }
 
+.cg-gift-extra-career-hint {
+  margin-top: 0.45rem;
+  padding: 0.45rem 0.7rem;
+  background: rgba(201, 168, 76, 0.1);
+  border: 1px solid rgba(201, 168, 76, 0.35);
+  border-radius: 5px;
+  font-size: 0.82rem;
+  color: #c9a84c;
+  line-height: 1.45;
+}
+.cg-gift-extra-career-hint strong {
+  font-weight: 700;
+}
+.cg-gift-extra-career-hint em {
+  font-style: italic;
+  color: #e8dcc4;
+}
+
 .cg-traits-box {
   background: var(--cg-parchment-2);
   border: 1px solid var(--cg-parchment-3);
