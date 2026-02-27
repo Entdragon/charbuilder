@@ -1,29 +1,31 @@
-// ── Experience Points tab ─────────────────────────────────────────────────────
+// ── Experience Points – Details tab widget + Skills/Gifts tab helpers ─────────
 
-#tab-experience {
-  padding: 1.25rem 1rem;
-  color: #e8dcc4;
-}
+// Widget container (lives inside Details tab)
 
-// Balance panel
-
-.xp-balance-panel {
-  background: rgba(201, 168, 76, 0.08);
-  border: 1px solid rgba(201, 168, 76, 0.3);
+.cg-xp-tracker {
+  background: rgba(201, 168, 76, 0.06);
+  border: 1px solid rgba(201, 168, 76, 0.25);
   border-radius: 8px;
-  padding: 1.1rem 1.25rem;
-  margin-bottom: 1.5rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  align-items: flex-start;
+  padding: 1.1rem 1.25rem 1.25rem;
+  margin-top: 1.5rem;
+
+  h3 {
+    margin: 0 0 1rem;
+    font-family: 'Cinzel', serif;
+    font-size: 1rem;
+    color: #c9a84c;
+    font-weight: 600;
+    letter-spacing: .04em;
+  }
 }
 
-.xp-earned-wrap {
+// Earned XP row
+
+.xp-earned-row {
   display: flex;
-  flex-direction: column;
-  gap: .35rem;
-  flex: 0 0 auto;
+  align-items: center;
+  gap: .75rem;
+  margin-bottom: 1rem;
 }
 
 .xp-label {
@@ -32,16 +34,17 @@
   text-transform: uppercase;
   letter-spacing: .05em;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .xp-earned-input {
   width: 90px;
-  padding: .45rem .6rem;
+  padding: .4rem .6rem;
   background: #1a1714;
   border: 1px solid rgba(201, 168, 76, 0.45);
   border-radius: 5px;
   color: #e8dcc4;
-  font-size: 1.2rem;
+  font-size: 1.15rem;
   font-family: 'Cinzel', serif;
   text-align: center;
 
@@ -52,28 +55,24 @@
   }
 }
 
-.xp-balance-grid {
+// Balance row (Available / Spent stats)
+
+.xp-balance-row {
   display: flex;
-  flex-wrap: wrap;
   gap: .6rem;
-  flex: 1 1 auto;
-  align-items: stretch;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
 }
 
-.xp-balance-cell {
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(201, 168, 76, 0.2);
-  border-radius: 6px;
-  padding: .5rem .85rem;
+.xp-stat {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: .15rem;
-  min-width: 90px;
-
-  &--total {
-    border-color: rgba(201, 168, 76, 0.4);
-  }
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(201, 168, 76, 0.2);
+  border-radius: 6px;
+  padding: .45rem .9rem;
+  min-width: 80px;
 
   &--avail {
     border-color: #c9a84c;
@@ -84,200 +83,186 @@
     border-color: #c0392b !important;
     background: rgba(192, 57, 43, 0.1) !important;
 
-    .xp-balance-val { color: #e74c3c; }
+    .xp-stat-val { color: #e74c3c; }
   }
 
-  &--ok .xp-balance-val {
+  &--ok .xp-stat-val {
     color: #c9a84c;
   }
 }
 
-.xp-balance-label {
-  font-size: .72rem;
+.xp-stat-label {
+  font-size: .7rem;
   color: #9a8a6a;
   text-transform: uppercase;
   letter-spacing: .04em;
 }
 
-.xp-balance-val {
-  font-size: 1.3rem;
+.xp-stat-val {
+  font-size: 1.25rem;
   font-family: 'Cinzel', serif;
   color: #e8dcc4;
   font-weight: 700;
-  line-height: 1;
+  line-height: 1.1;
 }
 
-// Sections
+// Purchase rows
 
-.xp-section {
-  margin-bottom: 1.75rem;
+.xp-purchases {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
 }
 
-.xp-section-header {
+.xp-purchase-row {
   display: flex;
   align-items: center;
-  gap: .6rem;
-  margin-bottom: .35rem;
-
-  h4 {
-    margin: 0;
-    font-family: 'Cinzel', serif;
-    font-size: .95rem;
-    color: #e8dcc4;
-    font-weight: 600;
-  }
+  justify-content: space-between;
+  gap: .75rem;
+  padding: .55rem .75rem;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 6px;
+  flex-wrap: wrap;
 }
 
-.xp-cost-badge {
-  background: rgba(201, 168, 76, 0.2);
-  border: 1px solid rgba(201, 168, 76, 0.4);
-  border-radius: 10px;
-  padding: .1rem .5rem;
-  font-size: .72rem;
-  color: #c9a84c;
+.xp-purchase-info {
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+  flex: 1 1 160px;
+}
+
+.xp-purchase-label {
+  font-size: .88rem;
   font-weight: 600;
+  color: #e8dcc4;
 }
 
-.xp-section-note {
-  font-size: .8rem;
+.xp-purchase-note {
+  font-size: .75rem;
   color: #9a8a6a;
-  margin: 0 0 .75rem;
   font-style: italic;
 }
 
-.xp-empty {
+.xp-purchase-ctrl {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  flex-shrink: 0;
+}
+
+.xp-ctrl-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(201, 168, 76, 0.5);
+  background: transparent;
+  color: #c9a84c;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s, border-color .15s, color .15s;
+
+  &:hover:not(:disabled) {
+    background: rgba(201, 168, 76, 0.2);
+    border-color: #c9a84c;
+  }
+
+  &:disabled {
+    opacity: .3;
+    cursor: default;
+  }
+}
+
+.xp-ctrl-count {
+  font-family: 'Cinzel', serif;
+  font-size: 1rem;
+  color: #e8dcc4;
+  min-width: 24px;
+  text-align: center;
+  font-weight: 700;
+}
+
+// ── XP mark controls in Skills tab ───────────────────────────────────────────
+
+.xp-skill-ctrl {
+  display: flex;
+  align-items: center;
+  gap: .3rem;
+}
+
+.xp-skill-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid rgba(201, 168, 76, 0.4);
+  background: transparent;
+  color: #c9a84c;
+  cursor: pointer;
+  font-size: .85rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background .15s, border-color .15s;
+
+  &:hover:not(:disabled) {
+    background: rgba(201, 168, 76, 0.2);
+    border-color: #c9a84c;
+  }
+
+  &:disabled {
+    opacity: .3;
+    cursor: default;
+  }
+}
+
+.xp-skill-count {
+  font-family: 'Cinzel', serif;
+  font-size: .85rem;
+  color: #e8dcc4;
+  min-width: 18px;
+  text-align: center;
+}
+
+// Small mark-dot buttons used in skills table (creation marks)
+
+.xp-mark-tag {
+  font-size: .65rem;
+  color: #c9a84c;
+  font-family: 'Crimson Pro', serif;
+  vertical-align: super;
+}
+
+// ── XP gift slots (Gifts tab) ─────────────────────────────────────────────────
+
+.xp-gift-label {
+  font-size: .8rem;
+  color: #c9a84c;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  font-weight: 600;
+  margin-bottom: .5rem;
+}
+
+.xp-gifts-empty {
   font-size: .85rem;
   color: #6a5a3a;
   font-style: italic;
   margin: .5rem 0;
 }
 
-// Marks rows
-
-.xp-marks-list,
-.xp-gifts-list {
-  display: flex;
-  flex-direction: column;
-  gap: .4rem;
-  margin-bottom: .75rem;
+.xp-gift-slot {
+  margin-bottom: .4rem;
 }
 
-.xp-mark-row {
-  display: flex;
-  align-items: center;
-  gap: .75rem;
-  padding: .5rem .75rem;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 6px;
-  flex-wrap: wrap;
-}
-
-.xp-mark-name {
-  flex: 1 1 140px;
-  font-size: .9rem;
-  font-weight: 600;
-}
-
-.xp-mark-info {
-  display: flex;
-  align-items: center;
-  gap: .6rem;
-  flex-wrap: wrap;
-}
-
-.xp-mark-creation {
-  font-size: .78rem;
-  color: #9a8a6a;
-}
-
-.xp-mark-btns {
-  display: flex;
-  gap: .25rem;
-
-  .skill-mark-btn.xp-mark-btn {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    border: 2px solid rgba(201, 168, 76, 0.4);
-    background: transparent;
-    cursor: pointer;
-    padding: 0;
-    transition: background .15s, border-color .15s;
-
-    &.active {
-      background: #c9a84c;
-      border-color: #c9a84c;
-    }
-
-    &:hover {
-      border-color: #c9a84c;
-    }
-  }
-}
-
-.xp-mark-die {
-  font-family: 'Cinzel', serif;
-  font-size: .85rem;
-  color: #c9a84c;
-  min-width: 28px;
-}
-
-.xp-mark-cost {
-  font-size: .78rem;
-  color: #9a8a6a;
-}
-
-// Gift rows
-
-.xp-gift-row {
-  display: flex;
-  align-items: center;
-  gap: .75rem;
-  padding: .45rem .75rem;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 6px;
-}
-
-.xp-gift-name {
-  flex: 1;
-  font-size: .9rem;
-}
-
-.xp-gift-cost {
-  font-size: .78rem;
-  color: #9a8a6a;
-}
-
-// Remove buttons
-
-.xp-remove-mark,
-.xp-remove-gift {
-  background: transparent;
-  border: none;
-  color: #6a4a4a;
-  cursor: pointer;
-  font-size: 1rem;
-  padding: .1rem .3rem;
-  border-radius: 3px;
-  line-height: 1;
-  transition: color .15s;
-
-  &:hover { color: #e74c3c; }
-}
-
-// Add row
-
-.xp-add-row {
-  display: flex;
-  gap: .5rem;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.xp-add-select {
-  flex: 1 1 220px;
+.xp-gift-select {
+  width: 100%;
   padding: .45rem .6rem;
   background: #1a1714;
   border: 1px solid rgba(201, 168, 76, 0.3);
@@ -291,38 +276,7 @@
   }
 }
 
-.xp-add-btn {
-  padding: .45rem 1rem;
-  background: transparent;
-  border: 1px solid rgba(201, 168, 76, 0.4);
-  border-radius: 5px;
-  color: #c9a84c;
-  cursor: pointer;
-  font-size: .88rem;
-  white-space: nowrap;
-  transition: background .15s, border-color .15s;
-
-  &:hover:not(:disabled) {
-    background: rgba(201, 168, 76, 0.15);
-    border-color: #c9a84c;
-  }
-
-  &:disabled {
-    opacity: .4;
-    cursor: default;
-  }
-}
-
-// XP mark tag in skills table
-
-.xp-mark-tag {
-  font-size: .65rem;
-  color: #c9a84c;
-  font-family: 'Crimson Pro', serif;
-  vertical-align: super;
-}
-
-// Summary section
+// ── Summary XP section ────────────────────────────────────────────────────────
 
 .summary-xp {
   h3 { color: #c9a84c; }

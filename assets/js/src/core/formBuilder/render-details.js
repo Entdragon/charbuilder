@@ -27,7 +27,6 @@ export default {
         <li data-tab="tab-traits">Traits, Species, Careers</li>
         <li data-tab="tab-gifts">Gifts</li>
         <li data-tab="tab-skills">Skills</li>
-        <li data-tab="tab-experience">Experience</li>
         <li data-tab="tab-trappings">Trappings &amp; Equipment</li>
         <li data-tab="tab-description">Description</li>
         <li data-tab="tab-summary">Character Sheet</li>
@@ -40,6 +39,10 @@ export default {
       (data && (data.species_id || data.species || (data.profile && data.profile.species))) || '';
     const careerSelected =
       (data && (data.career_id || data.career || (data.profile && data.profile.career))) || '';
+
+    const xpEarned      = parseInt(data.experience_points, 10) || 0;
+    const xpMarksBudget = parseInt(data.xpMarksBudget, 10) || 0;
+    const xpGiftSlots   = parseInt(data.xpGiftSlots,   10) || 0;
 
     const traitFields = TRAITS.map(trait => {
       const val   = String(data[trait] ?? '');
@@ -115,6 +118,58 @@ export default {
             <input type="text" id="cg-goal2" value="${escape(data.goal2)}" />
             <label>Goal 3</label>
             <input type="text" id="cg-goal3" value="${escape(data.goal3)}" />
+          </div>
+
+          <!-- ── Experience Points tracker ───────────────────────────── -->
+          <div class="cg-xp-tracker" id="cg-xp-tracker">
+            <h3>Experience Points</h3>
+
+            <div class="xp-earned-row">
+              <label class="xp-label" for="xp-earned">Total XP Earned</label>
+              <input type="number" id="xp-earned" class="xp-earned-input" min="0"
+                     value="${xpEarned}" placeholder="0">
+            </div>
+
+            <div class="xp-balance-row">
+              <div class="xp-stat xp-stat--avail" id="xp-stat-avail">
+                <span class="xp-stat-label">Available</span>
+                <span class="xp-stat-val" id="xp-available-display">0</span>
+              </div>
+              <div class="xp-stat">
+                <span class="xp-stat-label">Spent</span>
+                <span class="xp-stat-val" id="xp-spent-display">0</span>
+              </div>
+            </div>
+
+            <div class="xp-purchases">
+              <div class="xp-purchase-row">
+                <div class="xp-purchase-info">
+                  <span class="xp-purchase-label">Extra Skill Marks</span>
+                  <span class="xp-purchase-note">4 XP each — placed on the Skills tab, no per-skill cap</span>
+                </div>
+                <div class="xp-purchase-ctrl">
+                  <button type="button" class="xp-ctrl-btn" id="xp-marks-minus"
+                          title="Refund 1 mark (4 XP)">−</button>
+                  <span class="xp-ctrl-count" id="xp-marks-bought">${xpMarksBudget}</span>
+                  <button type="button" class="xp-ctrl-btn" id="xp-marks-plus"
+                          title="Buy 1 mark (4 XP)">+</button>
+                </div>
+              </div>
+
+              <div class="xp-purchase-row">
+                <div class="xp-purchase-info">
+                  <span class="xp-purchase-label">Extra Gifts</span>
+                  <span class="xp-purchase-note">10 XP each — a new gift slot appears on the Gifts tab</span>
+                </div>
+                <div class="xp-purchase-ctrl">
+                  <button type="button" class="xp-ctrl-btn" id="xp-gifts-minus"
+                          title="Refund 1 gift (10 XP)">−</button>
+                  <span class="xp-ctrl-count" id="xp-gifts-bought">${xpGiftSlots}</span>
+                  <button type="button" class="xp-ctrl-btn" id="xp-gifts-plus"
+                          title="Buy 1 gift (10 XP)">+</button>
+                </div>
+              </div>
+            </div>
           </div>
 
         </div>

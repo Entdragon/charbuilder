@@ -27,6 +27,8 @@ export default {
 
           <div class="cg-gift-label">Gifts</div>
           <div id="cg-free-choices" class="cg-gift-item"></div>
+
+          <div id="cg-xp-gifts" class="cg-gift-item cg-xp-gifts-container"></div>
         </div>
 
       </div>

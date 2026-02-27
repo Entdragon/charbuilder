@@ -6,9 +6,10 @@ import TraitsService  from '../traits/service.js';
 import SpeciesAPI     from '../species/api.js';
 import CareerAPI      from '../career/api.js';
 
+import { marksToDice } from '../../utils/marks-dice.js';
+
 const $ = window.jQuery;
-const TRAITS   = TraitsService.TRAITS;
-const MARK_DIE = { 1: 'd4', 2: 'd6', 3: 'd8' };
+const TRAITS = TraitsService.TRAITS;
 
 const SummaryAPI = {
   /**
@@ -219,8 +220,8 @@ const SummaryAPI = {
       const cpDie = cpIds.includes(id) ? 'd6' : '';
       // Each extra career that covers this skill adds its own d4
       const ecDies = ecSkillSets.map(set => set.includes(id) ? 'd4' : '').filter(Boolean);
-      const totalMk = Math.min(3, (parseInt(marks[id], 10) || 0) + (parseInt(xpMarks[id], 10) || 0));
-      const mkDie   = MARK_DIE[totalMk] || '';
+      const totalMk = (parseInt(marks[id], 10) || 0) + (parseInt(xpMarks[id], 10) || 0);
+      const mkDie   = marksToDice(totalMk);
 
       // Stack all contributions — same logic as skills/render.js
       const poolDice = [spDie, cpDie].concat(ecDies).concat([mkDie]).filter(Boolean);
@@ -234,9 +235,10 @@ const SummaryAPI = {
       </div>
     `;
 
-    if (xpGifts.length > 0 || xpEarned > 0) {
-      const xpSpent = Object.values(xpMarks).reduce((s, v) => s + (parseInt(v, 10) || 0), 0) * 4
-                    + xpGifts.length * 10;
+    const xpMarksBudget = parseInt(data.xpMarksBudget, 10) || 0;
+    const xpGiftSlots   = parseInt(data.xpGiftSlots,   10) || 0;
+    if (xpGifts.length > 0 || xpEarned > 0 || xpMarksBudget > 0) {
+      const xpSpent = xpMarksBudget * 4 + xpGiftSlots * 10;
       html += `
         <div class="summary-section summary-xp">
           <h3>Experience Points</h3>

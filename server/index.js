@@ -159,6 +159,8 @@ async function runMigrations() {
     { name: 'experience_points', def: 'INT NOT NULL DEFAULT 0' },
     { name: 'xp_skill_marks',    def: 'TEXT NULL DEFAULT NULL' },
     { name: 'xp_gifts',          def: 'TEXT NULL DEFAULT NULL' },
+    { name: 'xp_marks_budget',   def: 'INT NOT NULL DEFAULT 0' },
+    { name: 'xp_gift_slots',     def: 'INT NOT NULL DEFAULT 0' },
   ];
 
   for (const col of newCols) {

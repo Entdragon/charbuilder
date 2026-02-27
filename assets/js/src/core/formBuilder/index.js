@@ -380,6 +380,8 @@ function buildPayload(raw) {
 
   // Experience Points
   character.experience_points = parseInt(core.experience_points, 10) || 0;
+  character.xp_marks_budget   = parseInt(core.xpMarksBudget, 10) || 0;
+  character.xp_gift_slots     = parseInt(core.xpGiftSlots,   10) || 0;
   character.xp_skill_marks    = core.xpSkillMarks || {};
   character.xp_gifts          = Array.isArray(core.xpGifts) ? core.xpGifts : [];
 
@@ -689,8 +691,10 @@ const FormBuilderAPI = {
     d.experience_points = xpEarnedDom !== undefined
       ? (parseInt(xpEarnedDom, 10) || 0)
       : (parseInt(this._data.experience_points, 10) || 0);
-    d.xpSkillMarks = this._data.xpSkillMarks || {};
-    d.xpGifts      = Array.isArray(this._data.xpGifts) ? this._data.xpGifts : [];
+    d.xpMarksBudget = parseInt(this._data.xpMarksBudget, 10) || 0;
+    d.xpGiftSlots   = parseInt(this._data.xpGiftSlots,   10) || 0;
+    d.xpSkillMarks  = this._data.xpSkillMarks || {};
+    d.xpGifts       = Array.isArray(this._data.xpGifts) ? this._data.xpGifts : [];
     this._data.experience_points = d.experience_points;
 
     return d;

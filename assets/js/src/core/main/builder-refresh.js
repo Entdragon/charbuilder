@@ -14,7 +14,7 @@ export default function refreshTab() {
 
   switch (tab) {
     case 'tab-details':
-      // Pure inputs; no module init required.
+      ExperienceAPI.initWidget();
       break;
 
     case 'tab-traits':
@@ -34,14 +34,11 @@ export default function refreshTab() {
 
     case 'tab-gifts':
       GiftsAPI.init();
+      ExperienceAPI.renderXpGifts();
       break;
 
     case 'tab-skills':
       SkillsAPI.init();
-      break;
-
-    case 'tab-experience':
-      ExperienceAPI.init();
       break;
 
     case 'tab-trappings':

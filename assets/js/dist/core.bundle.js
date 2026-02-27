@@ -849,7 +849,6 @@
         <li data-tab="tab-traits">Traits, Species, Careers</li>
         <li data-tab="tab-gifts">Gifts</li>
         <li data-tab="tab-skills">Skills</li>
-        <li data-tab="tab-experience">Experience</li>
         <li data-tab="tab-trappings">Trappings &amp; Equipment</li>
         <li data-tab="tab-description">Description</li>
         <li data-tab="tab-summary">Character Sheet</li>
@@ -859,6 +858,9 @@
     renderContent(data = {}) {
       const speciesSelected = data && (data.species_id || data.species || data.profile && data.profile.species) || "";
       const careerSelected = data && (data.career_id || data.career || data.profile && data.profile.career) || "";
+      const xpEarned = parseInt(data.experience_points, 10) || 0;
+      const xpMarksBudget = parseInt(data.xpMarksBudget, 10) || 0;
+      const xpGiftSlots = parseInt(data.xpGiftSlots, 10) || 0;
       const traitFields = TRAITS2.map((trait) => {
         var _a;
         const val = String((_a = data[trait]) != null ? _a : "");
@@ -929,6 +931,58 @@
             <input type="text" id="cg-goal2" value="${escape(data.goal2)}" />
             <label>Goal 3</label>
             <input type="text" id="cg-goal3" value="${escape(data.goal3)}" />
+          </div>
+
+          <!-- \u2500\u2500 Experience Points tracker \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 -->
+          <div class="cg-xp-tracker" id="cg-xp-tracker">
+            <h3>Experience Points</h3>
+
+            <div class="xp-earned-row">
+              <label class="xp-label" for="xp-earned">Total XP Earned</label>
+              <input type="number" id="xp-earned" class="xp-earned-input" min="0"
+                     value="${xpEarned}" placeholder="0">
+            </div>
+
+            <div class="xp-balance-row">
+              <div class="xp-stat xp-stat--avail" id="xp-stat-avail">
+                <span class="xp-stat-label">Available</span>
+                <span class="xp-stat-val" id="xp-available-display">0</span>
+              </div>
+              <div class="xp-stat">
+                <span class="xp-stat-label">Spent</span>
+                <span class="xp-stat-val" id="xp-spent-display">0</span>
+              </div>
+            </div>
+
+            <div class="xp-purchases">
+              <div class="xp-purchase-row">
+                <div class="xp-purchase-info">
+                  <span class="xp-purchase-label">Extra Skill Marks</span>
+                  <span class="xp-purchase-note">4 XP each \u2014 placed on the Skills tab, no per-skill cap</span>
+                </div>
+                <div class="xp-purchase-ctrl">
+                  <button type="button" class="xp-ctrl-btn" id="xp-marks-minus"
+                          title="Refund 1 mark (4 XP)">\u2212</button>
+                  <span class="xp-ctrl-count" id="xp-marks-bought">${xpMarksBudget}</span>
+                  <button type="button" class="xp-ctrl-btn" id="xp-marks-plus"
+                          title="Buy 1 mark (4 XP)">+</button>
+                </div>
+              </div>
+
+              <div class="xp-purchase-row">
+                <div class="xp-purchase-info">
+                  <span class="xp-purchase-label">Extra Gifts</span>
+                  <span class="xp-purchase-note">10 XP each \u2014 a new gift slot appears on the Gifts tab</span>
+                </div>
+                <div class="xp-purchase-ctrl">
+                  <button type="button" class="xp-ctrl-btn" id="xp-gifts-minus"
+                          title="Refund 1 gift (10 XP)">\u2212</button>
+                  <span class="xp-ctrl-count" id="xp-gifts-bought">${xpGiftSlots}</span>
+                  <button type="button" class="xp-ctrl-btn" id="xp-gifts-plus"
+                          title="Buy 1 gift (10 XP)">+</button>
+                </div>
+              </div>
+            </div>
           </div>
 
         </div>
@@ -1022,6 +1076,8 @@
 
           <div class="cg-gift-label">Gifts</div>
           <div id="cg-free-choices" class="cg-gift-item"></div>
+
+          <div id="cg-xp-gifts" class="cg-gift-item cg-xp-gifts-container"></div>
         </div>
 
       </div>
@@ -1066,80 +1122,6 @@
     }
   };
 
-  // assets/js/src/core/experience/render.js
-  var render_default = {
-    renderContent() {
-      return `
-      <div id="tab-experience" class="tab-panel">
-
-        <div class="xp-balance-panel">
-          <div class="xp-earned-wrap">
-            <label class="xp-label" for="xp-earned">Total XP Earned</label>
-            <input type="number" id="xp-earned" class="xp-earned-input" min="0" value="0" placeholder="0">
-          </div>
-          <div class="xp-balance-grid">
-            <div class="xp-balance-cell">
-              <span class="xp-balance-label">Spent on Marks</span>
-              <span class="xp-balance-val" id="xp-marks-cost">0</span>
-            </div>
-            <div class="xp-balance-cell">
-              <span class="xp-balance-label">Spent on Gifts</span>
-              <span class="xp-balance-val" id="xp-gifts-cost">0</span>
-            </div>
-            <div class="xp-balance-cell xp-balance-cell--total">
-              <span class="xp-balance-label">Total Spent</span>
-              <span class="xp-balance-val" id="xp-total-cost">0</span>
-            </div>
-            <div class="xp-balance-cell xp-balance-cell--avail" id="xp-avail-cell">
-              <span class="xp-balance-label">Available</span>
-              <span class="xp-balance-val" id="xp-available">0</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="xp-section">
-          <div class="xp-section-header">
-            <h4>Extra Skill Marks</h4>
-            <span class="xp-cost-badge">4 XP each</span>
-          </div>
-          <p class="xp-section-note">
-            Marks bought here stack with your starting marks. Total marks per skill cap at 3 (d4 \u2192 d6 \u2192 d8).
-          </p>
-          <div id="xp-marks-list" class="xp-marks-list"></div>
-          <div class="xp-add-row">
-            <select id="xp-add-skill-select" class="xp-add-select">
-              <option value="">\u2014 Choose a skill to mark \u2014</option>
-            </select>
-            <button type="button" id="xp-add-skill-btn" class="btn btn-outline xp-add-btn" disabled>
-              + Add Mark
-            </button>
-          </div>
-        </div>
-
-        <div class="xp-section">
-          <div class="xp-section-header">
-            <h4>Experience Gifts</h4>
-            <span class="xp-cost-badge">10 XP each</span>
-          </div>
-          <p class="xp-section-note">
-            These gifts are purchased post-character-creation with earned XP.
-          </p>
-          <div id="xp-gifts-list" class="xp-gifts-list"></div>
-          <div class="xp-add-row">
-            <select id="xp-add-gift-select" class="xp-add-select">
-              <option value="">\u2014 Choose a gift \u2014</option>
-            </select>
-            <button type="button" id="xp-add-gift-btn" class="btn btn-outline xp-add-btn" disabled>
-              + Add Gift
-            </button>
-          </div>
-        </div>
-
-      </div>
-    `;
-    }
-  };
-
   // assets/js/src/core/formBuilder/form-builder.js
   var $4 = window.jQuery;
   var FormBuilder = {
@@ -1153,7 +1135,6 @@
     ${render_details_default.renderContent(data)}
     ${render_profile_default.renderContent(data)}
     ${render_skills_default.renderContent(data)}
-    ${render_default.renderContent()}
     ${render_summary_default.renderContent(data)}
   </div>
 
@@ -1433,6 +1414,8 @@
     character["free-choice-2"] = core["free-choice-2"];
     character.career_gift_replacements = core.career_gift_replacements || {};
     character.experience_points = parseInt(core.experience_points, 10) || 0;
+    character.xp_marks_budget = parseInt(core.xpMarksBudget, 10) || 0;
+    character.xp_gift_slots = parseInt(core.xpGiftSlots, 10) || 0;
     character.xp_skill_marks = core.xpSkillMarks || {};
     character.xp_gifts = Array.isArray(core.xpGifts) ? core.xpGifts : [];
     flat.character = character;
@@ -1684,6 +1667,8 @@
       }
       const xpEarnedDom = readIfExists("#xp-earned");
       d.experience_points = xpEarnedDom !== void 0 ? parseInt(xpEarnedDom, 10) || 0 : parseInt(this._data.experience_points, 10) || 0;
+      d.xpMarksBudget = parseInt(this._data.xpMarksBudget, 10) || 0;
+      d.xpGiftSlots = parseInt(this._data.xpGiftSlots, 10) || 0;
       d.xpSkillMarks = this._data.xpSkillMarks || {};
       d.xpGifts = Array.isArray(this._data.xpGifts) ? this._data.xpGifts : [];
       this._data.experience_points = d.experience_points;
@@ -4893,13 +4878,23 @@
   var GiftsAPI = { init, refresh, getSelected };
   var gifts_default = GiftsAPI;
 
+  // assets/js/src/utils/marks-dice.js
+  var BASE_DICE = ["d4", "d6", "d8", "d10", "d12"];
+  function marksToDice(n) {
+    const marks = parseInt(n, 10) || 0;
+    if (marks <= 0)
+      return "";
+    const level = Math.floor((marks - 1) / 5);
+    const pos = (marks - 1) % 5;
+    const base = BASE_DICE[pos];
+    if (level === 0)
+      return base;
+    const extras = Array(level).fill("d12").join(" + ");
+    return `${base} + ${extras}`;
+  }
+
   // assets/js/src/core/skills/render.js
   var $13 = window.jQuery;
-  var MARK_DIE = {
-    1: "d4",
-    2: "d6",
-    3: "d8"
-  };
   function isSkillsTabActive() {
     try {
       const li = document.querySelector("#cg-modal .cg-tabs li.active");
@@ -4990,7 +4985,7 @@
     }
     return [];
   }
-  var render_default2 = {
+  var render_default = {
     render() {
       if (!isSkillsTabActive())
         return;
@@ -5009,15 +5004,34 @@
         skills: Array.isArray(x.skills) ? x.skills.map(String) : []
       }));
       data.skillMarks = data.skillMarks || {};
-      const MAX_MARKS2 = 13;
-      const usedMarks = Object.values(data.skillMarks).reduce((sum, v) => sum + (parseInt(v, 10) || 0), 0);
-      const marksRemain = Math.max(0, MAX_MARKS2 - usedMarks);
+      const MAX_CREATION_MARKS = 13;
+      const MAX_MARKS_PER_SKILL = 3;
+      const usedCreationMarks = Object.values(data.skillMarks).reduce((sum, v) => sum + (parseInt(v, 10) || 0), 0);
+      const creationMarksRemain = Math.max(0, MAX_CREATION_MARKS - usedCreationMarks);
+      const xpMarksBudget = parseInt(data.xpMarksBudget, 10) || 0;
+      const xpSkillMarks = data.xpSkillMarks || {};
+      const xpMarksPlaced = Object.values(xpSkillMarks).reduce((sum, v) => sum + (parseInt(v, 10) || 0), 0);
+      const xpMarksRemain = Math.max(0, xpMarksBudget - xpMarksPlaced);
       $13("#tab-skills #marks-remaining, #marks-remaining").remove();
-      $table.before(`
+      let headerHtml = `
       <div id="marks-remaining" class="marks-remaining">
-        Marks Remaining: <strong>${marksRemain}</strong>
-      </div>
-    `);
+        <div class="marks-remaining-group">
+          <span class="marks-lbl">Starting Marks Remaining:</span>
+          <strong>${creationMarksRemain}</strong>
+          <span class="marks-note">/ ${MAX_CREATION_MARKS} \xB7 max ${MAX_MARKS_PER_SKILL} per skill</span>
+        </div>
+    `;
+      if (xpMarksBudget > 0) {
+        headerHtml += `
+        <div class="marks-remaining-group xp-marks-group">
+          <span class="marks-lbl">XP Marks Remaining:</span>
+          <strong class="${xpMarksRemain === 0 ? "marks-zero" : "marks-xp"}">${xpMarksRemain}</strong>
+          <span class="marks-note">/ ${xpMarksBudget} \xB7 no per-skill cap \xB7 extends beyond d8</span>
+        </div>
+      `;
+      }
+      headerHtml += `</div>`;
+      $table.before(headerHtml);
       const $thead = $13("<thead>");
       const $tr = $13("<tr>").append("<th>Skill</th>").append(`<th>${speciesNameOf(species) || ""}</th>`).append(`<th>${careerNameOf(career) || ""}</th>`);
       extraCareers.forEach((ec) => {
@@ -5034,31 +5048,53 @@
         const cpDie = cpSkills.includes(id) ? "d6" : "";
         const extraDies = extraCareers.map((ec) => (ec.skills || []).includes(id) ? "d4" : "");
         const myMarks = parseInt(data.skillMarks[id], 10) || 0;
-        const xpMarksMap = data.xpSkillMarks || {};
-        const xpMarks = parseInt(xpMarksMap[id], 10) || 0;
-        const totalMks = Math.min(3, myMarks + xpMarks);
-        let buttonsHtml = "";
+        let creationBtnsHtml = "";
         [1, 2, 3].forEach((n) => {
-          const disabled = usedMarks >= MAX_MARKS2 && myMarks < n ? " disabled" : "";
+          const disabled = usedCreationMarks >= MAX_CREATION_MARKS && myMarks < n ? " disabled" : "";
           const active = myMarks >= n ? " active" : "";
-          buttonsHtml += `<button
+          creationBtnsHtml += `<button
           type="button"
           class="skill-mark-btn${active}"
           data-skill-id="${id}"
           data-mark="${n}"
+          data-mark-type="creation"
           ${disabled}
         ></button>`;
         });
-        const markDie = totalMks ? MARK_DIE[totalMks] : "";
-        const markDisplay = markDie ? xpMarks > 0 ? `${markDie} <span class="xp-mark-tag">+${xpMarks}XP</span>` : markDie : "\u2013";
-        const poolDice = [spDie, cpDie].concat(extraDies).concat([markDie]).filter(Boolean);
+        const myXpMarks = parseInt(xpSkillMarks[id], 10) || 0;
+        let xpCtrlHtml = "";
+        if (xpMarksBudget > 0) {
+          const canAdd = xpMarksRemain > 0;
+          const canRemove = myXpMarks > 0;
+          xpCtrlHtml = `
+          <div class="xp-marks-row">
+            <button type="button"
+              class="xp-skill-btn xp-skill-minus${canRemove ? "" : " disabled"}"
+              data-skill-id="${id}" data-xp-action="minus"
+              ${canRemove ? "" : "disabled"}>\u2212</button>
+            <span class="xp-skill-count${myXpMarks > 0 ? " xp-skill-count--active" : ""}"
+              title="XP marks on this skill">${myXpMarks > 0 ? "+" + myXpMarks : "\xB7"}</span>
+            <button type="button"
+              class="xp-skill-btn xp-skill-plus${canAdd ? "" : " disabled"}"
+              data-skill-id="${id}" data-xp-action="plus"
+              ${canAdd ? "" : "disabled"}>+</button>
+          </div>
+        `;
+        }
+        const totalMarks = myMarks + myXpMarks;
+        const markDie = marksToDice(totalMarks);
+        const markDisplay = totalMarks > 0 ? myXpMarks > 0 ? `<span class="marks-total-die">${markDie}</span>` : markDie : "\u2013";
+        const poolDice = [spDie, cpDie].concat(extraDies).filter(Boolean);
+        if (markDie)
+          poolDice.push(markDie);
         const poolStr = poolDice.length ? poolDice.join(" + ") : "\u2013";
         const $row = $13("<tr>").append(`<td>${name}</td>`).append(`<td>${spDie || "\u2013"}</td>`).append(`<td>${cpDie || "\u2013"}</td>`);
         extraDies.forEach((die) => {
           $row.append(`<td>${die || "\u2013"}</td>`);
         });
         $row.append(`<td>
-                   <div class="marks-buttons">${buttonsHtml}</div>
+                   <div class="marks-buttons">${creationBtnsHtml}</div>
+                   ${xpCtrlHtml}
                    <div class="marks-display">${markDisplay}</div>
                  </td>`).append(`<td>${poolStr}</td>`);
         $tbody.append($row);
@@ -5080,7 +5116,7 @@
   function requestRender(_reason = "") {
     if (isSkillsTabActive2()) {
       _pendingRender = false;
-      render_default2.render();
+      render_default.render();
     } else {
       _pendingRender = true;
     }
@@ -5090,12 +5126,15 @@
     const to = String(detail.to || "");
     if (to === "tab-skills") {
       _pendingRender = false;
-      render_default2.render();
+      render_default.render();
     }
   }
   var events_default2 = {
     bind() {
       $14(document).off("cg:tab:changed.cgskills").on("cg:tab:changed.cgskills", onTabChanged);
+      $14(document).off("cg:xp:marks:changed.cgskills").on("cg:xp:marks:changed.cgskills", () => {
+        requestRender("xp marks changed");
+      });
       $14(document).off("change.cgskills", "#cg-species, #cg-career").on("change.cgskills", "#cg-species, #cg-career", () => {
         requestRender("species/career change");
       });
@@ -5122,11 +5161,43 @@
           builder_ui_default.markDirty();
         } catch (_) {
         }
-        render_default2.render();
+        render_default.render();
+      });
+      $14(document).off("click.cgskills", ".xp-skill-btn").on("click.cgskills", ".xp-skill-btn", function() {
+        var _a, _b;
+        if ($14(this).prop("disabled") || $14(this).hasClass("disabled"))
+          return;
+        const skillId = String((_a = $14(this).data("skill-id")) != null ? _a : "");
+        const action = String((_b = $14(this).data("xp-action")) != null ? _b : "");
+        if (!skillId || !action)
+          return;
+        formBuilder_default._data = formBuilder_default._data || {};
+        if (!formBuilder_default._data.xpSkillMarks || typeof formBuilder_default._data.xpSkillMarks !== "object") {
+          formBuilder_default._data.xpSkillMarks = {};
+        }
+        const xpBudget = parseInt(formBuilder_default._data.xpMarksBudget, 10) || 0;
+        const xpPlaced = Object.values(formBuilder_default._data.xpSkillMarks).reduce((s, v) => s + (parseInt(v, 10) || 0), 0);
+        const xpRemain = xpBudget - xpPlaced;
+        const cur = parseInt(formBuilder_default._data.xpSkillMarks[skillId], 10) || 0;
+        if (action === "plus" && xpRemain > 0) {
+          formBuilder_default._data.xpSkillMarks[skillId] = cur + 1;
+        } else if (action === "minus" && cur > 0) {
+          const newVal = cur - 1;
+          if (newVal === 0) {
+            delete formBuilder_default._data.xpSkillMarks[skillId];
+          } else {
+            formBuilder_default._data.xpSkillMarks[skillId] = newVal;
+          }
+        }
+        try {
+          builder_ui_default.markDirty();
+        } catch (_) {
+        }
+        render_default.render();
       });
       if (isSkillsTabActive2() || _pendingRender) {
         _pendingRender = false;
-        render_default2.render();
+        render_default.render();
       }
     }
   };
@@ -5187,7 +5258,7 @@
       formBuilder_default._data = formBuilder_default._data || {};
       formBuilder_default._data.skillsList = list;
       if (isSkillsTabActive3()) {
-        render_default2.render();
+        render_default.render();
       }
     }).catch((err) => {
       _fetching = false;
@@ -5217,7 +5288,7 @@
         return;
       }
       if (isSkillsTabActive3()) {
-        render_default2.render();
+        render_default.render();
       }
     },
     // Allow external callers (e.g. character load) to reset the fetch gate
@@ -5239,7 +5310,6 @@
   // assets/js/src/core/summary/api.js
   var $16 = window.jQuery;
   var TRAITS3 = service_default.TRAITS;
-  var MARK_DIE2 = { 1: "d4", 2: "d6", 3: "d8" };
   var SummaryAPI = {
     /**
      * Entry point when the Summary tab is shown.
@@ -5418,8 +5488,8 @@
         const spDie = spIds.includes(id) ? "d4" : "";
         const cpDie = cpIds.includes(id) ? "d6" : "";
         const ecDies = ecSkillSets.map((set) => set.includes(id) ? "d4" : "").filter(Boolean);
-        const totalMk = Math.min(3, (parseInt(marks[id], 10) || 0) + (parseInt(xpMarks[id], 10) || 0));
-        const mkDie = MARK_DIE2[totalMk] || "";
+        const totalMk = (parseInt(marks[id], 10) || 0) + (parseInt(xpMarks[id], 10) || 0);
+        const mkDie = marksToDice(totalMk);
         const poolDice = [spDie, cpDie].concat(ecDies).concat([mkDie]).filter(Boolean);
         const pool = poolDice.length ? poolDice.join(" + ") : "\u2014";
         html += `<tr><td>${skill.name}</td><td>${pool}</td></tr>`;
@@ -5430,8 +5500,10 @@
         </div>
       </div>
     `;
-      if (xpGifts.length > 0 || xpEarned > 0) {
-        const xpSpent = Object.values(xpMarks).reduce((s, v) => s + (parseInt(v, 10) || 0), 0) * 4 + xpGifts.length * 10;
+      const xpMarksBudget = parseInt(data.xpMarksBudget, 10) || 0;
+      const xpGiftSlots = parseInt(data.xpGiftSlots, 10) || 0;
+      if (xpGifts.length > 0 || xpEarned > 0 || xpMarksBudget > 0) {
+        const xpSpent = xpMarksBudget * 4 + xpGiftSlots * 10;
         html += `
         <div class="summary-section summary-xp">
           <h3>Experience Points</h3>
@@ -5596,44 +5668,113 @@
   var $17 = window.jQuery;
   var XP_MARK_COST = 4;
   var XP_GIFT_COST = 10;
-  var MAX_MARKS = 3;
-  var MARK_DIE3 = { 1: "d4", 2: "d6", 3: "d8" };
   function getData() {
     return formBuilder_default._data || {};
   }
   function getXpEarned() {
     return parseInt(getData().experience_points, 10) || 0;
   }
-  function getXpSkillMarks() {
-    return getData().xpSkillMarks || {};
+  function getXpMarksBudget() {
+    return parseInt(getData().xpMarksBudget, 10) || 0;
+  }
+  function getXpGiftSlots() {
+    return parseInt(getData().xpGiftSlots, 10) || 0;
   }
   function getXpGifts() {
     return Array.isArray(getData().xpGifts) ? getData().xpGifts : [];
   }
-  function getCreationMarks() {
-    return getData().skillMarks || {};
+  function getXpSkillMarks() {
+    return getData().xpSkillMarks || {};
   }
-  function setXpEarned(val) {
-    formBuilder_default._data = __spreadProps(__spreadValues({}, formBuilder_default._data), { experience_points: Math.max(0, parseInt(val, 10) || 0) });
+  function calcSpent() {
+    return getXpMarksBudget() * XP_MARK_COST + getXpGiftSlots() * XP_GIFT_COST;
   }
-  function setXpSkillMarks(marks) {
-    formBuilder_default._data = __spreadProps(__spreadValues({}, formBuilder_default._data), { xpSkillMarks: __spreadValues({}, marks) });
+  function calcAvailable() {
+    return getXpEarned() - calcSpent();
   }
-  function setXpGifts(gifts) {
-    formBuilder_default._data = __spreadProps(__spreadValues({}, formBuilder_default._data), { xpGifts: [...gifts] });
+  function setData(patch) {
+    formBuilder_default._data = __spreadValues(__spreadValues({}, formBuilder_default._data || {}), patch);
   }
-  function xpMarksFor(skillId) {
-    const id = String(skillId);
-    const c = parseInt(getCreationMarks()[id], 10) || 0;
-    const x = parseInt(getXpSkillMarks()[id], 10) || 0;
-    return Math.min(x, Math.max(0, MAX_MARKS - c));
+  var _widgetBound = false;
+  function updateWidgetDisplay() {
+    const earned = getXpEarned();
+    const spent = calcSpent();
+    const avail = earned - spent;
+    const budget = getXpMarksBudget();
+    const slots = getXpGiftSlots();
+    $17("#xp-available-display").text(avail);
+    $17("#xp-spent-display").text(spent);
+    $17("#xp-marks-bought").text(budget);
+    $17("#xp-gifts-bought").text(slots);
+    const $statAvail = $17("#xp-stat-avail");
+    $statAvail.toggleClass("xp-stat--negative", avail < 0);
+    $statAvail.toggleClass("xp-stat--ok", avail >= 0);
+    $17("#xp-marks-plus").prop("disabled", avail < XP_MARK_COST);
+    $17("#xp-gifts-plus").prop("disabled", avail < XP_GIFT_COST);
+    $17("#xp-marks-minus").prop("disabled", budget <= 0);
+    $17("#xp-gifts-minus").prop("disabled", slots <= 0);
   }
-  function calcMarksCost() {
-    const marks = getXpSkillMarks();
-    return Object.values(marks).reduce((sum, v) => sum + (parseInt(v, 10) || 0) * XP_MARK_COST, 0);
+  function bindWidgetEvents() {
+    if (_widgetBound) {
+      updateWidgetDisplay();
+      return;
+    }
+    _widgetBound = true;
+    $17(document).on("input.cgxp change.cgxp", "#xp-earned", function() {
+      const val = Math.max(0, parseInt($17(this).val(), 10) || 0);
+      setData({ experience_points: val });
+      updateWidgetDisplay();
+    });
+    $17(document).on("click.cgxp", "#xp-marks-plus", function() {
+      if (calcAvailable() < XP_MARK_COST)
+        return;
+      setData({ xpMarksBudget: getXpMarksBudget() + 1 });
+      updateWidgetDisplay();
+      triggerSkillsRefresh();
+    });
+    $17(document).on("click.cgxp", "#xp-marks-minus", function() {
+      const budget = getXpMarksBudget();
+      if (budget <= 0)
+        return;
+      const newBudget = budget - 1;
+      const placed = getXpSkillMarks();
+      const total = Object.values(placed).reduce((s, v) => s + (parseInt(v, 10) || 0), 0);
+      const newPlaced = __spreadValues({}, placed);
+      if (total > newBudget) {
+        const keys = Object.keys(newPlaced).filter((k) => parseInt(newPlaced[k], 10) > 0);
+        for (let i = keys.length - 1; i >= 0 && Object.values(newPlaced).reduce((s, v) => s + (parseInt(v, 10) || 0), 0) > newBudget; i--) {
+          const k = keys[i];
+          newPlaced[k] = Math.max(0, (parseInt(newPlaced[k], 10) || 0) - 1);
+          if (newPlaced[k] === 0)
+            delete newPlaced[k];
+        }
+      }
+      setData({ xpMarksBudget: newBudget, xpSkillMarks: newPlaced });
+      updateWidgetDisplay();
+      triggerSkillsRefresh();
+    });
+    $17(document).on("click.cgxp", "#xp-gifts-plus", function() {
+      if (calcAvailable() < XP_GIFT_COST)
+        return;
+      setData({ xpGiftSlots: getXpGiftSlots() + 1 });
+      updateWidgetDisplay();
+    });
+    $17(document).on("click.cgxp", "#xp-gifts-minus", function() {
+      const slots = getXpGiftSlots();
+      if (slots <= 0)
+        return;
+      const newSlots = slots - 1;
+      const gifts = getXpGifts().slice(0, newSlots);
+      setData({ xpGiftSlots: newSlots, xpGifts: gifts });
+      updateWidgetDisplay();
+    });
+    updateWidgetDisplay();
   }
-  function calcGiftsCost() {
-    return getXpGifts().length * XP_GIFT_COST;
+  function triggerSkillsRefresh() {
+    try {
+      $17(document).trigger("cg:xp:marks:changed");
+    } catch (_) {
+    }
   }
   var _giftsCache = null;
   function fetchGiftList() {
@@ -5643,10 +5784,11 @@
       const env = window.CG_AJAX || {};
       const url = env.ajax_url || "/api/ajax";
       try {
+        const body = new URLSearchParams({ action: "cg_get_free_gifts", nonce: env.nonce || "1" });
         const res = yield fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: new URLSearchParams({ action: "cg_get_free_gifts", nonce: env.nonce || "1" })
+          body
         });
         const json = yield res.json();
         const list = json.success && Array.isArray(json.data) ? json.data : [];
@@ -5660,187 +5802,56 @@
       }
     });
   }
-  function renderBalance() {
-    const mc = calcMarksCost();
-    const gc = calcGiftsCost();
-    const tc = mc + gc;
-    const av = getXpEarned() - tc;
-    const $earned = $17("#xp-earned");
-    if ($earned.length && $earned.val() !== String(getXpEarned())) {
-      $earned.val(getXpEarned());
-    }
-    $17("#xp-marks-cost").text(mc);
-    $17("#xp-gifts-cost").text(gc);
-    $17("#xp-total-cost").text(tc);
-    $17("#xp-available").text(av);
-    const $avail = $17("#xp-avail-cell");
-    $avail.toggleClass("xp-balance-cell--negative", av < 0);
-    $avail.toggleClass("xp-balance-cell--ok", av >= 0);
-  }
-  function renderMarksList() {
-    const skills = window.CG_SKILLS_LIST || [];
-    const xpMarks = getXpSkillMarks();
-    const skillsById = {};
-    skills.forEach((s) => {
-      skillsById[String(s.id)] = s.name;
-    });
-    const activeSkills = Object.keys(xpMarks).filter((id) => parseInt(xpMarks[id], 10) > 0).map((id) => ({ id, name: skillsById[id] || `Skill #${id}` })).sort((a, b) => a.name.localeCompare(b.name));
-    const $list = $17("#xp-marks-list").empty();
-    if (!activeSkills.length) {
-      $list.append('<p class="xp-empty">No extra marks yet. Use the dropdown below to add some.</p>');
-      return;
-    }
-    activeSkills.forEach(({ id, name }) => {
-      const creationMk = parseInt(getCreationMarks()[id], 10) || 0;
-      const xpMk = xpMarksFor(id);
-      const maxMore = MAX_MARKS - creationMk;
-      let btnsHtml = "";
-      for (let n = 1; n <= maxMore; n++) {
-        const active = n <= xpMk ? " active" : "";
-        btnsHtml += `<button type="button" class="skill-mark-btn xp-mark-btn${active}"
-        data-skill-id="${id}" data-mark="${n}" title="${n} mark${n > 1 ? "s" : ""} (${n * XP_MARK_COST} XP)"></button>`;
-      }
-      const totalDie = MARK_DIE3[Math.min(MAX_MARKS, creationMk + xpMk)] || "\u2014";
-      const xpCost = xpMk * XP_MARK_COST;
-      $list.append(`
-      <div class="xp-mark-row" data-skill-id="${id}">
-        <span class="xp-mark-name">${name}</span>
-        <div class="xp-mark-info">
-          <span class="xp-mark-creation" title="Starting marks: ${creationMk}">Start: ${creationMk > 0 ? MARK_DIE3[creationMk] : "\u2014"}</span>
-          <div class="xp-mark-btns">${btnsHtml}</div>
-          <span class="xp-mark-die" title="Total die">= ${totalDie}</span>
-          <span class="xp-mark-cost">${xpCost} XP</span>
-          <button type="button" class="xp-remove-mark btn-ghost" data-skill-id="${id}" title="Remove XP marks for this skill">\u2715</button>
-        </div>
-      </div>
-    `);
-    });
-  }
-  function renderGiftsList() {
-    const gifts = getXpGifts();
-    const $list = $17("#xp-gifts-list").empty();
-    if (!gifts.length) {
-      $list.append('<p class="xp-empty">No gifts purchased yet. Use the dropdown below to add one.</p>');
-      return;
-    }
-    gifts.forEach((gift, idx) => {
-      $list.append(`
-      <div class="xp-gift-row" data-index="${idx}">
-        <span class="xp-gift-name">${gift.name}</span>
-        <span class="xp-gift-cost">${XP_GIFT_COST} XP</span>
-        <button type="button" class="xp-remove-gift btn-ghost" data-index="${idx}" title="Remove gift">\u2715</button>
-      </div>
-    `);
-    });
-  }
-  function render() {
-    renderBalance();
-    renderMarksList();
-    renderGiftsList();
-  }
-  function populateSkillDropdown() {
-    const skills = window.CG_SKILLS_LIST || [];
-    const $select = $17("#xp-add-skill-select").empty();
-    $select.append('<option value="">\u2014 Choose a skill to mark \u2014</option>');
-    skills.slice().sort((a, b) => String(a.name).localeCompare(String(b.name))).forEach((s) => {
-      const id = String(s.id);
-      const creationMk = parseInt(getCreationMarks()[id], 10) || 0;
-      const maxMore = MAX_MARKS - creationMk;
-      if (maxMore <= 0)
-        return;
-      $select.append(`<option value="${id}">${s.name}</option>`);
-    });
-  }
-  function populateGiftDropdown() {
+  function renderXpGifts() {
     return __async(this, null, function* () {
+      const $container = $17("#cg-xp-gifts");
+      if (!$container.length)
+        return;
+      const slots = getXpGiftSlots();
+      if (slots === 0) {
+        $container.html('<p class="xp-gifts-empty">Buy extra gift slots on the Details tab using Experience Points.</p>');
+        return;
+      }
       const gifts = yield fetchGiftList();
-      const $select = $17("#xp-add-gift-select").empty();
-      $select.append('<option value="">\u2014 Choose a gift \u2014</option>');
-      gifts.forEach((g) => {
-        $select.append(`<option value="${g.id}" data-name="${g.name}">${g.name}</option>`);
+      const selected = getXpGifts();
+      let html = `<div class="xp-gift-label">Experience Gifts (${slots} slot${slots > 1 ? "s" : ""})</div>`;
+      for (let i = 0; i < slots; i++) {
+        const curId = String(selected[i] || "");
+        const options = gifts.map(
+          (g) => `<option value="${g.id}" ${g.id === curId ? "selected" : ""}>${g.name}</option>`
+        ).join("");
+        html += `
+      <div class="cg-free-slot xp-gift-slot" data-xp-slot="${i}">
+        <select id="cg-xp-gift-${i}" class="cg-free-gift-select xp-gift-select" data-xp-slot="${i}">
+          <option value="">\u2014 Choose a gift \u2014</option>
+          ${options}
+        </select>
+      </div>
+    `;
+      }
+      $container.html(html);
+      $container.off("change.cgxpgifts").on("change.cgxpgifts", ".xp-gift-select", function() {
+        const slot = parseInt($17(this).data("xp-slot"), 10);
+        const val = String($17(this).val() || "");
+        const arr = getXpGifts().slice();
+        while (arr.length <= slot)
+          arr.push("");
+        arr[slot] = val;
+        while (arr.length && !arr[arr.length - 1])
+          arr.pop();
+        setData({ xpGifts: arr });
       });
-    });
-  }
-  var _bound3 = false;
-  function bindEvents() {
-    if (_bound3)
-      return;
-    _bound3 = true;
-    $17(document).on("input.cgxp change.cgxp", "#xp-earned", function() {
-      setXpEarned(parseInt($17(this).val(), 10) || 0);
-      render();
-    });
-    $17(document).on("click.cgxp", ".xp-mark-btn", function() {
-      const id = String($17(this).data("skill-id"));
-      const n = parseInt($17(this).data("mark"), 10);
-      const cur = xpMarksFor(id);
-      const marks = __spreadValues({}, getXpSkillMarks());
-      marks[id] = cur === n ? Math.max(0, n - 1) : n;
-      if (marks[id] <= 0)
-        delete marks[id];
-      setXpSkillMarks(marks);
-      render();
-    });
-    $17(document).on("click.cgxp", ".xp-remove-mark", function() {
-      const id = String($17(this).data("skill-id"));
-      const marks = __spreadValues({}, getXpSkillMarks());
-      delete marks[id];
-      setXpSkillMarks(marks);
-      render();
-    });
-    $17(document).on("change.cgxp", "#xp-add-skill-select", function() {
-      $17("#xp-add-skill-btn").prop("disabled", !$17(this).val());
-    });
-    $17(document).on("change.cgxp", "#xp-add-gift-select", function() {
-      $17("#xp-add-gift-btn").prop("disabled", !$17(this).val());
-    });
-    $17(document).on("click.cgxp", "#xp-add-skill-btn", function() {
-      const id = String($17("#xp-add-skill-select").val() || "");
-      if (!id)
-        return;
-      const creationMk = parseInt(getCreationMarks()[id], 10) || 0;
-      const maxMore = MAX_MARKS - creationMk;
-      if (maxMore <= 0)
-        return;
-      const marks = __spreadValues({}, getXpSkillMarks());
-      const cur = parseInt(marks[id], 10) || 0;
-      const next = Math.min(maxMore, cur + 1);
-      if (next > cur)
-        marks[id] = next;
-      setXpSkillMarks(marks);
-      $17("#xp-add-skill-select").val("");
-      $17("#xp-add-skill-btn").prop("disabled", true);
-      populateSkillDropdown();
-      render();
-    });
-    $17(document).on("click.cgxp", "#xp-add-gift-btn", function() {
-      const $opt = $17("#xp-add-gift-select option:selected");
-      const id = String($opt.val() || "");
-      const name = String($opt.data("name") || $opt.text() || "");
-      if (!id || !name)
-        return;
-      const gifts = [...getXpGifts(), { id, name }];
-      setXpGifts(gifts);
-      $17("#xp-add-gift-select").val("");
-      $17("#xp-add-gift-btn").prop("disabled", true);
-      render();
-    });
-    $17(document).on("click.cgxp", ".xp-remove-gift", function() {
-      const idx = parseInt($17(this).data("index"), 10);
-      const gifts = getXpGifts().filter((_, i) => i !== idx);
-      setXpGifts(gifts);
-      render();
     });
   }
   var ExperienceAPI = {
-    init() {
-      return __async(this, null, function* () {
-        bindEvents();
-        populateSkillDropdown();
-        populateGiftDropdown();
-        render();
-      });
-    }
+    initWidget() {
+      bindWidgetEvents();
+    },
+    renderXpGifts,
+    // Called by skills/render.js to get XP mark budget info
+    getXpMarksBudget,
+    getXpSkillMarks,
+    calcAvailable
   };
   var experience_default = ExperienceAPI;
 
@@ -5850,6 +5861,7 @@
     const tab = String($18("#cg-modal .cg-tabs li.active").data("tab") || "");
     switch (tab) {
       case "tab-details":
+        experience_default.initWidget();
         break;
       case "tab-traits":
         species_default.init();
@@ -5864,12 +5876,10 @@
         break;
       case "tab-gifts":
         gifts_default.init();
+        experience_default.renderXpGifts();
         break;
       case "tab-skills":
         skills_default.init();
-        break;
-      case "tab-experience":
-        experience_default.init();
         break;
       case "tab-trappings":
         break;

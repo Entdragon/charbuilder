@@ -1,67 +1,142 @@
 // assets/js/src/core/experience/index.js
-// XP (Experience Points) module.
-// Manages XP earned, marks bought with XP, and gifts bought with XP.
+//
+// Experience Points manager.
+// - initWidget()    → called when Details tab is active; binds +/− controls
+// - renderXpGifts() → called when Gifts tab is active; renders extra gift dropdowns
 
 import FormBuilderAPI from '../formBuilder';
+import { marksToDice } from '../../utils/marks-dice.js';
 
 const $ = window.jQuery;
 
 const XP_MARK_COST = 4;
 const XP_GIFT_COST = 10;
-const MAX_MARKS    = 3;
-
-const MARK_DIE = { 1: 'd4', 2: 'd6', 3: 'd8' };
 
 // ── State helpers ─────────────────────────────────────────────────────────────
 
 function getData()           { return FormBuilderAPI._data || {}; }
 function getXpEarned()       { return parseInt(getData().experience_points, 10) || 0; }
-function getXpSkillMarks()   { return getData().xpSkillMarks || {}; }
+function getXpMarksBudget()  { return parseInt(getData().xpMarksBudget,     10) || 0; }
+function getXpGiftSlots()    { return parseInt(getData().xpGiftSlots,        10) || 0; }
 function getXpGifts()        { return Array.isArray(getData().xpGifts) ? getData().xpGifts : []; }
-function getCreationMarks()  { return getData().skillMarks || {}; }
+function getXpSkillMarks()   { return getData().xpSkillMarks || {}; }
 
-function setXpEarned(val) {
-  FormBuilderAPI._data = { ...FormBuilderAPI._data, experience_points: Math.max(0, parseInt(val, 10) || 0) };
-}
-
-function setXpSkillMarks(marks) {
-  FormBuilderAPI._data = { ...FormBuilderAPI._data, xpSkillMarks: { ...marks } };
-}
-
-function setXpGifts(gifts) {
-  FormBuilderAPI._data = { ...FormBuilderAPI._data, xpGifts: [...gifts] };
-}
-
-// Total XP marks (creation + XP) for a skill, capped at MAX_MARKS
-function totalMarks(skillId) {
-  const id = String(skillId);
-  const c  = parseInt(getCreationMarks()[id], 10) || 0;
-  const x  = parseInt(getXpSkillMarks()[id],  10) || 0;
-  return Math.min(MAX_MARKS, c + x);
-}
-
-// How many XP marks are on a skill (capped so total doesn't exceed MAX_MARKS)
-function xpMarksFor(skillId) {
-  const id = String(skillId);
-  const c  = parseInt(getCreationMarks()[id], 10) || 0;
-  const x  = parseInt(getXpSkillMarks()[id],  10) || 0;
-  return Math.min(x, Math.max(0, MAX_MARKS - c));
-}
-
-function calcMarksCost() {
-  const marks = getXpSkillMarks();
-  return Object.values(marks).reduce((sum, v) => sum + ((parseInt(v, 10) || 0) * XP_MARK_COST), 0);
-}
-
-function calcGiftsCost() {
-  return getXpGifts().length * XP_GIFT_COST;
+function calcSpent() {
+  return getXpMarksBudget() * XP_MARK_COST + getXpGiftSlots() * XP_GIFT_COST;
 }
 
 function calcAvailable() {
-  return getXpEarned() - calcMarksCost() - calcGiftsCost();
+  return getXpEarned() - calcSpent();
 }
 
-// ── Gift list fetching ────────────────────────────────────────────────────────
+function setData(patch) {
+  FormBuilderAPI._data = { ...(FormBuilderAPI._data || {}), ...patch };
+}
+
+// ── Widget (Details tab) ──────────────────────────────────────────────────────
+
+let _widgetBound = false;
+
+function updateWidgetDisplay() {
+  const earned  = getXpEarned();
+  const spent   = calcSpent();
+  const avail   = earned - spent;
+  const budget  = getXpMarksBudget();
+  const slots   = getXpGiftSlots();
+
+  $('#xp-available-display').text(avail);
+  $('#xp-spent-display').text(spent);
+  $('#xp-marks-bought').text(budget);
+  $('#xp-gifts-bought').text(slots);
+
+  const $statAvail = $('#xp-stat-avail');
+  $statAvail.toggleClass('xp-stat--negative', avail < 0);
+  $statAvail.toggleClass('xp-stat--ok', avail >= 0);
+
+  // Disable + buttons when not enough XP
+  $('#xp-marks-plus').prop('disabled', avail < XP_MARK_COST);
+  $('#xp-gifts-plus').prop('disabled', avail < XP_GIFT_COST);
+
+  // Disable − buttons when at zero
+  $('#xp-marks-minus').prop('disabled', budget <= 0);
+  $('#xp-gifts-minus').prop('disabled', slots <= 0);
+}
+
+function bindWidgetEvents() {
+  if (_widgetBound) {
+    updateWidgetDisplay();
+    return;
+  }
+  _widgetBound = true;
+
+  // XP earned input
+  $(document).on('input.cgxp change.cgxp', '#xp-earned', function() {
+    const val = Math.max(0, parseInt($(this).val(), 10) || 0);
+    setData({ experience_points: val });
+    updateWidgetDisplay();
+  });
+
+  // Buy a mark (+4 XP)
+  $(document).on('click.cgxp', '#xp-marks-plus', function() {
+    if (calcAvailable() < XP_MARK_COST) return;
+    setData({ xpMarksBudget: getXpMarksBudget() + 1 });
+    updateWidgetDisplay();
+    triggerSkillsRefresh();
+  });
+
+  // Refund a mark
+  $(document).on('click.cgxp', '#xp-marks-minus', function() {
+    const budget = getXpMarksBudget();
+    if (budget <= 0) return;
+    const newBudget = budget - 1;
+
+    // Trim placed marks if they exceed new budget
+    const placed   = getXpSkillMarks();
+    const total    = Object.values(placed).reduce((s, v) => s + (parseInt(v, 10) || 0), 0);
+    const newPlaced = { ...placed };
+    if (total > newBudget) {
+      // Remove from the last-placed skill
+      const keys = Object.keys(newPlaced).filter(k => parseInt(newPlaced[k], 10) > 0);
+      for (let i = keys.length - 1; i >= 0 && Object.values(newPlaced).reduce((s, v) => s + (parseInt(v, 10) || 0), 0) > newBudget; i--) {
+        const k = keys[i];
+        newPlaced[k] = Math.max(0, (parseInt(newPlaced[k], 10) || 0) - 1);
+        if (newPlaced[k] === 0) delete newPlaced[k];
+      }
+    }
+
+    setData({ xpMarksBudget: newBudget, xpSkillMarks: newPlaced });
+    updateWidgetDisplay();
+    triggerSkillsRefresh();
+  });
+
+  // Buy a gift slot (+10 XP)
+  $(document).on('click.cgxp', '#xp-gifts-plus', function() {
+    if (calcAvailable() < XP_GIFT_COST) return;
+    setData({ xpGiftSlots: getXpGiftSlots() + 1 });
+    updateWidgetDisplay();
+  });
+
+  // Refund a gift slot
+  $(document).on('click.cgxp', '#xp-gifts-minus', function() {
+    const slots = getXpGiftSlots();
+    if (slots <= 0) return;
+    const newSlots = slots - 1;
+    // Remove the last gift from the array
+    const gifts = getXpGifts().slice(0, newSlots);
+    setData({ xpGiftSlots: newSlots, xpGifts: gifts });
+    updateWidgetDisplay();
+  });
+
+  updateWidgetDisplay();
+}
+
+function triggerSkillsRefresh() {
+  try {
+    $(document).trigger('cg:xp:marks:changed');
+  } catch (_) {}
+}
+
+// ── XP Gifts (Gifts tab) ──────────────────────────────────────────────────────
 
 let _giftsCache = null;
 
@@ -72,249 +147,85 @@ async function fetchGiftList() {
   const url = env.ajax_url || '/api/ajax';
 
   try {
-    const res = await fetch(url, {
+    const body = new URLSearchParams({ action: 'cg_get_free_gifts', nonce: env.nonce || '1' });
+    const res  = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ action: 'cg_get_free_gifts', nonce: env.nonce || '1' })
+      body
     });
     const json = await res.json();
     const list = (json.success && Array.isArray(json.data)) ? json.data : [];
-    _giftsCache = list.map(g => ({
-      id:   String(g.ct_id || g.id || ''),
-      name: String(g.ct_gift_name || g.name || g.gift_name || '')
-    })).filter(g => g.id && g.name).sort((a, b) => a.name.localeCompare(b.name));
+    _giftsCache = list
+      .map(g => ({
+        id:   String(g.ct_id || g.id || ''),
+        name: String(g.ct_gift_name || g.name || g.gift_name || '')
+      }))
+      .filter(g => g.id && g.name)
+      .sort((a, b) => a.name.localeCompare(b.name));
     return _giftsCache;
   } catch (_) {
     return [];
   }
 }
 
-// ── Render ────────────────────────────────────────────────────────────────────
+async function renderXpGifts() {
+  const $container = $('#cg-xp-gifts');
+  if (!$container.length) return;
 
-function renderBalance() {
-  const mc = calcMarksCost();
-  const gc = calcGiftsCost();
-  const tc = mc + gc;
-  const av = getXpEarned() - tc;
-
-  const $earned = $('#xp-earned');
-  if ($earned.length && $earned.val() !== String(getXpEarned())) {
-    $earned.val(getXpEarned());
-  }
-
-  $('#xp-marks-cost').text(mc);
-  $('#xp-gifts-cost').text(gc);
-  $('#xp-total-cost').text(tc);
-  $('#xp-available').text(av);
-
-  const $avail = $('#xp-avail-cell');
-  $avail.toggleClass('xp-balance-cell--negative', av < 0);
-  $avail.toggleClass('xp-balance-cell--ok',       av >= 0);
-}
-
-function renderMarksList() {
-  const skills    = window.CG_SKILLS_LIST || [];
-  const xpMarks   = getXpSkillMarks();
-  const skillsById = {};
-  skills.forEach(s => { skillsById[String(s.id)] = s.name; });
-
-  // Show only skills that have XP marks
-  const activeSkills = Object.keys(xpMarks)
-    .filter(id => parseInt(xpMarks[id], 10) > 0)
-    .map(id => ({ id, name: skillsById[id] || `Skill #${id}` }))
-    .sort((a, b) => a.name.localeCompare(b.name));
-
-  const $list = $('#xp-marks-list').empty();
-  if (!activeSkills.length) {
-    $list.append('<p class="xp-empty">No extra marks yet. Use the dropdown below to add some.</p>');
+  const slots = getXpGiftSlots();
+  if (slots === 0) {
+    $container.html('<p class="xp-gifts-empty">Buy extra gift slots on the Details tab using Experience Points.</p>');
     return;
   }
 
-  activeSkills.forEach(({ id, name }) => {
-    const creationMk = parseInt(getCreationMarks()[id], 10) || 0;
-    const xpMk       = xpMarksFor(id);
-    const maxMore     = MAX_MARKS - creationMk;
+  const gifts    = await fetchGiftList();
+  const selected = getXpGifts();
 
-    let btnsHtml = '';
-    for (let n = 1; n <= maxMore; n++) {
-      const active = n <= xpMk ? ' active' : '';
-      btnsHtml += `<button type="button" class="skill-mark-btn xp-mark-btn${active}"
-        data-skill-id="${id}" data-mark="${n}" title="${n} mark${n > 1 ? 's' : ''} (${n * XP_MARK_COST} XP)"></button>`;
-    }
+  let html = `<div class="xp-gift-label">Experience Gifts (${slots} slot${slots > 1 ? 's' : ''})</div>`;
+  for (let i = 0; i < slots; i++) {
+    const curId = String(selected[i] || '');
+    const options = gifts.map(g =>
+      `<option value="${g.id}" ${g.id === curId ? 'selected' : ''}>${g.name}</option>`
+    ).join('');
 
-    const totalDie = MARK_DIE[Math.min(MAX_MARKS, creationMk + xpMk)] || '—';
-    const xpCost   = xpMk * XP_MARK_COST;
-
-    $list.append(`
-      <div class="xp-mark-row" data-skill-id="${id}">
-        <span class="xp-mark-name">${name}</span>
-        <div class="xp-mark-info">
-          <span class="xp-mark-creation" title="Starting marks: ${creationMk}">Start: ${creationMk > 0 ? MARK_DIE[creationMk] : '—'}</span>
-          <div class="xp-mark-btns">${btnsHtml}</div>
-          <span class="xp-mark-die" title="Total die">= ${totalDie}</span>
-          <span class="xp-mark-cost">${xpCost} XP</span>
-          <button type="button" class="xp-remove-mark btn-ghost" data-skill-id="${id}" title="Remove XP marks for this skill">✕</button>
-        </div>
+    html += `
+      <div class="cg-free-slot xp-gift-slot" data-xp-slot="${i}">
+        <select id="cg-xp-gift-${i}" class="cg-free-gift-select xp-gift-select" data-xp-slot="${i}">
+          <option value="">— Choose a gift —</option>
+          ${options}
+        </select>
       </div>
-    `);
-  });
-}
-
-function renderGiftsList() {
-  const gifts = getXpGifts();
-  const $list = $('#xp-gifts-list').empty();
-
-  if (!gifts.length) {
-    $list.append('<p class="xp-empty">No gifts purchased yet. Use the dropdown below to add one.</p>');
-    return;
+    `;
   }
 
-  gifts.forEach((gift, idx) => {
-    $list.append(`
-      <div class="xp-gift-row" data-index="${idx}">
-        <span class="xp-gift-name">${gift.name}</span>
-        <span class="xp-gift-cost">${XP_GIFT_COST} XP</span>
-        <button type="button" class="xp-remove-gift btn-ghost" data-index="${idx}" title="Remove gift">✕</button>
-      </div>
-    `);
-  });
-}
+  $container.html(html);
 
-function render() {
-  renderBalance();
-  renderMarksList();
-  renderGiftsList();
-}
-
-// ── Populate dropdowns ────────────────────────────────────────────────────────
-
-function populateSkillDropdown() {
-  const skills  = window.CG_SKILLS_LIST || [];
-  const $select = $('#xp-add-skill-select').empty();
-  $select.append('<option value="">— Choose a skill to mark —</option>');
-
-  skills
-    .slice()
-    .sort((a, b) => String(a.name).localeCompare(String(b.name)))
-    .forEach(s => {
-      const id = String(s.id);
-      const creationMk = parseInt(getCreationMarks()[id], 10) || 0;
-      const maxMore    = MAX_MARKS - creationMk;
-      if (maxMore <= 0) return; // already capped
-      $select.append(`<option value="${id}">${s.name}</option>`);
-    });
-}
-
-async function populateGiftDropdown() {
-  const gifts   = await fetchGiftList();
-  const $select = $('#xp-add-gift-select').empty();
-  $select.append('<option value="">— Choose a gift —</option>');
-  gifts.forEach(g => {
-    $select.append(`<option value="${g.id}" data-name="${g.name}">${g.name}</option>`);
-  });
-}
-
-// ── Event binding ─────────────────────────────────────────────────────────────
-
-let _bound = false;
-
-function bindEvents() {
-  if (_bound) return;
-  _bound = true;
-
-  // XP earned input
-  $(document).on('input.cgxp change.cgxp', '#xp-earned', function () {
-    setXpEarned(parseInt($(this).val(), 10) || 0);
-    render();
-  });
-
-  // Mark buttons (toggle XP mark level for a skill)
-  $(document).on('click.cgxp', '.xp-mark-btn', function () {
-    const id = String($(this).data('skill-id'));
-    const n  = parseInt($(this).data('mark'), 10);
-    const cur = xpMarksFor(id);
-    const marks = { ...getXpSkillMarks() };
-    // Clicking the current level removes that level; otherwise sets to n
-    marks[id] = (cur === n) ? Math.max(0, n - 1) : n;
-    if (marks[id] <= 0) delete marks[id];
-    setXpSkillMarks(marks);
-    render();
-  });
-
-  // Remove all XP marks for a skill
-  $(document).on('click.cgxp', '.xp-remove-mark', function () {
-    const id = String($(this).data('skill-id'));
-    const marks = { ...getXpSkillMarks() };
-    delete marks[id];
-    setXpSkillMarks(marks);
-    render();
-  });
-
-  // Skill select change → enable/disable add button
-  $(document).on('change.cgxp', '#xp-add-skill-select', function () {
-    $('#xp-add-skill-btn').prop('disabled', !$(this).val());
-  });
-
-  // Gift select change → enable/disable add button
-  $(document).on('change.cgxp', '#xp-add-gift-select', function () {
-    $('#xp-add-gift-btn').prop('disabled', !$(this).val());
-  });
-
-  // Add skill mark button
-  $(document).on('click.cgxp', '#xp-add-skill-btn', function () {
-    const id = String($('#xp-add-skill-select').val() || '');
-    if (!id) return;
-
-    const creationMk = parseInt(getCreationMarks()[id], 10) || 0;
-    const maxMore    = MAX_MARKS - creationMk;
-    if (maxMore <= 0) return;
-
-    // Add 1 XP mark (first available slot)
-    const marks = { ...getXpSkillMarks() };
-    const cur   = parseInt(marks[id], 10) || 0;
-    const next  = Math.min(maxMore, cur + 1);
-    if (next > cur) marks[id] = next;
-    setXpSkillMarks(marks);
-
-    $('#xp-add-skill-select').val('');
-    $('#xp-add-skill-btn').prop('disabled', true);
-    populateSkillDropdown();
-    render();
-  });
-
-  // Add XP gift
-  $(document).on('click.cgxp', '#xp-add-gift-btn', function () {
-    const $opt = $('#xp-add-gift-select option:selected');
-    const id   = String($opt.val() || '');
-    const name = String($opt.data('name') || $opt.text() || '');
-    if (!id || !name) return;
-
-    const gifts = [...getXpGifts(), { id, name }];
-    setXpGifts(gifts);
-
-    $('#xp-add-gift-select').val('');
-    $('#xp-add-gift-btn').prop('disabled', true);
-    render();
-  });
-
-  // Remove XP gift
-  $(document).on('click.cgxp', '.xp-remove-gift', function () {
-    const idx   = parseInt($(this).data('index'), 10);
-    const gifts = getXpGifts().filter((_, i) => i !== idx);
-    setXpGifts(gifts);
-    render();
+  // Bind change events for XP gift selects
+  $container.off('change.cgxpgifts').on('change.cgxpgifts', '.xp-gift-select', function() {
+    const slot  = parseInt($(this).data('xp-slot'), 10);
+    const val   = String($(this).val() || '');
+    const arr   = getXpGifts().slice();
+    while (arr.length <= slot) arr.push('');
+    arr[slot] = val;
+    // Trim trailing empty
+    while (arr.length && !arr[arr.length - 1]) arr.pop();
+    setData({ xpGifts: arr });
   });
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
 const ExperienceAPI = {
-  async init() {
-    bindEvents();
-    populateSkillDropdown();
-    populateGiftDropdown(); // async, fills in as gifts load
-    render();
-  }
+  initWidget() {
+    bindWidgetEvents();
+  },
+
+  renderXpGifts,
+
+  // Called by skills/render.js to get XP mark budget info
+  getXpMarksBudget,
+  getXpSkillMarks,
+  calcAvailable,
 };
 
 export default ExperienceAPI;

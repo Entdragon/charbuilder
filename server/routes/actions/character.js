@@ -34,6 +34,8 @@ function normalizeRow(row) {
   }
 
   row.experience_points = parseInt(row.experience_points, 10) || 0;
+  row.xpMarksBudget     = parseInt(row.xp_marks_budget,  10) || 0;
+  row.xpGiftSlots       = parseInt(row.xp_gift_slots,    10) || 0;
 
   if (row.xp_skill_marks) {
     try {
@@ -133,6 +135,8 @@ async function cg_save_character(req, res) {
     trait_career:                 (data.trait_career  || '').toString().slice(0, 10),
     increased_trait_career_target:(data.increased_trait_career_target || null),
     experience_points:            parseInt(data.experience_points, 10) || 0,
+    xp_marks_budget:              parseInt(data.xp_marks_budget   ?? data.xpMarksBudget,  10) || 0,
+    xp_gift_slots:                parseInt(data.xp_gift_slots     ?? data.xpGiftSlots,    10) || 0,
     xp_skill_marks:               JSON.stringify(data.xp_skill_marks || data.xpSkillMarks || {}),
     xp_gifts:                     JSON.stringify(Array.isArray(data.xp_gifts) ? data.xp_gifts : (Array.isArray(data.xpGifts) ? data.xpGifts : [])),
     updated:                      new Date().toISOString().slice(0, 19).replace('T', ' '),
