@@ -1,0 +1,187 @@
+// assets/css/src/components/_battle.scss
+// Battle & Equipment tab — on-screen styles
+
+.cg-battle-box {
+  padding: 1.2em 1.4em;
+}
+
+// ── Computed Pools ──────────────────────────────────────────────
+.cg-battle-pools {
+  margin-bottom: 1.4em;
+}
+
+.cg-battle-subhead {
+  font-family:    var(--cg-heading-font, 'Cinzel', serif);
+  font-size:      0.78rem;
+  font-weight:    700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color:          var(--cg-gold, #c9a84c);
+  border-bottom:  1px solid rgba(201,168,76,0.22);
+  padding-bottom: 0.25em;
+  margin:         0 0 0.7em;
+}
+
+.cg-battle-pool-grid {
+  display:        flex;
+  gap:            1.5em;
+  flex-wrap:      wrap;
+  margin-bottom:  1em;
+}
+
+.cg-pool-block {
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  background:     rgba(201,168,76,0.06);
+  border:         1px solid rgba(201,168,76,0.2);
+  border-radius:  6px;
+  padding:        0.7em 1.2em;
+  min-width:      120px;
+}
+
+.cg-pool-label {
+  font-size:      0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color:          var(--cg-text-muted, #a09070);
+  margin-bottom:  0.2em;
+}
+
+.cg-pool-dice {
+  font-family:    var(--cg-heading-font, 'Cinzel', serif);
+  font-size:      1.1rem;
+  font-weight:    700;
+  color:          var(--cg-gold, #c9a84c);
+}
+
+.cg-pool-note {
+  font-size:      0.65rem;
+  color:          var(--cg-text-muted, #a09070);
+  margin-top:     0.15em;
+}
+
+// ── Wound Track ─────────────────────────────────────────────────
+.cg-wound-track {
+  margin-bottom:  1.2em;
+}
+
+.cg-wound-levels {
+  display:        flex;
+  gap:            0.8em;
+  flex-wrap:      wrap;
+  margin-top:     0.5em;
+}
+
+.cg-wound-level {
+  display:        flex;
+  align-items:    center;
+  gap:            0.4em;
+  font-size:      0.85rem;
+  color:          var(--cg-text-light, #e8dcc4);
+}
+
+.cg-wound-box {
+  display:        inline-block;
+  width:          18px;
+  height:         18px;
+  border:         2px solid rgba(201,168,76,0.45);
+  border-radius:  3px;
+  background:     transparent;
+  flex-shrink:    0;
+}
+
+.cg-wound-name {
+  font-size:      0.8rem;
+}
+
+// ── Weapon / Armor Tables ────────────────────────────────────────
+.cg-battle-section {
+  margin-bottom: 1.6em;
+}
+
+.cg-battle-table {
+  width:           100%;
+  border-collapse: collapse;
+  font-size:       0.82rem;
+  margin-bottom:   0.6em;
+
+  th {
+    background:      rgba(201,168,76,0.1);
+    color:           var(--cg-gold, #c9a84c);
+    font-family:     var(--cg-heading-font, 'Cinzel', serif);
+    font-size:       0.68rem;
+    text-transform:  uppercase;
+    letter-spacing:  0.06em;
+    padding:         6px 10px;
+    border:          1px solid rgba(201,168,76,0.18);
+    text-align:      left;
+    white-space:     nowrap;
+  }
+
+  td {
+    padding:         5px 6px;
+    border:          1px solid rgba(201,168,76,0.12);
+    color:           var(--cg-text-light, #e8dcc4);
+    vertical-align:  middle;
+  }
+
+  tr:nth-child(odd) td {
+    background: rgba(255,255,255,0.03);
+  }
+}
+
+.cg-battle-input {
+  background:   var(--cg-surface, #242019);
+  color:        var(--cg-text-light, #e8dcc4);
+  border:       1px solid var(--cg-border, rgba(201,168,76,0.22));
+  border-radius:4px;
+  padding:      4px 7px;
+  font-size:    0.82rem;
+  width:        100%;
+  box-sizing:   border-box;
+  font-family:  inherit;
+
+  &:focus {
+    outline:      none;
+    border-color: rgba(201,168,76,0.55);
+  }
+}
+
+.cg-battle-add-btn {
+  background:    transparent;
+  color:         var(--cg-gold, #c9a84c);
+  border:        1px dashed rgba(201,168,76,0.4);
+  border-radius: 5px;
+  padding:       5px 14px;
+  font-size:     0.78rem;
+  cursor:        pointer;
+  font-family:   inherit;
+  margin-top:    0.3em;
+
+  &:hover {
+    background: rgba(201,168,76,0.08);
+    border-color: rgba(201,168,76,0.7);
+  }
+}
+
+.cg-battle-remove-btn {
+  background:    transparent;
+  color:         rgba(201,100,76,0.7);
+  border:        none;
+  cursor:        pointer;
+  font-size:     0.85rem;
+  padding:       2px 6px;
+  border-radius: 3px;
+
+  &:hover {
+    color:      #e05a3a;
+    background: rgba(200,80,60,0.1);
+  }
+}
+
+.cg-battle-loading {
+  color:      var(--cg-text-muted, #a09070);
+  font-style: italic;
+  font-size:  0.9rem;
+}

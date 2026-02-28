@@ -34,9 +34,11 @@ export default {
       </div>
 
       <div id="tab-trappings" class="tab-panel">
-        <div class="cg-profile-box">
-          <h3>Trappings &amp; Equipment</h3>
-          <p><em>Coming soon.</em></p>
+        <div class="cg-profile-box cg-battle-box">
+          <h3>Battle &amp; Equipment</h3>
+          <div id="cg-battle-panel">
+            <p class="cg-battle-loading"><em>Loading battle array…</em></p>
+          </div>
         </div>
       </div>
     `;

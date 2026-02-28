@@ -6,6 +6,27 @@ function safeJson(val) {
   return val;
 }
 
+async function ensureBattleColumns() {
+  const p = prefix();
+  const table = `${p}character_records`;
+  try {
+    const cols = await query(`SELECT COLUMN_NAME FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME IN ('weapons','armor')`, [table]);
+    const existing = new Set(cols.map(c => c.COLUMN_NAME || c.column_name));
+    if (!existing.has('weapons')) {
+      await query(`ALTER TABLE \`${table}\` ADD COLUMN weapons TEXT DEFAULT NULL`);
+    }
+    if (!existing.has('armor')) {
+      await query(`ALTER TABLE \`${table}\` ADD COLUMN armor TEXT DEFAULT NULL`);
+    }
+  } catch (err) {
+    console.warn('[ensureBattleColumns] Could not add columns:', err.message);
+  }
+}
+
+// Run once at startup (non-blocking)
+ensureBattleColumns().catch(() => {});
+
 function normalizeRow(row) {
   if (!row) return null;
   row.id         = String(row.id || '');
@@ -56,6 +77,24 @@ function normalizeRow(row) {
     row.xp_gifts = [];
   }
   row.xpGifts = row.xp_gifts;
+
+  if (row.weapons) {
+    try {
+      if (typeof row.weapons === 'string') row.weapons = JSON.parse(row.weapons);
+      if (!Array.isArray(row.weapons)) row.weapons = [];
+    } catch (e) { row.weapons = []; }
+  } else {
+    row.weapons = [];
+  }
+
+  if (row.armor) {
+    try {
+      if (typeof row.armor === 'string') row.armor = JSON.parse(row.armor);
+      if (!Array.isArray(row.armor)) row.armor = [];
+    } catch (e) { row.armor = []; }
+  } else {
+    row.armor = [];
+  }
 
   return row;
 }
@@ -139,6 +178,8 @@ async function cg_save_character(req, res) {
     xp_gift_slots:                parseInt(data.xp_gift_slots     ?? data.xpGiftSlots,    10) || 0,
     xp_skill_marks:               JSON.stringify(data.xp_skill_marks || data.xpSkillMarks || {}),
     xp_gifts:                     JSON.stringify(Array.isArray(data.xp_gifts) ? data.xp_gifts : (Array.isArray(data.xpGifts) ? data.xpGifts : [])),
+    weapons:                      JSON.stringify(Array.isArray(data.weapons) ? data.weapons : []),
+    armor:                        JSON.stringify(Array.isArray(data.armor)   ? data.armor   : []),
     updated:                      new Date().toISOString().slice(0, 19).replace('T', ' '),
   };
 

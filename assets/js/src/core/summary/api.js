@@ -248,10 +248,80 @@ const SummaryAPI = {
       `;
     }
 
+    // ── Battle Array ──────────────────────────────────────────
+    const weapons = Array.isArray(data.weapons) ? data.weapons : [];
+    const armor   = Array.isArray(data.armor)   ? data.armor   : [];
+
+    // Compute pools from traits in the current data
+    function pool(...dice) { return dice.filter(Boolean).join(' + ') || '—'; }
+    const initiative = pool(data.speed, data.will);
+    const dodge      = pool(data.speed, data.will);
+    const soak       = pool(data.body);
+
+    html += `
+      <div class="summary-section summary-battle">
+        <h3>Battle Array</h3>
+        <div class="summary-battle-pools">
+          <table class="cg-battle-summary-table">
+            <thead><tr><th>Pool</th><th>Dice</th></tr></thead>
+            <tbody>
+              <tr><td>Initiative</td><td>${initiative}</td></tr>
+              <tr><td>Dodge</td><td>${dodge}</td></tr>
+              <tr><td>Soak (Body)</td><td>${soak}</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="cg-summary-wound-track">
+          <strong>Wound Track:</strong>
+          <span class="cg-wound-boxes">
+            ${['Hurt','Injured','Mauled','Crippled','Dead'].map(w =>
+              `<span class="cg-wound-pip"><span class="cg-wound-box-print"></span>${w}</span>`
+            ).join('')}
+          </span>
+        </div>
+    `;
+
+    if (weapons.length) {
+      html += `
+        <h4 class="summary-sub-heading">Weapons</h4>
+        <table class="cg-battle-summary-table">
+          <thead><tr><th>Name</th><th>Attack Pool</th><th>Damage</th><th>Range</th><th>Notes</th></tr></thead>
+          <tbody>
+            ${weapons.map(w => `<tr>
+              <td>${w.name || '—'}</td>
+              <td>${w.attack || '—'}</td>
+              <td>${w.damage || '—'}</td>
+              <td>${w.range  || 'Melee'}</td>
+              <td>${w.notes  || ''}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    if (armor.length) {
+      html += `
+        <h4 class="summary-sub-heading">Armor</h4>
+        <table class="cg-battle-summary-table">
+          <thead><tr><th>Name</th><th>Soak Dice</th><th>Penalty</th><th>Notes</th></tr></thead>
+          <tbody>
+            ${armor.map(a => `<tr>
+              <td>${a.name    || '—'}</td>
+              <td>${a.soak    || '—'}</td>
+              <td>${a.penalty || '—'}</td>
+              <td>${a.notes   || ''}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    html += `</div>`;
+
     if (battle.length) {
       html += `
-        <div class="summary-section summary-battle">
-          <h3>Battle</h3>
+        <div class="summary-section summary-battle-extra">
+          <h3>Other Battle Notes</h3>
           <ul>
       `;
       battle.forEach(item => {

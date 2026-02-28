@@ -5,6 +5,7 @@ import GiftsAPI       from '../gifts';
 import SkillsAPI      from '../skills';
 import SummaryAPI     from '../summary';
 import ExperienceAPI  from '../experience';
+import BattleAPI      from '../battle/index.js';
 
 const $ = window.jQuery;
 
@@ -42,7 +43,7 @@ export default function refreshTab() {
       break;
 
     case 'tab-trappings':
-      // Placeholder tab for now.
+      BattleAPI.init();
       break;
 
     case 'tab-description':

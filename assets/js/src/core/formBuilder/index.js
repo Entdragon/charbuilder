@@ -385,6 +385,10 @@ function buildPayload(raw) {
   character.xp_skill_marks    = core.xpSkillMarks || {};
   character.xp_gifts          = Array.isArray(core.xpGifts) ? core.xpGifts : [];
 
+  // Battle array — weapons and armor rows
+  character.weapons = Array.isArray(raw.weapons) ? raw.weapons : [];
+  character.armor   = Array.isArray(raw.armor)   ? raw.armor   : [];
+
   flat.character = character;
 
   flat.character_json = JSON.stringify({ ...core });
@@ -696,6 +700,43 @@ const FormBuilderAPI = {
     d.xpSkillMarks  = this._data.xpSkillMarks || {};
     d.xpGifts       = Array.isArray(this._data.xpGifts) ? this._data.xpGifts : [];
     this._data.experience_points = d.experience_points;
+
+    // Battle data — BattleAPI.persist() keeps this._data.weapons/armor in sync whenever DOM changes.
+    // Flush synchronously via DOM scan (covers the case where the battle tab is currently active).
+    try {
+      const weapons = [];
+      document.querySelectorAll('#cg-weapons-tbody .cg-weapon-row').forEach(row => {
+        weapons.push({
+          name:   row.querySelector('.cg-weapon-name')?.value   || '',
+          attack: row.querySelector('.cg-weapon-attack')?.value || '',
+          damage: row.querySelector('.cg-weapon-damage')?.value || '',
+          range:  row.querySelector('.cg-weapon-range')?.value  || 'Melee',
+          notes:  row.querySelector('.cg-weapon-notes')?.value  || '',
+        });
+      });
+      if (weapons.length) {
+        this._data.weapons = weapons;
+        d.weapons = weapons;
+      }
+    } catch (_) {}
+    try {
+      const armor = [];
+      document.querySelectorAll('#cg-armor-tbody .cg-armor-row').forEach(row => {
+        armor.push({
+          name:    row.querySelector('.cg-armor-name')?.value    || '',
+          soak:    row.querySelector('.cg-armor-soak')?.value    || '',
+          penalty: row.querySelector('.cg-armor-penalty')?.value || '',
+          notes:   row.querySelector('.cg-armor-notes')?.value   || '',
+        });
+      });
+      if (armor.length) {
+        this._data.armor = armor;
+        d.armor = armor;
+      }
+    } catch (_) {}
+
+    d.weapons = Array.isArray(this._data.weapons) ? this._data.weapons : [];
+    d.armor   = Array.isArray(this._data.armor)   ? this._data.armor   : [];
 
     return d;
   },

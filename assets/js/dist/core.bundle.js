@@ -743,15 +743,15 @@
       return map;
     },
     enforceCounts() {
-      const $22 = window.jQuery;
+      const $23 = window.jQuery;
       const freq = { d8: 0, d6: 0, d4: 0 };
-      $22(".cg-trait-select").each(function() {
-        const v = $22(this).val();
+      $23(".cg-trait-select").each(function() {
+        const v = $23(this).val();
         if (v && v in freq)
           freq[v]++;
       });
-      $22(".cg-trait-select").each(function() {
-        const $sel = $22(this);
+      $23(".cg-trait-select").each(function() {
+        const $sel = $23(this);
         const current = $sel.val() || "";
         let options = '<option value="">\u2014 Select \u2014</option>';
         DICE_TYPES.forEach((die) => {
@@ -764,13 +764,13 @@
       });
     },
     updateAdjustedDisplays() {
-      const $22 = window.jQuery;
+      const $23 = window.jQuery;
       const boosts = this.calculateBoostMap();
       const totalCareerBoosts = boosts.trait_career || 0;
       const careerCounts = computeCareerBoostCounts(totalCareerBoosts);
       const careerMainBoosts = careerCounts.main || 0;
       TRAITS.forEach((traitKey) => {
-        const $sel = $22(`#cg-${traitKey}`);
+        const $sel = $23(`#cg-${traitKey}`);
         if (!$sel.length)
           return;
         const rawBase = String($sel.val() || "").trim();
@@ -782,11 +782,11 @@
         if (rawBase) {
           badgeText = count > 0 ? boostedDie(rawBase, count) : rawBase;
         }
-        const $badge = $22(`#cg-${traitKey}-badge`);
+        const $badge = $23(`#cg-${traitKey}-badge`);
         if ($badge.length)
           $badge.text(badgeText);
         if (traitKey === "trait_career") {
-          const $pb = $22("#cg-profile-trait_career-badge");
+          const $pb = $23("#cg-profile-trait_career-badge");
           if ($pb.length)
             $pb.text(badgeText);
         }
@@ -801,11 +801,11 @@
             note = origBoosts === 1 ? "Increased by gift" : `Increased by gift \xD7${origBoosts}`;
           }
         }
-        const $note = $22(`#cg-${traitKey}-adjusted`);
+        const $note = $23(`#cg-${traitKey}-adjusted`);
         if ($note.length)
           $note.text(note);
         if (traitKey === "trait_career") {
-          const $pn = $22("#cg-profile-trait_career-note");
+          const $pn = $23("#cg-profile-trait_career-note");
           if ($pn.length)
             $pn.text(note);
         }
@@ -849,7 +849,7 @@
         <li data-tab="tab-traits">Traits, Species, Careers</li>
         <li data-tab="tab-gifts">Gifts</li>
         <li data-tab="tab-skills">Skills</li>
-        <li data-tab="tab-trappings">Trappings &amp; Equipment</li>
+        <li data-tab="tab-trappings">Battle &amp; Equipment</li>
         <li data-tab="tab-description">Description</li>
         <li data-tab="tab-summary">Character Sheet</li>
       </ul>
@@ -1083,9 +1083,11 @@
       </div>
 
       <div id="tab-trappings" class="tab-panel">
-        <div class="cg-profile-box">
-          <h3>Trappings &amp; Equipment</h3>
-          <p><em>Coming soon.</em></p>
+        <div class="cg-profile-box cg-battle-box">
+          <h3>Battle &amp; Equipment</h3>
+          <div id="cg-battle-panel">
+            <p class="cg-battle-loading"><em>Loading battle array\u2026</em></p>
+          </div>
         </div>
       </div>
     `;
@@ -1418,6 +1420,8 @@
     character.xp_gift_slots = parseInt(core.xpGiftSlots, 10) || 0;
     character.xp_skill_marks = core.xpSkillMarks || {};
     character.xp_gifts = Array.isArray(core.xpGifts) ? core.xpGifts : [];
+    character.weapons = Array.isArray(raw.weapons) ? raw.weapons : [];
+    character.armor = Array.isArray(raw.armor) ? raw.armor : [];
     flat.character = character;
     flat.character_json = JSON.stringify(__spreadValues({}, core));
     return flat;
@@ -1672,6 +1676,43 @@
       d.xpSkillMarks = this._data.xpSkillMarks || {};
       d.xpGifts = Array.isArray(this._data.xpGifts) ? this._data.xpGifts : [];
       this._data.experience_points = d.experience_points;
+      try {
+        const weapons = [];
+        document.querySelectorAll("#cg-weapons-tbody .cg-weapon-row").forEach((row) => {
+          var _a2, _b2, _c2, _d2, _e2;
+          weapons.push({
+            name: ((_a2 = row.querySelector(".cg-weapon-name")) == null ? void 0 : _a2.value) || "",
+            attack: ((_b2 = row.querySelector(".cg-weapon-attack")) == null ? void 0 : _b2.value) || "",
+            damage: ((_c2 = row.querySelector(".cg-weapon-damage")) == null ? void 0 : _c2.value) || "",
+            range: ((_d2 = row.querySelector(".cg-weapon-range")) == null ? void 0 : _d2.value) || "Melee",
+            notes: ((_e2 = row.querySelector(".cg-weapon-notes")) == null ? void 0 : _e2.value) || ""
+          });
+        });
+        if (weapons.length) {
+          this._data.weapons = weapons;
+          d.weapons = weapons;
+        }
+      } catch (_) {
+      }
+      try {
+        const armor = [];
+        document.querySelectorAll("#cg-armor-tbody .cg-armor-row").forEach((row) => {
+          var _a2, _b2, _c2, _d2;
+          armor.push({
+            name: ((_a2 = row.querySelector(".cg-armor-name")) == null ? void 0 : _a2.value) || "",
+            soak: ((_b2 = row.querySelector(".cg-armor-soak")) == null ? void 0 : _b2.value) || "",
+            penalty: ((_c2 = row.querySelector(".cg-armor-penalty")) == null ? void 0 : _c2.value) || "",
+            notes: ((_d2 = row.querySelector(".cg-armor-notes")) == null ? void 0 : _d2.value) || ""
+          });
+        });
+        if (armor.length) {
+          this._data.armor = armor;
+          d.armor = armor;
+        }
+      } catch (_) {
+      }
+      d.weapons = Array.isArray(this._data.weapons) ? this._data.weapons : [];
+      d.armor = Array.isArray(this._data.armor) ? this._data.armor : [];
       return d;
     },
     /**
@@ -3484,9 +3525,9 @@
         src.qualifications = payload;
       }
       document.dispatchEvent(new CustomEvent("cg:quals:changed", { detail: { qualifications: payload } }));
-      const $22 = window.jQuery;
-      if ($22)
-        $22(document).trigger("cg:quals:changed", [{ qualifications: payload }]);
+      const $23 = window.jQuery;
+      if ($23)
+        $23(document).trigger("cg:quals:changed", [{ qualifications: payload }]);
     },
     getAll() {
       return JSON.parse(JSON.stringify(this.data || emptyData()));
@@ -5539,8 +5580,8 @@
         const totalMk = (parseInt(marks[id], 10) || 0) + (parseInt(xpMarks[id], 10) || 0);
         const mkDie = marksToDice(totalMk);
         const poolDice = [spDie, cpDie].concat(ecDies).concat([mkDie]).filter(Boolean);
-        const pool = poolDice.length ? poolDice.join(" + ") : "\u2014";
-        html += `<tr><td>${skill.name}</td><td>${pool}</td></tr>`;
+        const pool2 = poolDice.length ? poolDice.join(" + ") : "\u2014";
+        html += `<tr><td>${skill.name}</td><td>${pool2}</td></tr>`;
       });
       html += `
           </tbody>
@@ -5560,10 +5601,74 @@
         </div>
       `;
       }
+      const weapons = Array.isArray(data.weapons) ? data.weapons : [];
+      const armor = Array.isArray(data.armor) ? data.armor : [];
+      function pool(...dice) {
+        return dice.filter(Boolean).join(" + ") || "\u2014";
+      }
+      const initiative = pool(data.speed, data.will);
+      const dodge = pool(data.speed, data.will);
+      const soak = pool(data.body);
+      html += `
+      <div class="summary-section summary-battle">
+        <h3>Battle Array</h3>
+        <div class="summary-battle-pools">
+          <table class="cg-battle-summary-table">
+            <thead><tr><th>Pool</th><th>Dice</th></tr></thead>
+            <tbody>
+              <tr><td>Initiative</td><td>${initiative}</td></tr>
+              <tr><td>Dodge</td><td>${dodge}</td></tr>
+              <tr><td>Soak (Body)</td><td>${soak}</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="cg-summary-wound-track">
+          <strong>Wound Track:</strong>
+          <span class="cg-wound-boxes">
+            ${["Hurt", "Injured", "Mauled", "Crippled", "Dead"].map(
+        (w) => `<span class="cg-wound-pip"><span class="cg-wound-box-print"></span>${w}</span>`
+      ).join("")}
+          </span>
+        </div>
+    `;
+      if (weapons.length) {
+        html += `
+        <h4 class="summary-sub-heading">Weapons</h4>
+        <table class="cg-battle-summary-table">
+          <thead><tr><th>Name</th><th>Attack Pool</th><th>Damage</th><th>Range</th><th>Notes</th></tr></thead>
+          <tbody>
+            ${weapons.map((w) => `<tr>
+              <td>${w.name || "\u2014"}</td>
+              <td>${w.attack || "\u2014"}</td>
+              <td>${w.damage || "\u2014"}</td>
+              <td>${w.range || "Melee"}</td>
+              <td>${w.notes || ""}</td>
+            </tr>`).join("")}
+          </tbody>
+        </table>
+      `;
+      }
+      if (armor.length) {
+        html += `
+        <h4 class="summary-sub-heading">Armor</h4>
+        <table class="cg-battle-summary-table">
+          <thead><tr><th>Name</th><th>Soak Dice</th><th>Penalty</th><th>Notes</th></tr></thead>
+          <tbody>
+            ${armor.map((a) => `<tr>
+              <td>${a.name || "\u2014"}</td>
+              <td>${a.soak || "\u2014"}</td>
+              <td>${a.penalty || "\u2014"}</td>
+              <td>${a.notes || ""}</td>
+            </tr>`).join("")}
+          </tbody>
+        </table>
+      `;
+      }
+      html += `</div>`;
       if (battle.length) {
         html += `
-        <div class="summary-section summary-battle">
-          <h3>Battle</h3>
+        <div class="summary-section summary-battle-extra">
+          <h3>Other Battle Notes</h3>
           <ul>
       `;
         battle.forEach((item) => {
@@ -5926,10 +6031,251 @@
   };
   var experience_default = ExperienceAPI;
 
-  // assets/js/src/core/main/builder-refresh.js
+  // assets/js/src/core/battle/index.js
   var $18 = window.jQuery;
+  var WOUND_LEVELS = ["Hurt", "Injured", "Mauled", "Crippled", "Dead"];
+  var RANGE_OPTIONS = ["Melee", "Thrown", "Short", "Medium", "Long"];
+  function escape2(val) {
+    return String(val == null ? "" : val).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  function traitDie(key) {
+    const dom = document.getElementById(`cg-${key}`);
+    if (dom && dom.value)
+      return dom.value;
+    const d = formBuilder_default._data || {};
+    return d[key] || "";
+  }
+  function poolString(...dice) {
+    return dice.filter(Boolean).join(" + ") || "\u2014";
+  }
+  function buildCombatPools() {
+    const speed = traitDie("speed");
+    const will = traitDie("will");
+    const body = traitDie("body");
+    return {
+      initiative: poolString(speed, will),
+      dodge: poolString(speed, will),
+      soak: poolString(body)
+    };
+  }
+  function renderPoolsSection(pools) {
+    return `
+    <div class="cg-battle-pools">
+      <h4 class="cg-battle-subhead">Computed Battle Pools</h4>
+      <div class="cg-battle-pool-grid">
+        <div class="cg-pool-block">
+          <span class="cg-pool-label">Initiative</span>
+          <span class="cg-pool-dice" id="cg-battle-initiative">${escape2(pools.initiative)}</span>
+          <span class="cg-pool-note">(Speed + Will)</span>
+        </div>
+        <div class="cg-pool-block">
+          <span class="cg-pool-label">Dodge</span>
+          <span class="cg-pool-dice" id="cg-battle-dodge">${escape2(pools.dodge)}</span>
+          <span class="cg-pool-note">(Speed + Will)</span>
+        </div>
+        <div class="cg-pool-block">
+          <span class="cg-pool-label">Soak</span>
+          <span class="cg-pool-dice" id="cg-battle-soak">${escape2(pools.soak)}</span>
+          <span class="cg-pool-note">(Body)</span>
+        </div>
+      </div>
+      <div class="cg-wound-track">
+        <h4 class="cg-battle-subhead">Wound Track</h4>
+        <div class="cg-wound-levels">
+          ${WOUND_LEVELS.map((w) => `
+            <div class="cg-wound-level">
+              <span class="cg-wound-box"></span>
+              <span class="cg-wound-name">${w}</span>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    </div>
+  `;
+  }
+  function weaponRowHtml(w = {}, idx) {
+    const rangeOpts = RANGE_OPTIONS.map(
+      (r) => `<option value="${r}"${(w.range || "Melee") === r ? " selected" : ""}>${r}</option>`
+    ).join("");
+    return `
+    <tr class="cg-weapon-row" data-idx="${idx}">
+      <td><input class="cg-battle-input cg-weapon-name"   value="${escape2(w.name || "")}" placeholder="e.g. Short Sword" /></td>
+      <td><input class="cg-battle-input cg-weapon-attack" value="${escape2(w.attack || "")}" placeholder="e.g. d6+d8" /></td>
+      <td><input class="cg-battle-input cg-weapon-damage" value="${escape2(w.damage || "")}" placeholder="e.g. d6" /></td>
+      <td>
+        <select class="cg-free-select cg-weapon-range">${rangeOpts}</select>
+      </td>
+      <td><input class="cg-battle-input cg-weapon-notes" value="${escape2(w.notes || "")}" placeholder="optional" /></td>
+      <td><button type="button" class="cg-battle-remove-btn" data-target="weapon" data-idx="${idx}" title="Remove">\u2715</button></td>
+    </tr>
+  `;
+  }
+  function armorRowHtml(a = {}, idx) {
+    return `
+    <tr class="cg-armor-row" data-idx="${idx}">
+      <td><input class="cg-battle-input cg-armor-name"    value="${escape2(a.name || "")}" placeholder="e.g. Leather Cuirass" /></td>
+      <td><input class="cg-battle-input cg-armor-soak"    value="${escape2(a.soak || "")}" placeholder="e.g. d4" /></td>
+      <td><input class="cg-battle-input cg-armor-penalty" value="${escape2(a.penalty || "")}" placeholder="e.g. \u22121 Speed" /></td>
+      <td><input class="cg-battle-input cg-armor-notes"   value="${escape2(a.notes || "")}" placeholder="optional" /></td>
+      <td><button type="button" class="cg-battle-remove-btn" data-target="armor" data-idx="${idx}" title="Remove">\u2715</button></td>
+    </tr>
+  `;
+  }
+  function renderWeaponsTable(weapons) {
+    const rows = (Array.isArray(weapons) ? weapons : []).map((w, i) => weaponRowHtml(w, i)).join("");
+    return `
+    <div class="cg-battle-section">
+      <h4 class="cg-battle-subhead">Weapons</h4>
+      <table class="cg-battle-table cg-weapons-table">
+        <thead>
+          <tr>
+            <th>Name</th><th>Attack Pool</th><th>Damage</th><th>Range</th><th>Notes</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="cg-weapons-tbody">${rows}</tbody>
+      </table>
+      <button type="button" class="cg-battle-add-btn" id="cg-add-weapon">+ Add Weapon</button>
+    </div>
+  `;
+  }
+  function renderArmorTable(armor) {
+    const rows = (Array.isArray(armor) ? armor : []).map((a, i) => armorRowHtml(a, i)).join("");
+    return `
+    <div class="cg-battle-section">
+      <h4 class="cg-battle-subhead">Armor</h4>
+      <table class="cg-battle-table cg-armor-table">
+        <thead>
+          <tr>
+            <th>Name</th><th>Soak Dice</th><th>Penalty</th><th>Notes</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="cg-armor-tbody">${rows}</tbody>
+      </table>
+      <button type="button" class="cg-battle-add-btn" id="cg-add-armor">+ Add Armor</button>
+    </div>
+  `;
+  }
+  function readWeaponsFromDom() {
+    const out = [];
+    document.querySelectorAll("#cg-weapons-tbody .cg-weapon-row").forEach((row) => {
+      var _a, _b, _c, _d, _e;
+      out.push({
+        name: ((_a = row.querySelector(".cg-weapon-name")) == null ? void 0 : _a.value) || "",
+        attack: ((_b = row.querySelector(".cg-weapon-attack")) == null ? void 0 : _b.value) || "",
+        damage: ((_c = row.querySelector(".cg-weapon-damage")) == null ? void 0 : _c.value) || "",
+        range: ((_d = row.querySelector(".cg-weapon-range")) == null ? void 0 : _d.value) || "Melee",
+        notes: ((_e = row.querySelector(".cg-weapon-notes")) == null ? void 0 : _e.value) || ""
+      });
+    });
+    return out;
+  }
+  function readArmorFromDom() {
+    const out = [];
+    document.querySelectorAll("#cg-armor-tbody .cg-armor-row").forEach((row) => {
+      var _a, _b, _c, _d;
+      out.push({
+        name: ((_a = row.querySelector(".cg-armor-name")) == null ? void 0 : _a.value) || "",
+        soak: ((_b = row.querySelector(".cg-armor-soak")) == null ? void 0 : _b.value) || "",
+        penalty: ((_c = row.querySelector(".cg-armor-penalty")) == null ? void 0 : _c.value) || "",
+        notes: ((_d = row.querySelector(".cg-armor-notes")) == null ? void 0 : _d.value) || ""
+      });
+    });
+    return out;
+  }
+  function persist() {
+    if (!formBuilder_default)
+      return;
+    formBuilder_default._data = formBuilder_default._data || {};
+    formBuilder_default._data.weapons = readWeaponsFromDom();
+    formBuilder_default._data.armor = readArmorFromDom();
+  }
+  function refreshPools() {
+    const pools = buildCombatPools();
+    const iEl = document.getElementById("cg-battle-initiative");
+    const dEl = document.getElementById("cg-battle-dodge");
+    const sEl = document.getElementById("cg-battle-soak");
+    if (iEl)
+      iEl.textContent = pools.initiative;
+    if (dEl)
+      dEl.textContent = pools.dodge;
+    if (sEl)
+      sEl.textContent = pools.soak;
+  }
+  var BattleAPI = {
+    _bound: false,
+    init() {
+      var _a;
+      const container = document.getElementById("cg-battle-panel");
+      if (!container)
+        return;
+      const data = ((_a = formBuilder_default) == null ? void 0 : _a._data) || {};
+      const weapons = Array.isArray(data.weapons) ? data.weapons : [];
+      const armor = Array.isArray(data.armor) ? data.armor : [];
+      const pools = buildCombatPools();
+      container.innerHTML = renderPoolsSection(pools) + renderWeaponsTable(weapons) + renderArmorTable(armor);
+      this._bindEvents(container);
+    },
+    _bindEvents(container) {
+      var _a, _b;
+      if (this._bound) {
+        this._bound = false;
+      }
+      this._bound = true;
+      (_a = container.querySelector("#cg-add-weapon")) == null ? void 0 : _a.addEventListener("click", () => {
+        var _a2;
+        persist();
+        const data = ((_a2 = formBuilder_default) == null ? void 0 : _a2._data) || {};
+        const weapons = Array.isArray(data.weapons) ? data.weapons : [];
+        weapons.push({ name: "", attack: "", damage: "", range: "Melee", notes: "" });
+        formBuilder_default._data.weapons = weapons;
+        const tbody = document.getElementById("cg-weapons-tbody");
+        if (tbody) {
+          const idx = tbody.querySelectorAll(".cg-weapon-row").length;
+          tbody.insertAdjacentHTML("beforeend", weaponRowHtml({}, idx));
+        }
+      });
+      (_b = container.querySelector("#cg-add-armor")) == null ? void 0 : _b.addEventListener("click", () => {
+        var _a2;
+        persist();
+        const data = ((_a2 = formBuilder_default) == null ? void 0 : _a2._data) || {};
+        const armor = Array.isArray(data.armor) ? data.armor : [];
+        armor.push({ name: "", soak: "", penalty: "", notes: "" });
+        formBuilder_default._data.armor = armor;
+        const tbody = document.getElementById("cg-armor-tbody");
+        if (tbody) {
+          const idx = tbody.querySelectorAll(".cg-armor-row").length;
+          tbody.insertAdjacentHTML("beforeend", armorRowHtml({}, idx));
+        }
+      });
+      container.addEventListener("click", (e) => {
+        const btn = e.target.closest(".cg-battle-remove-btn");
+        if (!btn)
+          return;
+        const row = btn.closest("tr");
+        if (row)
+          row.remove();
+        persist();
+      });
+      container.addEventListener("input", () => persist(), true);
+      container.addEventListener("change", () => persist(), true);
+      document.addEventListener("cg:traits:updated", refreshPools);
+      document.addEventListener("change", (e) => {
+        const t = e.target;
+        if (t && t.id && /^cg-(speed|will|body)$/.test(t.id))
+          refreshPools();
+      });
+    },
+    // Called by collectFormData — ensures DOM state is flushed
+    flush() {
+      persist();
+    }
+  };
+  var battle_default = BattleAPI;
+
+  // assets/js/src/core/main/builder-refresh.js
+  var $19 = window.jQuery;
   function refreshTab() {
-    const tab = String($18("#cg-modal .cg-tabs li.active").data("tab") || "");
+    const tab = String($19("#cg-modal .cg-tabs li.active").data("tab") || "");
     switch (tab) {
       case "tab-details":
         experience_default.initWidget();
@@ -5953,6 +6299,7 @@
         skills_default.init();
         break;
       case "tab-trappings":
+        battle_default.init();
         break;
       case "tab-description":
         break;
@@ -5963,7 +6310,7 @@
   }
 
   // assets/js/src/core/main/builder-load.js
-  var $19 = window.jQuery;
+  var $20 = window.jQuery;
   var LOG2 = (...a) => console.log("[BuilderLoad]", ...a);
   var ERR = (...a) => console.error("[BuilderLoad]", ...a);
   var _inited2 = false;
@@ -6017,18 +6364,18 @@
       return _inFlight;
     const now = Date.now();
     if (force && now - _lastForceFetchAt < FORCE_THROTTLE_MS && _cacheRows) {
-      return $19.Deferred().resolve(_cacheRows).promise();
+      return $20.Deferred().resolve(_cacheRows).promise();
     }
     if (!force && _cacheRows && now - _cacheAt < CACHE_MS) {
-      return $19.Deferred().resolve(_cacheRows).promise();
+      return $20.Deferred().resolve(_cacheRows).promise();
     }
     LOG2("fetching characters via AJAX\u2026", force ? "(force)" : "");
     const req = _getListRequest();
     if (!req) {
       ERR("No listCharacters()/fetchCharacters() available on FormBuilderAPI");
-      return $19.Deferred().resolve([]).promise();
+      return $20.Deferred().resolve([]).promise();
     }
-    const d = $19.Deferred();
+    const d = $20.Deferred();
     _inFlight = d.promise();
     if (force)
       _lastForceFetchAt = now;
@@ -6061,7 +6408,7 @@
     return _inFlight;
   }
   function populateLoadSelect(rows) {
-    const $sel = $19("#cg-splash-load-select");
+    const $sel = $20("#cg-splash-load-select");
     if (!$sel.length)
       return;
     _populating = true;
@@ -6069,14 +6416,14 @@
     try {
       const current = String($sel.val() || "");
       $sel.empty();
-      $sel.append($19("<option>", { value: "", text: "-- Select a character --" }));
+      $sel.append($20("<option>", { value: "", text: "-- Select a character --" }));
       (rows || []).forEach((r) => {
         var _a, _b;
         const id = String((_a = r == null ? void 0 : r.id) != null ? _a : "");
         const name = String((_b = r == null ? void 0 : r.name) != null ? _b : "");
         if (!id)
           return;
-        $sel.append($19("<option>", { value: id, text: name || `#${id}` }));
+        $sel.append($20("<option>", { value: id, text: name || `#${id}` }));
       });
       if (current)
         $sel.val(current);
@@ -6094,7 +6441,7 @@
     _lastEnsureAt = now;
     if (_populating || _suppressObserver)
       return;
-    const $sel = $19("#cg-splash-load-select");
+    const $sel = $20("#cg-splash-load-select");
     if (!$sel.length)
       return;
     const count = $sel.find("option").length;
@@ -6169,22 +6516,22 @@
   }
 
   // assets/js/src/core/main/builder-save.js
-  var $20 = window.jQuery;
+  var $21 = window.jQuery;
   var LOG3 = (...a) => console.log("[BuilderSave]", ...a);
   var WARN2 = (...a) => console.warn("[BuilderSave]", ...a);
   function setSaveButtonsDisabled(disabled) {
     try {
-      $20("#cg-modal .cg-save-button").prop("disabled", !!disabled).toggleClass("cg-disabled", !!disabled);
+      $21("#cg-modal .cg-save-button").prop("disabled", !!disabled).toggleClass("cg-disabled", !!disabled);
     } catch (_) {
     }
   }
   function bindSaveEvents() {
-    $20(document).off("click", ".cg-save-button");
-    $20(document).off("click", ".cg-close-after-save");
-    $20(document).on("click.cg", ".cg-save-button", function(e) {
+    $21(document).off("click", ".cg-save-button");
+    $21(document).off("click", ".cg-close-after-save");
+    $21(document).on("click.cg", ".cg-save-button", function(e) {
       e.preventDefault();
       e.stopImmediatePropagation();
-      const $btn = $20(this);
+      const $btn = $21(this);
       const shouldClose = $btn.hasClass("cg-close-after-save");
       if (window.CG_SAVE_IN_FLIGHT) {
         WARN2("Save click ignored: CG_SAVE_IN_FLIGHT already true", { shouldClose });
@@ -6202,15 +6549,15 @@
   }
 
   // assets/js/src/core/main/builder-events.js
-  var $21 = window.jQuery;
+  var $22 = window.jQuery;
   var LOG4 = (...a) => console.log("[BuilderEvents]", ...a);
   var SEL = {
     species: '#cg-species, select[name="species"], select[data-cg="species"], .cg-species',
     career: '#cg-career,  select[name="career"],  select[data-cg="career"],  .cg-career'
   };
   function firstSelect(selector) {
-    const $sel = $21(selector);
-    const $modalSel = $21("#cg-modal").find(selector);
+    const $sel = $22(selector);
+    const $modalSel = $22("#cg-modal").find(selector);
     if ($modalSel.length)
       return $modalSel.first();
     return $sel.length ? $sel.first() : null;
@@ -6227,7 +6574,7 @@
     if (String($sel.val() || "") === val)
       return true;
     const $byText = $sel.find("option").filter(function() {
-      return $21(this).text() === val;
+      return $22(this).text() === val;
     }).first();
     if ($byText.length) {
       $sel.val($byText.val());
@@ -6256,7 +6603,7 @@
     const $sel = firstSelect(selector);
     if (!$sel) {
       LOG4(`no ${kind} select found`);
-      return $21.Deferred().resolve().promise();
+      return $22.Deferred().resolve().promise();
     }
     const el = $sel.get(0);
     const beforeVal = String($sel.val() || "").trim();
@@ -6270,10 +6617,10 @@
     }
     const ensureOptions = () => {
       if (el.options.length > 1 && !force)
-        return $21.Deferred().resolve().promise();
+        return $22.Deferred().resolve().promise();
       const API = kind === "species" ? api_default : api_default2;
       if (typeof (API == null ? void 0 : API.populateSelect) !== "function")
-        return $21.Deferred().resolve().promise();
+        return $22.Deferred().resolve().promise();
       return API.populateSelect(el, { force: !!force });
     };
     const doApply = () => {
@@ -6292,7 +6639,7 @@
         }
       }
     };
-    return $21.Deferred(function(dfr) {
+    return $22.Deferred(function(dfr) {
       setTimeout(() => {
         ensureOptions().then(() => {
           doApply();
@@ -6302,7 +6649,7 @@
     }).promise();
   }
   function hydrateSpeciesAndCareer(opts = {}) {
-    return $21.when(
+    return $22.when(
       hydrateSelect("species", opts),
       hydrateSelect("career", opts)
     );
@@ -6319,9 +6666,9 @@
       (_b = (_a = gifts_default) == null ? void 0 : _a.init) == null ? void 0 : _b.call(_a);
     } catch (_) {
     }
-    $21(document).off("input.cg change.cg", "#cg-modal input, #cg-modal select, #cg-modal textarea").on("input.cg change.cg", "#cg-modal input, #cg-modal select, #cg-modal textarea", function() {
+    $22(document).off("input.cg change.cg", "#cg-modal input, #cg-modal select, #cg-modal textarea").on("input.cg change.cg", "#cg-modal input, #cg-modal select, #cg-modal textarea", function() {
       builder_ui_default.markDirty();
-      const $el = $21(this);
+      const $el = $22(this);
       if ($el.hasClass("skill-marks")) {
         const skillId = $el.data("skill-id");
         const val = parseInt($el.val(), 10) || 0;
@@ -6335,11 +6682,11 @@
       const key = id.replace(/^cg-/, "");
       formBuilder_default._data[key] = $el.val();
     });
-    $21(document).off("click.cg", "#cg-open-builder").on("click.cg", "#cg-open-builder", (e) => {
+    $22(document).off("click.cg", "#cg-open-builder").on("click.cg", "#cg-open-builder", (e) => {
       e.preventDefault();
-      $21("#cg-modal-splash").removeClass("cg-hidden").addClass("visible");
+      $22("#cg-modal-splash").removeClass("cg-hidden").addClass("visible");
       try {
-        const $sel = $21("#cg-splash-load-select");
+        const $sel = $22("#cg-splash-load-select");
         const optCount = $sel.length ? $sel.find("option").length : 0;
         if ($sel.length && optCount <= 1) {
           document.dispatchEvent(new CustomEvent("cg:characters:refresh", { detail: { source: "splash-open" } }));
@@ -6347,9 +6694,9 @@
       } catch (_) {
       }
     });
-    $21(document).off("click.cg", "#cg-new-splash").on("click.cg", "#cg-new-splash", (e) => {
+    $22(document).off("click.cg", "#cg-new-splash").on("click.cg", "#cg-new-splash", (e) => {
       e.preventDefault();
-      $21("#cg-modal-splash").removeClass("visible").addClass("cg-hidden");
+      $22("#cg-modal-splash").removeClass("visible").addClass("cg-hidden");
       builder_ui_default.openBuilder({ isNew: true, payload: {} });
       formBuilder_default._data.skillMarks = {};
       formBuilder_default._data.species = "";
@@ -6358,9 +6705,9 @@
         window.CG_FreeChoicesState.selected = ["", "", ""];
       }
     });
-    $21(document).off("click.cg", "#cg-load-splash").on("click.cg", "#cg-load-splash", (e) => {
+    $22(document).off("click.cg", "#cg-load-splash").on("click.cg", "#cg-load-splash", (e) => {
       e.preventDefault();
-      const charId = $21("#cg-splash-load-select").val();
+      const charId = $22("#cg-splash-load-select").val();
       if (!charId) {
         alert("Please select a character to load.");
         return;
@@ -6374,7 +6721,7 @@
           alert("Character could not be loaded.");
           return;
         }
-        $21("#cg-modal-splash").removeClass("visible").addClass("cg-hidden");
+        $22("#cg-modal-splash").removeClass("visible").addClass("cg-hidden");
         builder_ui_default.openBuilder({ isNew: false, payload: record });
         setTimeout(() => {
           hydrateSpeciesAndCareer({ force: true, record });
@@ -6386,39 +6733,39 @@
     });
     bindLoadEvents();
     bindSaveEvents();
-    $21(document).off("click.cg", "#cg-modal .cg-tabs li").on("click.cg", "#cg-modal .cg-tabs li", function(e) {
+    $22(document).off("click.cg", "#cg-modal .cg-tabs li").on("click.cg", "#cg-modal .cg-tabs li", function(e) {
       e.preventDefault();
-      const fromTab = $21("#cg-modal .cg-tabs li.active").data("tab");
-      const tabName = $21(this).data("tab");
-      $21("#cg-modal .cg-tabs li").removeClass("active");
-      $21(this).addClass("active");
-      $21(".tab-panel").removeClass("active");
-      $21(`#${tabName}`).addClass("active");
+      const fromTab = $22("#cg-modal .cg-tabs li.active").data("tab");
+      const tabName = $22(this).data("tab");
+      $22("#cg-modal .cg-tabs li").removeClass("active");
+      $22(this).addClass("active");
+      $22(".tab-panel").removeClass("active");
+      $22(`#${tabName}`).addClass("active");
       emitTabChanged(fromTab, tabName);
       refreshTab();
       setTimeout(() => {
         hydrateSpeciesAndCareer({ force: false });
       }, 0);
     });
-    $21(document).off("click.cg", "#cg-modal-close").on("click.cg", "#cg-modal-close", (e) => {
+    $22(document).off("click.cg", "#cg-modal-close").on("click.cg", "#cg-modal-close", (e) => {
       e.preventDefault();
       builder_ui_default.showUnsaved();
     });
-    $21(document).off("click.cg", "#cg-modal-overlay").on("click.cg", "#cg-modal-overlay", function(e) {
+    $22(document).off("click.cg", "#cg-modal-overlay").on("click.cg", "#cg-modal-overlay", function(e) {
       if (e.target !== this)
         return;
       builder_ui_default.showUnsaved();
     });
-    $21(document).off("click.cg", "#unsaved-save").on("click.cg", "#unsaved-save", (e) => {
+    $22(document).off("click.cg", "#unsaved-save").on("click.cg", "#unsaved-save", (e) => {
       e.preventDefault();
       console.log("[BuilderEvents] Prompt: SAVE & EXIT clicked");
       formBuilder_default.save(true);
     });
-    $21(document).off("click.cg", "#unsaved-exit").on("click.cg", "#unsaved-exit", (e) => {
+    $22(document).off("click.cg", "#unsaved-exit").on("click.cg", "#unsaved-exit", (e) => {
       e.preventDefault();
       builder_ui_default.closeBuilder();
     });
-    $21(document).off("click.cg", "#unsaved-cancel").on("click.cg", "#unsaved-cancel", (e) => {
+    $22(document).off("click.cg", "#unsaved-cancel").on("click.cg", "#unsaved-cancel", (e) => {
       e.preventDefault();
       builder_ui_default.hideUnsaved();
     });
