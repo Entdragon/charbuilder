@@ -249,7 +249,7 @@ function renderLanguageSelect(container) {
   }).join('\n');
 
   container.innerHTML = `
-    <select id="cg-base-language-select" style="min-width:220px;">
+    <select id="cg-base-language-select" class="cg-free-select" style="min-width:220px;">
       <option value="">— Select Language —</option>
       ${opts}
     </select>

@@ -4719,7 +4719,7 @@
       return `<option value="${safe}"${sel2}>${label}</option>`;
     }).join("\n");
     container.innerHTML = `
-    <select id="cg-base-language-select" style="min-width:220px;">
+    <select id="cg-base-language-select" class="cg-free-select" style="min-width:220px;">
       <option value="">\u2014 Select Language \u2014</option>
       ${opts}
     </select>
