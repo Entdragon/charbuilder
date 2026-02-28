@@ -4501,6 +4501,14 @@
         const html = needs.map((type) => {
           const cur = String(map[slotId][type] || "").trim();
           const excludeValues = [0, 1, 2].filter((j) => j !== i).map((j) => String((map[String(j)] || {})[type] || "").trim()).filter(Boolean);
+          if (type === "language") {
+            try {
+              const baseLang = (state_default2.get("language") || [])[0] || "";
+              if (baseLang)
+                excludeValues.push(baseLang);
+            } catch (_) {
+            }
+          }
           return renderQualSelectHtml({ slot: i, type, value: cur, allGifts: this._allGifts, excludeValues });
         }).join("\n");
         wrap.innerHTML = html;
@@ -4726,9 +4734,15 @@
     if (!container)
       return;
     const labels = getLanguageLabelsForBaseSelect();
-    const cur = state_default2 && typeof state_default2.get === "function" ? (state_default2.get("language") || [])[0] || "" : "";
+    const allLangs = state_default2 && typeof state_default2.get === "function" ? state_default2.get("language") || [] : [];
+    const cur = allLangs[0] || "";
+    const freeGiftLangs = new Set(allLangs.slice(1).map((l) => canon4(String(l || ""))).filter(Boolean));
     const finalLabels = uniqSorted([cur, ...labels]);
-    const opts = finalLabels.map((label) => {
+    const opts = finalLabels.filter((label) => {
+      if (!label)
+        return false;
+      return canon4(cur) === canon4(label) || !freeGiftLangs.has(canon4(label));
+    }).map((label) => {
       const sel2 = canon4(cur) === canon4(label) ? " selected" : "";
       const safe = String(label).replace(/"/g, "&quot;");
       return `<option value="${safe}"${sel2}>${label}</option>`;
@@ -4777,6 +4791,7 @@
     _onCatalogUpdated: null,
     _onBuilderOpened: null,
     _onTabChanged: null,
+    _onQualsChanged: null,
     init() {
       var _a, _b;
       if (this._inited)
@@ -4828,14 +4843,18 @@
         };
       if (!this._onTabChanged)
         this._onTabChanged = () => this._scheduleRender("tab-changed");
+      if (!this._onQualsChanged)
+        this._onQualsChanged = () => this._scheduleRender("quals-changed");
       document.removeEventListener("cg:quals:catalog-updated", this._onCatalogUpdated);
       document.addEventListener("cg:quals:catalog-updated", this._onCatalogUpdated);
       document.removeEventListener("cg:builder:opened", this._onBuilderOpened);
       document.addEventListener("cg:builder:opened", this._onBuilderOpened);
       document.removeEventListener("cg:tab:changed", this._onTabChanged);
       document.addEventListener("cg:tab:changed", this._onTabChanged);
+      document.removeEventListener("cg:quals:changed", this._onQualsChanged);
+      document.addEventListener("cg:quals:changed", this._onQualsChanged);
       if ($12 && $12.fn) {
-        $12(document).off("cg:quals:catalog-updated.cgqualui cg:builder:opened.cgqualui cg:tab:changed.cgqualui").on("cg:quals:catalog-updated.cgqualui", this._onCatalogUpdated).on("cg:builder:opened.cgqualui", this._onBuilderOpened).on("cg:tab:changed.cgqualui", this._onTabChanged);
+        $12(document).off("cg:quals:catalog-updated.cgqualui cg:builder:opened.cgqualui cg:tab:changed.cgqualui cg:quals:changed.cgqualui").on("cg:quals:catalog-updated.cgqualui", this._onCatalogUpdated).on("cg:builder:opened.cgqualui", this._onBuilderOpened).on("cg:tab:changed.cgqualui", this._onTabChanged).on("cg:quals:changed.cgqualui", this._onQualsChanged);
       }
     },
     _installObserver() {

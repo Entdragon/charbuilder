@@ -1007,11 +1007,18 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
 
       const html = needs.map(type => {
         const cur = String(map[slotId][type] || '').trim();
-        // Collect values chosen in OTHER slots for this type so they can be excluded
+        // Collect values chosen in OTHER free-gift slots for this type
         const excludeValues = [0, 1, 2]
           .filter(j => j !== i)
           .map(j => String((map[String(j)] || {})[type] || '').trim())
           .filter(Boolean);
+        // Also exclude the base-language selection (QualState index 0) for language type
+        if (type === 'language') {
+          try {
+            const baseLang = (QualState.get('language') || [])[0] || '';
+            if (baseLang) excludeValues.push(baseLang);
+          } catch (_) {}
+        }
         return renderQualSelectHtml({ slot: i, type, value: cur, allGifts: this._allGifts, excludeValues });
       }).join('\n');
 

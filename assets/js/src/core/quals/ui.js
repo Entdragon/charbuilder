@@ -236,18 +236,27 @@ function renderLanguageSelect(container) {
   if (!container) return;
 
   const labels = getLanguageLabelsForBaseSelect();
-  const cur = (QualState && typeof QualState.get === 'function')
-    ? ((QualState.get('language') || [])[0] || '')
-    : '';
+  const allLangs = (QualState && typeof QualState.get === 'function')
+    ? (QualState.get('language') || [])
+    : [];
+  const cur = allLangs[0] || '';
+  // Languages already chosen in free-gift slots (indices 1+) are excluded from the base select
+  const freeGiftLangs = new Set(allLangs.slice(1).map(l => canon(String(l || ''))).filter(Boolean));
 
   // Ensure current selection is always present, even if not in catalog yet
   const finalLabels = uniqSorted([cur, ...labels]);
 
-  const opts = finalLabels.map(label => {
-    const sel = (canon(cur) === canon(label)) ? ' selected' : '';
-    const safe = String(label).replace(/"/g, '&quot;');
-    return `<option value="${safe}"${sel}>${label}</option>`;
-  }).join('\n');
+  const opts = finalLabels
+    .filter(label => {
+      if (!label) return false;
+      // Always keep the base selection visible; exclude anything chosen in a free-gift slot
+      return canon(cur) === canon(label) || !freeGiftLangs.has(canon(label));
+    })
+    .map(label => {
+      const sel = (canon(cur) === canon(label)) ? ' selected' : '';
+      const safe = String(label).replace(/"/g, '&quot;');
+      return `<option value="${safe}"${sel}>${label}</option>`;
+    }).join('\n');
 
   container.innerHTML = `
     <select id="cg-base-language-select" class="cg-free-select" style="min-width:220px;">
@@ -301,6 +310,7 @@ const QualUI = (Existing && Existing.__cg_singleton) ? Existing : {
   _onCatalogUpdated: null,
   _onBuilderOpened: null,
   _onTabChanged: null,
+  _onQualsChanged: null,
 
   init() {
     if (this._inited) return;
@@ -340,6 +350,7 @@ const QualUI = (Existing && Existing.__cg_singleton) ? Existing : {
     if (!this._onCatalogUpdated) this._onCatalogUpdated = () => this._scheduleRender('catalog-updated');
     if (!this._onBuilderOpened)  this._onBuilderOpened  = () => { try { QualState?.init?.(); } catch (_) {} this._scheduleRender('builder-opened'); };
     if (!this._onTabChanged)     this._onTabChanged     = () => this._scheduleRender('tab-changed');
+    if (!this._onQualsChanged)   this._onQualsChanged   = () => this._scheduleRender('quals-changed');
 
     document.removeEventListener('cg:quals:catalog-updated', this._onCatalogUpdated);
     document.addEventListener('cg:quals:catalog-updated', this._onCatalogUpdated);
@@ -350,12 +361,17 @@ const QualUI = (Existing && Existing.__cg_singleton) ? Existing : {
     document.removeEventListener('cg:tab:changed', this._onTabChanged);
     document.addEventListener('cg:tab:changed', this._onTabChanged);
 
+    // Re-render the base language select whenever any qual changes (e.g. free-gift language picked)
+    document.removeEventListener('cg:quals:changed', this._onQualsChanged);
+    document.addEventListener('cg:quals:changed', this._onQualsChanged);
+
     if ($ && $.fn) {
       $(document)
-        .off('cg:quals:catalog-updated.cgqualui cg:builder:opened.cgqualui cg:tab:changed.cgqualui')
+        .off('cg:quals:catalog-updated.cgqualui cg:builder:opened.cgqualui cg:tab:changed.cgqualui cg:quals:changed.cgqualui')
         .on('cg:quals:catalog-updated.cgqualui', this._onCatalogUpdated)
         .on('cg:builder:opened.cgqualui', this._onBuilderOpened)
-        .on('cg:tab:changed.cgqualui', this._onTabChanged);
+        .on('cg:tab:changed.cgqualui', this._onTabChanged)
+        .on('cg:quals:changed.cgqualui', this._onQualsChanged);
     }
   },
 
