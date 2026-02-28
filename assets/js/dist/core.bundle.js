@@ -4166,8 +4166,8 @@
     }).filter(Boolean).join("\n");
     const nice = type.charAt(0).toUpperCase() + type.slice(1);
     return `
-    <label style="display:flex; flex-direction:column; gap:4px; margin-top:8px; min-width: 220px;">
-      <span style="font-weight:600;">${nice}</span>
+    <label style="display:flex; flex-direction:column; gap:4px; margin-top:8px; min-width:220px;">
+      <span style="font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:var(--cg-text-muted);">${nice}</span>
       <select class="cg-free-qual-select" data-slot="${slot}" data-qtype="${type}">
         <option value="">\u2014 Select ${nice} \u2014</option>
         ${opts}

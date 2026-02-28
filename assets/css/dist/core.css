@@ -449,7 +449,8 @@
 
 .cg-profile-select,
 .cg-free-select,
-.cg-free-gift-select {
+.cg-free-gift-select,
+.cg-free-qual-select {
   width: 100%;
   padding: 0.5em 0.65em;
   font-size: 1rem;
@@ -463,7 +464,8 @@
 }
 .cg-profile-select:focus,
 .cg-free-select:focus,
-.cg-free-gift-select:focus {
+.cg-free-gift-select:focus,
+.cg-free-qual-select:focus {
   outline: none;
   border-color: var(--cg-gold);
   box-shadow: 0 0 0 2px rgba(201, 168, 76, 0.15);

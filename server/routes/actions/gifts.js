@@ -30,12 +30,19 @@ async function cg_get_free_gifts(req, res) {
   ];
   const requireCols = suffixes.map(s => s ? `ct_gifts_requires_${s}` : 'ct_gifts_requires').join(', ');
 
+  const requireSpecialSuffixes = ['','_two','_three','_four','_five','_six','_seven','_eight'];
+  const requireSpecialCols = requireSpecialSuffixes
+    .map(s => `ct_gifts_requires_special${s}`)
+    .join(', ');
+
   const rows = await query(`
     SELECT
       ct_id                    AS id,
       ct_gifts_name            AS name,
       ct_gifts_allows_multiple AS allows_multiple,
       ct_gifts_manifold        AS ct_gifts_manifold,
+      ct_gifts_requires_special,
+      ${requireSpecialCols},
       ${requireCols}
     FROM ${p}customtables_table_gifts
     ORDER BY ct_gifts_name ASC
