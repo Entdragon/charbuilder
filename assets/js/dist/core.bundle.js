@@ -3395,6 +3395,12 @@
       const t = String(type || "").toLowerCase();
       return this._catalog[t] || [];
     },
+    // Allow quals/ui.js to push the server-fetched language list so that
+    // free-choices.js uses the same curated list for Language sub-selects.
+    updateLanguageList(labels = []) {
+      this._catalog.language = labels.map((l) => ({ label: String(l), key: String(l).trim().toLowerCase(), count: 1 })).filter((o) => o.label);
+      window.CG_QualCatalog = this._catalog;
+    },
     debugTop(limit = 30) {
       const rows = [];
       Object.keys(this._catalog || {}).forEach((type) => {
@@ -3679,11 +3685,11 @@
     var _a, _b, _c;
     if (g && (String(g.id || "") === "223" || String(g.ct_id || "") === "223"))
       return true;
-    const v = (_c = (_b = (_a = g == null ? void 0 : g.allows_multiple) != null ? _a : g == null ? void 0 : g.ct_gifts_manifold) != null ? _b : g == null ? void 0 : g.manifold) != null ? _c : null;
-    if (v === true)
+    if (detectQualTypesNeeded(g).length > 0)
       return true;
+    const v = (_c = (_b = (_a = g == null ? void 0 : g.allows_multiple) != null ? _a : g == null ? void 0 : g.ct_gifts_manifold) != null ? _b : g == null ? void 0 : g.manifold) != null ? _c : null;
     const n = Number(v);
-    return Number.isFinite(n) && n > 1;
+    return Number.isFinite(n) && n > 0;
   }
   function extractRequiredGiftIds(g) {
     if (!g || typeof g !== "object")
@@ -4154,14 +4160,18 @@
     } catch (_) {
     }
   }
-  function renderQualSelectHtml({ slot, type, value, allGifts }) {
+  function renderQualSelectHtml({ slot, type, value, allGifts, excludeValues = [] }) {
     const items = getQualItemsForType(type, allGifts);
+    const excluded = new Set((excludeValues || []).map((v) => canon3(String(v || ""))).filter(Boolean));
     const opts = (Array.isArray(items) ? items : []).map((it) => {
       var _a, _b;
       const label = String((_b = (_a = it == null ? void 0 : it.label) != null ? _a : it == null ? void 0 : it.key) != null ? _b : "").trim();
       if (!label)
         return "";
-      const sel = canon3(value) === canon3(label) ? " selected" : "";
+      const isCurrent = canon3(value) === canon3(label);
+      if (!isCurrent && excluded.has(canon3(label)))
+        return "";
+      const sel = isCurrent ? " selected" : "";
       return `<option value="${label}"${sel}>${label}</option>`;
     }).filter(Boolean).join("\n");
     const nice = type.charAt(0).toUpperCase() + type.slice(1);
@@ -4490,7 +4500,8 @@
           map[slotId] = {};
         const html = needs.map((type) => {
           const cur = String(map[slotId][type] || "").trim();
-          return renderQualSelectHtml({ slot: i, type, value: cur, allGifts: this._allGifts });
+          const excludeValues = [0, 1, 2].filter((j) => j !== i).map((j) => String((map[String(j)] || {})[type] || "").trim()).filter(Boolean);
+          return renderQualSelectHtml({ slot: i, type, value: cur, allGifts: this._allGifts, excludeValues });
         }).join("\n");
         wrap.innerHTML = html;
         setSlotQualMap(map);
@@ -4687,6 +4698,10 @@
       }).then((r) => r.json()).then((json) => {
         _languageListLoading = false;
         _languageListCache = json && json.success && Array.isArray(json.data) ? json.data : [];
+        try {
+          quals_default.updateLanguageList(_languageListCache);
+        } catch (_) {
+        }
         if (onLoaded)
           onLoaded(_languageListCache);
       }).catch(() => {

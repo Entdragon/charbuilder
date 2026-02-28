@@ -14,6 +14,15 @@ const Quals = {
     return this._catalog[t] || [];
   },
 
+  // Allow quals/ui.js to push the server-fetched language list so that
+  // free-choices.js uses the same curated list for Language sub-selects.
+  updateLanguageList(labels = []) {
+    this._catalog.language = labels
+      .map(l => ({ label: String(l), key: String(l).trim().toLowerCase(), count: 1 }))
+      .filter(o => o.label);
+    window.CG_QualCatalog = this._catalog;
+  },
+
   debugTop(limit = 30) {
     const rows = [];
     Object.keys(this._catalog || {}).forEach(type => {

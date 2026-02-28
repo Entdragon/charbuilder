@@ -171,10 +171,15 @@ function allowsMultiple(g) {
   // free-choice copy can independently target a different extra career.
   if (g && (String(g.id || '') === '223' || String(g.ct_id || '') === '223')) return true;
 
+  // Any gift that requires a qualification sub-choice (Language, Literacy, Mystic,
+  // Piety, Insider) can always be taken multiple times — uniqueness is enforced at
+  // the qualification-value level, not the gift level.
+  if (detectQualTypesNeeded(g).length > 0) return true;
+
+  // Fix: use > 0 not > 1 — a DB value of 1 means "allows multiple".
   const v = g?.allows_multiple ?? g?.ct_gifts_manifold ?? g?.manifold ?? null;
-  if (v === true) return true;
   const n = Number(v);
-  return Number.isFinite(n) && n > 1;
+  return Number.isFinite(n) && n > 0;
 }
 
 function extractRequiredGiftIds(g) {
@@ -636,12 +641,16 @@ function qualStateRemoveIfSafe(type, value, slotMap) {
   } catch (_) {}
 }
 
-function renderQualSelectHtml({ slot, type, value, allGifts }) {
+function renderQualSelectHtml({ slot, type, value, allGifts, excludeValues = [] }) {
   const items = getQualItemsForType(type, allGifts);
+  const excluded = new Set((excludeValues || []).map(v => canon(String(v || ''))).filter(Boolean));
   const opts = (Array.isArray(items) ? items : []).map(it => {
     const label = String(it?.label ?? it?.key ?? '').trim();
     if (!label) return '';
-    const sel = (canon(value) === canon(label)) ? ' selected' : '';
+    // Always include the current slot's saved value even if another slot has the same
+    const isCurrent = canon(value) === canon(label);
+    if (!isCurrent && excluded.has(canon(label))) return '';
+    const sel = isCurrent ? ' selected' : '';
     return `<option value="${label}"${sel}>${label}</option>`;
   }).filter(Boolean).join('\n');
 
@@ -998,7 +1007,12 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
 
       const html = needs.map(type => {
         const cur = String(map[slotId][type] || '').trim();
-        return renderQualSelectHtml({ slot: i, type, value: cur, allGifts: this._allGifts });
+        // Collect values chosen in OTHER slots for this type so they can be excluded
+        const excludeValues = [0, 1, 2]
+          .filter(j => j !== i)
+          .map(j => String((map[String(j)] || {})[type] || '').trim())
+          .filter(Boolean);
+        return renderQualSelectHtml({ slot: i, type, value: cur, allGifts: this._allGifts, excludeValues });
       }).join('\n');
 
       wrap.innerHTML = html;

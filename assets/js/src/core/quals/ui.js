@@ -209,6 +209,7 @@ function fetchLanguageList(onLoaded) {
       .then(json => {
         _languageListLoading = false;
         _languageListCache = (json && json.success && Array.isArray(json.data)) ? json.data : [];
+        try { Quals.updateLanguageList(_languageListCache); } catch (_) {}
         if (onLoaded) onLoaded(_languageListCache);
       })
       .catch(() => {
