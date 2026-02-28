@@ -50,51 +50,49 @@ async function cg_get_free_gifts(req, res) {
   res.json({ success: true, data: rows });
 }
 
+const DEFAULT_LANGUAGES = [
+  'Calabrian', 'Common', 'Dwarven', 'Elven', 'Goblin', 'Hesperian',
+  'Kawtaw', 'Mordic', 'Old Calabrian', 'Orcish', 'Sylvan', 'Urathi',
+];
+
+async function ensureLanguageTable() {
+  const p = prefix();
+  const table = `\`${p}cg_languages\``;
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS ${table} (
+      id         INT AUTO_INCREMENT PRIMARY KEY,
+      name       VARCHAR(100) NOT NULL,
+      sort_order INT NOT NULL DEFAULT 0,
+      UNIQUE KEY uq_cg_lang_name (name)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  const existing = await query(`SELECT COUNT(*) AS cnt FROM ${table}`);
+  const count = parseInt((existing[0] || {}).cnt || 0, 10);
+  if (count === 0) {
+    const placeholders = DEFAULT_LANGUAGES.map((_, i) => `(?, ${i})`).join(', ');
+    await query(
+      `INSERT IGNORE INTO ${table} (name, sort_order) VALUES ${placeholders}`,
+      DEFAULT_LANGUAGES
+    );
+  }
+}
+
 async function cg_get_language_list(req, res) {
   const p = prefix();
-  const DEFAULT_LANGUAGES = [
-    'Calabrian', 'Common', 'Dwarven', 'Elven', 'Goblin', 'Hesperian',
-    'Kawtaw', 'Mordic', 'Old Calabrian', 'Orcish', 'Sylvan', 'Urathi',
-  ];
-  const extraLangs = [];
-
-  // Attempt 1: dedicated cg_character_language table (staging/future prod)
   try {
-    const cols = await query(`DESCRIBE \`${p}cg_character_language\``);
-    // Find the column that holds language text — prefer one with 'language' in the name,
-    // skip id columns and any column that looks like a foreign key (ends in _id or _character)
-    const langCol = cols
-      .map(c => c.Field || c.field || '')
-      .find(f => /language/i.test(f) && !/^ct_id$/i.test(f) && !/_character$/i.test(f));
-
-    if (langCol) {
-      const rows = await query(
-        `SELECT DISTINCT \`${langCol}\` AS lang FROM \`${p}cg_character_language\`
-         WHERE \`${langCol}\` IS NOT NULL AND \`${langCol}\` <> ''`
-      );
-      rows.forEach(r => {
-        const v = String(r.lang || '').trim();
-        if (v) extraLangs.push(v);
-      });
-    }
-  } catch (_) {}
-
-  // Attempt 2: language column in character_records
-  try {
+    await ensureLanguageTable();
     const rows = await query(
-      `SELECT DISTINCT language FROM ${p}character_records
-       WHERE language IS NOT NULL AND language <> ''`
+      `SELECT name FROM \`${p}cg_languages\` ORDER BY sort_order ASC, name ASC`
     );
-    rows.forEach(r => {
-      const v = String(r.language || '').trim();
-      if (v) extraLangs.push(v);
-    });
-  } catch (_) {}
-
-  const merged = [...new Set([...DEFAULT_LANGUAGES, ...extraLangs])].sort((a, b) =>
-    a.toLowerCase().localeCompare(b.toLowerCase())
-  );
-  res.json({ success: true, data: merged });
+    const list = rows.map(r => String(r.name || '').trim()).filter(Boolean);
+    res.json({ success: true, data: list });
+  } catch (err) {
+    // Fallback: return hardcoded list so the app keeps working even if DB migration fails
+    console.error('[cg_get_language_list] DB error, using fallback:', err.message);
+    res.json({ success: true, data: DEFAULT_LANGUAGES.slice().sort((a, b) => a.localeCompare(b)) });
+  }
 }
 
 module.exports = { cg_get_local_knowledge, cg_get_language_gift, cg_get_free_gifts, cg_get_language_list };
