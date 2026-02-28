@@ -54,28 +54,23 @@ const SummaryAPI = {
   renderSummary(data = {}) {
     const $sheet = $('#cg-summary-sheet').empty();
 
-    // Basic Info
-    const name   = data.name   || '—';
-    const age    = data.age    || '—';
-    const gender = data.gender || '—';
-    const motto  = data.motto  || '—';
+    // ── Source data ────────────────────────────────────────────
+    const name       = data.name        || '—';
+    const age        = data.age         || '—';
+    const gender     = data.gender      || '—';
+    const playerName = data.player_name || '';
+    const motto      = data.motto       || '—';
+    const description = data.description || '';
+    const backstory   = data.backstory   || '';
 
-    // Goals
-    const goals = [1, 2, 3]
-      .map(i => data[`goal${i}`] || '—')
-      .filter(v => v !== '—')
-      .join(', ')
-      || '—';
+    const goal1 = data.goal1 || '';
+    const goal2 = data.goal2 || '';
+    const goal3 = data.goal3 || '';
+    const goalsList = [goal1, goal2, goal3].filter(Boolean);
 
-    // Description & Backstory
-    const description = data.description || '—';
-    const backstory   = data.backstory   || '—';
-
-    // Species & Career
     const species = SpeciesAPI.currentProfile || {};
     const career  = CareerAPI.currentProfile  || {};
 
-    // Extra careers
     let extraCareers = [];
     if (Array.isArray(data.extraCareers) && data.extraCareers.length) {
       extraCareers = data.extraCareers.filter(ec => ec && ec.id);
@@ -83,15 +78,12 @@ const SummaryAPI = {
       try { extraCareers = JSON.parse(data.extra_careers).filter(ec => ec && ec.id); } catch (_) {}
     }
 
-    // Die step helper (shared with ExtraCareers)
     const DIE_ORDER = ['d4','d6','d8','d10','d12'];
     function stepDie(die, steps) {
       const i = DIE_ORDER.indexOf(String(die || '').toLowerCase());
       if (i === -1) return die || 'd4';
       return DIE_ORDER[Math.min(DIE_ORDER.length - 1, i + (parseInt(steps, 10) || 0))];
     }
-
-    // Count Gift-223 (Increased Trait: Career) boosts targeting a given career
     function boostCountFor(careerId) {
       let n = 0;
       const target = String(careerId);
@@ -106,231 +98,230 @@ const SummaryAPI = {
       return n;
     }
 
-    // Skills, Marks, Battle
-    const skills   = window.CG_SKILLS_LIST || [];
-    const marks    = data.skillMarks   || {};
-    const xpMarks  = data.xpSkillMarks || {};
-    const xpGifts  = Array.isArray(data.xpGifts) ? data.xpGifts : [];
-    const xpEarned = parseInt(data.experience_points, 10) || 0;
-    const battle   = data.battle       || [];
+    const skills       = window.CG_SKILLS_LIST || [];
+    const marks        = data.skillMarks        || {};
+    const xpMarks      = data.xpSkillMarks      || {};
+    const xpGifts      = Array.isArray(data.xpGifts) ? data.xpGifts : [];
+    const xpEarned     = parseInt(data.experience_points, 10) || 0;
+    const xpMarksBudget = parseInt(data.xpMarksBudget, 10) || 0;
+    const xpGiftSlots   = parseInt(data.xpGiftSlots,   10) || 0;
+    const xpSpent       = xpMarksBudget * 4 + xpGiftSlots * 10;
 
-    // Assemble HTML
-    let html = `
-      <div class="summary-section summary-basic">
-        <h2>${name}</h2>
-        <p><strong>Age:</strong> ${age}</p>
-        <p><strong>Gender:</strong> ${gender}</p>
-        <p><strong>Motto:</strong> ${motto}</p>
-      </div>
+    const weapons = Array.isArray(data.weapons) ? data.weapons : [];
+    const armor   = Array.isArray(data.armor)   ? data.armor   : [];
 
-      <div class="summary-section summary-goals">
-        <p><strong>Goals:</strong> ${goals}</p>
-      </div>
+    function dicePools(...dice) { return dice.filter(Boolean).join(' + ') || '—'; }
+    const initiative = dicePools(data.speed, data.will);
+    const dodge      = dicePools(data.speed, data.will);
+    const soak       = dicePools(data.body);
 
-      <div class="summary-section summary-description">
-        <p><strong>Description:</strong> ${description}</p>
-      </div>
-
-      <div class="summary-section summary-backstory">
-        <p><strong>Backstory:</strong> ${backstory}</p>
-      </div>
-
-      <div class="summary-section summary-species">
-        <h3>Species: ${species.speciesName || '—'}</h3>
-        <ul>
-    `;
-    ['gift_1','gift_2','gift_3'].forEach((_, idx) => {
-      const gift = species[`gift_${idx+1}`];
-      const mult = species[`manifold_${idx+1}`] || 1;
-      if (gift) {
-        html += `<li><strong>Gift ${idx+1}:</strong> ${gift} × ${mult}</li>`;
-      }
-    });
-    html += `</ul></div>`;
-
-    // Career names for display (main + extras)
     const allCareerNames = [career.careerName].filter(Boolean);
     extraCareers.forEach(ec => { if (ec.name) allCareerNames.push(ec.name); });
     const careerLabel = allCareerNames.length ? allCareerNames.join(' / ') : '—';
 
-    html += `
-      <div class="summary-section summary-career">
-        <h3>Career: ${careerLabel}</h3>
-        <ul>
-    `;
+    // ── Species gifts block ────────────────────────────────────
+    let speciesGiftsHtml = '';
+    ['gift_1','gift_2','gift_3'].forEach((_, idx) => {
+      const gift = species[`gift_${idx+1}`];
+      const mult = species[`manifold_${idx+1}`] || 1;
+      if (gift) speciesGiftsHtml += `<li>${gift}${mult > 1 ? ` × ${mult}` : ''}</li>`;
+    });
+
+    // ── Career gifts block ─────────────────────────────────────
+    let careerGiftsHtml = '';
     ['gift_1','gift_2','gift_3'].forEach((_, idx) => {
       const gift = career[`gift_${idx+1}`];
       const mult = career[`manifold_${idx+1}`] || 1;
-      if (gift) {
-        html += `<li><strong>Gift ${idx+1}:</strong> ${gift} × ${mult}</li>`;
-      }
+      if (gift) careerGiftsHtml += `<li>${gift}${mult > 1 ? ` × ${mult}` : ''}</li>`;
     });
-    html += `</ul></div>`;
 
-    html += `
-      <div class="summary-section summary-traits">
-        <h3>Traits</h3>
-        <ul>
-    `;
+    // ── Traits block ───────────────────────────────────────────
+    let traitsHtml = '';
     TRAITS.forEach(key => {
       let label = key.replace(/^trait_/, '');
       if (label === 'species') label = 'Species';
       else if (label === 'career') label = 'Career';
       else label = Utils.capitalize(label);
-
-      const base  = data[key] || '—';
-      const boost = TraitsService.getBoostedDie(key);
+      const base    = data[key] || '—';
+      const boost   = TraitsService.getBoostedDie(key);
       const display = boost ? `${base} → ${boost}` : base;
-
-      html += `<li><strong>${label}:</strong> ${display}</li>`;
+      traitsHtml += `<li><strong>${label}:</strong> ${display}</li>`;
     });
-
-    // Extra career trait rows (one per extra career slot unlocked)
     if (extraCareers.length) {
       extraCareers.forEach(ec => {
         const ecName = ec.name || 'Extra Career';
         const boosts = boostCountFor(String(ec.id));
         const ecDie  = boosts > 0 ? stepDie('d4', boosts) : 'd4';
         const suffix = boosts > 0 ? ` → ${ecDie}` : '';
-        html += `<li><strong>${ecName} (Career):</strong> d4${suffix}</li>`;
+        traitsHtml += `<li><strong>${ecName} (Career):</strong> d4${suffix}</li>`;
       });
     }
 
-    html += `</ul></div>`;
-
-    html += `
-      <div class="summary-section summary-skills">
-        <h3>Skills</h3>
-        <div class="cg-summary-skills-wrap">
-        <table class="cg-summary-skills">
-          <thead><tr><th>Skill</th><th>Dice Pool</th></tr></thead>
-          <tbody>
-    `;
+    // ── Skills block ───────────────────────────────────────────
     const spIds = [species.skill_one, species.skill_two, species.skill_three].map(String);
     const cpIds = [career.skill_one,  career.skill_two,  career.skill_three].map(String);
-
-    // Extra career skill lists — each contributes d4 independently
     const ecSkillSets = extraCareers.map(ec =>
       (Array.isArray(ec.skills) ? ec.skills : []).map(String)
     );
-
+    let skillsHtml = '';
     skills.forEach(skill => {
-      const id = String(skill.id);
+      const id    = String(skill.id);
       const spDie = spIds.includes(id) ? 'd4' : '';
       const cpDie = cpIds.includes(id) ? 'd6' : '';
-      // Each extra career that covers this skill adds its own d4
       const ecDies = ecSkillSets.map(set => set.includes(id) ? 'd4' : '').filter(Boolean);
       const totalMk = (parseInt(marks[id], 10) || 0) + (parseInt(xpMarks[id], 10) || 0);
       const mkDie   = marksToDice(totalMk);
-
-      // Stack all contributions — same logic as skills/render.js
       const poolDice = [spDie, cpDie].concat(ecDies).concat([mkDie]).filter(Boolean);
       const pool = poolDice.length ? poolDice.join(' + ') : '—';
-      html += `<tr><td>${skill.name}</td><td>${pool}</td></tr>`;
+      skillsHtml += `<tr><td>${skill.name}</td><td>${pool}</td></tr>`;
     });
-    html += `
-          </tbody>
-        </table>
-        </div>
-      </div>
-    `;
 
-    const xpMarksBudget = parseInt(data.xpMarksBudget, 10) || 0;
-    const xpGiftSlots   = parseInt(data.xpGiftSlots,   10) || 0;
-    if (xpGifts.length > 0 || xpEarned > 0 || xpMarksBudget > 0) {
-      const xpSpent = xpMarksBudget * 4 + xpGiftSlots * 10;
-      html += `
-        <div class="summary-section summary-xp">
-          <h3>Experience Points</h3>
-          <p><strong>Earned:</strong> ${xpEarned} &nbsp;|&nbsp; <strong>Spent:</strong> ${xpSpent} &nbsp;|&nbsp; <strong>Available:</strong> ${xpEarned - xpSpent}</p>
-          ${xpGifts.length > 0 ? `<ul>${xpGifts.map(g => `<li>${g.name}</li>`).join('')}</ul>` : ''}
-        </div>
-      `;
-    }
-
-    // ── Battle Array ──────────────────────────────────────────
-    const weapons = Array.isArray(data.weapons) ? data.weapons : [];
-    const armor   = Array.isArray(data.armor)   ? data.armor   : [];
-
-    // Compute pools from traits in the current data
-    function pool(...dice) { return dice.filter(Boolean).join(' + ') || '—'; }
-    const initiative = pool(data.speed, data.will);
-    const dodge      = pool(data.speed, data.will);
-    const soak       = pool(data.body);
-
-    html += `
-      <div class="summary-section summary-battle">
-        <h3>Battle Array</h3>
-        <div class="summary-battle-pools">
-          <table class="cg-battle-summary-table">
-            <thead><tr><th>Pool</th><th>Dice</th></tr></thead>
-            <tbody>
-              <tr><td>Initiative</td><td>${initiative}</td></tr>
-              <tr><td>Dodge</td><td>${dodge}</td></tr>
-              <tr><td>Soak (Body)</td><td>${soak}</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="cg-summary-wound-track">
-          <strong>Wound Track:</strong>
-          <span class="cg-wound-boxes">
-            ${['Hurt','Injured','Mauled','Crippled','Dead'].map(w =>
-              `<span class="cg-wound-pip"><span class="cg-wound-box-print"></span>${w}</span>`
-            ).join('')}
-          </span>
-        </div>
-    `;
-
+    // ── Weapons block ──────────────────────────────────────────
+    let weaponsHtml = '';
     if (weapons.length) {
-      html += `
+      weaponsHtml = `
         <h4 class="summary-sub-heading">Weapons</h4>
         <table class="cg-battle-summary-table">
           <thead><tr><th>Name</th><th>Attack Pool</th><th>Damage</th><th>Range</th><th>Notes</th></tr></thead>
-          <tbody>
-            ${weapons.map(w => `<tr>
-              <td>${w.name || '—'}</td>
-              <td>${w.attack || '—'}</td>
-              <td>${w.damage || '—'}</td>
-              <td>${w.range  || 'Melee'}</td>
-              <td>${w.notes  || ''}</td>
-            </tr>`).join('')}
-          </tbody>
-        </table>
-      `;
+          <tbody>${weapons.map(w => `<tr>
+            <td>${w.name   || '—'}</td><td>${w.attack || '—'}</td>
+            <td>${w.damage || '—'}</td><td>${w.range  || 'Melee'}</td>
+            <td>${w.notes  || ''}</td>
+          </tr>`).join('')}</tbody>
+        </table>`;
     }
 
+    // ── Armor block ────────────────────────────────────────────
+    let armorHtml = '';
     if (armor.length) {
-      html += `
+      armorHtml = `
         <h4 class="summary-sub-heading">Armor</h4>
         <table class="cg-battle-summary-table">
           <thead><tr><th>Name</th><th>Soak Dice</th><th>Penalty</th><th>Notes</th></tr></thead>
-          <tbody>
-            ${armor.map(a => `<tr>
-              <td>${a.name    || '—'}</td>
-              <td>${a.soak    || '—'}</td>
-              <td>${a.penalty || '—'}</td>
-              <td>${a.notes   || ''}</td>
-            </tr>`).join('')}
-          </tbody>
-        </table>
-      `;
+          <tbody>${armor.map(a => `<tr>
+            <td>${a.name    || '—'}</td><td>${a.soak    || '—'}</td>
+            <td>${a.penalty || '—'}</td><td>${a.notes   || ''}</td>
+          </tr>`).join('')}</tbody>
+        </table>`;
     }
 
-    html += `</div>`;
-
-    if (battle.length) {
-      html += `
-        <div class="summary-section summary-battle-extra">
-          <h3>Other Battle Notes</h3>
-          <ul>
-      `;
-      battle.forEach(item => {
-        html += `<li><strong>${Utils.capitalize(item.key)}:</strong> ${item.value}</li>`;
-      });
-      html += `</ul></div>`;
+    // ── XP block ───────────────────────────────────────────────
+    let xpHtml = '';
+    if (xpGifts.length > 0 || xpEarned > 0 || xpMarksBudget > 0) {
+      xpHtml = `
+        <div class="summary-section summary-xp">
+          <h3>Experience Points</h3>
+          <p><strong>Earned:</strong> ${xpEarned} &nbsp;|&nbsp;
+             <strong>Spent:</strong> ${xpSpent} &nbsp;|&nbsp;
+             <strong>Available:</strong> ${xpEarned - xpSpent}</p>
+          ${xpGifts.length > 0 ? `<ul>${xpGifts.map(g => `<li>${g.name}</li>`).join('')}</ul>` : ''}
+        </div>`;
     }
 
-    // Inject all HTML
+    // ── Assemble two-page layout ───────────────────────────────
+    const html = `
+
+      <!-- ══ HEADER ══ -->
+      <div class="summary-header-block">
+        <h2>${name}</h2>
+        <div class="summary-basic-row">
+          <span><strong>Age:</strong> ${age}</span>
+          <span><strong>Gender:</strong> ${gender}</span>
+          ${playerName ? `<span><strong>Player:</strong> ${playerName}</span>` : ''}
+        </div>
+        ${motto !== '—' ? `<div class="summary-motto"><em>"${motto}"</em></div>` : ''}
+      </div>
+
+      <!-- ══ PAGE 1 — two columns ══ -->
+      <div class="summary-page1-body">
+
+        <!-- Left column -->
+        <div class="summary-col-left">
+
+          ${goalsList.length ? `
+          <div class="summary-section summary-goals">
+            <h3>Goals</h3>
+            <ul>${goalsList.map(g => `<li>${g}</li>`).join('')}</ul>
+          </div>` : ''}
+
+          <div class="summary-section summary-species">
+            <h3>Species: ${species.speciesName || '—'}</h3>
+            ${speciesGiftsHtml ? `<ul>${speciesGiftsHtml}</ul>` : ''}
+          </div>
+
+          <div class="summary-section summary-career">
+            <h3>Career: ${careerLabel}</h3>
+            ${careerGiftsHtml ? `<ul>${careerGiftsHtml}</ul>` : ''}
+          </div>
+
+        </div><!-- /col-left -->
+
+        <!-- Right column -->
+        <div class="summary-col-right">
+
+          <div class="summary-section summary-traits">
+            <h3>Traits</h3>
+            <ul>${traitsHtml}</ul>
+          </div>
+
+          <div class="summary-section summary-battle">
+            <h3>Battle Array</h3>
+            <div class="summary-battle-pools">
+              <table class="cg-battle-summary-table cg-battle-pools-table">
+                <thead><tr><th>Pool</th><th>Dice</th></tr></thead>
+                <tbody>
+                  <tr><td>Initiative</td><td>${initiative}</td></tr>
+                  <tr><td>Dodge</td><td>${dodge}</td></tr>
+                  <tr><td>Soak (Body)</td><td>${soak}</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="cg-summary-wound-track">
+              <strong>Wounds:</strong>
+              <span class="cg-wound-boxes">
+                ${['Hurt','Injured','Mauled','Crippled','Dead'].map(w =>
+                  `<span class="cg-wound-pip"><span class="cg-wound-box-print"></span>${w}</span>`
+                ).join('')}
+              </span>
+            </div>
+            ${weaponsHtml}
+            ${armorHtml}
+          </div>
+
+        </div><!-- /col-right -->
+
+      </div><!-- /page1-body -->
+
+      <!-- ══ PAGE 2 ══ -->
+      <div class="summary-page2">
+
+        <div class="summary-section summary-skills">
+          <h3>Skills</h3>
+          <div class="cg-summary-skills-wrap">
+            <table class="cg-summary-skills">
+              <thead><tr><th>Skill</th><th>Dice Pool</th></tr></thead>
+              <tbody>${skillsHtml}</tbody>
+            </table>
+          </div>
+        </div>
+
+        ${xpHtml}
+
+        ${description ? `
+        <div class="summary-section summary-description">
+          <h3>Description</h3>
+          <p>${description}</p>
+        </div>` : ''}
+
+        ${backstory ? `
+        <div class="summary-section summary-backstory">
+          <h3>Backstory</h3>
+          <p>${backstory}</p>
+        </div>` : ''}
+
+      </div><!-- /page2 -->
+    `;
+
     $sheet.html(html);
   },
   // CG HARDEN: live summary updates across tabs

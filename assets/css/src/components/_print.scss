@@ -1,52 +1,73 @@
 // assets/css/src/components/_print.scss
 
+// ── Shared table mixin ────────────────────────────────────────────────────────
+@mixin battle-table-base {
+  width:           100%;
+  border-collapse: collapse;
+  font-size:       9pt;
+  margin-bottom:   5pt;
+  break-inside:    avoid;
+
+  th {
+    background:     #f5f0e8;
+    font-family:    Georgia, serif;
+    font-size:      7.5pt;
+    font-weight:    bold;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color:          #1a1410;
+    border:         0.5pt solid #c9a84c;
+    padding:        3pt 5pt;
+    text-align:     left;
+  }
+
+  td {
+    border:    0.5pt solid #d4c89a;
+    padding:   2pt 5pt;
+    font-size: 9pt;
+    color:     #2c2316;
+  }
+
+  tr:nth-child(odd) td { background: #faf7f0; }
+}
+
 @media print {
 
-  /* ── Page setup ─────────────────────────────────────────── */
+  // ── Page setup ──────────────────────────────────────────────────────────────
   @page {
     size: A4;
-    margin: 1.4cm 1.8cm;
+    margin: 1.2cm 1.6cm;
   }
 
-  /* ── Hide all app chrome ────────────────────────────────── */
-  #site-header,
-  #site-nav,
-  #site-footer,
-  .app-topbar,
-  .cg-tabs,
-  .cg-form-buttons,
-  .summary-header,
-  #cg-export-pdf,
-  .marks-remaining,
-  .skill-mark-btn {
+  // ── Hide all app chrome ─────────────────────────────────────────────────────
+  #site-header, #site-nav, #site-footer,
+  .app-topbar, .cg-tabs, .cg-form-buttons,
+  .summary-header, #cg-export-pdf,
+  .marks-remaining, .skill-mark-btn {
     display: none !important;
   }
 
-  /* In the main-app window: hide everything outside the sheet */
-  body > *:not(#cg-summary-sheet):not(#site-wrapper) {
-    display: none !important;
-  }
-  #site-wrapper > *:not(#site-body) { display: none !important; }
-  #site-body > *:not(#site-content)  { display: none !important; }
-  #site-content > *:not(#cg-app-screen) { display: none !important; }
-  #cg-app-screen > *:not(.app-main)  { display: none !important; }
-  .app-main > *:not(.app-hero-or-modal) { display: none !important; }
-  #cg-modal > *:not(.cg-modal-inner):not(#cg-form) { display: none !important; }
-  .cg-tab-wrap > *:not(#tab-summary) { display: none !important; }
-  #tab-summary > *:not(#cg-summary-sheet) { display: none !important; }
+  body > *:not(#cg-summary-sheet):not(#site-wrapper) { display: none !important; }
+  #site-wrapper > *:not(#site-body)                  { display: none !important; }
+  #site-body > *:not(#site-content)                  { display: none !important; }
+  #site-content > *:not(#cg-app-screen)              { display: none !important; }
+  #cg-app-screen > *:not(.app-main)                  { display: none !important; }
+  .app-main > *:not(.app-hero-or-modal)              { display: none !important; }
+  #cg-modal > *:not(.cg-modal-inner):not(#cg-form)  { display: none !important; }
+  .cg-tab-wrap > *:not(#tab-summary)                 { display: none !important; }
+  #tab-summary > *:not(#cg-summary-sheet)            { display: none !important; }
 
-  /* ── Base reset ─────────────────────────────────────────── */
+  // ── Base reset ──────────────────────────────────────────────────────────────
   html, body {
-    background: white !important;
+    background:  white !important;
     color:       #2c2316 !important;
     margin:      0 !important;
     padding:     0 !important;
     font-family: Georgia, 'Crimson Pro', serif !important;
     font-size:   10pt !important;
-    line-height: 1.45 !important;
+    line-height: 1.4 !important;
   }
 
-  /* ── Summary sheet ──────────────────────────────────────── */
   #cg-summary-sheet {
     display:    block !important;
     visibility: visible !important;
@@ -58,79 +79,99 @@
     color:      #2c2316 !important;
   }
 
-  /* ── Typography ─────────────────────────────────────────── */
+  // ── Shared typography ───────────────────────────────────────────────────────
   #cg-summary-sheet h2 {
     font-family:    Georgia, serif !important;
-    font-size:      22pt !important;
+    font-size:      20pt !important;
     font-weight:    700 !important;
     color:          #1a1410 !important;
     text-align:     center !important;
-    letter-spacing: 0.04em !important;
-    margin:         0 0 4pt !important;
-    padding-bottom: 6pt !important;
+    letter-spacing: 0.05em !important;
+    margin:         0 0 3pt !important;
+    padding-bottom: 5pt !important;
     border-bottom:  2pt solid #c9a84c !important;
   }
 
   #cg-summary-sheet h3 {
     font-family:    Georgia, serif !important;
-    font-size:      10pt !important;
+    font-size:      9.5pt !important;
     font-weight:    700 !important;
     color:          #1a1410 !important;
     text-transform: uppercase !important;
     letter-spacing: 0.08em !important;
     border-bottom:  0.5pt solid #c9a84c !important;
     padding-bottom: 2pt !important;
-    margin:         8pt 0 4pt !important;
+    margin:         7pt 0 4pt !important;
   }
+
+  #cg-summary-sheet h3:first-child { margin-top: 0 !important; }
 
   #cg-summary-sheet p,
   #cg-summary-sheet li {
     font-family: Georgia, serif !important;
-    font-size:   10pt !important;
+    font-size:   9.5pt !important;
     color:       #2c2316 !important;
     margin:      2pt 0 !important;
-    line-height: 1.4 !important;
+    line-height: 1.35 !important;
   }
 
-  #cg-summary-sheet strong {
-    color:       #1a1410 !important;
-    font-weight: bold !important;
-  }
+  #cg-summary-sheet strong { color: #1a1410 !important; font-weight: bold !important; }
 
   #cg-summary-sheet ul {
-    margin:      4pt 0 !important;
-    padding-left:16pt !important;
+    margin:       3pt 0 !important;
+    padding-left: 14pt !important;
   }
 
-  /* ── Section spacing ────────────────────────────────────── */
-  .summary-section {
+  .summary-section { margin-bottom: 7pt !important; }
+
+  // ── HEADER (full width) ─────────────────────────────────────────────────────
+  .summary-header-block {
+    text-align:    center !important;
     margin-bottom: 8pt !important;
   }
 
-  .summary-basic {
-    text-align: center !important;
+  .summary-basic-row {
+    display:         flex !important;
+    justify-content: center !important;
+    gap:             1.4em !important;
+    flex-wrap:       wrap !important;
+    font-size:       9pt !important;
+    color:           #2c2316 !important;
+    margin-top:      4pt !important;
   }
 
-  /* ── PAGE 1: Species + Career side by side ──────────────── */
-  .summary-species,
-  .summary-career {
-    display:        inline-block !important;
-    width:          47% !important;
-    vertical-align: top !important;
-    box-sizing:     border-box !important;
-    padding-right:  8pt !important;
+  .summary-motto {
+    font-size:  9pt !important;
+    color:      #5a4a32 !important;
+    margin-top: 2pt !important;
+    font-style: italic !important;
   }
 
-  .summary-career {
-    padding-right:  0 !important;
-    padding-left:   8pt !important;
-    border-left:    0.5pt solid #d4c89a !important;
+  // ── PAGE 1: two-column body ─────────────────────────────────────────────────
+  .summary-page1-body {
+    display:  flex !important;
+    gap:      0 !important;
+    width:    100% !important;
   }
 
-  /* ── PAGE 1: Traits — two columns ───────────────────────── */
+  .summary-col-left {
+    width:        42% !important;
+    flex-shrink:  0 !important;
+    box-sizing:   border-box !important;
+    padding-right:12pt !important;
+    border-right: 0.7pt solid #d4c89a !important;
+  }
+
+  .summary-col-right {
+    flex:         1 !important;
+    box-sizing:   border-box !important;
+    padding-left: 12pt !important;
+  }
+
+  // ── Traits — two inline columns ─────────────────────────────────────────────
   .summary-traits ul {
     column-count:  2 !important;
-    column-gap:    1.5em !important;
+    column-gap:    1em !important;
     list-style:    none !important;
     padding:       0 !important;
     margin:        0 !important;
@@ -139,187 +180,202 @@
   .summary-traits li {
     break-inside:  avoid !important;
     padding:       1pt 0 !important;
-    font-size:     10pt !important;
   }
 
-  /* ── PAGE BREAK: Skills start on page 2 ────────────────── */
-  .summary-skills {
-    page-break-before: always !important;
-    break-before:      page !important;
-  }
-
-  /* ── PAGE 2: Skills table — compact two-column layout ───── */
-  .summary-skills h3 {
-    margin-top: 0 !important;
-  }
-
-  /* Split skills into two columns using CSS columns */
-  .cg-summary-skills-wrap {
-    column-count: 2 !important;
-    column-gap:   1.2em !important;
-  }
-
-  /* Skills table compact */
-  .cg-summary-skills {
-    width:           100% !important;
-    border-collapse: collapse !important;
-    font-size:       9pt !important;
-    break-inside:    auto !important;
-    margin-top:      0 !important;
-  }
-
-  .cg-summary-skills thead {
-    display: table-header-group !important;
-  }
-
-  .cg-summary-skills th {
-    background:     #f5f0e8 !important;
-    font-family:    Georgia, serif !important;
-    font-size:      8.5pt !important;
-    font-weight:    bold !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.04em !important;
-    color:          #1a1410 !important;
-    border:         0.5pt solid #c9a84c !important;
-    padding:        3pt 6pt !important;
-    text-align:     left !important;
-  }
-
-  .cg-summary-skills td {
-    border:   0.5pt solid #d4c89a !important;
-    padding:  2pt 6pt !important;
-    font-size:9pt !important;
-    color:    #2c2316 !important;
-  }
-
-  .cg-summary-skills tr:nth-child(odd) td {
-    background: #faf7f0 !important;
-  }
-
-  .cg-summary-skills tr {
-    break-inside: avoid !important;
-  }
-
-  /* ── Battle Array ───────────────────────────────────────── */
-  .summary-battle {
-    page-break-before: auto !important;
-  }
-
-  /* Battle pools + wound track side by side */
+  // ── Battle Array ─────────────────────────────────────────────────────────────
   .summary-battle-pools {
-    display:        inline-block !important;
+    display: inline-block !important;
     vertical-align: top !important;
-    margin-right:   1.5em !important;
+    margin-right: 1em !important;
+  }
+
+  .cg-battle-pools-table {
+    width: auto !important;
+    min-width: 120pt !important;
   }
 
   .cg-summary-wound-track {
-    display:        inline-block !important;
-    vertical-align: top !important;
-    margin-top:     0.4em !important;
-    font-size:      9pt !important;
+    display:    block !important;
+    margin-top: 5pt !important;
+    font-size:  8.5pt !important;
+    color:      #2c2316 !important;
   }
 
   .cg-wound-boxes {
-    display:        flex !important;
-    gap:            0.6em !important;
-    flex-wrap:      wrap !important;
-    margin-top:     0.3em !important;
+    display:    flex !important;
+    gap:        0.5em !important;
+    flex-wrap:  wrap !important;
+    margin-top: 3pt !important;
   }
 
   .cg-wound-pip {
-    display:        flex !important;
-    align-items:    center !important;
-    gap:            0.3em !important;
-    font-size:      8.5pt !important;
-    color:          #2c2316 !important;
+    display:     flex !important;
+    align-items: center !important;
+    gap:         0.3em !important;
+    font-size:   8pt !important;
+    color:       #2c2316 !important;
   }
 
   .cg-wound-box-print {
-    display:        inline-block !important;
-    width:          12pt !important;
-    height:         12pt !important;
-    border:         1.2pt solid #8a7040 !important;
-    border-radius:  2pt !important;
-    background:     transparent !important;
-    flex-shrink:    0 !important;
+    display:      inline-block !important;
+    width:        11pt !important;
+    height:       11pt !important;
+    border:       1.2pt solid #8a7040 !important;
+    border-radius:2pt !important;
+    background:   transparent !important;
+    flex-shrink:  0 !important;
   }
 
-  /* Battle pool table */
   .cg-battle-summary-table {
-    width:           100% !important;
-    border-collapse: collapse !important;
-    font-size:       9pt !important;
-    margin-bottom:   6pt !important;
-    break-inside:    avoid !important;
-  }
-
-  .cg-battle-summary-table th {
-    background:      #f5f0e8 !important;
-    font-family:     Georgia, serif !important;
-    font-size:       8pt !important;
-    font-weight:     bold !important;
-    text-transform:  uppercase !important;
-    letter-spacing:  0.04em !important;
-    color:           #1a1410 !important;
-    border:          0.5pt solid #c9a84c !important;
-    padding:         3pt 6pt !important;
-    text-align:      left !important;
-  }
-
-  .cg-battle-summary-table td {
-    border:   0.5pt solid #d4c89a !important;
-    padding:  2pt 6pt !important;
-    font-size:9pt !important;
-    color:    #2c2316 !important;
-  }
-
-  .cg-battle-summary-table tr:nth-child(odd) td {
-    background: #faf7f0 !important;
+    @include battle-table-base;
   }
 
   .summary-sub-heading {
     font-family:    Georgia, serif !important;
-    font-size:      8.5pt !important;
+    font-size:      8pt !important;
     font-weight:    bold !important;
     text-transform: uppercase !important;
     letter-spacing: 0.06em !important;
-    color:          #1a1410 !important;
+    color:          #5a4020 !important;
     margin:         6pt 0 3pt !important;
     padding:        0 !important;
     border:         none !important;
   }
 
-  /* Old generic battle list (kept for back-compat) */
-  .summary-battle ul,
-  .summary-battle-extra ul {
-    list-style: none !important;
-    padding:    0 !important;
-    columns:    2 !important;
-    column-gap: 1em !important;
+  // ── PAGE 2: starts after page break ────────────────────────────────────────
+  .summary-page2 {
+    page-break-before: always !important;
+    break-before:      page !important;
   }
 
-  .summary-battle li,
-  .summary-battle-extra li {
-    break-inside: avoid !important;
+  // ── PAGE 2: Skills ──────────────────────────────────────────────────────────
+  .summary-skills h3 { margin-top: 0 !important; }
+
+  .cg-summary-skills-wrap {
+    column-count: 2 !important;
+    column-gap:   1.2em !important;
   }
 
-  /* ── Misc ────────────────────────────────────────────────── */
-  a { color: inherit !important; text-decoration: none !important; }
+  .cg-summary-skills {
+    width:           100% !important;
+    border-collapse: collapse !important;
+    font-size:       8.5pt !important;
+    break-inside:    auto !important;
+    margin-top:      0 !important;
+  }
 
-  * { box-shadow: none !important; text-shadow: none !important; }
+  .cg-summary-skills thead { display: table-header-group !important; }
+
+  .cg-summary-skills th {
+    background:     #f5f0e8 !important;
+    font-family:    Georgia, serif !important;
+    font-size:      8pt !important;
+    font-weight:    bold !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+    color:          #1a1410 !important;
+    border:         0.5pt solid #c9a84c !important;
+    padding:        2pt 5pt !important;
+    text-align:     left !important;
+  }
+
+  .cg-summary-skills td {
+    border:    0.5pt solid #d4c89a !important;
+    padding:   2pt 5pt !important;
+    font-size: 8.5pt !important;
+    color:     #2c2316 !important;
+  }
+
+  .cg-summary-skills tr:nth-child(odd) td { background: #faf7f0 !important; }
+  .cg-summary-skills tr                  { break-inside: avoid !important; }
+
+  // ── Misc ───────────────────────────────────────────────────────────────────
+  a   { color: inherit !important; text-decoration: none !important; }
+  *   { box-shadow: none !important; text-shadow: none !important; }
 }
 
-/* ── Print window (standalone body) ────────────────────────── */
-/* When the Export to PDF window opens, #cg-summary-sheet is
-   a direct child of body — no hiding needed, just typography. */
+// ── Print window (standalone export-to-PDF body) ────────────────────────────
 body.cg-print-window {
   background: white;
   padding:    0;
   margin:     0;
+  font-family: Georgia, 'Crimson Pro', serif;
+  font-size:  10pt;
 
   #cg-summary-sheet {
     max-width: 18cm;
     margin:    0 auto;
     padding:   0;
+    color:     #2c2316;
+  }
+
+  // Header
+  .summary-header-block { text-align: center; margin-bottom: 10pt; }
+  .summary-header-block h2 {
+    font-size:    20pt;
+    font-weight:  700;
+    border-bottom:2pt solid #c9a84c;
+    padding-bottom:5pt;
+    margin-bottom: 3pt;
+  }
+  .summary-basic-row {
+    display: flex; justify-content: center; gap: 1.4em;
+    flex-wrap: wrap; font-size: 9pt; color: #2c2316; margin-top: 4pt;
+  }
+  .summary-motto { font-size: 9pt; color: #5a4a32; margin-top: 2pt; font-style: italic; }
+
+  // Two columns page 1
+  .summary-page1-body { display: flex; gap: 0; }
+  .summary-col-left {
+    width: 42%; flex-shrink: 0; box-sizing: border-box;
+    padding-right: 12pt; border-right: 0.7pt solid #d4c89a;
+  }
+  .summary-col-right { flex: 1; box-sizing: border-box; padding-left: 12pt; }
+
+  h3 {
+    font-size: 9.5pt; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; border-bottom: 0.5pt solid #c9a84c;
+    padding-bottom: 2pt; margin: 7pt 0 4pt; color: #1a1410;
+  }
+  h3:first-child { margin-top: 0; }
+  p, li { font-size: 9.5pt; color: #2c2316; margin: 2pt 0; line-height: 1.35; }
+  ul    { margin: 3pt 0; padding-left: 14pt; }
+  .summary-section { margin-bottom: 7pt; }
+
+  // Traits two-col
+  .summary-traits ul { column-count: 2; column-gap: 1em; list-style: none; padding: 0; margin: 0; }
+  .summary-traits li { break-inside: avoid; padding: 1pt 0; }
+
+  // Battle
+  .cg-battle-summary-table { @include battle-table-base; }
+  .cg-battle-pools-table   { width: auto; min-width: 120pt; }
+
+  .cg-summary-wound-track { display: block; margin-top: 5pt; font-size: 8.5pt; }
+  .cg-wound-boxes  { display: flex; gap: 0.5em; flex-wrap: wrap; margin-top: 3pt; }
+  .cg-wound-pip    { display: flex; align-items: center; gap: 0.3em; font-size: 8pt; }
+  .cg-wound-box-print {
+    display: inline-block; width: 11pt; height: 11pt;
+    border: 1.2pt solid #8a7040; border-radius: 2pt; flex-shrink: 0;
+  }
+
+  .summary-sub-heading {
+    font-size: 8pt; font-weight: bold; text-transform: uppercase;
+    letter-spacing: 0.06em; color: #5a4020; margin: 6pt 0 3pt;
+  }
+
+  // Page 2
+  .summary-page2 { page-break-before: always; break-before: page; }
+  .summary-skills h3 { margin-top: 0; }
+  .cg-summary-skills-wrap { column-count: 2; column-gap: 1.2em; }
+  .cg-summary-skills {
+    width: 100%; border-collapse: collapse; font-size: 8.5pt; break-inside: auto;
+    th {
+      background: #f5f0e8; font-size: 8pt; font-weight: bold; text-transform: uppercase;
+      letter-spacing: 0.04em; color: #1a1410; border: 0.5pt solid #c9a84c;
+      padding: 2pt 5pt; text-align: left;
+    }
+    td { border: 0.5pt solid #d4c89a; padding: 2pt 5pt; font-size: 8.5pt; color: #2c2316; }
+    tr:nth-child(odd) td { background: #faf7f0; }
+    tr { break-inside: avoid; }
   }
 }

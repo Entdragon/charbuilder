@@ -1206,39 +1206,223 @@
   font-size: 0.9rem;
 }
 
+.summary-header-block {
+  text-align: center;
+  margin-bottom: 1.2em;
+  padding-bottom: 0.8em;
+  border-bottom: 2px solid rgba(201, 168, 76, 0.35);
+}
+.summary-header-block h2 {
+  font-family: var(--cg-heading-font, "Cinzel", serif);
+  font-size: 1.7rem;
+  color: var(--cg-text-light, #e8dcc4);
+  margin: 0 0 0.3em;
+  letter-spacing: 0.04em;
+}
+
+.summary-basic-row {
+  display: flex;
+  justify-content: center;
+  gap: 1.4em;
+  flex-wrap: wrap;
+  font-size: 0.88rem;
+  color: var(--cg-text-muted, #a09070);
+  margin-top: 0.3em;
+}
+.summary-basic-row strong {
+  color: var(--cg-text-light, #e8dcc4);
+}
+
+.summary-motto {
+  font-size: 0.88rem;
+  color: var(--cg-text-muted, #a09070);
+  margin-top: 0.3em;
+  font-style: italic;
+}
+
+.summary-page1-body {
+  display: flex;
+  gap: 1.5em;
+  align-items: flex-start;
+}
+@media (max-width: 680px) {
+  .summary-page1-body {
+    flex-direction: column;
+    gap: 0;
+  }
+}
+
+.summary-col-left {
+  flex: 0 0 42%;
+  max-width: 42%;
+  box-sizing: border-box;
+}
+@media (max-width: 680px) {
+  .summary-col-left {
+    flex: none;
+    max-width: none;
+    width: 100%;
+  }
+}
+
+.summary-col-right {
+  flex: 1;
+  box-sizing: border-box;
+}
+
+.summary-page2 {
+  margin-top: 1.5em;
+  padding-top: 1em;
+  border-top: 1px solid rgba(201, 168, 76, 0.2);
+}
+
+#cg-summary-sheet h3 {
+  font-family: var(--cg-heading-font, "Cinzel", serif);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--cg-gold, #c9a84c);
+  border-bottom: 1px solid rgba(201, 168, 76, 0.22);
+  padding-bottom: 0.25em;
+  margin: 0.9em 0 0.5em;
+}
+
+#cg-summary-sheet h3:first-child {
+  margin-top: 0;
+}
+
+.summary-section {
+  margin-bottom: 0.8em;
+}
+
+#cg-summary-sheet ul {
+  margin: 0.3em 0 0.5em;
+  padding-left: 1.2em;
+}
+
+#cg-summary-sheet li {
+  font-size: 0.88rem;
+  color: var(--cg-text-light, #e8dcc4);
+  line-height: 1.5;
+  margin: 0.15em 0;
+}
+
+#cg-summary-sheet p {
+  font-size: 0.88rem;
+  color: var(--cg-text-light, #e8dcc4);
+  line-height: 1.5;
+  margin: 0.2em 0;
+}
+
 .cg-summary-skills {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 1em;
+  margin-top: 0.5em;
   font-family: "Crimson Pro", Georgia, serif;
+  font-size: 0.85rem;
 }
-
+.cg-summary-skills th {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--cg-gold, #c9a84c);
+  padding: 0.3em 0.6em;
+  border-bottom: 1px solid rgba(201, 168, 76, 0.3);
+  text-align: left;
+  background: rgba(201, 168, 76, 0.07);
+}
 .cg-summary-skills td {
-  border: 1px solid var(--cg-parchment-3);
-  padding: 0.5em 0.75em;
-  color: var(--cg-text);
+  border: 1px solid rgba(201, 168, 76, 0.12);
+  padding: 0.3em 0.6em;
+  color: var(--cg-text-light, #e8dcc4);
+}
+.cg-summary-skills tr:nth-child(odd) td {
+  background: rgba(255, 255, 255, 0.025);
 }
 
-.cg-summary-skills tr:nth-child(odd) td {
-  background: rgba(240, 232, 208, 0.35);
+.cg-battle-summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.83rem;
+  margin-bottom: 0.5em;
+}
+.cg-battle-summary-table th {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--cg-gold, #c9a84c);
+  padding: 0.3em 0.6em;
+  border: 1px solid rgba(201, 168, 76, 0.2);
+  text-align: left;
+  background: rgba(201, 168, 76, 0.07);
+}
+.cg-battle-summary-table td {
+  border: 1px solid rgba(201, 168, 76, 0.12);
+  padding: 0.3em 0.6em;
+  color: var(--cg-text-light, #e8dcc4);
+}
+.cg-battle-summary-table tr:nth-child(odd) td {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.cg-battle-pools-table {
+  width: auto;
+  min-width: 160px;
+}
+
+.summary-sub-heading {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--cg-gold, #c9a84c);
+  margin: 0.7em 0 0.3em;
+}
+
+.cg-summary-wound-track {
+  margin-top: 0.6em;
+  font-size: 0.83rem;
+  color: var(--cg-text-muted, #a09070);
+}
+
+.cg-wound-boxes {
+  display: flex;
+  gap: 0.6em;
+  flex-wrap: wrap;
+  margin-top: 0.35em;
+}
+
+.cg-wound-pip {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  font-size: 0.8rem;
+  color: var(--cg-text-light, #e8dcc4);
+}
+
+.cg-wound-box-print {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(201, 168, 76, 0.4);
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.summary-xp p {
+  font-size: 0.88rem;
+}
+
+.summary-xp ul {
+  font-size: 0.85rem;
 }
 
 .cg-subsection {
   margin-top: 1.5em;
   padding: 0.75em 1em;
-  border-left: 3px solid var(--cg-gold);
-  background: var(--cg-parchment-2);
-  border-radius: 0 var(--cg-radius) var(--cg-radius) 0;
-}
-
-.cg-subsection label {
-  display: block;
-  margin-bottom: 0.75em;
-  font-weight: 600;
-  font-size: 0.88rem;
-  color: var(--cg-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  border-left: 3px solid var(--cg-gold, #c9a84c);
+  background: rgba(201, 168, 76, 0.05);
+  border-radius: 0 var(--cg-radius, 4px) var(--cg-radius, 4px) 0;
 }
 
 .cg-text-box {
@@ -1272,25 +1456,16 @@
 }
 
 @media print {
-  /* ── Page setup ─────────────────────────────────────────── */
   @page {
     size: A4;
-    margin: 1.4cm 1.8cm;
+    margin: 1.2cm 1.6cm;
   }
-  /* ── Hide all app chrome ────────────────────────────────── */
-  #site-header,
-  #site-nav,
-  #site-footer,
-  .app-topbar,
-  .cg-tabs,
-  .cg-form-buttons,
-  .summary-header,
-  #cg-export-pdf,
-  .marks-remaining,
-  .skill-mark-btn {
+  #site-header, #site-nav, #site-footer,
+  .app-topbar, .cg-tabs, .cg-form-buttons,
+  .summary-header, #cg-export-pdf,
+  .marks-remaining, .skill-mark-btn {
     display: none !important;
   }
-  /* In the main-app window: hide everything outside the sheet */
   body > *:not(#cg-summary-sheet):not(#site-wrapper) {
     display: none !important;
   }
@@ -1318,7 +1493,6 @@
   #tab-summary > *:not(#cg-summary-sheet) {
     display: none !important;
   }
-  /* ── Base reset ─────────────────────────────────────────── */
   html, body {
     background: white !important;
     color: #2c2316 !important;
@@ -1326,9 +1500,8 @@
     padding: 0 !important;
     font-family: Georgia, "Crimson Pro", serif !important;
     font-size: 10pt !important;
-    line-height: 1.45 !important;
+    line-height: 1.4 !important;
   }
-  /* ── Summary sheet ──────────────────────────────────────── */
   #cg-summary-sheet {
     display: block !important;
     visibility: visible !important;
@@ -1339,70 +1512,89 @@
     margin: 0 !important;
     color: #2c2316 !important;
   }
-  /* ── Typography ─────────────────────────────────────────── */
   #cg-summary-sheet h2 {
     font-family: Georgia, serif !important;
-    font-size: 22pt !important;
+    font-size: 20pt !important;
     font-weight: 700 !important;
     color: #1a1410 !important;
     text-align: center !important;
-    letter-spacing: 0.04em !important;
-    margin: 0 0 4pt !important;
-    padding-bottom: 6pt !important;
+    letter-spacing: 0.05em !important;
+    margin: 0 0 3pt !important;
+    padding-bottom: 5pt !important;
     border-bottom: 2pt solid #c9a84c !important;
   }
   #cg-summary-sheet h3 {
     font-family: Georgia, serif !important;
-    font-size: 10pt !important;
+    font-size: 9.5pt !important;
     font-weight: 700 !important;
     color: #1a1410 !important;
     text-transform: uppercase !important;
     letter-spacing: 0.08em !important;
     border-bottom: 0.5pt solid #c9a84c !important;
     padding-bottom: 2pt !important;
-    margin: 8pt 0 4pt !important;
+    margin: 7pt 0 4pt !important;
+  }
+  #cg-summary-sheet h3:first-child {
+    margin-top: 0 !important;
   }
   #cg-summary-sheet p,
   #cg-summary-sheet li {
     font-family: Georgia, serif !important;
-    font-size: 10pt !important;
+    font-size: 9.5pt !important;
     color: #2c2316 !important;
     margin: 2pt 0 !important;
-    line-height: 1.4 !important;
+    line-height: 1.35 !important;
   }
   #cg-summary-sheet strong {
     color: #1a1410 !important;
     font-weight: bold !important;
   }
   #cg-summary-sheet ul {
-    margin: 4pt 0 !important;
-    padding-left: 16pt !important;
+    margin: 3pt 0 !important;
+    padding-left: 14pt !important;
   }
-  /* ── Section spacing ────────────────────────────────────── */
   .summary-section {
+    margin-bottom: 7pt !important;
+  }
+  .summary-header-block {
+    text-align: center !important;
     margin-bottom: 8pt !important;
   }
-  .summary-basic {
-    text-align: center !important;
+  .summary-basic-row {
+    display: flex !important;
+    justify-content: center !important;
+    gap: 1.4em !important;
+    flex-wrap: wrap !important;
+    font-size: 9pt !important;
+    color: #2c2316 !important;
+    margin-top: 4pt !important;
   }
-  /* ── PAGE 1: Species + Career side by side ──────────────── */
-  .summary-species,
-  .summary-career {
-    display: inline-block !important;
-    width: 47% !important;
-    vertical-align: top !important;
+  .summary-motto {
+    font-size: 9pt !important;
+    color: #5a4a32 !important;
+    margin-top: 2pt !important;
+    font-style: italic !important;
+  }
+  .summary-page1-body {
+    display: flex !important;
+    gap: 0 !important;
+    width: 100% !important;
+  }
+  .summary-col-left {
+    width: 42% !important;
+    flex-shrink: 0 !important;
     box-sizing: border-box !important;
-    padding-right: 8pt !important;
+    padding-right: 12pt !important;
+    border-right: 0.7pt solid #d4c89a !important;
   }
-  .summary-career {
-    padding-right: 0 !important;
-    padding-left: 8pt !important;
-    border-left: 0.5pt solid #d4c89a !important;
+  .summary-col-right {
+    flex: 1 !important;
+    box-sizing: border-box !important;
+    padding-left: 12pt !important;
   }
-  /* ── PAGE 1: Traits — two columns ───────────────────────── */
   .summary-traits ul {
     column-count: 2 !important;
-    column-gap: 1.5em !important;
+    column-gap: 1em !important;
     list-style: none !important;
     padding: 0 !important;
     margin: 0 !important;
@@ -1410,27 +1602,98 @@
   .summary-traits li {
     break-inside: avoid !important;
     padding: 1pt 0 !important;
-    font-size: 10pt !important;
   }
-  /* ── PAGE BREAK: Skills start on page 2 ────────────────── */
-  .summary-skills {
+  .summary-battle-pools {
+    display: inline-block !important;
+    vertical-align: top !important;
+    margin-right: 1em !important;
+  }
+  .cg-battle-pools-table {
+    width: auto !important;
+    min-width: 120pt !important;
+  }
+  .cg-summary-wound-track {
+    display: block !important;
+    margin-top: 5pt !important;
+    font-size: 8.5pt !important;
+    color: #2c2316 !important;
+  }
+  .cg-wound-boxes {
+    display: flex !important;
+    gap: 0.5em !important;
+    flex-wrap: wrap !important;
+    margin-top: 3pt !important;
+  }
+  .cg-wound-pip {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.3em !important;
+    font-size: 8pt !important;
+    color: #2c2316 !important;
+  }
+  .cg-wound-box-print {
+    display: inline-block !important;
+    width: 11pt !important;
+    height: 11pt !important;
+    border: 1.2pt solid #8a7040 !important;
+    border-radius: 2pt !important;
+    background: transparent !important;
+    flex-shrink: 0 !important;
+  }
+  .cg-battle-summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9pt;
+    margin-bottom: 5pt;
+    break-inside: avoid;
+  }
+  .cg-battle-summary-table th {
+    background: #f5f0e8;
+    font-family: Georgia, serif;
+    font-size: 7.5pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #1a1410;
+    border: 0.5pt solid #c9a84c;
+    padding: 3pt 5pt;
+    text-align: left;
+  }
+  .cg-battle-summary-table td {
+    border: 0.5pt solid #d4c89a;
+    padding: 2pt 5pt;
+    font-size: 9pt;
+    color: #2c2316;
+  }
+  .cg-battle-summary-table tr:nth-child(odd) td {
+    background: #faf7f0;
+  }
+  .summary-sub-heading {
+    font-family: Georgia, serif !important;
+    font-size: 8pt !important;
+    font-weight: bold !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.06em !important;
+    color: #5a4020 !important;
+    margin: 6pt 0 3pt !important;
+    padding: 0 !important;
+    border: none !important;
+  }
+  .summary-page2 {
     page-break-before: always !important;
     break-before: page !important;
   }
-  /* ── PAGE 2: Skills table — compact two-column layout ───── */
   .summary-skills h3 {
     margin-top: 0 !important;
   }
-  /* Split skills into two columns using CSS columns */
   .cg-summary-skills-wrap {
     column-count: 2 !important;
     column-gap: 1.2em !important;
   }
-  /* Skills table compact */
   .cg-summary-skills {
     width: 100% !important;
     border-collapse: collapse !important;
-    font-size: 9pt !important;
+    font-size: 8.5pt !important;
     break-inside: auto !important;
     margin-top: 0 !important;
   }
@@ -1440,19 +1703,19 @@
   .cg-summary-skills th {
     background: #f5f0e8 !important;
     font-family: Georgia, serif !important;
-    font-size: 8.5pt !important;
+    font-size: 8pt !important;
     font-weight: bold !important;
     text-transform: uppercase !important;
     letter-spacing: 0.04em !important;
     color: #1a1410 !important;
     border: 0.5pt solid #c9a84c !important;
-    padding: 3pt 6pt !important;
+    padding: 2pt 5pt !important;
     text-align: left !important;
   }
   .cg-summary-skills td {
     border: 0.5pt solid #d4c89a !important;
-    padding: 2pt 6pt !important;
-    font-size: 9pt !important;
+    padding: 2pt 5pt !important;
+    font-size: 8.5pt !important;
     color: #2c2316 !important;
   }
   .cg-summary-skills tr:nth-child(odd) td {
@@ -1461,97 +1724,6 @@
   .cg-summary-skills tr {
     break-inside: avoid !important;
   }
-  /* ── Battle Array ───────────────────────────────────────── */
-  .summary-battle {
-    page-break-before: auto !important;
-  }
-  /* Battle pools + wound track side by side */
-  .summary-battle-pools {
-    display: inline-block !important;
-    vertical-align: top !important;
-    margin-right: 1.5em !important;
-  }
-  .cg-summary-wound-track {
-    display: inline-block !important;
-    vertical-align: top !important;
-    margin-top: 0.4em !important;
-    font-size: 9pt !important;
-  }
-  .cg-wound-boxes {
-    display: flex !important;
-    gap: 0.6em !important;
-    flex-wrap: wrap !important;
-    margin-top: 0.3em !important;
-  }
-  .cg-wound-pip {
-    display: flex !important;
-    align-items: center !important;
-    gap: 0.3em !important;
-    font-size: 8.5pt !important;
-    color: #2c2316 !important;
-  }
-  .cg-wound-box-print {
-    display: inline-block !important;
-    width: 12pt !important;
-    height: 12pt !important;
-    border: 1.2pt solid #8a7040 !important;
-    border-radius: 2pt !important;
-    background: transparent !important;
-    flex-shrink: 0 !important;
-  }
-  /* Battle pool table */
-  .cg-battle-summary-table {
-    width: 100% !important;
-    border-collapse: collapse !important;
-    font-size: 9pt !important;
-    margin-bottom: 6pt !important;
-    break-inside: avoid !important;
-  }
-  .cg-battle-summary-table th {
-    background: #f5f0e8 !important;
-    font-family: Georgia, serif !important;
-    font-size: 8pt !important;
-    font-weight: bold !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.04em !important;
-    color: #1a1410 !important;
-    border: 0.5pt solid #c9a84c !important;
-    padding: 3pt 6pt !important;
-    text-align: left !important;
-  }
-  .cg-battle-summary-table td {
-    border: 0.5pt solid #d4c89a !important;
-    padding: 2pt 6pt !important;
-    font-size: 9pt !important;
-    color: #2c2316 !important;
-  }
-  .cg-battle-summary-table tr:nth-child(odd) td {
-    background: #faf7f0 !important;
-  }
-  .summary-sub-heading {
-    font-family: Georgia, serif !important;
-    font-size: 8.5pt !important;
-    font-weight: bold !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.06em !important;
-    color: #1a1410 !important;
-    margin: 6pt 0 3pt !important;
-    padding: 0 !important;
-    border: none !important;
-  }
-  /* Old generic battle list (kept for back-compat) */
-  .summary-battle ul,
-  .summary-battle-extra ul {
-    list-style: none !important;
-    padding: 0 !important;
-    columns: 2 !important;
-    column-gap: 1em !important;
-  }
-  .summary-battle li,
-  .summary-battle-extra li {
-    break-inside: avoid !important;
-  }
-  /* ── Misc ────────────────────────────────────────────────── */
   a {
     color: inherit !important;
     text-decoration: none !important;
@@ -1561,16 +1733,200 @@
     text-shadow: none !important;
   }
 }
-/* ── Print window (standalone body) ────────────────────────── */
-/* When the Export to PDF window opens, #cg-summary-sheet is
-   a direct child of body — no hiding needed, just typography. */
 body.cg-print-window {
   background: white;
   padding: 0;
   margin: 0;
+  font-family: Georgia, "Crimson Pro", serif;
+  font-size: 10pt;
 }
 body.cg-print-window #cg-summary-sheet {
   max-width: 18cm;
   margin: 0 auto;
   padding: 0;
+  color: #2c2316;
+}
+body.cg-print-window .summary-header-block {
+  text-align: center;
+  margin-bottom: 10pt;
+}
+body.cg-print-window .summary-header-block h2 {
+  font-size: 20pt;
+  font-weight: 700;
+  border-bottom: 2pt solid #c9a84c;
+  padding-bottom: 5pt;
+  margin-bottom: 3pt;
+}
+body.cg-print-window .summary-basic-row {
+  display: flex;
+  justify-content: center;
+  gap: 1.4em;
+  flex-wrap: wrap;
+  font-size: 9pt;
+  color: #2c2316;
+  margin-top: 4pt;
+}
+body.cg-print-window .summary-motto {
+  font-size: 9pt;
+  color: #5a4a32;
+  margin-top: 2pt;
+  font-style: italic;
+}
+body.cg-print-window .summary-page1-body {
+  display: flex;
+  gap: 0;
+}
+body.cg-print-window .summary-col-left {
+  width: 42%;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  padding-right: 12pt;
+  border-right: 0.7pt solid #d4c89a;
+}
+body.cg-print-window .summary-col-right {
+  flex: 1;
+  box-sizing: border-box;
+  padding-left: 12pt;
+}
+body.cg-print-window h3 {
+  font-size: 9.5pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-bottom: 0.5pt solid #c9a84c;
+  padding-bottom: 2pt;
+  margin: 7pt 0 4pt;
+  color: #1a1410;
+}
+body.cg-print-window h3:first-child {
+  margin-top: 0;
+}
+body.cg-print-window p, body.cg-print-window li {
+  font-size: 9.5pt;
+  color: #2c2316;
+  margin: 2pt 0;
+  line-height: 1.35;
+}
+body.cg-print-window ul {
+  margin: 3pt 0;
+  padding-left: 14pt;
+}
+body.cg-print-window .summary-section {
+  margin-bottom: 7pt;
+}
+body.cg-print-window .summary-traits ul {
+  column-count: 2;
+  column-gap: 1em;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+body.cg-print-window .summary-traits li {
+  break-inside: avoid;
+  padding: 1pt 0;
+}
+body.cg-print-window .cg-battle-summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9pt;
+  margin-bottom: 5pt;
+  break-inside: avoid;
+}
+body.cg-print-window .cg-battle-summary-table th {
+  background: #f5f0e8;
+  font-family: Georgia, serif;
+  font-size: 7.5pt;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #1a1410;
+  border: 0.5pt solid #c9a84c;
+  padding: 3pt 5pt;
+  text-align: left;
+}
+body.cg-print-window .cg-battle-summary-table td {
+  border: 0.5pt solid #d4c89a;
+  padding: 2pt 5pt;
+  font-size: 9pt;
+  color: #2c2316;
+}
+body.cg-print-window .cg-battle-summary-table tr:nth-child(odd) td {
+  background: #faf7f0;
+}
+body.cg-print-window .cg-battle-pools-table {
+  width: auto;
+  min-width: 120pt;
+}
+body.cg-print-window .cg-summary-wound-track {
+  display: block;
+  margin-top: 5pt;
+  font-size: 8.5pt;
+}
+body.cg-print-window .cg-wound-boxes {
+  display: flex;
+  gap: 0.5em;
+  flex-wrap: wrap;
+  margin-top: 3pt;
+}
+body.cg-print-window .cg-wound-pip {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  font-size: 8pt;
+}
+body.cg-print-window .cg-wound-box-print {
+  display: inline-block;
+  width: 11pt;
+  height: 11pt;
+  border: 1.2pt solid #8a7040;
+  border-radius: 2pt;
+  flex-shrink: 0;
+}
+body.cg-print-window .summary-sub-heading {
+  font-size: 8pt;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #5a4020;
+  margin: 6pt 0 3pt;
+}
+body.cg-print-window .summary-page2 {
+  page-break-before: always;
+  break-before: page;
+}
+body.cg-print-window .summary-skills h3 {
+  margin-top: 0;
+}
+body.cg-print-window .cg-summary-skills-wrap {
+  column-count: 2;
+  column-gap: 1.2em;
+}
+body.cg-print-window .cg-summary-skills {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 8.5pt;
+  break-inside: auto;
+}
+body.cg-print-window .cg-summary-skills th {
+  background: #f5f0e8;
+  font-size: 8pt;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #1a1410;
+  border: 0.5pt solid #c9a84c;
+  padding: 2pt 5pt;
+  text-align: left;
+}
+body.cg-print-window .cg-summary-skills td {
+  border: 0.5pt solid #d4c89a;
+  padding: 2pt 5pt;
+  font-size: 8.5pt;
+  color: #2c2316;
+}
+body.cg-print-window .cg-summary-skills tr:nth-child(odd) td {
+  background: #faf7f0;
+}
+body.cg-print-window .cg-summary-skills tr {
+  break-inside: avoid;
 }

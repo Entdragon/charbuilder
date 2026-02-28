@@ -1,34 +1,222 @@
+// assets/css/src/components/_summary.scss
+// On-screen styles for the Character Sheet tab.
+// Print styles are handled separately in _print.scss.
+
+// ── Header block ────────────────────────────────────────────────
+.summary-header-block {
+  text-align:    center;
+  margin-bottom: 1.2em;
+  padding-bottom:0.8em;
+  border-bottom: 2px solid rgba(201,168,76,0.35);
+
+  h2 {
+    font-family:    var(--cg-heading-font, 'Cinzel', serif);
+    font-size:      1.7rem;
+    color:          var(--cg-text-light, #e8dcc4);
+    margin:         0 0 0.3em;
+    letter-spacing: 0.04em;
+  }
+}
+
+.summary-basic-row {
+  display:         flex;
+  justify-content: center;
+  gap:             1.4em;
+  flex-wrap:       wrap;
+  font-size:       0.88rem;
+  color:           var(--cg-text-muted, #a09070);
+  margin-top:      0.3em;
+
+  strong { color: var(--cg-text-light, #e8dcc4); }
+}
+
+.summary-motto {
+  font-size:  0.88rem;
+  color:      var(--cg-text-muted, #a09070);
+  margin-top: 0.3em;
+  font-style: italic;
+}
+
+// ── Page 1 body: two columns on wider screens ────────────────────
+.summary-page1-body {
+  display: flex;
+  gap:     1.5em;
+  align-items: flex-start;
+
+  @media (max-width: 680px) {
+    flex-direction: column;
+    gap:            0;
+  }
+}
+
+.summary-col-left {
+  flex:      0 0 42%;
+  max-width: 42%;
+  box-sizing: border-box;
+
+  @media (max-width: 680px) {
+    flex:      none;
+    max-width: none;
+    width:     100%;
+  }
+}
+
+.summary-col-right {
+  flex:       1;
+  box-sizing: border-box;
+}
+
+// ── Page 2 ──────────────────────────────────────────────────────
+.summary-page2 {
+  margin-top:  1.5em;
+  padding-top: 1em;
+  border-top:  1px solid rgba(201,168,76,0.2);
+}
+
+// ── Section headings ────────────────────────────────────────────
+#cg-summary-sheet h3 {
+  font-family:    var(--cg-heading-font, 'Cinzel', serif);
+  font-size:      0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color:          var(--cg-gold, #c9a84c);
+  border-bottom:  1px solid rgba(201,168,76,0.22);
+  padding-bottom: 0.25em;
+  margin:         0.9em 0 0.5em;
+}
+
+#cg-summary-sheet h3:first-child { margin-top: 0; }
+
+.summary-section {
+  margin-bottom: 0.8em;
+}
+
+// ── Lists ───────────────────────────────────────────────────────
+#cg-summary-sheet ul {
+  margin:       0.3em 0 0.5em;
+  padding-left: 1.2em;
+}
+
+#cg-summary-sheet li {
+  font-size:   0.88rem;
+  color:       var(--cg-text-light, #e8dcc4);
+  line-height: 1.5;
+  margin:      0.15em 0;
+}
+
+#cg-summary-sheet p {
+  font-size:   0.88rem;
+  color:       var(--cg-text-light, #e8dcc4);
+  line-height: 1.5;
+  margin:      0.2em 0;
+}
+
+// ── Skills table ────────────────────────────────────────────────
 .cg-summary-skills {
   width:           100%;
   border-collapse: collapse;
-  margin-top:      1em;
+  margin-top:      0.5em;
   font-family:     'Crimson Pro', Georgia, serif;
+  font-size:       0.85rem;
+
+  th {
+    font-size:      0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color:          var(--cg-gold, #c9a84c);
+    padding:        0.3em 0.6em;
+    border-bottom:  1px solid rgba(201,168,76,0.3);
+    text-align:     left;
+    background:     rgba(201,168,76,0.07);
+  }
+
+  td {
+    border:  1px solid rgba(201,168,76,0.12);
+    padding: 0.3em 0.6em;
+    color:   var(--cg-text-light, #e8dcc4);
+  }
+
+  tr:nth-child(odd) td { background: rgba(255,255,255,0.025); }
 }
 
-.cg-summary-skills td {
-  border:  1px solid var(--cg-parchment-3);
-  padding: 0.5em 0.75em;
-  color:   var(--cg-text);
+// ── Battle summary tables ────────────────────────────────────────
+.cg-battle-summary-table {
+  width:           100%;
+  border-collapse: collapse;
+  font-size:       0.83rem;
+  margin-bottom:   0.5em;
+
+  th {
+    font-size:      0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color:          var(--cg-gold, #c9a84c);
+    padding:        0.3em 0.6em;
+    border:         1px solid rgba(201,168,76,0.2);
+    text-align:     left;
+    background:     rgba(201,168,76,0.07);
+  }
+
+  td {
+    border:  1px solid rgba(201,168,76,0.12);
+    padding: 0.3em 0.6em;
+    color:   var(--cg-text-light, #e8dcc4);
+  }
+
+  tr:nth-child(odd) td { background: rgba(255,255,255,0.025); }
 }
 
-.cg-summary-skills tr:nth-child(odd) td {
-  background: rgba(240, 232, 208, 0.35);
-}
+.cg-battle-pools-table { width: auto; min-width: 160px; }
 
-.cg-subsection {
-  margin-top:  1.5em;
-  padding:     0.75em 1em;
-  border-left: 3px solid var(--cg-gold);
-  background:  var(--cg-parchment-2);
-  border-radius: 0 var(--cg-radius) var(--cg-radius) 0;
-}
-
-.cg-subsection label {
-  display:     block;
-  margin-bottom: 0.75em;
-  font-weight: 600;
-  font-size:   0.88rem;
-  color:       var(--cg-text-muted);
+.summary-sub-heading {
+  font-size:      0.72rem;
+  font-weight:    700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
+  color:          var(--cg-gold, #c9a84c);
+  margin:         0.7em 0 0.3em;
+}
+
+// ── Wound track (on-screen) ──────────────────────────────────────
+.cg-summary-wound-track {
+  margin-top: 0.6em;
+  font-size:  0.83rem;
+  color:      var(--cg-text-muted, #a09070);
+}
+
+.cg-wound-boxes {
+  display:    flex;
+  gap:        0.6em;
+  flex-wrap:  wrap;
+  margin-top: 0.35em;
+}
+
+.cg-wound-pip {
+  display:     flex;
+  align-items: center;
+  gap:         0.3em;
+  font-size:   0.8rem;
+  color:       var(--cg-text-light, #e8dcc4);
+}
+
+.cg-wound-box-print {
+  display:      inline-block;
+  width:        14px;
+  height:       14px;
+  border:       2px solid rgba(201,168,76,0.4);
+  border-radius:3px;
+  flex-shrink:  0;
+}
+
+// ── XP section ──────────────────────────────────────────────────
+.summary-xp p { font-size: 0.88rem; }
+.summary-xp ul { font-size: 0.85rem; }
+
+// ── Old subsection (kept for back-compat) ────────────────────────
+.cg-subsection {
+  margin-top:    1.5em;
+  padding:       0.75em 1em;
+  border-left:   3px solid var(--cg-gold, #c9a84c);
+  background:    rgba(201,168,76,0.05);
+  border-radius: 0 var(--cg-radius, 4px) var(--cg-radius, 4px) 0;
 }
