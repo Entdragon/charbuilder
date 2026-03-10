@@ -14,11 +14,9 @@
  * Or if you place this in public_html/characters/, adjust asset paths below.
  */
 
-// Determine base URL for assets (assets/ is one level up from php/)
-$scriptDir  = dirname($_SERVER['SCRIPT_NAME']); // e.g. /characters/php
-$baseDir    = dirname($scriptDir);              // e.g. /characters
-$assetsBase = $baseDir . '/assets';
-$ajaxUrl    = $scriptDir . '/api/ajax';         // clean URL via .htaccess rewrite
+// Asset paths — relative to the document root of this subdomain
+$assetsBase = '/assets';
+$ajaxUrl    = '/ajax.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
