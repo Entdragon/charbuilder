@@ -1,0 +1,15 @@
+# Deny direct web access to includes/ and actions/ directories.
+# Only ajax.php and index.php should be web-accessible.
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Block direct access to PHP include files
+  RewriteRule ^includes/ - [F,L]
+  RewriteRule ^actions/  - [F,L]
+</IfModule>
+
+# Fallback: deny all in these subdirs via Options
+<FilesMatch "^$">
+  # (empty — catches nothing, htaccess in subdirs handles the block)
+</FilesMatch>

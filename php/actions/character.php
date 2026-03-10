@@ -1,0 +1,174 @@
+<?php
+require_once __DIR__ . '/../includes/db.php';
+
+function cg_normalize_character(array $row): array {
+    $row['id']         = (string) ($row['id']         ?? '');
+    $row['species_id'] = (string) ($row['species']     ?? $row['species_id'] ?? 0);
+    $row['career_id']  = (string) ($row['career']      ?? $row['career_id']  ?? 0);
+
+    if (!empty($row['extra_career_1'])) $row['extra_career_1'] = (string) $row['extra_career_1'];
+    if (!empty($row['extra_career_2'])) $row['extra_career_2'] = (string) $row['extra_career_2'];
+
+    foreach (['skill_marks', 'career_gift_replacements', 'xp_skill_marks'] as $field) {
+        if (isset($row[$field])) {
+            $decoded = json_decode($row[$field], true);
+            $row[$field] = is_array($decoded) ? $decoded : [];
+        } else {
+            $row[$field] = [];
+        }
+    }
+    $row['xpSkillMarks'] = $row['xp_skill_marks'];
+
+    foreach (['xp_gifts', 'weapons', 'armor'] as $field) {
+        if (isset($row[$field])) {
+            $decoded = json_decode($row[$field], true);
+            $row[$field] = is_array($decoded) ? $decoded : [];
+        } else {
+            $row[$field] = [];
+        }
+    }
+    $row['xpGifts'] = $row['xp_gifts'];
+
+    $row['experience_points'] = (int) ($row['experience_points'] ?? 0);
+    $row['xpMarksBudget']     = (int) ($row['xp_marks_budget']   ?? 0);
+    $row['xpGiftSlots']       = (int) ($row['xp_gift_slots']     ?? 0);
+
+    return $row;
+}
+
+function cg_load_characters(): void {
+    $p   = cg_prefix();
+    $uid = cg_current_user_id();
+
+    $rows = cg_query(
+        "SELECT id, name, player_name, age, gender, species AS species_id, career AS career_id
+         FROM {$p}character_records WHERE user_id = ? ORDER BY updated DESC",
+        [$uid]
+    );
+
+    $normalized = array_map(fn($r) => array_merge($r, [
+        'id'         => (string) $r['id'],
+        'species_id' => (string) ($r['species_id'] ?? 0),
+        'career_id'  => (string) ($r['career_id']  ?? 0),
+    ]), $rows);
+
+    cg_json(['success' => true, 'data' => $normalized]);
+}
+
+function cg_get_character(): void {
+    $charId = (int) ($_POST['id'] ?? 0);
+    if ($charId <= 0) {
+        cg_json(['success' => false, 'data' => 'Invalid character ID.']);
+        return;
+    }
+
+    $p   = cg_prefix();
+    $uid = cg_current_user_id();
+    cg_ensure_battle_columns();
+
+    $row = cg_query_one(
+        "SELECT * FROM {$p}character_records WHERE id = ? AND user_id = ? LIMIT 1",
+        [$charId, $uid]
+    );
+
+    if (!$row) {
+        cg_json(['success' => false, 'data' => 'Character not found.']);
+        return;
+    }
+
+    cg_json(['success' => true, 'data' => cg_normalize_character($row)]);
+}
+
+function cg_save_character(): void {
+    $data = $_POST['character'] ?? [];
+    if (is_string($data)) {
+        $data = json_decode($data, true) ?? [];
+    }
+
+    $p   = cg_prefix();
+    $uid = cg_current_user_id();
+    $id  = (int) ($data['id'] ?? 0);
+
+    cg_ensure_battle_columns();
+
+    $skillMarks       = $data['skill_marks'] ?? [];
+    $giftReplacements = $data['career_gift_replacements'] ?? [];
+    $freeGifts        = $data['free_gifts'] ?? [$data['free_gift_1'] ?? 0, $data['free_gift_2'] ?? 0, $data['free_gift_3'] ?? 0];
+
+    $xpGifts     = $data['xp_gifts']   ?? $data['xpGifts']     ?? [];
+    $xpSkillMrks = $data['xp_skill_marks'] ?? $data['xpSkillMarks'] ?? [];
+    $weapons     = $data['weapons'] ?? [];
+    $armor       = $data['armor']   ?? [];
+
+    $fields = [
+        'name'                          => substr((string) ($data['name']        ?? ''), 0, 100),
+        'player_name'                   => substr((string) ($data['player_name'] ?? ''), 0, 255),
+        'age'                           => substr((string) ($data['age']         ?? ''), 0, 10),
+        'gender'                        => substr((string) ($data['gender']      ?? ''), 0, 20),
+        'will'                          => substr((string) ($data['will']        ?? ''), 0, 4),
+        'speed'                         => substr((string) ($data['speed']       ?? ''), 0, 4),
+        'body'                          => substr((string) ($data['body']        ?? ''), 0, 4),
+        'mind'                          => substr((string) ($data['mind']        ?? ''), 0, 4),
+        'species'                       => (int)  ($data['species_id'] ?? $data['species'] ?? 0),
+        'career'                        => (int)  ($data['career_id']  ?? $data['career']  ?? 0),
+        'free_gift_1'                   => (int)  ($freeGifts[0] ?? 0),
+        'free_gift_2'                   => (int)  ($freeGifts[1] ?? 0),
+        'free_gift_3'                   => (int)  ($freeGifts[2] ?? 0),
+        'career_gift_replacements'      => json_encode(is_array($giftReplacements) ? $giftReplacements : []),
+        'local_area'                    => (string) ($data['local_area']  ?? ''),
+        'language'                      => (string) ($data['language']    ?? ''),
+        'skill_marks'                   => json_encode(is_array($skillMarks) ? $skillMarks : []),
+        'description'                   => (string) ($data['description'] ?? ''),
+        'backstory'                     => (string) ($data['backstory']   ?? ''),
+        'motto'                         => (string) ($data['motto']       ?? ''),
+        'goal1'                         => (string) ($data['goal1']       ?? ''),
+        'goal2'                         => (string) ($data['goal2']       ?? ''),
+        'goal3'                         => (string) ($data['goal3']       ?? ''),
+        'extra_career_1'                => ($data['extra_career_1'] !== null && $data['extra_career_1'] !== '')
+                                            ? (int) $data['extra_career_1'] : null,
+        'extra_trait_career_1'          => $data['extra_trait_career_1'] ?? null,
+        'extra_career_2'                => ($data['extra_career_2'] !== null && $data['extra_career_2'] !== '')
+                                            ? (int) $data['extra_career_2'] : null,
+        'extra_trait_career_2'          => $data['extra_trait_career_2'] ?? null,
+        'trait_species'                 => substr((string) ($data['trait_species'] ?? ''), 0, 10),
+        'trait_career'                  => substr((string) ($data['trait_career']  ?? ''), 0, 10),
+        'increased_trait_career_target' => $data['increased_trait_career_target'] ?? null,
+        'experience_points'             => (int) ($data['experience_points'] ?? 0),
+        'xp_marks_budget'               => (int) ($data['xp_marks_budget']   ?? $data['xpMarksBudget'] ?? 0),
+        'xp_gift_slots'                 => (int) ($data['xp_gift_slots']     ?? $data['xpGiftSlots']   ?? 0),
+        'xp_skill_marks'                => json_encode(is_array($xpSkillMrks) ? $xpSkillMrks : []),
+        'xp_gifts'                      => json_encode(is_array($xpGifts)     ? $xpGifts     : []),
+        'weapons'                       => json_encode(is_array($weapons)     ? $weapons      : []),
+        'armor'                         => json_encode(is_array($armor)       ? $armor        : []),
+        'updated'                       => date('Y-m-d H:i:s'),
+    ];
+
+    if ($id > 0) {
+        $exists = cg_query_one(
+            "SELECT id FROM {$p}character_records WHERE id = ? AND user_id = ? LIMIT 1",
+            [$id, $uid]
+        );
+        if (!$exists) {
+            cg_json(['success' => false, 'data' => 'Character not found.']);
+            return;
+        }
+
+        $setClauses = implode(', ', array_map(fn($k) => "`{$k}` = ?", array_keys($fields)));
+        cg_exec(
+            "UPDATE {$p}character_records SET {$setClauses} WHERE id = ? AND user_id = ?",
+            [...array_values($fields), $id, $uid]
+        );
+        cg_json(['success' => true, 'data' => ['id' => (string) $id]]);
+    } else {
+        $fields['user_id'] = $uid;
+        $fields['created'] = date('Y-m-d H:i:s');
+
+        $cols     = implode(', ', array_map(fn($k) => "`{$k}`", array_keys($fields)));
+        $holders  = implode(', ', array_fill(0, count($fields), '?'));
+        cg_exec(
+            "INSERT INTO {$p}character_records ({$cols}) VALUES ({$holders})",
+            array_values($fields)
+        );
+        cg_json(['success' => true, 'data' => ['id' => cg_last_insert_id()]]);
+    }
+}

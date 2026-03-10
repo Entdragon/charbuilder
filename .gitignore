@@ -12,3 +12,6 @@ node_modules/
 *.prepatch.*
 *.tmp.*
 .sessions/
+
+# PHP deployment config (contains real DB credentials)
+php/includes/config.php
