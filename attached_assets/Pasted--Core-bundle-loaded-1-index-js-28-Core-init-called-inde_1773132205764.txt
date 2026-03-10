@@ -1,0 +1,56 @@
+[Core] bundle loaded (#1)
+index.js:28 [Core] init() called
+index.js:7 [MainAPI] init() called
+builder-events.js:35 [BuilderEvents] bindUIEvents() called
+index.js:33 [Core] MainAPI.init() failed TypeError: $22 is not a function
+    at bindUIEvents (builder-events.js:179:3)
+    at Object.init (index.js:9:5)
+    at Object.init (index.js:31:15)
+    at HTMLDocument.bootOnce (index.js:41:8)
+init @ index.js:33
+bootOnce @ index.js:41Understand this error
+builder-events.js:179 Uncaught TypeError: $22 is not a function
+    at bindUIEvents (builder-events.js:179:3)
+    at Object.init (index.js:9:5)
+    at Object.init (index.js:31:15)
+    at HTMLDocument.bootOnce (index.js:41:8)
+bindUIEvents @ builder-events.js:179
+init @ index.js:9
+init @ index.js:31
+bootOnce @ index.js:41Understand this error
+free-choices.js:96  POST https://characters.libraryofcalbria.com/ajax.php 401 (Unauthorized)
+ajaxPost @ free-choices.js:96
+(anonymous) @ free-choices.js:784
+(anonymous) @ core.bundle.js:38
+__async @ core.bundle.js:22
+_fetchAllGifts @ free-choices.js:779
+(anonymous) @ free-choices.js:775
+(anonymous) @ core.bundle.js:38
+__async @ core.bundle.js:22
+refresh @ free-choices.js:774
+init @ free-choices.js:726
+init @ index.js:18
+bindUIEvents @ builder-events.js:176
+init @ index.js:9
+init @ index.js:31
+bootOnce @ index.js:41Understand this error
+free-choices.js:30 [FreeChoices] cg_get_free_gifts returned unexpected payload {success: false, data: 'Not logged in.'}
+warn3 @ free-choices.js:30
+(anonymous) @ free-choices.js:793
+fulfilled @ core.bundle.js:25
+Promise.then
+step @ core.bundle.js:37
+(anonymous) @ core.bundle.js:38
+__async @ core.bundle.js:22
+_fetchAllGifts @ free-choices.js:779
+(anonymous) @ free-choices.js:775
+(anonymous) @ core.bundle.js:38
+__async @ core.bundle.js:22
+refresh @ free-choices.js:774
+init @ free-choices.js:726
+init @ index.js:18
+bindUIEvents @ builder-events.js:176
+init @ index.js:9
+init @ index.js:31
+bootOnce @ index.js:41Understand this warning
+free-choices.js:29 [FreeChoices] Fetched gifts {count: 0}
