@@ -18,7 +18,7 @@
 $scriptDir  = dirname($_SERVER['SCRIPT_NAME']); // e.g. /characters/php
 $baseDir    = dirname($scriptDir);              // e.g. /characters
 $assetsBase = $baseDir . '/assets';
-$ajaxUrl    = $scriptDir . '/ajax.php';
+$ajaxUrl    = $scriptDir . '/api/ajax';         // clean URL via .htaccess rewrite
 ?>
 <!DOCTYPE html>
 <html lang="en">
