@@ -1,7 +1,8 @@
 <?php
-session_start();
-$loggedIn = !empty($_SESSION['user_id']);
-$username = $loggedIn ? htmlspecialchars($_SESSION['username'] ?? '') : '';
+require_once __DIR__ . '/includes/auth.php';
+cg_session_start();
+$loggedIn = cg_is_logged_in();
+$username = $loggedIn ? htmlspecialchars($_SESSION['cg_username'] ?? '') : '';
 ?>
 <!DOCTYPE html>
 <html lang="en">

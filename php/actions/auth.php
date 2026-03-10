@@ -35,7 +35,10 @@ function cg_login_user(): void {
     $_SESSION['cg_email']    = $row['user_email'];
     $_SESSION['cg_is_admin'] = str_contains($capStr, 'administrator');
 
-    cg_json(['success' => true, 'data' => ['redirect' => '/']]);
+    cg_json(['success' => true, 'data' => [
+        'username' => $row['user_login'],
+        'redirect' => '/',
+    ]]);
 }
 
 function cg_logout_user(): void {
@@ -95,7 +98,10 @@ function cg_register_user(): void {
     $_SESSION['cg_email']    = $email;
     $_SESSION['cg_is_admin'] = false;
 
-    cg_json(['success' => true, 'data' => ['redirect' => '/']]);
+    cg_json(['success' => true, 'data' => [
+        'username' => $username,
+        'redirect' => '/',
+    ]]);
 }
 
 function cg_get_current_user(): void {
