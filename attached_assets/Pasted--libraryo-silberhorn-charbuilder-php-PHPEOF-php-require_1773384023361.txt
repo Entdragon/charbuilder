@@ -1,0 +1,49 @@
+[libraryo@silberhorn charbuilder]$ php << 'PHPEOF'
+> <?php
+> require '/home/libraryo/public_html/characters/includes/config.php';
+> require '/home/libraryo/public_html/characters/includes/db.php';
+> $p = cg_prefix();
+>
+> // What post types exist?
+> echo "=== Post types ===\n";
+> $rows = cg_query("SELECT post_type, COUNT(*) as cnt FROM {$p}posts WHERE post_status='publish' GROUP BY post_type ORDER BY cnt DESC", []);
+> foreach ($rows as $r) echo $r['post_type'] . ': ' . $r['cnt'] . "\n";
+>
+> // What custom tables exist with image-like columns?
+> echo "\n=== Custom tables with image/cover columns ===\n";
+> $tables = cg_query("SHOW TABLES LIKE '%custom%'", []);
+> foreach ($tables as $t) {
+>     $tname = array_values($t)[0];
+>     $cols = cg_query("SHOW COLUMNS FROM `$tname`", []);
+>     $colnames = array_column($cols, 'Field');
+>     $imgcols = array_filter($colnames, fn($c) => preg_match('/image|img|cover|photo|thumb|picture/i', $c));
+>     if ($imgcols) echo "$tname: " . implode(', ', $imgcols) . "\n";
+> }
+>
+> // Sample a book post's meta keys
+> echo "\n=== Meta keys for first 'page' post ===\n";
+> $post = cg_query_one("SELECT ID, post_title FROM {$p}posts WHERE post_type='page' AND post_status='publish' ORDER BY ID LIMIT 1", []);
+> if ($post) {
+>     echo "Post: {$post['post_title']} (ID={$post['ID']})\n";
+>     $metas = cg_query("SELECT meta_key, LEFT(meta_value,60) as v FROM {$p}postmeta WHERE post_id=? ORDER BY meta_key", [$post['ID']]);
+>     foreach ($metas as $m) echo "  {$m['meta_key']}: {$m['v']}\n";
+> }
+> PHPEOF
+=== Post types ===
+page: 32
+nav_menu_item: 12
+wp_template: 5
+wp_global_styles: 3
+wp_template_part: 1
+wp_navigation: 1
+post: 1
+
+=== Custom tables with image/cover columns ===
+DcVnchxg4_customtables_table_books: ct_cover_image, ct_ct_cover_image
+DcVnchxg4_customtables_table_equipment: ct_cover_dice
+DcVnchxg4_customtables_table_weapons: ct_cover_die
+
+=== Meta keys for first 'page' post ===
+Post: Ironclaw Books (ID=6)
+  _edit_lock: 1772152177:1
+[libraryo@silberhorn charbuilder]$
