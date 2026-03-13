@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/db.php';
 cg_session_start();
+cg_try_wp_sso();
 $loggedIn = cg_is_logged_in();
 $username = $loggedIn ? htmlspecialchars($_SESSION['cg_username'] ?? '') : '';
 ?>

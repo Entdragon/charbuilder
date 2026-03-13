@@ -18,6 +18,7 @@ require_once __DIR__ . '/includes/db.php';
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 cg_session_start();
+cg_try_wp_sso();
 
 // ── JSON helper ───────────────────────────────────────────────────────────────
 function cg_json(array $data): void {
