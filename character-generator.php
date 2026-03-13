@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 require_once __DIR__ . '/includes/index.php';
 require_once __DIR__ . '/includes/shortcode-ui.php';
 
-// Canonical (Stage) asset loader + hardening (shortcode-gated).
+// Canonical asset loader + hardening (shortcode-gated).
 require_once __DIR__ . '/includes/enqueue-hardening.php';
 
 // IMPORTANT: activation hook MUST be registered from the main plugin file.

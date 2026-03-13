@@ -33,9 +33,9 @@ Last updated: 2026-01-19 05:07:32Z
 - [2026-01-11 08:20:05Z] (multi-line)
   line one
   line two
-- [2026-01-11 08:28:16Z] Installed tools/cg-stage — use: . tools/cg-stage at the start of every session to set STAGE/CG, cd into plugin, and disable Ctrl-S flow control.
+- [2026-01-11 08:28:16Z] (removed) tools/cg-stage was a staging-environment helper — no longer needed after staging site was retired.
 - [2026-01-11 08:32:25Z] Upgraded cg-write/cg-write-pair to print a clear 'Waiting for STDIN' banner (TTY only) + remind: paste contents then Ctrl-D; Ctrl-C abort writes nothing.
-- [2026-01-11 08:35:40Z] Rewrote tools/cg-stage cleanly (no embedded test commands). It now derives CG from its own location, sets STAGE, disables Ctrl-S flow control, and prints whoami/host/pwd.
+- [2026-01-11 08:35:40Z] (removed) tools/cg-stage rewrite note — staging site retired.
 - [2026-01-11 08:37:19Z] Added tools/cg-help (prints quick workflow + STDIN paste rules). Run: ./tools/cg-help anytime you forget what to paste.
 - [2026-01-11 08:45:35Z] Fix: cg-write/cg-write-pair now compatible with older python3 by using typing.List (avoids list[str] TypeError). Transcript guard retained.
 - [2026-01-11 08:49:52Z] Hardened cg-write transcript guard: now matches up to 3 stray characters before [user@host]$ (e.g. r[libraryo@...]$).

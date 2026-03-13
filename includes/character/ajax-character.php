@@ -175,7 +175,7 @@ if ( ! function_exists( 'cg_char_send_db_error' ) ) {
         global $wpdb;
         $payload = [ 'message' => $public_message ];
 
-        // Helpful on STAGE for admins; avoids leaking details to normal users.
+        // Show DB error details to admins only; avoids leaking details to normal users.
         if ( is_user_logged_in() && current_user_can( 'manage_options' ) ) {
             $payload['db_error'] = (string) ( $wpdb->last_error ?? '' );
             $payload['db_query'] = (string) ( $wpdb->last_query ?? '' );

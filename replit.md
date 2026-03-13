@@ -3,7 +3,6 @@
 ## Project Overview
 A standalone Express.js web application converted from a WordPress plugin. Provides a character creation system for the Library of Calabria tabletop RPG. Connects to the existing WordPress MySQL database via a PHP proxy (shared hosting firewall blocks direct MySQL access from outside).
 
-- **Staging URL**: https://stage.libraryofcalbria.com/character-generator/
 - **Production URL**: https://libraryofcalbria.com/character-generator/
 
 ## Technology Stack
@@ -79,7 +78,7 @@ WordPress 6+ stores passwords as `$wp$2y$10$...` (bcrypt with a `$wp$` prefix). 
 New passwords are stored in `$wp$` format for WordPress compatibility.
 
 ## PHP Proxy
-`tools/cg-db-proxy.php` must be deployed to the WordPress server (e.g. `stage.libraryofcalbria.com/cg-db-proxy.php`). It:
+`tools/cg-db-proxy.php` must be deployed to the production WordPress server (e.g. `libraryofcalbria.com/cg-db-proxy.php`). It:
 - Reads `X-CG-Secret` header and validates against a hard-coded secret
 - Accepts `{ sql, params }` POST body
 - Runs the query against the WordPress database and returns JSON
@@ -100,3 +99,11 @@ The Experience tab (`tab-experience`) lives between Skills and Trappings in the 
 ## Replit Workflow
 - Command: `node server/index.js`
 - Port: 5000 (webview)
+
+## Hosting Cleanup (staging site retired)
+The old staging site (`stage.libraryofcalbria.com`) is no longer used. The following manual steps should be completed on the shared hosting control panel:
+1. Delete the staging WordPress database (via cPanel / phpMyAdmin)
+2. Remove `cg-db-proxy.php` and `cg-proxy-config.php` from the staging server's web root
+3. Optionally delete the entire staging WordPress installation and files from the hosting account
+4. Verify that the Replit Secrets `CG_PROXY_URL` and `CG_PROXY_SECRET` point to the production server (`libraryofcalbria.com`), not the staging server
+5. If `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS` are set, verify they reference the production database

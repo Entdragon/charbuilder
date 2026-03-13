@@ -1,6 +1,6 @@
 <?php
 /**
- * Canonical front-end asset loader for Character Builder (Stage).
+ * Canonical front-end asset loader for Character Builder.
  * - Loads exactly: core.bundle.js + core.css
  * - ONLY loads on pages containing the [character_generator] shortcode
  *   OR known builder page id/slug fallback (page 131 / 'character-generator')
