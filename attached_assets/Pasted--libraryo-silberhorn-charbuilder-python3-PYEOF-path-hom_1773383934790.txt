@@ -1,0 +1,53 @@
+[libraryo@silberhorn charbuilder]$ python3 << 'PYEOF'
+> path = '/home/libraryo/public_html/characters/index.php'
+> with open(path) as f:
+>     c = f.read()
+>
+> replacements = [
+>     # Fix nav URLs
+>     ('https://libraryofcalbria.com/" class="nav-item parent">Ironclaw',
+>      'https://libraryofcalbria.com/ironclaw/" class="nav-item parent">Ironclaw'),
+>     ('https://libraryofcalbria.com/species/" class="nav-item child">Species',
+>      'https://libraryofcalbria.com/species-catalog/" class="nav-item child">Species'),
+>     ('https://libraryofcalbria.com/gifts/" class="nav-item child">Gifts',
+>      'https://libraryofcalbria.com/gifts-catalog/" class="nav-item child">Gifts'),
+>     ('https://libraryofcalbria.com/skills/" class="nav-item child">Skills',
+>      'https://libraryofcalbria.com/skills-catalog/" class="nav-item child">Skills'),
+>     ('https://libraryofcalbria.com/my-account/" class="nav-item">Login',
+>      'https://libraryofcalbria.com/login/" class="nav-item">Login'),
+> ]
+>
+> for old, new in replacements:
+>     if old in c:
+>         c = c.replace(old, new, 1); print(f'Fixed: {old[:50]}...')
+>     else:
+>         print(f'Skip/already done: {old[:50]}...')
+>
+> with open(path, 'w') as f:
+>     f.write(c)
+> print('Nav URLs done.')
+> PYEOF
+Fixed: https://libraryofcalbria.com/" class="nav-item par...
+Fixed: https://libraryofcalbria.com/species/" class="nav-...
+Fixed: https://libraryofcalbria.com/gifts/" class="nav-it...
+Fixed: https://libraryofcalbria.com/skills/" class="nav-i...
+Fixed: https://libraryofcalbria.com/my-account/" class="n...
+Nav URLs done.
+[libraryo@silberhorn charbuilder]$
+[libraryo@silberhorn charbuilder]$ # Check what post types have featured images in WordPress
+[libraryo@silberhorn charbuilder]$ php << 'PHPEOF'
+> <?php
+> require '/home/libraryo/public_html/characters/includes/config.php';
+> require '/home/libraryo/public_html/characters/includes/db.php';
+> $p = cg_prefix();
+> $rows = cg_query(
+>     "SELECT p.post_type, COUNT(*) as cnt
+>        FROM {$p}posts p
+>        JOIN {$p}postmeta pm ON pm.post_id = p.ID AND pm.meta_key = '_thumbnail_id'
+>       WHERE p.post_status = 'publish'
+>       GROUP BY p.post_type ORDER BY cnt DESC LIMIT 10",
+>     []
+> );
+> foreach ($rows as $r) echo $r['post_type'] . ': ' . $r['cnt'] . "\n";
+> PHPEOF
+[libraryo@silberhorn charbuilder]$
