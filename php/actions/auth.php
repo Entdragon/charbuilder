@@ -18,8 +18,12 @@ function cg_login_user(): void {
         [$username, $username]
     );
 
-    if (!$row || !cg_check_password($password, $row['user_pass'])) {
-        cg_json(['success' => false, 'data' => 'Invalid username or password.']);
+    if (!$row) {
+        cg_json(['success' => false, 'data' => 'DEBUG: User not found for: ' . $username]);
+        return;
+    }
+    if (!cg_check_password($password, $row['user_pass'])) {
+        cg_json(['success' => false, 'data' => 'DEBUG: Password mismatch. Hash type: ' . substr($row['user_pass'], 0, 4)]);
         return;
     }
 
