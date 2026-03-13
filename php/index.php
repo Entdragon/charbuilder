@@ -5,6 +5,29 @@ cg_session_start();
 cg_try_wp_sso();
 $loggedIn = cg_is_logged_in();
 $username = $loggedIn ? htmlspecialchars($_SESSION['cg_username'] ?? '') : '';
+
+// Fetch a random book cover from WordPress for the header thumbnail
+$bookThumbUrl = '';
+try {
+    $p   = cg_prefix();
+    $row = cg_query_one(
+        "SELECT pm.meta_value AS thumb_id
+           FROM {$p}posts p
+           JOIN {$p}postmeta pm ON pm.post_id = p.ID AND pm.meta_key = '_thumbnail_id'
+          WHERE p.post_status = 'publish'
+            AND p.post_type NOT IN ('attachment','revision','nav_menu_item','custom_css','customize_changeset','wp_block')
+          ORDER BY RAND()
+          LIMIT 1",
+        []
+    );
+    if ($row) {
+        $img = cg_query_one(
+            "SELECT guid FROM {$p}posts WHERE ID = ? LIMIT 1",
+            [(int) $row['thumb_id']]
+        );
+        $bookThumbUrl = $img['guid'] ?? '';
+    }
+} catch (Throwable $e) { /* non-fatal */ }
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -103,6 +126,25 @@ $username = $loggedIn ? htmlspecialchars($_SESSION['cg_username'] ?? '') : '';
       letter-spacing: 0.14em;
       text-transform: uppercase;
       font-weight:    400;
+    }
+
+    .header-book-thumb {
+      position:   absolute;
+      top:        10px;
+      right:      1.5em;
+      z-index:    10;
+    }
+    .header-book-thumb img {
+      border:        2px solid var(--gold-border);
+      border-radius: 6px;
+      max-height:    80px;
+      width:         auto;
+      display:       block;
+      transition:    transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .header-book-thumb img:hover {
+      transform:  scale(1.06);
+      box-shadow: 0 4px 16px rgba(201,168,76,0.35);
     }
 
     #site-body {
@@ -491,6 +533,11 @@ $username = $loggedIn ? htmlspecialchars($_SESSION['cg_username'] ?? '') : '';
       The Library of Calabria
       <span class="site-title-sub">Character Generator</span>
     </a>
+    <?php if ($bookThumbUrl): ?>
+    <div class="header-book-thumb">
+      <img src="<?= htmlspecialchars($bookThumbUrl) ?>" alt="Ironclaw book cover">
+    </div>
+    <?php endif; ?>
   </header>
 
   <div id="site-body">
@@ -505,6 +552,10 @@ $username = $loggedIn ? htmlspecialchars($_SESSION['cg_username'] ?? '') : '';
       <a href="https://libraryofcalbria.com/index/" class="nav-item child">Index</a>
       <div class="nav-divider"></div>
       <a href="https://characters.libraryofcalbria.com/" class="nav-item active">Character Generator</a>
+      <?php if (!$loggedIn): ?>
+      <a href="https://libraryofcalbria.com/register/" class="nav-item">Register</a>
+      <a href="https://libraryofcalbria.com/my-account/" class="nav-item">Login</a>
+      <?php endif; ?>
       <a href="https://libraryofcalbria.com/corrections-log/" class="nav-item">Corrections Log</a>
       <a href="https://libraryofcalbria.com/updates/" class="nav-item">Updates</a>
     </nav>
