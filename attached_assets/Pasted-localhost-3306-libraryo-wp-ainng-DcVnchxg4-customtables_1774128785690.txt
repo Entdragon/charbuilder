@@ -1,0 +1,56 @@
+localhost:3306/libraryo_wp_ainng/DcVnchxg4_customtables_table_gift_requirements/		https://silberhorn.myhost.nz:2083/cpsess0433809381/3rdparty/phpMyAdmin/index.php?route=/table/sql&db=libraryo_wp_ainng&table=DcVnchxg4_customtables_table_gift_requirements
+Your SQL query has been executed successfully.
+
+SHOW COLUMNS FROM `DcVnchxg4_customtables_table_gifts`;
+
+
+
+id	int(10) unsigned	NO	PRI	NULL	auto_increment	
+published	tinyint(1)	NO		1		
+ct_id	int(11)	YES		NULL		
+ct_gifts_name	varchar(255)	YES		NULL		
+ct_gifts_allows_multiple	int(11)	YES		NULL		
+ct_gifts_manifold	int(11)	YES		NULL		
+ct_gifts_requires	int(11)	YES		NULL		
+ct_gifts_requires_two	int(11)	YES		NULL		
+ct_gifts_requires_three	int(11)	YES		NULL		
+ct_gifts_requires_four	int(11)	YES		NULL		
+ct_gifts_requires_five	int(11)	YES		NULL		
+ct_gifts_requires_six	int(11)	YES		NULL		
+ct_gifts_requires_seven	int(11)	YES		NULL		
+ct_gifts_requires_eight	int(11)	YES		NULL		
+ct_gifts_requires_nine	int(11)	YES		NULL		
+ct_gifts_requires_ten	int(11)	YES		NULL		
+ct_gifts_requires_eleven	int(11)	YES		NULL		
+ct_gifts_requires_twelve	int(11)	YES		NULL		
+ct_gifts_requires_thirteen	int(11)	YES		NULL		
+ct_gifts_requires_fourteen	int(11)	YES		NULL		
+ct_gifts_requires_fifteen	int(11)	YES		NULL		
+ct_gifts_requires_sixteen	int(11)	YES		NULL		
+ct_gifts_requires_seventeen	int(11)	YES		NULL		
+ct_gifts_requires_eighteen	int(11)	YES		NULL		
+ct_gifts_requires_nineteen	int(11)	YES		NULL		
+ct_gifts_requires_special	varchar(255)	YES		NULL		
+ct_gifts_requires_special_two	varchar(255)	YES		NULL		
+ct_gifts_requires_special_three	varchar(255)	YES		NULL		
+ct_gifts_requires_special_four	varchar(255)	YES		NULL		
+ct_gifts_requires_special_five	varchar(255)	YES		NULL		
+ct_gifts_requires_special_six	varchar(255)	YES		NULL		
+ct_gifts_requires_special_seven	varchar(255)	YES		NULL		
+ct_gifts_requires_special_eight	varchar(255)	YES		NULL		
+ct_gifts_refresh	int(11)	YES		NULL		
+ct_gifts_effect	text	YES		NULL		
+ct_gifts_effect_description	text	YES		NULL		
+ct_book_id	int(11)	YES		NULL		
+ct_pg_no	int(11)	YES		NULL		
+ct_gift_trigger	text	YES		NULL		
+ct_gift_class	int(11)	YES		NULL		
+ct_gift_type	int(11)	YES		NULL		
+ct_gift_type_two	int(11)	YES		NULL		
+ct_gift_type_three	int(11)	YES		NULL		
+ct_gift_type_four	int(11)	YES		NULL		
+ct_gift_type_five	int(11)	YES		NULL		
+ct_gift_type_six	varchar(255)	YES		NULL		
+ct_gift_type_seven	varchar(255)	YES		NULL		
+ct_gift_type_eight	int(11)	YES		NULL		
+ct_slug	varchar(255)	YES		NULL		

@@ -41,17 +41,18 @@ ALTER TABLE `DcVnchxg4_customtables_table_gifts`
   DROP COLUMN IF EXISTS `ct_gifts_requires_nineteen`;
 
 -- ------------------------------------------------------------
--- Drop type_1 … type_8 inline columns from gifts
+-- Drop type inline columns from gifts
+-- Actual column names: ct_gift_type, ct_gift_type_two … ct_gift_type_eight
 -- ------------------------------------------------------------
 ALTER TABLE `DcVnchxg4_customtables_table_gifts`
-  DROP COLUMN IF EXISTS `ct_gifts_type_1`,
-  DROP COLUMN IF EXISTS `ct_gifts_type_2`,
-  DROP COLUMN IF EXISTS `ct_gifts_type_3`,
-  DROP COLUMN IF EXISTS `ct_gifts_type_4`,
-  DROP COLUMN IF EXISTS `ct_gifts_type_5`,
-  DROP COLUMN IF EXISTS `ct_gifts_type_6`,
-  DROP COLUMN IF EXISTS `ct_gifts_type_7`,
-  DROP COLUMN IF EXISTS `ct_gifts_type_8`;
+  DROP COLUMN IF EXISTS `ct_gift_type`,
+  DROP COLUMN IF EXISTS `ct_gift_type_two`,
+  DROP COLUMN IF EXISTS `ct_gift_type_three`,
+  DROP COLUMN IF EXISTS `ct_gift_type_four`,
+  DROP COLUMN IF EXISTS `ct_gift_type_five`,
+  DROP COLUMN IF EXISTS `ct_gift_type_six`,
+  DROP COLUMN IF EXISTS `ct_gift_type_seven`,
+  DROP COLUMN IF EXISTS `ct_gift_type_eight`;
 
 -- Drop requires_special inline columns (legacy free-text, superseded by gift_requirements)
 ALTER TABLE `DcVnchxg4_customtables_table_gifts`
@@ -69,4 +70,4 @@ SELECT 'gifts columns remaining' AS label, COUNT(*) AS cnt
 FROM information_schema.COLUMNS
 WHERE TABLE_SCHEMA = DATABASE()
   AND TABLE_NAME   = 'DcVnchxg4_customtables_table_gifts'
-  AND (COLUMN_NAME LIKE 'ct_gifts_requires%' OR COLUMN_NAME LIKE 'ct_gifts_type_%');
+  AND (COLUMN_NAME LIKE 'ct_gifts_requires%' OR COLUMN_NAME LIKE 'ct_gift_type%');
