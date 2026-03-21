@@ -3,87 +3,59 @@
  * requirements-literacy-merge.php
  * Library of Calabria — child theme snippet
  *
- * PURPOSE
- * -------
- * Merges duplicate literacy requirement lines on gift detail pages.
+ * Merges paired generic/specific requirement boxes on gift pages, e.g.:
  *
- * Some gifts require a specific literacy (e.g. Zhongwén). The CustomTables
- * layout renders both a generic "Literacy" item (from the gift_requirements
- * gift_ref row) and a specific "Literacy: Zhongwén" item (from
- * ct_gifts_requires_special). This filter collapses them into one:
- *
- *   Before:  "Literacy"            (separate line)
- *            "Literacy: Zhongwén"  (separate line)
- *
- *   After:   "Literacy: Zhongwén"  (single merged line)
+ *   "Literacy"  +  "Literacy: Zho-ngwén"   → "Literacy: Zho-ngwén"
+ *   "Language"  +  "Language: Zhonggese"   → "Language: Zhonggese"
+ *   "Mystic of: [Choice]"  +  "Mystic: Elementalism"  → "Mystic: Elementalism"
  *
  * INSTALLATION
- * ------------
- * Copy the two functions below into the child theme's functions.php.
- * No JavaScript file is needed.
+ * Copy the two functions below into the child theme's functions.php (no <?php tag).
  *
- * SERVER PATH
- * -----------
- * wp-content/themes/<child-theme>/functions.php  (append the functions below)
- *
- * VERIFICATION
- * ------------
- * 1. Visit a gift page that requires Literacy in a specific language
- *    (e.g. a Zhongwén-literacy gift).
- * 2. Confirm only one literacy line appears (e.g. "Literacy: Zhongwén").
- * 3. Confirm non-literacy requirements are unchanged.
- * 4. Test a gift that only has the generic "Literacy" requirement (no language):
- *    that line should remain as-is (no merging, nothing removed).
+ * SERVER PATH: wp-content/themes/<child-theme>/functions.php (append)
  */
 
-if ( ! function_exists( 'loc_merge_literacy_requirements' ) ) {
-    /**
-     * Merge duplicate literacy requirement entries in rendered gift-page HTML.
-     *
-     * Runs as a the_content filter at priority 20 (after CT shortcodes at 11).
-     * Only processes pages whose URL path contains '/gifts/' — adjust the
-     * $uri check below if your gift pages live under a different path.
-     *
-     * @param  string $content  Rendered page content (fully-expanded shortcodes).
-     * @return string           Content with literacy items merged.
-     */
-    function loc_merge_literacy_requirements( $content ) {
-        // Fast-exit: skip if no literacy content at all.
-        if ( stripos( $content, 'literacy' ) === false ) {
+if ( ! function_exists( 'loc_merge_gift_requirements' ) ) {
+    function loc_merge_gift_requirements( $content ) {
+        // Fast-exit: skip pages with none of the relevant keywords.
+        if ( false === stripos( $content, 'Literacy' )
+            && false === stripos( $content, 'Language' )
+            && false === stripos( $content, '[Choice]' ) ) {
             return $content;
         }
-
-        // Only run on gift detail pages.
-        $uri = $_SERVER['REQUEST_URI'] ?? '';
-        if ( stripos( $uri, '/gifts/' ) === false ) {
-            return $content;
-        }
-
-        return loc_dom_merge_literacy( $content );
+        return loc_dom_merge_gift_pairs( $content );
     }
-    add_filter( 'the_content', 'loc_merge_literacy_requirements', 20 );
+    add_filter( 'the_content', 'loc_merge_gift_requirements', 20 );
 }
 
-if ( ! function_exists( 'loc_dom_merge_literacy' ) ) {
+if ( ! function_exists( 'loc_dom_merge_gift_pairs' ) ) {
     /**
-     * Parse HTML with DOMDocument, find sibling literacy elements in the same
-     * parent container, and merge them.
+     * Parse the rendered HTML with DOMDocument and merge paired requirement elements
+     * that share the same parent container.
      *
-     * Algorithm:
-     *  1. Find every leaf element whose text content is exactly "Literacy".
-     *  2. For each, search its siblings in the same parent for a specific
-     *     literacy item: "Literacy: X", "Must be literate in X", "Literate in X".
-     *  3. If a specific sibling is found, update the generic element to
-     *     "Literacy: X" and remove the specific sibling.
+     * Two merge patterns are handled:
      *
-     * @param  string $content  Raw HTML string.
-     * @return string           Modified HTML string.
+     *   Pattern 1 — generic + specific
+     *     Generic element text:  "Literacy"         (no colon)
+     *     Specific sibling text: "Literacy: Zho-ngwén"  (starts with generic + ": ")
+     *     Result: generic element becomes "Literacy: Zho-ngwén", specific removed.
+     *
+     *   Pattern 2 — placeholder + specific
+     *     Generic element text:  "Mystic of: [Choice]"  (contains "[Choice]")
+     *     Specific sibling text: "Mystic: Elementalism"  (starts with same prefix, no "[Choice]")
+     *     Result: generic element becomes "Mystic: Elementalism", specific removed.
+     *
+     * Only elements whose total text content is 1–120 characters are considered,
+     * which excludes large container elements while including individual requirement boxes.
+     * The match always requires both elements to share the same immediate parent, so
+     * content in unrelated page sections is never altered.
+     *
+     * @param  string $content  Rendered HTML from WordPress/CustomTables.
+     * @return string           Modified HTML with merged pairs.
      */
-    function loc_dom_merge_literacy( $content ) {
+    function loc_dom_merge_gift_pairs( $content ) {
         $dom = new DOMDocument( '1.0', 'UTF-8' );
         libxml_use_internal_errors( true );
-
-        // Wrap in a known root so loadHTML gives us a single body to iterate.
         $dom->loadHTML(
             '<html><head><meta charset="utf-8"></head><body>' . $content . '</body></html>',
             LIBXML_NOBLANKS
@@ -93,58 +65,92 @@ if ( ! function_exists( 'loc_dom_merge_literacy' ) ) {
         $xpath = new DOMXPath( $dom );
 
         /*
-         * Find leaf elements whose normalised text is exactly "Literacy".
-         * "Leaf" = no child elements (child::*), so we don't match headings
-         * or labels that contain "Literacy" alongside other child nodes.
+         * Select all elements whose total text length is between 1 and 120 chars.
+         * Using normalize-space(.) (dot = current node including all descendants)
+         * means we correctly read text even when it is wrapped in <em>, <strong>, etc.
          */
-        $generic_nodes = $xpath->query(
-            '//*[not(child::*) and normalize-space(text())="Literacy"]'
+        $candidates = $xpath->query(
+            '//*[string-length(normalize-space(.)) >= 1 and string-length(normalize-space(.)) <= 120]'
         );
 
-        if ( $generic_nodes->length === 0 ) {
-            return $content;
+        // Group candidate elements by their immediate parent.
+        $by_parent = [];
+        foreach ( $candidates as $node ) {
+            if ( $node->parentNode === null ) {
+                continue;
+            }
+            $text = trim( $node->textContent );
+            if ( $text === '' ) {
+                continue;
+            }
+            $by_parent[ spl_object_hash( $node->parentNode ) ][] = [
+                'node' => $node,
+                'text' => $text,
+            ];
         }
 
         $changed = false;
+        $removed = new SplObjectStorage();
 
-        foreach ( $generic_nodes as $generic ) {
-            $parent = $generic->parentNode;
-            if ( ! $parent ) {
+        foreach ( $by_parent as $group ) {
+            if ( count( $group ) < 2 ) {
                 continue;
             }
 
-            $specific_node = null;
-            $language      = null;
+            $n = count( $group );
+            for ( $i = 0; $i < $n; $i++ ) {
+                $item = $group[ $i ];
 
-            // Check every sibling in the same parent for a specific literacy pattern.
-            foreach ( $parent->childNodes as $sibling ) {
-                if ( $sibling->isSameNode( $generic ) ) {
-                    continue;
-                }
-                if ( $sibling->nodeType !== XML_ELEMENT_NODE ) {
+                // Skip nodes already removed from the DOM.
+                if ( $removed->contains( $item['node'] ) || $item['node']->parentNode === null ) {
                     continue;
                 }
 
-                $text = trim( $sibling->textContent );
+                $text = $item['text'];
 
-                if ( preg_match( '/^literacy:\s*(.+)$/i', $text, $m ) ) {
-                    $language      = trim( $m[1] );
-                    $specific_node = $sibling;
-                    break;
+                // ── Pattern 1: "X" (no colon) — look for sibling "X: Y" ──────────
+                if ( strpos( $text, ':' ) === false ) {
+                    for ( $j = 0; $j < $n; $j++ ) {
+                        if ( $j === $i ) {
+                            continue;
+                        }
+                        $other = $group[ $j ];
+                        if ( $removed->contains( $other['node'] ) || $other['node']->parentNode === null ) {
+                            continue;
+                        }
+                        if ( 0 === stripos( $other['text'], $text . ': ' ) ) {
+                            loc_replace_element_text( $dom, $item['node'], $other['text'] );
+                            $other['node']->parentNode->removeChild( $other['node'] );
+                            $removed->attach( $other['node'] );
+                            $changed = true;
+                            break;
+                        }
+                    }
+                    continue;
                 }
-                if ( preg_match( '/^(?:must be literate|literate) in\s+(.+)$/i', $text, $m ) ) {
-                    $language      = trim( $m[1] );
-                    $specific_node = $sibling;
-                    break;
-                }
-            }
 
-            if ( $language && $specific_node ) {
-                // Update generic to the merged value.
-                $generic->textContent = 'Literacy: ' . $language;
-                // Remove the now-redundant specific sibling.
-                $parent->removeChild( $specific_node );
-                $changed = true;
+                // ── Pattern 2: "X: [Choice]" — look for sibling "X: Y" (concrete) ─
+                if ( preg_match( '/^(.+?):\s*\[Choice\]$/i', $text, $m ) ) {
+                    $prefix = trim( $m[1] );
+                    for ( $j = 0; $j < $n; $j++ ) {
+                        if ( $j === $i ) {
+                            continue;
+                        }
+                        $other = $group[ $j ];
+                        if ( $removed->contains( $other['node'] ) || $other['node']->parentNode === null ) {
+                            continue;
+                        }
+                        $otext = $other['text'];
+                        if ( 0 === stripos( $otext, $prefix . ': ' )
+                            && false === stripos( $otext, '[Choice]' ) ) {
+                            loc_replace_element_text( $dom, $item['node'], $otext );
+                            $other['node']->parentNode->removeChild( $other['node'] );
+                            $removed->attach( $other['node'] );
+                            $changed = true;
+                            break;
+                        }
+                    }
+                }
             }
         }
 
@@ -152,13 +158,29 @@ if ( ! function_exists( 'loc_dom_merge_literacy' ) ) {
             return $content;
         }
 
-        // Serialise only the body's children — strips the html/head/body wrapper.
+        // Serialise only the body children — strips the html/head/body wrapper.
         $body   = $dom->getElementsByTagName( 'body' )->item( 0 );
         $output = '';
         foreach ( $body->childNodes as $child ) {
             $output .= $dom->saveHTML( $child );
         }
-
         return $output;
+    }
+}
+
+if ( ! function_exists( 'loc_replace_element_text' ) ) {
+    /**
+     * Replace all child nodes of $node with a single plain text node.
+     * This removes any <em>/<strong> wrappers while keeping the element itself.
+     *
+     * @param DOMDocument $dom
+     * @param DOMElement  $node
+     * @param string      $text
+     */
+    function loc_replace_element_text( $dom, $node, $text ) {
+        while ( $node->firstChild ) {
+            $node->removeChild( $node->firstChild );
+        }
+        $node->appendChild( $dom->createTextNode( $text ) );
     }
 }
