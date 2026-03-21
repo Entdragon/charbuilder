@@ -1,0 +1,166 @@
+<?php
+/**
+ * Template Name: Character Generator
+ */
+
+declare(strict_types=1);
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+$cg_entry = ABSPATH . 'characters/index.php';
+
+if (!is_file($cg_entry)) {
+    status_header(500);
+    nocache_headers();
+    header('Content-Type: text/plain; charset=utf-8');
+    echo "Character Generator app entry not found: {$cg_entry}";
+    exit;
+}
+
+$auth_mode = '';
+if (isset($_GET['auth'])) {
+    $candidate = sanitize_key(wp_unslash($_GET['auth']));
+    if (in_array($candidate, array('login', 'register'), true)) {
+        $auth_mode = $candidate;
+    }
+}
+
+if (!defined('CG_PUBLIC_BASE')) {
+    define('CG_PUBLIC_BASE', '/characters');
+}
+
+if (!defined('CG_CANONICAL_URL')) {
+    define('CG_CANONICAL_URL', home_url('/character-generator/'));
+}
+
+if (!defined('CG_LOGIN_URL')) {
+    define('CG_LOGIN_URL', home_url('/character-generator/?auth=login'));
+}
+
+if (!defined('CG_REGISTER_URL')) {
+    define('CG_REGISTER_URL', home_url('/character-generator/?auth=register'));
+}
+
+if (!defined('CG_EMBED_MODE')) {
+    define('CG_EMBED_MODE', true);
+}
+
+$cg_ajax_env = array(
+    'ajax_url'    => home_url('/characters/ajax.php'),
+    'ajaxurl'     => home_url('/characters/ajax.php'),
+    'nonce'       => '1',
+    'security'    => '1',
+    '_ajax_nonce' => '1',
+);
+
+get_header();
+?>
+
+<style id="loc-character-generator-page-style">
+  .loc-cg-page {
+    max-width: 1120px;
+    margin: 0 auto;
+  }
+
+  .loc-cg-hero {
+    margin: 0 0 1.25rem;
+  }
+
+  .loc-cg-hero h1 {
+    margin: 0 0 0.45rem;
+  }
+
+  .loc-cg-shell {
+    background: #171411;
+    border: 1px solid rgba(201,168,76,0.22);
+    border-radius: 18px;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.18);
+    overflow: hidden;
+  }
+
+  .loc-cg-shell > #site-wrapper {
+    margin: 0 !important;
+  }
+</style>
+
+<div class="loc-cg-page">
+  <section class="loc-cg-hero">
+    <h1><?php echo esc_html(get_the_title() ?: 'Character Generator'); ?></h1>
+  </section>
+
+  <div class="loc-cg-shell">
+    <?php require $cg_entry; ?>
+  </div>
+</div>
+
+<script>
+(function () {
+  const authMode = <?php echo wp_json_encode($auth_mode); ?>;
+  const expectedAjax = <?php echo wp_json_encode($cg_ajax_env); ?>;
+
+  function enforceCharacterAjaxEnv() {
+    try {
+      window.CG_AJAX = Object.assign({}, window.CG_AJAX || {}, expectedAjax);
+      window.CG_Ajax = window.CG_AJAX;
+      window.CG_NONCE = '1';
+      window.CG_NONCES = new Proxy({}, { get: () => '1' });
+    } catch (e) {
+      // non-fatal
+    }
+  }
+
+  function applyAuthMode() {
+    try {
+      if (!authMode) {
+        return;
+      }
+
+      if (typeof window.activateAuthTab === 'function') {
+        window.activateAuthTab(authMode);
+        return;
+      }
+
+      const tabs = document.querySelectorAll('.auth-tab');
+      const forms = document.querySelectorAll('.auth-form');
+
+      tabs.forEach(t => t.classList.remove('active'));
+      forms.forEach(f => f.classList.remove('active'));
+
+      const activeTab = document.querySelector('.auth-tab[data-tab="' + authMode + '"]');
+      const activeForm = document.getElementById(authMode + '-form');
+
+      if (activeTab) activeTab.classList.add('active');
+      if (activeForm) activeForm.classList.add('active');
+    } catch (e) {
+      // non-fatal
+    }
+  }
+
+  function stabilizeCharacterPage() {
+    enforceCharacterAjaxEnv();
+    applyAuthMode();
+  }
+
+  stabilizeCharacterPage();
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', stabilizeCharacterPage);
+  } else {
+    stabilizeCharacterPage();
+  }
+
+  window.addEventListener('load', stabilizeCharacterPage);
+
+  setTimeout(stabilizeCharacterPage, 0);
+  setTimeout(stabilizeCharacterPage, 50);
+  setTimeout(stabilizeCharacterPage, 150);
+  setTimeout(stabilizeCharacterPage, 400);
+  setTimeout(stabilizeCharacterPage, 1000);
+  setTimeout(stabilizeCharacterPage, 2500);
+})();
+</script>
+
+<?php
+get_footer();
