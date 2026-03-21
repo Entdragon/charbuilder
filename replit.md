@@ -100,10 +100,5 @@ The Experience tab (`tab-experience`) lives between Skills and Trappings in the 
 - Command: `node server/index.js`
 - Port: 5000 (webview)
 
-## Hosting Cleanup (staging site retired)
-The former staging site is no longer used. The following manual steps should be completed on the shared hosting control panel:
-1. Delete the staging WordPress database (via cPanel / phpMyAdmin)
-2. Remove `cg-db-proxy.php` and `cg-proxy-config.php` from the former staging server's web root
-3. Optionally delete the entire staging WordPress installation and files from the hosting account
-4. Verify that the Replit Secrets `CG_PROXY_URL` and `CG_PROXY_SECRET` point to the production server (`libraryofcalbria.com`), not the former staging server
-5. If `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS` are set, verify they reference the production database
+## Hosting Notes
+The staging site has been retired. `CG_PROXY_URL` and `CG_PROXY_SECRET` point to the production server (`libraryofcalbria.com`). The `DB_PREFIX` secret is confirmed set. No staging environment is in use.
