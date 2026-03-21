@@ -3,199 +3,100 @@
  * requirements-literacy-merge.php
  * Library of Calabria — child theme snippet
  *
- * Merges paired generic/specific requirement boxes on gift pages.
- * Uses an output buffer (not the_content filter) so it catches content
- * rendered by CustomTables shortcodes or templates at any hook.
+ * Merges paired generic/specific requirement boxes on gift pages via JavaScript.
+ * Runs client-side so it is unaffected by page caching plugins.
  *
- * Patterns handled:
- *   "Literacy"          +  "Literacy: Zho-ngwén"   → "Literacy: Zho-ngwén"
- *   "Language"          +  "Language: Zhonggese"   → "Language: Zhonggese"
- *   "Mystic"            +  "Mystic: Elementalism"  → "Mystic: Elementalism"
- *   "Piety"             +  "Piety: Solari"         → "Piety: Solari"
- *   "Mystic of: [Choice]"  +  "Mystic: Elementalism"  → "Mystic: Elementalism"
- *   (any "X: [Choice]"  +  "X: concrete value")
+ * Patterns handled (all case-insensitive):
+ *   "Literacy"           +  "Literacy: Zho-ngwén"  → "Literacy: Zho-ngwén"
+ *   "Language"           +  "Language: Zhonggese"  → "Language: Zhonggese"
+ *   "Mystic"             +  "Mystic: Elementalism" → "Mystic: Elementalism"
+ *   "Piety"              +  "Piety: Solari"        → "Piety: Solari"
+ *   "Mystic of: [Choice]"  +  "Mystic: Elementalism" → "Mystic: Elementalism"
+ *   (any "X of: [Choice]" or "X: [Choice]" paired with "X: concrete value")
  *
  * INSTALLATION
- * Copy the functions below into the child theme's functions.php (no <?php tag).
+ * Copy the function below into the child theme's functions.php (no <?php tag).
  *
  * SERVER PATH: wp-content/themes/<child-theme>/functions.php (append)
  */
 
-if ( ! function_exists( 'loc_req_ob_start' ) ) {
-    /**
-     * Start output buffering on every front-end page.
-     * The callback does a fast keyword check and exits immediately on pages
-     * that contain none of the trigger words, so the overhead is minimal.
-     */
-    function loc_req_ob_start() {
-        if ( is_admin() ) {
-            return;
-        }
-        ob_start( 'loc_req_ob_callback' );
-    }
-    add_action( 'template_redirect', 'loc_req_ob_start' );
-}
+if ( ! function_exists( 'loc_req_merge_script' ) ) {
+    function loc_req_merge_script() {
+        ?>
+        <script>
+        (function () {
+            'use strict';
 
-if ( ! function_exists( 'loc_req_ob_callback' ) ) {
-    /**
-     * Output buffer callback: receives the complete page HTML, runs the merge,
-     * and returns the (possibly modified) HTML.
-     *
-     * @param  string $html  Full page HTML.
-     * @return string
-     */
-    function loc_req_ob_callback( $html ) {
-        // Fast-exit: if none of the trigger words appear, skip DOM work entirely.
-        $triggers = array( 'Literacy', 'Language', 'Mystic', 'Piety', '[Choice]' );
-        $found = false;
-        foreach ( $triggers as $t ) {
-            if ( stripos( $html, $t ) !== false ) {
-                $found = true;
-                break;
-            }
-        }
-        if ( ! $found ) {
-            return $html;
-        }
+            function mergeRequirements() {
+                // Find every requirements grid on the page.
+                var grids = document.querySelectorAll('.skill-grid');
 
-        return loc_req_dom_merge( $html );
-    }
-}
+                grids.forEach(function (grid) {
+                    var cards = Array.from(grid.querySelectorAll('.skill-card'));
+                    if (cards.length < 2) return;
 
-if ( ! function_exists( 'loc_req_dom_merge' ) ) {
-    /**
-     * Parse HTML with DOMDocument, find sibling requirement elements that form
-     * a generic/specific pair, and collapse them into one.
-     *
-     * Two merge patterns:
-     *
-     *   Pattern 1 — bare generic + specific
-     *     Generic:  "Literacy"            (no colon)
-     *     Specific: "Literacy: Zho-ngwén" (same word + ": " prefix)
-     *     Result:   generic element text becomes "Literacy: Zho-ngwén"; specific removed.
-     *
-     *   Pattern 2 — [Choice] placeholder + specific
-     *     Generic:  "Mystic of: [Choice]"   (ends with [Choice])
-     *     Specific: "Mystic: Elementalism"   (same base word + ": ", no [Choice])
-     *     Result:   generic becomes "Mystic: Elementalism"; specific removed.
-     *
-     * Only sibling elements (same immediate parent) are ever compared, and only
-     * those whose total text length is 1–120 chars, so large container divs are
-     * never modified.
-     *
-     * @param  string $html  Full or partial HTML.
-     * @return string
-     */
-    function loc_req_dom_merge( $html ) {
-        $dom = new DOMDocument( '1.0', 'UTF-8' );
-        libxml_use_internal_errors( true );
-        $dom->loadHTML( $html );
-        libxml_clear_errors();
+                    var removed = [];
 
-        $xpath = new DOMXPath( $dom );
+                    for (var i = 0; i < cards.length; i++) {
+                        if (removed.indexOf(i) !== -1) continue;
 
-        // Gather all elements with short total text (requirement-box candidates).
-        $candidates = $xpath->query(
-            '//*[string-length(normalize-space(.)) >= 1 and string-length(normalize-space(.)) <= 120]'
-        );
+                        var textI = cards[i].textContent.trim();
 
-        // Group by parent.
-        $by_parent = array();
-        foreach ( $candidates as $node ) {
-            if ( $node->parentNode === null ) {
-                continue;
-            }
-            $text = trim( $node->textContent );
-            if ( $text === '' ) {
-                continue;
-            }
-            $key = spl_object_hash( $node->parentNode );
-            $by_parent[ $key ][] = array( 'node' => $node, 'text' => $text );
-        }
+                        for (var j = 0; j < cards.length; j++) {
+                            if (i === j || removed.indexOf(j) !== -1) continue;
 
-        $changed = false;
-        $removed = new SplObjectStorage();
+                            var textJ = cards[j].textContent.trim();
 
-        foreach ( $by_parent as $group ) {
-            $n = count( $group );
-            if ( $n < 2 ) {
-                continue;
-            }
+                            // Pattern 1 — "X" (no colon) paired with "X: Y"
+                            if (textI.indexOf(':') === -1) {
+                                if (textJ.toLowerCase().indexOf(textI.toLowerCase() + ': ') === 0) {
+                                    setCardText(cards[i], textJ);
+                                    cards[j].parentNode.removeChild(cards[j]);
+                                    removed.push(j);
+                                    break;
+                                }
+                            }
 
-            for ( $i = 0; $i < $n; $i++ ) {
-                $item = $group[ $i ];
-                if ( $removed->contains( $item['node'] ) || $item['node']->parentNode === null ) {
-                    continue;
-                }
-                $text = $item['text'];
-
-                // ── Pattern 1: "X" with no colon ────────────────────────────────
-                if ( strpos( $text, ':' ) === false ) {
-                    for ( $j = 0; $j < $n; $j++ ) {
-                        if ( $j === $i ) {
-                            continue;
-                        }
-                        $other = $group[ $j ];
-                        if ( $removed->contains( $other['node'] ) || $other['node']->parentNode === null ) {
-                            continue;
-                        }
-                        if ( 0 === stripos( $other['text'], $text . ': ' ) ) {
-                            loc_req_set_text( $dom, $item['node'], $other['text'] );
-                            $other['node']->parentNode->removeChild( $other['node'] );
-                            $removed->attach( $other['node'] );
-                            $changed = true;
-                            break;
+                            // Pattern 2 — "X: [Choice]" or "X of: [Choice]" paired with "X: Y"
+                            var choiceMatch = textI.match(/^(.*?)(?:\s+of)?:\s*\[Choice\]$/i);
+                            if (choiceMatch) {
+                                // Try the base word (e.g. "Mystic" from "Mystic of: [Choice]")
+                                var base = choiceMatch[1].trim().split(/\s+/).shift();
+                                if (
+                                    textJ.toLowerCase().indexOf('[choice]') === -1 &&
+                                    textJ.toLowerCase().indexOf(base.toLowerCase() + ':') === 0
+                                ) {
+                                    setCardText(cards[i], textJ);
+                                    cards[j].parentNode.removeChild(cards[j]);
+                                    removed.push(j);
+                                    break;
+                                }
+                            }
                         }
                     }
-                    continue;
-                }
-
-                // ── Pattern 2: "X: [Choice]" placeholder ────────────────────────
-                if ( preg_match( '/^(.+?):\s*\[Choice\]$/i', $text, $m ) ) {
-                    $prefix = trim( $m[1] );
-                    for ( $j = 0; $j < $n; $j++ ) {
-                        if ( $j === $i ) {
-                            continue;
-                        }
-                        $other = $group[ $j ];
-                        if ( $removed->contains( $other['node'] ) || $other['node']->parentNode === null ) {
-                            continue;
-                        }
-                        $otext = $other['text'];
-                        if ( 0 === stripos( $otext, $prefix . ': ' )
-                            && false === stripos( $otext, '[Choice]' ) ) {
-                            loc_req_set_text( $dom, $item['node'], $otext );
-                            $other['node']->parentNode->removeChild( $other['node'] );
-                            $removed->attach( $other['node'] );
-                            $changed = true;
-                            break;
-                        }
-                    }
-                }
+                });
             }
-        }
 
-        if ( ! $changed ) {
-            return $html;
-        }
+            /**
+             * Replace a card's visible text without removing its element.
+             * Strips child nodes (links, <em>, etc.) and sets plain text.
+             */
+            function setCardText(card, text) {
+                while (card.firstChild) {
+                    card.removeChild(card.firstChild);
+                }
+                card.appendChild(document.createTextNode(text));
+            }
 
-        return $dom->saveHTML();
+            // Run after the DOM is ready.
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', mergeRequirements);
+            } else {
+                mergeRequirements();
+            }
+        }());
+        </script>
+        <?php
     }
-}
-
-if ( ! function_exists( 'loc_req_set_text' ) ) {
-    /**
-     * Replace all child nodes of $node with a single plain-text node.
-     * This strips any <em>/<strong> wrappers while keeping the element itself.
-     *
-     * @param DOMDocument $dom
-     * @param DOMNode     $node
-     * @param string      $text
-     */
-    function loc_req_set_text( $dom, $node, $text ) {
-        while ( $node->firstChild ) {
-            $node->removeChild( $node->firstChild );
-        }
-        $node->appendChild( $dom->createTextNode( $text ) );
-    }
+    add_action( 'wp_footer', 'loc_req_merge_script' );
 }

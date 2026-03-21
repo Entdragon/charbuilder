@@ -1,0 +1,69 @@
+
+<h2>Gift Details</h2>
+
+<div class="skill-grid" style="margin-bottom: 20px;">
+      <div class="skill-card" style="background-color: #e6f9e6;">
+      <a href="/gifts-multiple/">Multiple Times</a>
+    </div>
+  
+  
+      <div class="skill-card">
+      <a href="/gift-class/magical/">
+        Magical      </a>
+    </div>
+  </div>
+
+  <h3>Types</h3>
+  <div class="skill-grid" style="margin-bottom: 20px;">
+          <div class="skill-card">
+        <a href="/gift-type/air/">Air</a>
+      </div>
+          <div class="skill-card">
+        <a href="/gift-type/clout/">Clout</a>
+      </div>
+          <div class="skill-card">
+        <a href="/gift-type/master/">Master</a>
+      </div>
+          <div class="skill-card">
+        <a href="/gift-type/skill/">Skill</a>
+      </div>
+      </div>
+
+  <h3>Gift Requires</h3>
+  <div class="skill-grid" style="margin-bottom: 20px;">
+                  <div class="skill-card">
+          <a href="/gift/mystic-of-choice/">
+            Mystic of: [Choice]          </a>
+        </div>
+                        <div class="skill-card"><em>Mystic: Elementalism</em></div>
+            </div>
+
+  <section class="gift-section gift-section--trigger">
+    <h3>Trigger</h3>
+    <ul class="gift-list gift-trigger-list">
+              <li>Casting a Air Spell</li>
+          </ul>
+  </section>
+
+  <h3>Refresh</h3>
+  <div class="skill-grid" style="margin-bottom: 20px;">
+    <div class="skill-card">
+      <a href="/refresh/chapter/">
+        Chapter      </a>
+    </div>
+  </div>
+
+  <section class="gift-section gift-section--effect">
+    <h3>Effect</h3>
+
+                <div class="gift-rule">
+        <div class="gift-rule__head">
+                                      </div>
+
+                  <ul class="gift-list gift-effect-clauses">
+                          <li>Add 1 Mark to your Weather Sense Skill</li>
+                          <li>Claim a bonus 2d8 casting a spell of the Air nature.</li>
+                      </ul>
+        
+              </div>
+      </section>
