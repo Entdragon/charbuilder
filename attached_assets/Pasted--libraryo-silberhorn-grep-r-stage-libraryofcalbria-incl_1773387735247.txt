@@ -1,0 +1,23 @@
+[libraryo@silberhorn ~]$ grep -r "stage\.libraryofcalbria" . --include="*.php" --include="*.js" --include="*.md" --include="*.conf"
+
+^C
+[libraryo@silberhorn ~]$ echo $CG_PROXY_URL
+
+[libraryo@silberhorn ~]$ curl -s -o /dev/null -w "%{http_code}" https://stage.libraryofcalbria.com/cg-db-proxy.php
+404[libraryo@silberhorn ~]$ curl -s http://localhost:5000/api/ajax -X POST -d "action=cg_ping" | head -c 200
+[libraryo@silberhorn ~]$ grep -r "stage\.libraryofcalbria" . --include="*.php" --include="*.js" --include="*.md" --include="*.conf"
+./tmp/awstats/awstats.libraryofcalbria.com.conf:HostAliases="characters.libraryofcalbria.com libraryofcalbria.com michaeljparry.com michaeljparry.com.libraryofcalbria.com stage.libraryofcalbria.com www.characters.libraryofcalbria.com www.libraryofcalbria.com www.michaeljparry.com www.michaeljparry.com.libraryofcalbria.com www.stage.libraryofcalbria.com localhost 127.0.0.1"
+./tmp/awstats/ssl/awstats.libraryofcalbria.com.conf:HostAliases="characters.libraryofcalbria.com libraryofcalbria.com michaeljparry.com michaeljparry.com.libraryofcalbria.com stage.libraryofcalbria.com www.characters.libraryofcalbria.com www.libraryofcalbria.com www.michaeljparry.com www.michaeljparry.com.libraryofcalbria.com www.stage.libraryofcalbria.com localhost 127.0.0.1"
+./tmp/awstats/ssl/awstats.michaeljparry.com.libraryofcalbria.com.conf:HostAliases="characters.libraryofcalbria.com libraryofcalbria.com michaeljparry.com michaeljparry.com.libraryofcalbria.com stage.libraryofcalbria.com www.characters.libraryofcalbria.com www.libraryofcalbria.com www.michaeljparry.com www.michaeljparry.com.libraryofcalbria.com www.stage.libraryofcalbria.com localhost 127.0.0.1"
+./tmp/awstats/ssl/awstats.characters.libraryofcalbria.com.conf:HostAliases="characters.libraryofcalbria.com libraryofcalbria.com michaeljparry.com michaeljparry.com.libraryofcalbria.com stage.libraryofcalbria.com www.characters.libraryofcalbria.com www.libraryofcalbria.com www.michaeljparry.com www.michaeljparry.com.libraryofcalbria.com www.stage.libraryofcalbria.com localhost 127.0.0.1"
+./tmp/awstats/ssl/awstats.stage.libraryofcalbria.com.conf:LogFile="/etc/apache2/logs/domlogs/stage.libraryofcalbria.com-ssl_log"
+./tmp/awstats/ssl/awstats.stage.libraryofcalbria.com.conf:SiteDomain="stage.libraryofcalbria.com"
+./tmp/awstats/ssl/awstats.stage.libraryofcalbria.com.conf:HostAliases="characters.libraryofcalbria.com libraryofcalbria.com michaeljparry.com michaeljparry.com.libraryofcalbria.com stage.libraryofcalbria.com www.characters.libraryofcalbria.com www.libraryofcalbria.com www.michaeljparry.com www.michaeljparry.com.libraryofcalbria.com www.stage.libraryofcalbria.com localhost 127.0.0.1"
+./tmp/awstats/awstats.michaeljparry.com.libraryofcalbria.com.conf:HostAliases="characters.libraryofcalbria.com libraryofcalbria.com michaeljparry.com michaeljparry.com.libraryofcalbria.com stage.libraryofcalbria.com www.characters.libraryofcalbria.com www.libraryofcalbria.com www.michaeljparry.com www.michaeljparry.com.libraryofcalbria.com www.stage.libraryofcalbria.com localhost 127.0.0.1"
+./tmp/awstats/awstats.characters.libraryofcalbria.com.conf:HostAliases="characters.libraryofcalbria.com libraryofcalbria.com michaeljparry.com michaeljparry.com.libraryofcalbria.com stage.libraryofcalbria.com www.characters.libraryofcalbria.com www.libraryofcalbria.com www.michaeljparry.com www.michaeljparry.com.libraryofcalbria.com www.stage.libraryofcalbria.com localhost 127.0.0.1"
+./tmp/awstats/awstats.stage.libraryofcalbria.com.conf:LogFile="/etc/apache2/logs/domlogs/stage.libraryofcalbria.com"
+./tmp/awstats/awstats.stage.libraryofcalbria.com.conf:SiteDomain="stage.libraryofcalbria.com"
+./tmp/awstats/awstats.stage.libraryofcalbria.com.conf:HostAliases="characters.libraryofcalbria.com libraryofcalbria.com michaeljparry.com michaeljparry.com.libraryofcalbria.com stage.libraryofcalbria.com www.characters.libraryofcalbria.com www.libraryofcalbria.com www.michaeljparry.com www.michaeljparry.com.libraryofcalbria.com www.stage.libraryofcalbria.com localhost 127.0.0.1"
+./charbuilder/replit.md:- **Staging URL**: https://stage.libraryofcalbria.com/character-generator/
+./charbuilder/replit.md:`tools/cg-db-proxy.php` must be deployed to the WordPress server (e.g. `stage.libraryofcalbria.com/cg-db-proxy.php`). It:
+[libraryo@silberhorn ~]$

@@ -1,0 +1,47 @@
+[libraryo@silberhorn ~]$ ls -la ~/
+total 224
+drwx--x--x 27 libraryo libraryo  8192 Mar 13 21:01 .
+drwxr-xr-x  3 root     libraryo    22 Jun 27  2025 ..
+lrwxrwxrwx  1 libraryo libraryo    34 Jun 27  2025 access-logs -> /etc/apache2/logs/domlogs/libraryo
+drwxrwxr-x  6 libraryo libraryo  4096 Sep 24 17:38 _backups
+-rw-------  1 libraryo libraryo 47877 Mar 13 20:48 .bash_history
+-rw-r--r--  1 libraryo libraryo    18 Jun 27  2025 .bash_logout
+-rw-r--r--  1 libraryo libraryo   141 Jun 27  2025 .bash_profile
+-rw-r--r--  1 libraryo libraryo   659 Jan 11 20:58 .bashrc
+drwxrwxr-x  2 libraryo libraryo   127 Dec 30 17:12 bin
+drwxrwx--x  5 libraryo libraryo    39 Jun 27  2025 .cagefs
+drwxr-xr-x  4 libraryo libraryo    57 Mar 13 18:33 .caldav
+drwxrwxr-x  7 libraryo libraryo    87 Jan  4 10:59 .claude
+-rw-------  1 libraryo libraryo 52372 Jan  4 10:59 .claude.json
+-rw-------  1 libraryo libraryo 52301 Jan  4 10:59 .claude.json.backup
+drwxr-xr-x  2 libraryo libraryo    48 Mar  6 21:48 .cl.selector
+drwx------  6 libraryo libraryo   191 Mar 13 20:59 .cpanel
+drwxr-x---  3 libraryo mail        50 Mar 13 13:01 etc
+-rw-rw-r--  1 libraryo libraryo    72 Jul 12  2025 .gitconfig
+-rw-------  1 libraryo libraryo     0 Dec 30 16:51 .git-credentials
+drwxr-x--- 17 libraryo nobody     298 Sep 24 07:03 .htpasswds
+-rw-rw----  1 libraryo libraryo   106 Jun 27  2025 .imunify_patch_id
+-rw-------  1 libraryo libraryo   591 Mar 13 20:56 .lastlogin
+-rw-------  1 libraryo libraryo    28 Jan  5 20:42 .lesshst
+drwx------  3 libraryo libraryo  4096 Mar 13 03:59 logs
+drwxr-x--x  5 libraryo libraryo   209 Mar 13 20:46 mail
+drwxr-x---  7 libraryo nobody    4096 Mar 12 21:48 michaeljparry.com
+-rw-rw----  1 libraryo libraryo   102 Jun 27  2025 .myimunify_id
+drwxrwxr-x  4 libraryo libraryo    72 Jul 12  2025 .npm
+drwxrwxr-x  8 libraryo libraryo  4096 Jul 12  2025 .nvm
+drwxr-x---  3 libraryo libraryo    22 Jun 27  2025 public_ftp
+drwxr-x---  8 libraryo nobody    4096 Mar 13 18:46 public_html
+drwx------  2 libraryo libraryo    24 Jun 27  2025 .spamassassin
+-rw-r--r--  1 libraryo libraryo     0 Jun 27  2025 .spamassassinboxenable
+-rw-r--r--  1 libraryo libraryo     0 Jun 27  2025 .spamassassinenable
+drwx------  2 libraryo libraryo    79 Dec 30 16:54 .ssh
+drwxr-xr-x  5 libraryo libraryo    77 Mar 10 21:23 ssl
+drwxr-x---  2 libraryo nobody       6 Mar 13 20:57 stage.libraryofcalbria.com
+drwxr-xr-x  7 libraryo libraryo  4096 Mar 13 21:01 tmp
+drwx------  2 libraryo libraryo    51 Mar 12 21:50 .trash
+drwx------  2 libraryo libraryo     6 Jun 27  2025 wordpress-backups
+drwxr-xr-x  3 libraryo libraryo    19 Jun 27  2025 .wp-cli
+drwx------  4 libraryo libraryo    26 Mar 12 06:00 .wp-toolkit
+-rw-------  1 libraryo libraryo   684 Jun 27  2025 .wp-toolkit-identifier
+lrwxrwxrwx  1 libraryo libraryo    11 Jun 27  2025 www -> public_html
+[libraryo@silberhorn ~]$

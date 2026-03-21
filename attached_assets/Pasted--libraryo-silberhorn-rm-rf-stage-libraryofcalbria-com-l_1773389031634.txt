@@ -1,0 +1,33 @@
+[libraryo@silberhorn ~]$ rm -rf ~/stage.libraryofcalbria.com/
+[libraryo@silberhorn ~]$ rm -f ~/stage-db-backup.20260228T071035Z.sql
+[libraryo@silberhorn ~]$ rm -f ~/character_records_prod.sql ~/character_records_prod.sql.bak
+[libraryo@silberhorn ~]$ ls -la ~/_backups/
+total 746056
+drwxrwxr-x  6 libraryo libraryo      4096 Sep 24 17:38 .
+drwx--x--x 26 libraryo libraryo      8192 Mar 13 21:03 ..
+drwxrwxr-x  2 libraryo libraryo       189 Sep 24 08:01 20250924-0759
+drwxrwxr-x  2 libraryo libraryo       189 Sep 24 08:03 20250924-0802
+-rw-rw-r--  1 libraryo libraryo     65982 Sep 24 12:51 live-customtables-20250924-1251.sql
+-rw-rw-r--  1 libraryo libraryo     65982 Sep 24 12:51 live-customtables-20250924-1251-stagepref.sql
+-rw-rw-r--  1 libraryo libraryo     65982 Sep 24 12:59 live-customtables-20250924-1259.sql
+-rw-rw-r--  1 libraryo libraryo     65982 Sep 24 12:59 live-customtables-20250924-1259-stagepref.sql
+-rw-rw-r--  1 libraryo libraryo     65982 Sep 24 13:02 live-customtables-20250924-1302.sql
+-rw-rw-r--  1 libraryo libraryo     65982 Sep 24 13:02 live-customtables-20250924-1302-stagepref.sql
+-rw-rw-r--  1 libraryo libraryo     70116 Sep 24 17:28 live-customtables-20250924-1728.sql
+-rw-rw-r--  1 libraryo libraryo     70116 Sep 24 17:29 live-customtables-20250924-1728-stagepref.sql
+-rw-rw-r--  1 libraryo libraryo    700659 Sep 24 17:31 live-customtables-20250924-1731.sql
+-rw-rw-r--  1 libraryo libraryo    700531 Sep 24 17:31 live-customtables-20250924-1731-stagepref.sql
+-rw-rw-r--  1 libraryo libraryo       854 Sep 24 12:57 live-customtables-tables-20250924-1257.sql
+-rw-rw-r--  1 libraryo libraryo       854 Sep 24 12:57 live-customtables-tables-20250924-1257-stagepref.sql
+-rw-rw-r--  1 libraryo libraryo   2810395 Sep 24 08:12 live-db-20250924-0812.sql
+-rw-rw-r--  1 libraryo libraryo   2810395 Sep 24 08:23 live-db-20250924-0823.sql
+-rw-rw-r--  1 libraryo libraryo   6041584 Sep 24 12:47 live-uploads-20250924-1247.tgz
+-rw-rw-r--  1 libraryo libraryo 246074414 Sep 24 08:14 live-wp-content-20250924-0814.tgz
+-rw-rw-r--  1 libraryo libraryo 246074759 Sep 24 08:22 live-wp-content-20250924-0822.tgz
+-rw-rw-r--  1 libraryo libraryo 246074415 Sep 24 08:24 live-wp-content-20250924-0823.tgz
+-rw-rw-r--  1 libraryo libraryo   3022451 Sep 24 12:21 stage-pre-housekeeping-20250924-1221.sql
+-rw-rw-r--  1 libraryo libraryo   2999307 Sep 24 08:46 stage-pre-wxr-20250924-0846.sql
+drwxrwxr-x  2 libraryo libraryo       221 Sep 24 17:39 stage-snapshot-20250924-1738
+-rw-rw-r--  1 libraryo libraryo   6041584 Sep 24 12:47 stage-uploads-before-20250924-1247.tgz
+drwxrwxr-x  2 libraryo libraryo         6 Sep 24 17:32 wxr
+[libraryo@silberhorn ~]$ ls -la ~/wordpress-backups/

@@ -1,0 +1,116 @@
+I need to make a plan for the development of the website and generator.
+
+Since my last session I have independently 
+moved the generator launch splash to https://libraryofcalbria.com/character-generator/ and the template associated with it so it looks and feels like the rest of the site
+changed the sign-on so it works better with the WordPress sign on  
+started trying to improve the structure of the database
+introduced a search function for custom tables to the website with filtering
+
+A questions I have is:
+should I commit the website templates I have built in the child theme to GitHub and then draw them down here into Replit?
+can you help at appropriate times with data clean-up - like I have found a way to display tables based elements in gifts_effects_description and need tp find all the other entries to update to do that
+
+What I think I need to do and want to do now is
+
+update GitHub with the changes I have made to the production code
+update the code here in Replit with those code changes
+tidy the folder structure back up and delete folders and files that were temporary or backups down while doing the manual work so the folder structure is not bloated and is clean
+complete the database schema changes I have been doing
+then cutover the web site and generator to use the new schema
+then clear out legacy and redundant tables and fields from the database to make it clean
+I then need to move back to developing the generator and cleaning the data
+For the generator I want to
+darken all font on light backgrounds and lighten fonts on all dark backgrounds currently the text can be hard to read.
+finish work on the requirements filtering in gifts including where a gift has requirement that can't be checked automatically (i.e need gm approval) once all other requirements are met will show in dropdown with text showing what the requirement is
+Filter "natural" gifts from the gifts dropdown as they only come from being granted when selecting a species
+add a text box next to the skills so users can add a favorite use
+start work on making sure various gifts that have impacts can filter through to the sheet
+i.e. where a gift gives a mark in skills it adds that mark to that skill, and allows three more marks to be added manually without purchasing with experience
+enable the ability purchase equipment and weapons from lists
+be able to track money with the default amount being denari = to starting dice
+need to figure out how to handle the conversions for money from the book of jade
+autofills in the equipment tab a equipment list generated from the trappings granted by careers and by specific Trappings gifts
+autofills weapons and armor values based on those purchases or trappings in the battle array including species weapons from species selection
+have a brief description generated from gift_effect next to the gift on gift tab and sheet so user has quick reference to see what gift does 
+and updates the summary sheet
+For the website I want to
+tidy up the requirements display so where currently it shows both Literacy and special literacy specific language those are merged 
+introduce a admin only view that allows me to edit entries on the customs tables and have when saved update the entries and any child tables
+
+For reference this is the work I have been trying to do in the database to make it cleaner.
+
+High‑level checklist (quick)
+- Canonical model: normalized gifts, gift_requirements, gift_types, gift_rules, gift_sections, gift_triggers.
+- Free‑form content: store parsed blocks in JSON effect_json with generated columns for indexed keys.
+- Deprecate legacy columns: requires_1..19, type_1..8 → backfill then remove.
+- Migration pattern: expand → migrate → contract with dual‑write and feature flags.
+
+Recommended schema & structural changes
+Core changes
+- Use surrogate PKs (BIGINT AUTO_INCREMENT) and FK constraints for integrity.
+- Move repeated inline columns into rows: requires_* → gift_requirements(req_id, gift_id, kind, ref_id, qty, slot).
+- Normalize types into gift_types + gift_type_map (many‑to‑many).
+- Store parsed @@SECTION/@@ACTION in gifts.effect_json JSON and also extract searchable fields into virtual/generated columns for indexing. Use MariaDB JSON validation.
+Naming, constraints, and indexes
+- Naming: lowercase, snake_case, singular table names.
+- Constraints: NOT NULL where possible; CHECK for enums; UNIQUE on (slug, book_id).
+- Indexes: index gift_id, type_id, kind, and JSON-extracted keys via generated columns.
+
+Operational & platform recommendations
+- Zero‑downtime migration: follow expand/migrate/contract; add columns/tables first, backfill in batches, enable dual‑write, then switch reads.
+- Backfill tooling: write idempotent ETL (Python) with logging and a manual review queue for ambiguous parses.
+- Testing: unit tests for parser, staging run with production snapshot, and data‑consistency checks.
+- Monitoring & audit: add created_by, updated_by, created_at, updated_at, and an audit_log table for changes to gifts.
+- Performance: consider partitioning very large tables (time or book_id) and caching read-heavy endpoints in the app layer.
+- WordPress integration: follow CustomTables plugin patterns and avoid bypassing WP DB APIs for migrations; keep plugin upgrade scripts idempotent.
+
+Trade-offs and risks (detailed)
+- Parsing risk: free‑text @@SECTION parsing will produce edge cases—log and surface ambiguous rows for manual fix.
+- JSON vs columns: JSON preserves flexibility but is less queryable; mitigate by extracting hot keys to generated columns.
+- Operational risk: long backfills can impact I/O—use batched jobs and run during low traffic windows.
+
+
+Bold summary: Yes — several other CustomTables need tightening beyond gifts: books, species, equipment, weapons, trappings, and careers should be normalized, constrained, indexed, and given audit fields; free‑text blobs should be parsed into structured child tables or JSON with generated columns for search. These changes will reduce duplication, simplify migrations, and make the app safer to evolve in production in Wellington, NZ.
+Table of recommended changes (quick comparison)
+|  |  |  |  | 
+|  |  | books(book_id, title, isbn, publisher_id, cover_url, metadata JSON)publishers |  | 
+|  |  | species(species_id, name, taxonomy)species_traits(trait_id, species_id, name, value) |  | 
+|  |  | equipment(equipment_id, name, category, cost JSON, weight DECIMAL, stats JSON) |  | 
+|  |  | weapons(weapon_id FK->equipment, damage, range, hands, tags)weapon_modifiers |  | 
+|  |  | trappings(trapping_id, name, rarity, effects JSON)trapping_effects |  | 
+|  |  | careers(career_id, name)career_skills(career_id, skill_id, rank)career_gifts(career_id, gift_id, slot) |  | 
+
+
+
+Detailed recommendations by table
+Books
+- Extract canonical metadata (title, ISBN, author_id, publisher_id, published_date) and move large text (ct_book_abstract, ct_cover_image) into JSON or media table.
+- Add unique (isbn) and NOT NULL where applicable; index slug.
+- Rationale: smaller rows, faster joins, easier cover-image CDN migration. (See schema design best practices).
+Species
+- Normalize traits into species_traits rows rather than long text fields; add controlled vocabularies for gender, size, taxonomy.
+- Add FK constraints and seed lookup tables for common trait names. Refactoring databases safely is recommended.
+Equipment and Weapons
+- Split equipment into base equipment and subtype tables (weapons, armor) to avoid many nullable columns.
+- Move cost/weight units into structured columns and keep cost_details JSON for edge cases. Use generated columns to index hot JSON keys.
+Trappings
+- Parse ct_notes and ct_effect into trapping_effects rows; keep a JSON lore field for long narrative. Add rarity enum and index it for filtering.
+Careers
+- Replace repeated skill/gift columns with mapping tables (career_skills, career_gifts) to support many‑to‑many and ordering. This reduces schema churn when adding new slots.
+
+Cross‑cutting changes
+- Add audit fields: created_at, created_by, updated_at, updated_by on all canonical tables.
+- Add slug + UNIQUE constraints for public lookups.
+- Use idempotent migration scripts and dual‑write during cutover; parse free text with unit‑tested ETL and queue ambiguous rows for manual review. Best practices for refactoring and migrations apply.
+
+
+Goal: Migrate and clean up all CustomTables starting with gifts, consolidate overlapping systems, and then normalize and harden books, species, equipment, weapons, trappings, and careers.
+Approach: expand → migrate → contract (create canonical tables; backfill with idempotent SQL; dual‑write; cutover reads; remove legacy columns). All work runs as SQL against MariaDB 11 with small, tested ETL helpers where SQL alone is insufficient.
+
+End state canonical schema map
+Each row shows table name, purpose, and key columns (one line per cell).
+
+
+
+
+ 
