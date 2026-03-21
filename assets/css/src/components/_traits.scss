@@ -23,7 +23,7 @@
 .cg-trait label {
   font-weight:    600;
   font-size:      0.88rem;
-  color:          var(--cg-text-muted);
+  color:          var(--cg-text, #2c2316);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   display:        block;

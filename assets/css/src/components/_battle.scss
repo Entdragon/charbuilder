@@ -16,8 +16,8 @@
   font-weight:    700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color:          var(--cg-gold, #c9a84c);
-  border-bottom:  1px solid rgba(201,168,76,0.22);
+  color:          var(--cg-gold-dark, #a8822a);
+  border-bottom:  1px solid rgba(201,168,76,0.35);
   padding-bottom: 0.25em;
   margin:         0 0 0.7em;
 }
@@ -44,7 +44,7 @@
   font-size:      0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color:          var(--cg-text-muted, #a09070);
+  color:          var(--cg-text-muted, #6a5b3e);
   margin-bottom:  0.2em;
 }
 
@@ -52,12 +52,12 @@
   font-family:    var(--cg-heading-font, 'Cinzel', serif);
   font-size:      1.1rem;
   font-weight:    700;
-  color:          var(--cg-gold, #c9a84c);
+  color:          var(--cg-gold-dark, #a8822a);
 }
 
 .cg-pool-note {
   font-size:      0.65rem;
-  color:          var(--cg-text-muted, #a09070);
+  color:          var(--cg-text-muted, #6a5b3e);
   margin-top:     0.15em;
 }
 
@@ -78,7 +78,7 @@
   align-items:    center;
   gap:            0.4em;
   font-size:      0.85rem;
-  color:          var(--cg-text-light, #e8dcc4);
+  color:          var(--cg-text, #2c2316);
 }
 
 .cg-wound-box {
@@ -107,27 +107,27 @@
   margin-bottom:   0.6em;
 
   th {
-    background:      rgba(201,168,76,0.1);
-    color:           var(--cg-gold, #c9a84c);
+    background:      rgba(201,168,76,0.12);
+    color:           var(--cg-gold-dark, #a8822a);
     font-family:     var(--cg-heading-font, 'Cinzel', serif);
     font-size:       0.68rem;
     text-transform:  uppercase;
     letter-spacing:  0.06em;
     padding:         6px 10px;
-    border:          1px solid rgba(201,168,76,0.18);
+    border:          1px solid rgba(201,168,76,0.3);
     text-align:      left;
     white-space:     nowrap;
   }
 
   td {
     padding:         5px 6px;
-    border:          1px solid rgba(201,168,76,0.12);
-    color:           var(--cg-text-light, #e8dcc4);
+    border:          1px solid rgba(201,168,76,0.2);
+    color:           var(--cg-text, #2c2316);
     vertical-align:  middle;
   }
 
   tr:nth-child(odd) td {
-    background: rgba(255,255,255,0.03);
+    background: rgba(201,168,76,0.06);
   }
 }
 
@@ -181,7 +181,7 @@
 }
 
 .cg-battle-loading {
-  color:      var(--cg-text-muted, #a09070);
+  color:      var(--cg-text-muted, #6a5b3e);
   font-style: italic;
   font-size:  0.9rem;
 }

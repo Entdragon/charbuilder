@@ -13,7 +13,7 @@
     margin: 0 0 1rem;
     font-family: 'Cinzel', serif;
     font-size: 1rem;
-    color: #c9a84c;
+    color: var(--cg-gold-dark, #a8822a);
     font-weight: 600;
     letter-spacing: .04em;
   }
@@ -30,7 +30,7 @@
 
 .xp-label {
   font-size: .8rem;
-  color: #c9a84c;
+  color: var(--cg-text-muted, #6a5b3e);
   text-transform: uppercase;
   letter-spacing: .05em;
   font-weight: 600;
@@ -83,17 +83,17 @@
     border-color: #c0392b !important;
     background: rgba(192, 57, 43, 0.1) !important;
 
-    .xp-stat-val { color: #e74c3c; }
+    .xp-stat-val { color: #a0271a; }
   }
 
   &--ok .xp-stat-val {
-    color: #c9a84c;
+    color: var(--cg-gold-dark, #a8822a);
   }
 }
 
 .xp-stat-label {
   font-size: .7rem;
-  color: #9a8a6a;
+  color: var(--cg-text-muted, #6a5b3e);
   text-transform: uppercase;
   letter-spacing: .04em;
 }
@@ -101,7 +101,7 @@
 .xp-stat-val {
   font-size: 1.25rem;
   font-family: 'Cinzel', serif;
-  color: #e8dcc4;
+  color: var(--cg-text, #2c2316);
   font-weight: 700;
   line-height: 1.1;
 }
@@ -136,12 +136,12 @@
 .xp-purchase-label {
   font-size: .88rem;
   font-weight: 600;
-  color: #e8dcc4;
+  color: var(--cg-text, #2c2316);
 }
 
 .xp-purchase-note {
   font-size: .75rem;
-  color: #9a8a6a;
+  color: var(--cg-text-muted, #6a5b3e);
   font-style: italic;
 }
 
@@ -185,7 +185,7 @@
 .xp-ctrl-count {
   font-family: 'Cinzel', serif;
   font-size: 1rem;
-  color: #e8dcc4;
+  color: var(--cg-text, #2c2316);
   min-width: 24px;
   text-align: center;
   font-weight: 700;
@@ -203,9 +203,9 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  border: 1px solid rgba(201, 168, 76, 0.4);
+  border: 1px solid rgba(201, 168, 76, 0.6);
   background: transparent;
-  color: #c9a84c;
+  color: var(--cg-gold-dark, #a8822a);
   cursor: pointer;
   font-size: .85rem;
   line-height: 1;
@@ -229,7 +229,7 @@
 .xp-skill-count {
   font-family: 'Cinzel', serif;
   font-size: .85rem;
-  color: #e8dcc4;
+  color: var(--cg-text, #2c2316);
   min-width: 18px;
   text-align: center;
 }
@@ -238,7 +238,7 @@
 
 .xp-mark-tag {
   font-size: .65rem;
-  color: #c9a84c;
+  color: var(--cg-gold-dark, #a8822a);
   font-family: 'Crimson Pro', serif;
   vertical-align: super;
 }
@@ -247,7 +247,7 @@
 
 .xp-gift-label {
   font-size: .8rem;
-  color: #c9a84c;
+  color: var(--cg-text-muted, #6a5b3e);
   text-transform: uppercase;
   letter-spacing: .05em;
   font-weight: 600;
@@ -285,7 +285,7 @@
 // ── Summary XP section ────────────────────────────────────────────────────────
 
 .summary-xp {
-  h3 { color: #c9a84c; }
+  h3 { color: var(--cg-gold-dark, #a8822a); }
 
   ul {
     margin: .4rem 0 0 1rem;

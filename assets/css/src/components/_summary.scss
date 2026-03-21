@@ -12,7 +12,7 @@
   h2 {
     font-family:    var(--cg-heading-font, 'Cinzel', serif);
     font-size:      1.7rem;
-    color:          var(--cg-text-light, #e8dcc4);
+    color:          var(--cg-text, #2c2316);
     margin:         0 0 0.3em;
     letter-spacing: 0.04em;
   }
@@ -24,15 +24,15 @@
   gap:             1.4em;
   flex-wrap:       wrap;
   font-size:       0.88rem;
-  color:           var(--cg-text-muted, #a09070);
+  color:           var(--cg-text-muted, #6a5b3e);
   margin-top:      0.3em;
 
-  strong { color: var(--cg-text-light, #e8dcc4); }
+  strong { color: var(--cg-text, #2c2316); }
 }
 
 .summary-motto {
   font-size:  0.88rem;
-  color:      var(--cg-text-muted, #a09070);
+  color:      var(--cg-text-muted, #6a5b3e);
   margin-top: 0.3em;
   font-style: italic;
 }
@@ -79,8 +79,8 @@
   font-size:      0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color:          var(--cg-gold, #c9a84c);
-  border-bottom:  1px solid rgba(201,168,76,0.22);
+  color:          var(--cg-gold-dark, #a8822a);
+  border-bottom:  1px solid rgba(201,168,76,0.35);
   padding-bottom: 0.25em;
   margin:         0.9em 0 0.5em;
 }
@@ -99,14 +99,14 @@
 
 #cg-summary-sheet li {
   font-size:   0.88rem;
-  color:       var(--cg-text-light, #e8dcc4);
+  color:       var(--cg-text, #2c2316);
   line-height: 1.5;
   margin:      0.15em 0;
 }
 
 #cg-summary-sheet p {
   font-size:   0.88rem;
-  color:       var(--cg-text-light, #e8dcc4);
+  color:       var(--cg-text, #2c2316);
   line-height: 1.5;
   margin:      0.2em 0;
 }
@@ -123,20 +123,20 @@
     font-size:      0.72rem;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color:          var(--cg-gold, #c9a84c);
+    color:          var(--cg-gold-dark, #a8822a);
     padding:        0.3em 0.6em;
     border-bottom:  1px solid rgba(201,168,76,0.3);
     text-align:     left;
-    background:     rgba(201,168,76,0.07);
+    background:     rgba(201,168,76,0.12);
   }
 
   td {
-    border:  1px solid rgba(201,168,76,0.12);
+    border:  1px solid rgba(201,168,76,0.25);
     padding: 0.3em 0.6em;
-    color:   var(--cg-text-light, #e8dcc4);
+    color:   var(--cg-text, #2c2316);
   }
 
-  tr:nth-child(odd) td { background: rgba(255,255,255,0.025); }
+  tr:nth-child(odd) td { background: rgba(201,168,76,0.06); }
 }
 
 // ── Battle summary tables ────────────────────────────────────────
@@ -150,20 +150,20 @@
     font-size:      0.7rem;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color:          var(--cg-gold, #c9a84c);
+    color:          var(--cg-gold-dark, #a8822a);
     padding:        0.3em 0.6em;
-    border:         1px solid rgba(201,168,76,0.2);
+    border:         1px solid rgba(201,168,76,0.3);
     text-align:     left;
-    background:     rgba(201,168,76,0.07);
+    background:     rgba(201,168,76,0.12);
   }
 
   td {
-    border:  1px solid rgba(201,168,76,0.12);
+    border:  1px solid rgba(201,168,76,0.2);
     padding: 0.3em 0.6em;
-    color:   var(--cg-text-light, #e8dcc4);
+    color:   var(--cg-text, #2c2316);
   }
 
-  tr:nth-child(odd) td { background: rgba(255,255,255,0.025); }
+  tr:nth-child(odd) td { background: rgba(201,168,76,0.06); }
 }
 
 .cg-battle-pools-table { width: auto; min-width: 160px; }
@@ -173,7 +173,7 @@
   font-weight:    700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color:          var(--cg-gold, #c9a84c);
+  color:          var(--cg-gold-dark, #a8822a);
   margin:         0.7em 0 0.3em;
 }
 
@@ -181,7 +181,7 @@
 .cg-summary-wound-track {
   margin-top: 0.6em;
   font-size:  0.83rem;
-  color:      var(--cg-text-muted, #a09070);
+  color:      var(--cg-text-muted, #6a5b3e);
 }
 
 .cg-wound-boxes {
@@ -196,7 +196,7 @@
   align-items: center;
   gap:         0.3em;
   font-size:   0.8rem;
-  color:       var(--cg-text-light, #e8dcc4);
+  color:       var(--cg-text, #2c2316);
 }
 
 .cg-wound-box-print {

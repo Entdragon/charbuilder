@@ -27,7 +27,7 @@
 
 .cg-tabs li.active {
   background:     var(--cg-tab-active-bg);
-  color:          var(--cg-gold-dark);
+  color:          var(--cg-text, #2c2316);
   border-bottom-color: var(--cg-gold);
   font-weight:    600;
 }
