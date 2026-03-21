@@ -116,9 +116,4 @@ ALTER TABLE `DcVnchxg4_customtables_table_skills`
   ADD COLUMN IF NOT EXISTS `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   ADD COLUMN IF NOT EXISTS `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
 
--- ------------------------------------------------------------
--- trappings / trappings_map (if exists)
--- ------------------------------------------------------------
-ALTER TABLE `DcVnchxg4_customtables_table_trappings`
-  ADD COLUMN IF NOT EXISTS `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  ADD COLUMN IF NOT EXISTS `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+-- trappings table does not exist in this database — skipped.
