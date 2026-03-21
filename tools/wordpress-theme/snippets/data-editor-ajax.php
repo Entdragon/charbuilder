@@ -312,6 +312,9 @@ if ( ! function_exists( 'loc_de_ajax_save_record' ) ) {
         $update_data   = [];
         $update_format = [];
         $int_types     = [ 'int', 'bigint', 'smallint', 'mediumint', 'tinyint' ];
+        // Long-text columns may contain HTML markup (e.g. gift body text); use
+        // wp_kses_post() so safe tags are preserved rather than stripped.
+        $richtext_types = [ 'text', 'mediumtext', 'longtext', 'tinytext' ];
 
         foreach ( $submitted_fields as $col => $val ) {
             $col = sanitize_key( $col );
@@ -322,8 +325,11 @@ if ( ! function_exists( 'loc_de_ajax_save_record' ) ) {
             if ( in_array( $dtype, $int_types, true ) ) {
                 $update_data[ $col ]   = ( $val === '' || $val === null ) ? null : intval( $val );
                 $update_format[]       = '%d';
+            } elseif ( in_array( $dtype, $richtext_types, true ) ) {
+                $update_data[ $col ]   = wp_kses_post( $val );
+                $update_format[]       = '%s';
             } else {
-                $update_data[ $col ]   = sanitize_textarea_field( $val );
+                $update_data[ $col ]   = sanitize_text_field( $val );
                 $update_format[]       = '%s';
             }
         }
@@ -378,8 +384,12 @@ if ( ! function_exists( 'loc_de_ajax_save_record' ) ) {
                         if ( $col === 'ct_sort' || $col === 'ct_req_ref_id' ) {
                             $row_data[ $col ]   = ( $val === '' || $val === null ) ? null : intval( $val );
                             $row_format[]       = '%d';
+                        } elseif ( $col === 'ct_body' ) {
+                            // ct_body is mediumtext and may contain HTML markup.
+                            $row_data[ $col ]   = wp_kses_post( $val );
+                            $row_format[]       = '%s';
                         } else {
-                            $row_data[ $col ]   = sanitize_textarea_field( $val );
+                            $row_data[ $col ]   = sanitize_text_field( $val );
                             $row_format[]       = '%s';
                         }
                     }
