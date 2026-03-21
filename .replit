@@ -43,3 +43,7 @@ run = ["node", "server/index.js"]
 
 [userenv.shared]
 DB_PREFIX = "DcVnchxg4_"
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 120000
