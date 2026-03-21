@@ -13,6 +13,9 @@
 -- ============================================================
 
 
+-- Disable FK checks so tables can be dropped regardless of references.
+SET FOREIGN_KEY_CHECKS = 0;
+
 -- ------------------------------------------------------------
 -- GROUP 1: Old bare/unprefixed tables (16 tables)
 -- These were the original CustomTables plugin tables created
@@ -85,6 +88,9 @@ DROP TABLE IF EXISTS `DcVnchxg4_customtables_table_trappings_map_bak_20260301`;
 
 DROP TABLE IF EXISTS `DcVnchxg4_character_records_dev`;
 
+
+-- Re-enable FK checks.
+SET FOREIGN_KEY_CHECKS = 1;
 
 -- ============================================================
 -- After running: verify the table count has dropped by 39.
