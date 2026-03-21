@@ -43,4 +43,71 @@ If you are unsure of the child theme directory name, check **WordPress Admin →
 
 | File in this repo | Goes to on server | Purpose |
 |---|---|---|
-| *(none yet — files will be added as features are built)* | | |
+| `snippets/requirements-literacy-merge.php` | Copy snippet into `functions.php` | Enqueues the requirements-merge JS on gift detail pages |
+| `js/gift-requirements-merge.js` | `js/gift-requirements-merge.js` | Merges duplicate literacy requirement lines in the DOM |
+
+---
+
+## Task 10 — Requirements display: literacy merge (gift pages)
+
+### Problem
+
+Gift detail pages sometimes show two separate lines for a literacy requirement:
+
+```
+Literacy
+Literacy: Zhongwén
+```
+
+These should display as one merged line:
+
+```
+Literacy: Zhongwén
+```
+
+This happens because the structured `gift_requirements` table has a generic "Literacy" gift_ref row, and `ct_gifts_requires_special` has the language-specific pair "Literacy: Zhongwén" — both are rendered by the CustomTables layout.
+
+### Solution
+
+A JavaScript post-processor (`js/gift-requirements-merge.js`) runs on DOM ready and merges the two items into one. It is enqueued only on gift detail pages via a `functions.php` hook.
+
+### Installation steps
+
+1. Copy `js/gift-requirements-merge.js` to the child theme:
+   ```
+   wp-content/themes/<child-theme>/js/gift-requirements-merge.js
+   ```
+
+2. Open the child theme's `functions.php` and paste the contents of
+   `snippets/requirements-literacy-merge.php` at the bottom of the file.
+
+3. Visit a gift detail page that has a Literacy: [language] requirement (e.g. a Zhongwén-literacy gift).
+
+4. Open the browser console (F12 → Console). Look for `[LOC-req-merge]` log lines:
+   - "Generic literacy item found: Literacy" — the plain item was detected
+   - "Specific literacy item found: Literacy: Zhongwén" — the language item was detected
+   - "Merging → 'Literacy: Zhongwén'" — the merge succeeded
+   - If you see "No items matched REQUIREMENT_ITEM_SELECTOR" — update the
+     `REQUIREMENT_ITEM_SELECTOR` constant inside the JS file to match your CT layout HTML.
+     Inspect the page source to find what element wraps each requirement line.
+
+5. Once the merge is confirmed working, set `DEBUG = false` inside the JS file and re-upload it.
+
+6. Commit the final JS back to this repo (`git add`, `git commit`, `git push`).
+
+### Adjusting the selector
+
+If step 4 shows "No items matched", inspect your gift page HTML. Each requirement line will be in some element — common patterns:
+
+| CT layout style | Selector to try |
+|---|---|
+| Table layout | `'td'` |
+| Unordered list | `'li'` |
+| CustomTables default | `'.ct-field-value'` or `'.customtables-record td'` |
+| Div-based | `'.ct_record div'` |
+
+Set `REQUIREMENT_ITEM_SELECTOR` to the right value and refresh to test.
+
+### URL detection (which pages load the script)
+
+By default the script loads on any page whose URL contains `/gifts/`. If your gift pages use a different URL pattern (e.g. `/gift/` singular, or a page slug like `/catalogue/`), update the `$load_on_this_page` condition in the `loc_enqueue_requirements_merge` function inside `functions.php`.
