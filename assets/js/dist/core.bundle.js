@@ -1422,6 +1422,10 @@
     character.xp_gifts = Array.isArray(core.xpGifts) ? core.xpGifts : [];
     character.weapons = Array.isArray(raw.weapons) ? raw.weapons : [];
     character.armor = Array.isArray(raw.armor) ? raw.armor : [];
+    character.skill_notes = raw.skill_notes && typeof raw.skill_notes === "object" && !Array.isArray(raw.skill_notes) ? raw.skill_notes : {};
+    character.gift_skill_marks = raw.gift_skill_marks && typeof raw.gift_skill_marks === "object" && !Array.isArray(raw.gift_skill_marks) ? raw.gift_skill_marks : {};
+    const rawFGQ = raw.free_gift_quals || raw.cg_free_gift_quals || raw.freeGiftQuals;
+    character.free_gift_quals = rawFGQ && typeof rawFGQ === "object" && !Array.isArray(rawFGQ) ? rawFGQ : {};
     flat.character = character;
     flat.character_json = JSON.stringify(__spreadValues({}, core));
     return flat;
@@ -3595,6 +3599,38 @@
     }
   };
   var ALWAYS_ACQUIRED_GIFT_IDS2 = ["242", "236"];
+  var KNACK_FOR_GIFT_ID = "232";
+  function setGiftSkillMarks(map) {
+    const clean = map && typeof map === "object" && !Array.isArray(map) ? map : {};
+    const d = getBuilderData2();
+    if (formBuilder_default && formBuilder_default._data) {
+      formBuilder_default._data.gift_skill_marks = clean;
+    } else {
+      d.gift_skill_marks = clean;
+    }
+  }
+  function recomputeGiftSkillMarks(slotQualMap) {
+    const marks = {};
+    const slots = getFreeGiftSlotsFromData();
+    [0, 1, 2].forEach((i) => {
+      const gId = String(slots[i] || "").trim();
+      if (gId !== KNACK_FOR_GIFT_ID)
+        return;
+      const sKey = String(i);
+      const skillId = String((slotQualMap[sKey] || {}).knack_skill || "").trim();
+      if (!skillId)
+        return;
+      marks[skillId] = (marks[skillId] || 0) + 1;
+    });
+    setGiftSkillMarks(marks);
+    try {
+      const detail = { gift_skill_marks: marks };
+      document.dispatchEvent(new CustomEvent("cg:gift-skill-marks:changed", { detail }));
+      if ($11)
+        $11(document).trigger("cg:gift-skill-marks:changed", [detail]);
+    } catch (_) {
+    }
+  }
   function normalize3(arr) {
     const out = (Array.isArray(arr) ? arr : []).slice(0, 3).map((v) => v ? String(v) : "");
     while (out.length < 3)
@@ -4442,6 +4478,11 @@
       row.innerHTML = htmlSlots.join("\n");
       this._renderSlotQuals(slots);
       try {
+        const map = getSlotQualMap();
+        recomputeGiftSkillMarks(map);
+      } catch (_) {
+      }
+      try {
         document.dispatchEvent(new CustomEvent("cg:free-choices:rendered"));
       } catch (_) {
       }
@@ -4487,6 +4528,30 @@
           this._scheduleRender("free-qual-select");
           return;
         }
+        if (t.classList.contains("cg-knack-skill-select")) {
+          const slot = String(t.getAttribute("data-slot") || "0");
+          const skillId = String(t.value || "").trim();
+          const map = getSlotQualMap();
+          if (!map[slot] || typeof map[slot] !== "object")
+            map[slot] = {};
+          if (skillId) {
+            map[slot].knack_skill = skillId;
+          } else {
+            delete map[slot].knack_skill;
+          }
+          if (Object.keys(map[slot] || {}).length === 0)
+            delete map[slot];
+          setSlotQualMap(map);
+          recomputeGiftSkillMarks(map);
+          try {
+            const BuilderUI = W.CG_BuilderUI;
+            if (BuilderUI && typeof BuilderUI.markDirty === "function")
+              BuilderUI.markDirty();
+          } catch (_) {
+          }
+          this._scheduleRender("knack-skill-select");
+          return;
+        }
       });
     },
     _cleanupSlotQualsOnGiftChange({ slot, prevGiftId, nextGiftId }) {
@@ -4497,20 +4562,26 @@
       const map = getSlotQualMap();
       const sKey = String(slot);
       const slotObj = map[sKey] && typeof map[sKey] === "object" ? map[sKey] : null;
-      if (!slotObj)
-        return;
-      prevNeeds.forEach((type) => {
-        if (nextNeeds.includes(type))
-          return;
-        const prevVal = String(slotObj[type] || "").trim();
-        if (!prevVal)
-          return;
-        delete slotObj[type];
-        qualStateRemoveIfSafe(type, prevVal, map);
-      });
+      const prevWasKnack = prevGiftId === KNACK_FOR_GIFT_ID;
+      const nextIsKnack = nextGiftId === KNACK_FOR_GIFT_ID;
+      if (prevWasKnack && !nextIsKnack && slotObj) {
+        delete slotObj.knack_skill;
+      }
+      if (slotObj) {
+        prevNeeds.forEach((type) => {
+          if (nextNeeds.includes(type))
+            return;
+          const prevVal = String(slotObj[type] || "").trim();
+          if (!prevVal)
+            return;
+          delete slotObj[type];
+          qualStateRemoveIfSafe(type, prevVal, map);
+        });
+      }
       if (slotObj && Object.keys(slotObj).length === 0)
         delete map[sKey];
       setSlotQualMap(map);
+      recomputeGiftSkillMarks(map);
     },
     _renderSlotQuals(slots) {
       const section = document.getElementById("cg-free-gifts");
@@ -4525,6 +4596,14 @@
           return;
         if (!giftIdSel) {
           wrap.innerHTML = "";
+          return;
+        }
+        if (giftIdSel === KNACK_FOR_GIFT_ID) {
+          if (!map[slotId] || typeof map[slotId] !== "object")
+            map[slotId] = {};
+          const curSkillId = String(map[slotId].knack_skill || "").trim();
+          wrap.innerHTML = this._renderKnackSkillSelectHtml(i, curSkillId, map);
+          setSlotQualMap(map);
           return;
         }
         const g = this._getGift(giftIdSel);
@@ -4555,6 +4634,51 @@
         wrap.innerHTML = html;
         setSlotQualMap(map);
       });
+    },
+    _renderKnackSkillSelectHtml(slot, curSkillId, slotQualMap) {
+      let skills = [];
+      try {
+        const d = getBuilderData2();
+        if (Array.isArray(d.skillsList)) {
+          skills = d.skillsList;
+        } else if (Array.isArray(W.CG_SKILLS_LIST)) {
+          skills = W.CG_SKILLS_LIST;
+        }
+      } catch (_) {
+      }
+      const usedSkillIds = /* @__PURE__ */ new Set();
+      const currentSlots = getFreeGiftSlotsFromData();
+      [0, 1, 2].forEach((j) => {
+        if (j === slot)
+          return;
+        const sKey = String(j);
+        if (String(currentSlots[j] || "").trim() !== KNACK_FOR_GIFT_ID)
+          return;
+        const sk = String((slotQualMap[sKey] || {}).knack_skill || "").trim();
+        if (sk)
+          usedSkillIds.add(sk);
+      });
+      const opts = skills.map((s) => {
+        const sid = String(s.id || "").trim();
+        const sname = String(s.name || "").trim();
+        if (!sid || !sname)
+          return "";
+        const isCurrent = sid === curSkillId;
+        if (!isCurrent && usedSkillIds.has(sid))
+          return "";
+        const sel = isCurrent ? " selected" : "";
+        return `<option value="${sid}"${sel}>${sname}</option>`;
+      }).filter(Boolean).join("\n");
+      return `
+      <label style="display:flex; flex-direction:column; gap:4px; margin-top:8px; min-width:220px;">
+        <span style="font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:var(--cg-text-muted);">Skill for Knack</span>
+        <select class="cg-knack-skill-select" data-slot="${slot}">
+          <option value="">\u2014 Choose a skill \u2014</option>
+          ${opts}
+        </select>
+        <span style="font-size:0.75rem; color:var(--cg-text-muted);">This gift grants +1 mark in the chosen skill.</span>
+      </label>
+    `;
     },
     getEligibleGiftsForSlot(allSelectedIds = [], slotIndex = 0) {
       if (!Array.isArray(this._allGifts) || !this._allGifts.length)
@@ -5092,6 +5216,8 @@
         name: String(x.name || ""),
         skills: Array.isArray(x.skills) ? x.skills.map(String) : []
       }));
+      data.skill_notes = data.skill_notes && typeof data.skill_notes === "object" && !Array.isArray(data.skill_notes) ? data.skill_notes : {};
+      data.gift_skill_marks = data.gift_skill_marks && typeof data.gift_skill_marks === "object" && !Array.isArray(data.gift_skill_marks) ? data.gift_skill_marks : {};
       data.skillMarks = data.skillMarks || {};
       const MAX_CREATION_MARKS = 13;
       const MAX_MARKS_PER_SKILL = 3;
@@ -5107,7 +5233,7 @@
         <div class="marks-remaining-group">
           <span class="marks-lbl">Starting Marks Remaining:</span>
           <strong>${creationMarksRemain}</strong>
-          <span class="marks-note">/ ${MAX_CREATION_MARKS} \xB7 max ${MAX_MARKS_PER_SKILL} per skill</span>
+          <span class="marks-note">/ ${MAX_CREATION_MARKS} \xB7 max ${MAX_MARKS_PER_SKILL} per skill (+ gift marks)</span>
         </div>
     `;
       if (xpMarksBudget > 0) {
@@ -5136,7 +5262,8 @@
         const spDie = spSkills.includes(id) ? "d4" : "";
         const cpDie = cpSkills.includes(id) ? "d6" : "";
         const extraDies = extraCareers.map((ec) => (ec.skills || []).includes(id) ? "d4" : "");
-        const myMarks = parseInt(data.skillMarks[id], 10) || 0;
+        const giftMarks = parseInt(data.gift_skill_marks[id], 10) || 0;
+        const myMarks = Math.min(parseInt(data.skillMarks[id], 10) || 0, MAX_MARKS_PER_SKILL);
         let creationBtnsHtml = "";
         [1, 2, 3].forEach((n) => {
           const disabled = usedCreationMarks >= MAX_CREATION_MARKS && myMarks < n ? " disabled" : "";
@@ -5150,6 +5277,10 @@
           ${disabled}
         ></button>`;
         });
+        let giftMarkHtml = "";
+        if (giftMarks > 0) {
+          giftMarkHtml = `<span class="skill-gift-mark-badge" title="${giftMarks} mark(s) from Knack For gift">+${giftMarks} gift</span>`;
+        }
         const myXpMarks = parseInt(xpSkillMarks[id], 10) || 0;
         let xpCtrlHtml = "";
         if (xpMarksBudget > 0) {
@@ -5170,19 +5301,34 @@
           </div>
         `;
         }
-        const totalMarks = myMarks + myXpMarks;
+        const totalMarks = myMarks + giftMarks + myXpMarks;
         const markDie = marksToDice(totalMarks);
         const markDisplay = totalMarks > 0 ? myXpMarks > 0 ? `<span class="marks-total-die">${markDie}</span>` : markDie : "\u2013";
         const poolDice = [spDie, cpDie].concat(extraDies).filter(Boolean);
         if (markDie)
           poolDice.push(markDie);
         const poolStr = poolDice.length ? poolDice.join(" + ") : "\u2013";
-        const $row = $13("<tr>").append(`<td>${name}</td>`).append(`<td>${spDie || "\u2013"}</td>`).append(`<td>${cpDie || "\u2013"}</td>`);
+        const noteVal = String(data.skill_notes[id] || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        const favouriteUseHtml = `<input
+        type="text"
+        class="skill-fav-input"
+        data-skill-id="${id}"
+        placeholder="Favourite use\u2026"
+        value="${noteVal}"
+        maxlength="120"
+        title="Note your favourite use of this skill"
+      />`;
+        const $row = $13("<tr>").append(`<td>
+          <div class="skill-name-cell">
+            <span>${name}</span>
+            ${favouriteUseHtml}
+          </div>
+        </td>`).append(`<td>${spDie || "\u2013"}</td>`).append(`<td>${cpDie || "\u2013"}</td>`);
         extraDies.forEach((die) => {
           $row.append(`<td>${die || "\u2013"}</td>`);
         });
         $row.append(`<td>
-                   <div class="marks-buttons">${creationBtnsHtml}</div>
+                   <div class="marks-buttons">${creationBtnsHtml}${giftMarkHtml}</div>
                    ${xpCtrlHtml}
                    <div class="marks-display">${markDisplay}</div>
                  </td>`).append(`<td>${poolStr}</td>`);
@@ -5229,6 +5375,9 @@
       });
       $14(document).off("cg:extra-careers:changed.cgskills").on("cg:extra-careers:changed.cgskills", () => {
         requestRender("extra careers changed");
+      });
+      $14(document).off("cg:gift-skill-marks:changed.cgskills").on("cg:gift-skill-marks:changed.cgskills", () => {
+        requestRender("gift skill marks changed");
       });
       $14(document).off("click.cgskills", ".skill-mark-btn").on("click.cgskills", ".skill-mark-btn", function() {
         var _a;
@@ -5283,6 +5432,30 @@
         } catch (_) {
         }
         render_default.render();
+      });
+      let _favDebounce = null;
+      $14(document).off("input.cgskills", ".skill-fav-input").on("input.cgskills", ".skill-fav-input", function() {
+        var _a, _b;
+        const skillId = String((_a = $14(this).data("skill-id")) != null ? _a : "");
+        const val = String((_b = $14(this).val()) != null ? _b : "");
+        if (!skillId)
+          return;
+        formBuilder_default._data = formBuilder_default._data || {};
+        if (!formBuilder_default._data.skill_notes || typeof formBuilder_default._data.skill_notes !== "object") {
+          formBuilder_default._data.skill_notes = {};
+        }
+        if (val) {
+          formBuilder_default._data.skill_notes[skillId] = val;
+        } else {
+          delete formBuilder_default._data.skill_notes[skillId];
+        }
+        clearTimeout(_favDebounce);
+        _favDebounce = setTimeout(() => {
+          try {
+            builder_ui_default.markDirty();
+          } catch (_) {
+          }
+        }, 500);
       });
       if (isSkillsTabActive2() || _pendingRender) {
         _pendingRender = false;

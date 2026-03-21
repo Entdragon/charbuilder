@@ -92,6 +92,18 @@ Three new columns added automatically to `character_records` on server startup v
 Costs: 4 XP per skill mark, 10 XP per gift. Total marks per skill capped at 3 (d4→d6→d8).
 The Experience tab (`tab-experience`) lives between Skills and Trappings in the builder.
 
+## Character Data – Skills: Favourite Use & Gift Mark Propagation (added Mar 2026)
+Three new columns added automatically to `character_records` on server startup via migration:
+- `skill_notes` TEXT (JSON) – Freeform "favourite use" text per skill `{skillId: "text"}`
+- `gift_skill_marks` TEXT (JSON) – Gift-granted bonus marks per skill `{skillId: count}` (from "Knack For" gifts)
+- `free_gift_quals` TEXT (JSON) – Per-slot qualification map for free gift choices `{slotIndex: {type: value}}` — now also stores `knack_skill` entries for gift 232
+
+Features:
+- Each skill row in the Skills tab has a small "Favourite use" text input (debounced auto-save).
+- Gift 232 ("Knack For: [Choice]") shows a skill-select dropdown in the Gifts tab when selected. The chosen skill gains +1 mark automatically; displayed as a badge in the Skills tab.
+- The manual creation-mark budget (3 per skill, 13 total) is independent of gift marks — players can still place up to 3 creation marks on a skill that already has a gift mark.
+- Removing a Knack For gift or changing its skill choice cleans up the bonus mark automatically.
+
 ## Build System
 - `npm run build` – Rebuild JS bundle and CSS (after source changes)
 - `npm run watch:core` / `npm run watch:css` – Watch modes for development

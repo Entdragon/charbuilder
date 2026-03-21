@@ -114,6 +114,16 @@ export default {
         skills: Array.isArray(x.skills) ? x.skills.map(String) : []
       }));
 
+    // ── Skill notes (favourite use) ───────────────────────────────────────────
+    data.skill_notes = (data.skill_notes && typeof data.skill_notes === 'object' && !Array.isArray(data.skill_notes))
+      ? data.skill_notes
+      : {};
+
+    // ── Gift-granted marks ────────────────────────────────────────────────────
+    data.gift_skill_marks = (data.gift_skill_marks && typeof data.gift_skill_marks === 'object' && !Array.isArray(data.gift_skill_marks))
+      ? data.gift_skill_marks
+      : {};
+
     // ── Creation marks state & budget ────────────────────────────────────────
     data.skillMarks = data.skillMarks || {};
     const MAX_CREATION_MARKS = 13;
@@ -138,7 +148,7 @@ export default {
         <div class="marks-remaining-group">
           <span class="marks-lbl">Starting Marks Remaining:</span>
           <strong>${creationMarksRemain}</strong>
-          <span class="marks-note">/ ${MAX_CREATION_MARKS} · max ${MAX_MARKS_PER_SKILL} per skill</span>
+          <span class="marks-note">/ ${MAX_CREATION_MARKS} · max ${MAX_MARKS_PER_SKILL} per skill (+ gift marks)</span>
         </div>
     `;
     if (xpMarksBudget > 0) {
@@ -182,8 +192,14 @@ export default {
       const cpDie    = cpSkills.includes(id) ? 'd6' : '';
       const extraDies = extraCareers.map(ec => (ec.skills || []).includes(id) ? 'd4' : '');
 
-      // ── Creation marks buttons (1–3, budget-capped) ──────────────────────
-      const myMarks = parseInt(data.skillMarks[id], 10) || 0;
+      // ── Gift-granted marks for this skill ─────────────────────────────────
+      const giftMarks = parseInt(data.gift_skill_marks[id], 10) || 0;
+
+      // ── Creation marks buttons ────────────────────────────────────────────
+      // Each skill can have up to 3 manual creation marks PLUS any gift-granted marks.
+      // The gift mark expands the button budget: 3 manual marks can still be placed on top.
+      // Clamp to 3 in case of stale/edited saves.
+      const myMarks = Math.min(parseInt(data.skillMarks[id], 10) || 0, MAX_MARKS_PER_SKILL);
       let creationBtnsHtml = '';
       [1, 2, 3].forEach(n => {
         const disabled = (usedCreationMarks >= MAX_CREATION_MARKS && myMarks < n) ? ' disabled' : '';
@@ -197,6 +213,12 @@ export default {
           ${disabled}
         ></button>`;
       });
+
+      // Gift marks indicator (shown when gift grants marks)
+      let giftMarkHtml = '';
+      if (giftMarks > 0) {
+        giftMarkHtml = `<span class="skill-gift-mark-badge" title="${giftMarks} mark(s) from Knack For gift">+${giftMarks} gift</span>`;
+      }
 
       // ── XP marks control (+/− per skill) ─────────────────────────────────
       const myXpMarks = parseInt(xpSkillMarks[id], 10) || 0;
@@ -221,21 +243,40 @@ export default {
       }
 
       // ── Total marks & die display ─────────────────────────────────────────
-      const totalMarks  = myMarks + myXpMarks;
+      const totalMarks  = myMarks + giftMarks + myXpMarks;
       const markDie     = marksToDice(totalMarks);
       const markDisplay = totalMarks > 0
         ? (myXpMarks > 0 ? `<span class="marks-total-die">${markDie}</span>` : markDie)
         : '–';
 
       // ── Dice pool ─────────────────────────────────────────────────────────
-      // For dice pool: marks contribute to the HIGHEST die only (standard Ironclaw rule)
-      // The pool shows the base mark die (which may be a compound like d4+d12)
       const poolDice = [spDie, cpDie].concat(extraDies).filter(Boolean);
       if (markDie) poolDice.push(markDie);
       const poolStr = poolDice.length ? poolDice.join(' + ') : '–';
 
+      // ── Favourite use input ───────────────────────────────────────────────
+      const noteVal = String(data.skill_notes[id] || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+      const favouriteUseHtml = `<input
+        type="text"
+        class="skill-fav-input"
+        data-skill-id="${id}"
+        placeholder="Favourite use…"
+        value="${noteVal}"
+        maxlength="120"
+        title="Note your favourite use of this skill"
+      />`;
+
       const $row = $('<tr>')
-        .append(`<td>${name}</td>`)
+        .append(`<td>
+          <div class="skill-name-cell">
+            <span>${name}</span>
+            ${favouriteUseHtml}
+          </div>
+        </td>`)
         .append(`<td>${spDie || '–'}</td>`)
         .append(`<td>${cpDie || '–'}</td>`);
 
@@ -245,7 +286,7 @@ export default {
 
       $row
         .append(`<td>
-                   <div class="marks-buttons">${creationBtnsHtml}</div>
+                   <div class="marks-buttons">${creationBtnsHtml}${giftMarkHtml}</div>
                    ${xpCtrlHtml}
                    <div class="marks-display">${markDisplay}</div>
                  </td>`)

@@ -31,6 +31,38 @@ const warn = (...a) => { try { console.warn('[FreeChoices]', ...a); } catch (_) 
 
 const ALWAYS_ACQUIRED_GIFT_IDS = ['242', '236']; // Local Knowledge, Language (always acquired in your model)
 
+const KNACK_FOR_GIFT_ID = '232'; // "Knack For: [Choice]" — grants +1 mark in a chosen skill
+
+function setGiftSkillMarks(map) {
+  const clean = (map && typeof map === 'object' && !Array.isArray(map)) ? map : {};
+  const d = getBuilderData();
+  if (FormBuilderAPI && FormBuilderAPI._data) {
+    FormBuilderAPI._data.gift_skill_marks = clean;
+  } else {
+    d.gift_skill_marks = clean;
+  }
+}
+
+function recomputeGiftSkillMarks(slotQualMap) {
+  // Count how many Knack For gifts chose each skill across all slots
+  const marks = {};
+  const slots = getFreeGiftSlotsFromData();
+  [0, 1, 2].forEach(i => {
+    const gId = String(slots[i] || '').trim();
+    if (gId !== KNACK_FOR_GIFT_ID) return;
+    const sKey = String(i);
+    const skillId = String((slotQualMap[sKey] || {}).knack_skill || '').trim();
+    if (!skillId) return;
+    marks[skillId] = (marks[skillId] || 0) + 1;
+  });
+  setGiftSkillMarks(marks);
+  try {
+    const detail = { gift_skill_marks: marks };
+    document.dispatchEvent(new CustomEvent('cg:gift-skill-marks:changed', { detail }));
+    if ($) $(document).trigger('cg:gift-skill-marks:changed', [detail]);
+  } catch (_) {}
+}
+
 function normalize3(arr) {
   const out = (Array.isArray(arr) ? arr : []).slice(0, 3).map(v => (v ? String(v) : ''));
   while (out.length < 3) out.push('');
@@ -891,6 +923,12 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
     row.innerHTML = htmlSlots.join('\n');
     this._renderSlotQuals(slots);
 
+    // Sync gift_skill_marks from slot qual map after rendering
+    try {
+      const map = getSlotQualMap();
+      recomputeGiftSkillMarks(map);
+    } catch (_) {}
+
     // Let ExtraCareers re-inject per-slot UI (e.g. "Applies to:" for gift 223)
     // after this render has settled, since our innerHTML wipes any injected elements.
     try {
@@ -944,6 +982,33 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
         this._scheduleRender('free-qual-select');
         return;
       }
+
+      if (t.classList.contains('cg-knack-skill-select')) {
+        const slot = String(t.getAttribute('data-slot') || '0');
+        const skillId = String(t.value || '').trim();
+
+        const map = getSlotQualMap();
+        if (!map[slot] || typeof map[slot] !== 'object') map[slot] = {};
+
+        if (skillId) {
+          map[slot].knack_skill = skillId;
+        } else {
+          delete map[slot].knack_skill;
+        }
+
+        if (Object.keys(map[slot] || {}).length === 0) delete map[slot];
+
+        setSlotQualMap(map);
+        recomputeGiftSkillMarks(map);
+
+        try {
+          const BuilderUI = W.CG_BuilderUI;
+          if (BuilderUI && typeof BuilderUI.markDirty === 'function') BuilderUI.markDirty();
+        } catch (_) {}
+
+        this._scheduleRender('knack-skill-select');
+        return;
+      }
     });
   },
 
@@ -958,20 +1023,29 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
     const sKey = String(slot);
 
     const slotObj = (map[sKey] && typeof map[sKey] === 'object') ? map[sKey] : null;
-    if (!slotObj) return;
 
-    prevNeeds.forEach(type => {
-      if (nextNeeds.includes(type)) return;
+    // Clean up knack_skill if the previous gift was Knack For and the next is not
+    const prevWasKnack = prevGiftId === KNACK_FOR_GIFT_ID;
+    const nextIsKnack  = nextGiftId === KNACK_FOR_GIFT_ID;
+    if (prevWasKnack && !nextIsKnack && slotObj) {
+      delete slotObj.knack_skill;
+    }
 
-      const prevVal = String(slotObj[type] || '').trim();
-      if (!prevVal) return;
+    if (slotObj) {
+      prevNeeds.forEach(type => {
+        if (nextNeeds.includes(type)) return;
 
-      delete slotObj[type];
-      qualStateRemoveIfSafe(type, prevVal, map);
-    });
+        const prevVal = String(slotObj[type] || '').trim();
+        if (!prevVal) return;
+
+        delete slotObj[type];
+        qualStateRemoveIfSafe(type, prevVal, map);
+      });
+    }
 
     if (slotObj && Object.keys(slotObj).length === 0) delete map[sKey];
     setSlotQualMap(map);
+    recomputeGiftSkillMarks(map);
   },
 
   _renderSlotQuals(slots) {
@@ -988,6 +1062,15 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
 
       if (!giftIdSel) {
         wrap.innerHTML = '';
+        return;
+      }
+
+      // Special handling for Knack For gift
+      if (giftIdSel === KNACK_FOR_GIFT_ID) {
+        if (!map[slotId] || typeof map[slotId] !== 'object') map[slotId] = {};
+        const curSkillId = String(map[slotId].knack_skill || '').trim();
+        wrap.innerHTML = this._renderKnackSkillSelectHtml(i, curSkillId, map);
+        setSlotQualMap(map);
         return;
       }
 
@@ -1025,6 +1108,55 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
       wrap.innerHTML = html;
       setSlotQualMap(map);
     });
+  },
+
+  _renderKnackSkillSelectHtml(slot, curSkillId, slotQualMap) {
+    // Build list of skills from CG_SKILLS_LIST or builder data
+    let skills = [];
+    try {
+      const d = getBuilderData();
+      if (Array.isArray(d.skillsList)) {
+        skills = d.skillsList;
+      } else if (Array.isArray(W.CG_SKILLS_LIST)) {
+        skills = W.CG_SKILLS_LIST;
+      }
+    } catch (_) {}
+
+    // Find skills already chosen by OTHER Knack For slots
+    const usedSkillIds = new Set();
+    const currentSlots = getFreeGiftSlotsFromData();
+    [0, 1, 2].forEach(j => {
+      if (j === slot) return;
+      const sKey = String(j);
+      if (String(currentSlots[j] || '').trim() !== KNACK_FOR_GIFT_ID) return;
+      const sk = String((slotQualMap[sKey] || {}).knack_skill || '').trim();
+      if (sk) usedSkillIds.add(sk);
+    });
+
+    const opts = skills
+      .map(s => {
+        const sid = String(s.id || '').trim();
+        const sname = String(s.name || '').trim();
+        if (!sid || !sname) return '';
+        // Allow current slot's skill even if also used in another slot (edge case: allow duplicate for display)
+        const isCurrent = sid === curSkillId;
+        if (!isCurrent && usedSkillIds.has(sid)) return '';
+        const sel = isCurrent ? ' selected' : '';
+        return `<option value="${sid}"${sel}>${sname}</option>`;
+      })
+      .filter(Boolean)
+      .join('\n');
+
+    return `
+      <label style="display:flex; flex-direction:column; gap:4px; margin-top:8px; min-width:220px;">
+        <span style="font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:var(--cg-text-muted);">Skill for Knack</span>
+        <select class="cg-knack-skill-select" data-slot="${slot}">
+          <option value="">— Choose a skill —</option>
+          ${opts}
+        </select>
+        <span style="font-size:0.75rem; color:var(--cg-text-muted);">This gift grants +1 mark in the chosen skill.</span>
+      </label>
+    `;
   },
 
   getEligibleGiftsForSlot(allSelectedIds = [], slotIndex = 0) {

@@ -66,7 +66,14 @@ export default {
         requestRender('extra careers changed');
       });
 
-    // 5) Creation mark-button clicks (max 3/skill, 13 total budget)
+    // 5) Gift skill marks changed (from Gifts tab Knack For selection)
+    $(document)
+      .off('cg:gift-skill-marks:changed.cgskills')
+      .on('cg:gift-skill-marks:changed.cgskills', () => {
+        requestRender('gift skill marks changed');
+      });
+
+    // 6) Creation mark-button clicks (max 3/skill, 13 total budget)
     $(document)
       .off('click.cgskills', '.skill-mark-btn')
       .on('click.cgskills', '.skill-mark-btn', function() {
@@ -94,7 +101,7 @@ export default {
         SkillsRender.render();
       });
 
-    // 6) XP mark +/− buttons (no per-skill cap, uses xpMarksBudget)
+    // 7) XP mark +/− buttons (no per-skill cap, uses xpMarksBudget)
     $(document)
       .off('click.cgskills', '.xp-skill-btn')
       .on('click.cgskills', '.xp-skill-btn', function() {
@@ -129,6 +136,33 @@ export default {
 
         try { BuilderUI.markDirty(); } catch (_) {}
         SkillsRender.render();
+      });
+
+    // 8) Favourite use text input (debounced to avoid thrashing on every keystroke)
+    let _favDebounce = null;
+    $(document)
+      .off('input.cgskills', '.skill-fav-input')
+      .on('input.cgskills', '.skill-fav-input', function() {
+        const skillId = String($(this).data('skill-id') ?? '');
+        const val     = String($(this).val() ?? '');
+        if (!skillId) return;
+
+        FormBuilderAPI._data = FormBuilderAPI._data || {};
+        if (!FormBuilderAPI._data.skill_notes || typeof FormBuilderAPI._data.skill_notes !== 'object') {
+          FormBuilderAPI._data.skill_notes = {};
+        }
+
+        if (val) {
+          FormBuilderAPI._data.skill_notes[skillId] = val;
+        } else {
+          delete FormBuilderAPI._data.skill_notes[skillId];
+        }
+
+        // Debounce dirty marking to avoid lag
+        clearTimeout(_favDebounce);
+        _favDebounce = setTimeout(() => {
+          try { BuilderUI.markDirty(); } catch (_) {}
+        }, 500);
       });
 
     // Render immediately if skills tab is already visible

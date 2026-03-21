@@ -24,8 +24,30 @@ async function ensureBattleColumns() {
   }
 }
 
+async function ensureSkillsExtColumns() {
+  const p = prefix();
+  const table = `${p}character_records`;
+  try {
+    const cols = await query(`SELECT COLUMN_NAME FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME IN ('skill_notes','gift_skill_marks','free_gift_quals')`, [table]);
+    const existing = new Set(cols.map(c => c.COLUMN_NAME || c.column_name));
+    if (!existing.has('skill_notes')) {
+      await query(`ALTER TABLE \`${table}\` ADD COLUMN skill_notes TEXT DEFAULT NULL`);
+    }
+    if (!existing.has('gift_skill_marks')) {
+      await query(`ALTER TABLE \`${table}\` ADD COLUMN gift_skill_marks TEXT DEFAULT NULL`);
+    }
+    if (!existing.has('free_gift_quals')) {
+      await query(`ALTER TABLE \`${table}\` ADD COLUMN free_gift_quals TEXT DEFAULT NULL`);
+    }
+  } catch (err) {
+    console.warn('[ensureSkillsExtColumns] Could not add columns:', err.message);
+  }
+}
+
 // Run once at startup (non-blocking)
 ensureBattleColumns().catch(() => {});
+ensureSkillsExtColumns().catch(() => {});
 
 function normalizeRow(row) {
   if (!row) return null;
@@ -94,6 +116,33 @@ function normalizeRow(row) {
     } catch (e) { row.armor = []; }
   } else {
     row.armor = [];
+  }
+
+  if (row.skill_notes) {
+    try {
+      if (typeof row.skill_notes === 'string') row.skill_notes = JSON.parse(row.skill_notes);
+      if (typeof row.skill_notes !== 'object' || Array.isArray(row.skill_notes)) row.skill_notes = {};
+    } catch (e) { row.skill_notes = {}; }
+  } else {
+    row.skill_notes = {};
+  }
+
+  if (row.gift_skill_marks) {
+    try {
+      if (typeof row.gift_skill_marks === 'string') row.gift_skill_marks = JSON.parse(row.gift_skill_marks);
+      if (typeof row.gift_skill_marks !== 'object' || Array.isArray(row.gift_skill_marks)) row.gift_skill_marks = {};
+    } catch (e) { row.gift_skill_marks = {}; }
+  } else {
+    row.gift_skill_marks = {};
+  }
+
+  if (row.free_gift_quals) {
+    try {
+      if (typeof row.free_gift_quals === 'string') row.free_gift_quals = JSON.parse(row.free_gift_quals);
+      if (typeof row.free_gift_quals !== 'object' || Array.isArray(row.free_gift_quals)) row.free_gift_quals = {};
+    } catch (e) { row.free_gift_quals = {}; }
+  } else {
+    row.free_gift_quals = {};
   }
 
   return row;
@@ -180,6 +229,9 @@ async function cg_save_character(req, res) {
     xp_gifts:                     JSON.stringify(Array.isArray(data.xp_gifts) ? data.xp_gifts : (Array.isArray(data.xpGifts) ? data.xpGifts : [])),
     weapons:                      JSON.stringify(Array.isArray(data.weapons) ? data.weapons : []),
     armor:                        JSON.stringify(Array.isArray(data.armor)   ? data.armor   : []),
+    skill_notes:                  JSON.stringify(typeof data.skill_notes === 'object' && !Array.isArray(data.skill_notes) ? data.skill_notes : {}),
+    gift_skill_marks:             JSON.stringify(typeof data.gift_skill_marks === 'object' && !Array.isArray(data.gift_skill_marks) ? data.gift_skill_marks : {}),
+    free_gift_quals:              JSON.stringify(typeof data.free_gift_quals === 'object' && !Array.isArray(data.free_gift_quals) ? data.free_gift_quals : {}),
     updated:                      new Date().toISOString().slice(0, 19).replace('T', ' '),
   };
 

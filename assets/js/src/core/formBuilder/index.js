@@ -389,6 +389,22 @@ function buildPayload(raw) {
   character.weapons = Array.isArray(raw.weapons) ? raw.weapons : [];
   character.armor   = Array.isArray(raw.armor)   ? raw.armor   : [];
 
+  // Skill notes (favourite use text per skill)
+  character.skill_notes = (raw.skill_notes && typeof raw.skill_notes === 'object' && !Array.isArray(raw.skill_notes))
+    ? raw.skill_notes
+    : {};
+
+  // Gift-granted skill marks (skill_id → count of gift-granted marks)
+  character.gift_skill_marks = (raw.gift_skill_marks && typeof raw.gift_skill_marks === 'object' && !Array.isArray(raw.gift_skill_marks))
+    ? raw.gift_skill_marks
+    : {};
+
+  // Free gift qualification map (slot → { type: value, ... }) — includes knack_skill for Knack For gifts
+  const rawFGQ = raw.free_gift_quals || raw.cg_free_gift_quals || raw.freeGiftQuals;
+  character.free_gift_quals = (rawFGQ && typeof rawFGQ === 'object' && !Array.isArray(rawFGQ))
+    ? rawFGQ
+    : {};
+
   flat.character = character;
 
   flat.character_json = JSON.stringify({ ...core });
