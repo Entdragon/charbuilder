@@ -124,3 +124,23 @@ git push -u origin feature/my-change
 # Open a PR on GitHub, review, merge to main
 git checkout main && git pull
 ```
+
+---
+
+## Post-merge setup (automatic)
+
+After each task agent merge, Replit automatically runs `scripts/post-merge.sh`, which:
+
+1. Runs `npm install --no-audit --no-fund --prefer-offline` — installs any new dependencies
+2. Runs `npm run build` — recompiles the JS bundle and CSS
+
+**If the post-merge setup fails**, the merge still completes but the compiled assets (`assets/js/dist/core.bundle.js`, `assets/css/dist/core.css`) may be out of date. In that case:
+
+```bash
+npm install
+npm run build
+```
+
+Run those manually in the Replit shell, then restart the workflow. Common causes of failure:
+- A new npm package was added but `npm install` failed (network issue — retry manually)
+- A JS or SCSS syntax error introduced in the merged code — fix the error, then rebuild
