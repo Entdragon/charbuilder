@@ -44,6 +44,10 @@ If you are unsure of the child theme directory name, check **WordPress Admin →
 | File in this repo | Goes to on server | Purpose |
 |---|---|---|
 | `snippets/requirements-literacy-merge.php` | Add functions to `functions.php` | Merges duplicate literacy requirement lines at render time (PHP, no JS) |
+| `page-data-editor.php` | `page-data-editor.php` (root of child theme) | Page template: admin-only front-end data editor |
+| `snippets/data-editor-ajax.php` | Add functions to `functions.php` | Three AJAX endpoints that power the data editor |
+| `css/data-editor.css` | `css/data-editor.css` | Styles for the data editor page |
+| `js/data-editor.js` | `js/data-editor.js` | Client-side JS for the data editor |
 
 ---
 
@@ -109,3 +113,72 @@ The merge targets **siblings within the same parent container** — so it cannot
 **Safe-failure guarantee:** If a gift has "Literacy" and "Literacy: Zhongwén" in *different* parent elements (non-siblings), the sibling search finds no match and neither element is altered. The worst case is the merge does nothing for that gift — the original two-line display is preserved, no content is removed.
 
 **HTML normalisation note:** DOMDocument re-serialises the full `the_content` block on gift pages. In practice this is harmless for CT-generated HTML, but if gift content ever includes inline `<script>` tags or tightly formatted markup, spot-check the rendered output after installation.
+
+---
+
+## Task 11 — Admin-only front-end data editor
+
+### What it is
+
+A WordPress page template that lets the site admin view and edit CustomTables records directly from the front end — no need to go into the CT plugin backend. Invisible to all non-admin visitors (protected by `current_user_can('manage_options')`).
+
+**Editable tables:** Gifts, Careers, Species, Skills, Equipment, Books
+
+**For Gifts only:** the editor also shows and saves child rows from `gift_sections` and `gift_requirements`.
+
+**Out of scope (edit-only):** creating new records, deleting records, bulk editing.
+
+### Files
+
+| File | Purpose |
+|---|---|
+| `page-data-editor.php` | Page template: admin check, enqueues CSS/JS, renders HTML shell |
+| `snippets/data-editor-ajax.php` | Three `wp_ajax_` endpoints (list, get, save) |
+| `css/data-editor.css` | Editor styles (WordPress admin aesthetic) |
+| `js/data-editor.js` | Client-side editor logic (jQuery) |
+
+### Installation steps
+
+1. **Upload files** to the child theme directory:
+   ```
+   wp-content/themes/<child-theme>/page-data-editor.php
+   wp-content/themes/<child-theme>/css/data-editor.css
+   wp-content/themes/<child-theme>/js/data-editor.js
+   ```
+
+2. **Add AJAX handlers** — paste the entire contents of `snippets/data-editor-ajax.php` into the child theme's `functions.php`.
+
+3. **Create the WordPress page:**
+   - WordPress Admin → Pages → Add New
+   - Title: "Data Editor" (or anything you prefer)
+   - Permalink: e.g. `/data-editor/` (keep it obscure)
+   - Page Template: select **"Data Editor"** from the template dropdown
+   - Publish
+
+4. **Test** — visit the page while logged in as admin. You should see the table selector. While logged out (or as a non-admin), visiting the page shows "Access denied."
+
+### Security model
+
+- All three AJAX endpoints are registered as `wp_ajax_` only (never `wp_ajax_nopriv_`) — unauthenticated requests are rejected by WordPress before reaching the code.
+- Every AJAX request is verified with `check_ajax_referer('loc_data_editor', 'nonce')`.
+- Every AJAX request checks `current_user_can('manage_options')`.
+- Table names are validated against a hardcoded whitelist (`LOC_DE_TABLES`); no user-supplied table name reaches a query.
+- Column names in UPDATE are validated against `INFORMATION_SCHEMA.COLUMNS`; no user-supplied column name reaches a query.
+- All values go through `$wpdb->update()` which uses prepared statements.
+- For child row updates, ownership is verified before each UPDATE: the child row's foreign key must match the parent record's `ct_id` (IDOR protection).
+
+### AJAX endpoints
+
+| Action | What it does |
+|---|---|
+| `loc_de_list` | Returns paginated + searchable record list (preview columns only) |
+| `loc_de_get` | Returns all columns for one record + child rows + column metadata |
+| `loc_de_save` | UPDATE main record + any submitted child rows |
+
+### Adding a new editable table
+
+Edit the `LOC_DE_TABLES` constant in `data-editor-ajax.php` (and the matching `cfg.tables` object in `page-data-editor.php`) to add more table slugs. The editor is column-driven — no other code changes needed for the main table fields.
+
+### Adding child table support for other tables
+
+Edit the `LOC_DE_CHILD_TABLES` constant in `data-editor-ajax.php`. Add a key matching the table slug, with each child table's `table` name (unprefixed), `fk` (foreign key column), and `editable` column list.
