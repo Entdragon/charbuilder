@@ -1,0 +1,965 @@
+<?php
+/**
+ * Twenty Twenty-Four Child functions.php
+ * (brace-count: each callback fn has its closing braces)
+ */
+
+// 1) Register menus
+add_action( 'after_setup_theme', function() {
+    register_nav_menus( [
+        'primary' => __( 'Primary Menu', 'twentytwentyfour-child' ),
+        'footer'  => __( 'Footer Menu',  'twentytwentyfour-child' ),
+    ] );
+} ); // <-- closes the add_action callback
+
+add_filter( 'wp_nav_menu_objects', function( $items ) {
+    if ( is_user_logged_in() ) return $items;
+
+    foreach ( $items as $key => $item ) {
+        if ( strpos( $item->url, '/character-generator' ) !== false ) {
+            unset( $items[$key] );
+        }
+    }
+
+    return $items;
+} );
+
+// 2) Enqueue child stylesheet and auth script (conditionally)
+add_action( 'wp_enqueue_scripts', function() {
+    wp_enqueue_style(
+        'twentytwentyfour-child-style',
+        get_stylesheet_uri(),
+        [],
+        wp_get_theme()->get( 'Version' )
+    );
+
+    // Auth script: only load on login or register pages
+    if ( is_page( [ 'login', 'register' ] ) ) {
+        wp_enqueue_script(
+            'cg-auth',
+            get_stylesheet_directory_uri() . '/js/cg-auth.js',
+            [ 'jquery' ],
+            null,
+            true
+        );
+
+        wp_localize_script( 'cg-auth', 'CG_Auth', [
+            'ajax_url' => admin_url( 'admin-ajax.php' ),
+            'nonce'    => wp_create_nonce( 'cg_nonce' ),
+        ] );
+    }
+} ); // <-- closes the add_action callback
+
+// 2b) Shared Library Search form helper
+if ( ! function_exists( 'loc_library_search_action_url' ) ) {
+    function loc_library_search_action_url() {
+        return home_url( '/library-search/' );
+    }
+}
+
+if ( ! function_exists( 'loc_library_search_current_value' ) ) {
+    function loc_library_search_current_value() {
+        if ( ! isset( $_GET['q'] ) ) {
+            return '';
+        }
+
+        return sanitize_text_field( wp_unslash( $_GET['q'] ) );
+    }
+}
+
+if ( ! function_exists( 'loc_library_clean_multi_value_param' ) ) {
+    function loc_library_clean_multi_value_param( $raw_values ) {
+        $clean = array();
+
+        foreach ( (array) $raw_values as $value ) {
+            $value = sanitize_text_field( (string) $value );
+            if ( $value !== '' ) {
+                $clean[] = $value;
+            }
+        }
+
+        return array_values( array_unique( $clean ) );
+    }
+}
+
+if ( ! function_exists( 'loc_render_library_search_controls' ) ) {
+    function loc_render_library_search_controls( $args = array() ) {
+        $defaults = array(
+            'wrapper_class'      => '',
+            'label'              => 'Search the Library',
+            'input_id'           => 'loc-library-search-q',
+            'input_name'         => 'q',
+            'input_type'         => 'search',
+            'input_class'        => 'loc-library-search-input',
+            'placeholder'        => 'Search gifts, equipment, weapons, species...',
+            'show_current_query' => true,
+        );
+
+        $args = wp_parse_args( $args, $defaults );
+
+        $current_value = '';
+        if ( ! empty( $args['show_current_query'] ) ) {
+            $current_value = loc_library_search_current_value();
+        }
+
+        $has_wrapper = trim( (string) $args['wrapper_class'] ) !== '';
+
+        if ( $has_wrapper ) {
+            echo '<div class="' . esc_attr( $args['wrapper_class'] ) . '">';
+        }
+
+        echo '<label for="' . esc_attr( $args['input_id'] ) . '" class="screen-reader-text">' . esc_html( $args['label'] ) . '</label>';
+        echo '<input type="' . esc_attr( $args['input_type'] ) . '" id="' . esc_attr( $args['input_id'] ) . '" name="' . esc_attr( $args['input_name'] ) . '" value="' . esc_attr( $current_value ) . '" placeholder="' . esc_attr( $args['placeholder'] ) . '" class="' . esc_attr( $args['input_class'] ) . '" required>';
+
+        if ( $has_wrapper ) {
+            echo '</div>';
+        }
+    }
+}
+
+if ( ! function_exists( 'loc_render_library_search_form' ) ) {
+    function loc_render_library_search_form( $args = array() ) {
+        $defaults = array(
+            'action'             => loc_library_search_action_url(),
+            'wrapper_class'      => 'loc-library-search-wrap',
+            'form_class'         => 'loc-library-search-form',
+            'label'              => 'Search the Library',
+            'input_id'           => 'loc-library-search-q',
+            'input_name'         => 'q',
+            'input_class'        => 'loc-library-search-input',
+            'button_class'       => 'loc-library-search-button',
+            'placeholder'        => 'Search gifts, equipment, weapons, species...',
+            'button_label'       => 'Search',
+            'helper_text'        => '',
+            'helper_class'       => 'loc-library-search-help',
+            'show_current_query' => true,
+        );
+
+        $args = wp_parse_args( $args, $defaults );
+
+        echo '<div class="' . esc_attr( $args['wrapper_class'] ) . '">';
+        echo '<form method="get" action="' . esc_url( $args['action'] ) . '" class="' . esc_attr( $args['form_class'] ) . '">';
+
+        loc_render_library_search_controls( array(
+            'wrapper_class'      => '',
+            'label'              => $args['label'],
+            'input_id'           => $args['input_id'],
+            'input_name'         => $args['input_name'],
+            'input_type'         => 'search',
+            'input_class'        => $args['input_class'],
+            'placeholder'        => $args['placeholder'],
+            'show_current_query' => ! empty( $args['show_current_query'] ),
+        ) );
+
+        echo '<button type="submit" class="' . esc_attr( $args['button_class'] ) . '">' . esc_html( $args['button_label'] ) . '</button>';
+        echo '</form>';
+
+        if ( trim( (string) $args['helper_text'] ) !== '' ) {
+            echo '<div class="' . esc_attr( $args['helper_class'] ) . '">' . esc_html( $args['helper_text'] ) . '</div>';
+        }
+
+        echo '</div>';
+    }
+}
+
+// 2c) Shared Library Search engine helpers
+if ( ! function_exists( 'loc_library_table_exists' ) ) {
+    function loc_library_table_exists( $table_name ) {
+        global $wpdb;
+        static $cache = array();
+
+        $key = 'table::' . $table_name;
+        if ( isset( $cache[ $key ] ) ) {
+            return $cache[ $key ];
+        }
+
+        $exists = (int) $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*)
+                 FROM information_schema.TABLES
+                 WHERE TABLE_SCHEMA = DATABASE()
+                   AND TABLE_NAME = %s",
+                $table_name
+            )
+        ) > 0;
+
+        $cache[ $key ] = $exists;
+        return $exists;
+    }
+}
+
+if ( ! function_exists( 'loc_library_table_has_column' ) ) {
+    function loc_library_table_has_column( $table_name, $column_name ) {
+        global $wpdb;
+        static $cache = array();
+
+        $key = $table_name . '::' . $column_name;
+        if ( isset( $cache[ $key ] ) ) {
+            return $cache[ $key ];
+        }
+
+        $exists = (int) $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*)
+                 FROM information_schema.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE()
+                   AND TABLE_NAME = %s
+                   AND COLUMN_NAME = %s",
+                $table_name,
+                $column_name
+            )
+        ) > 0;
+
+        $cache[ $key ] = $exists;
+        return $exists;
+    }
+}
+
+if ( ! function_exists( 'loc_library_first_existing_column' ) ) {
+    function loc_library_first_existing_column( $table_name, $candidates ) {
+        foreach ( (array) $candidates as $candidate ) {
+            if ( loc_library_table_has_column( $table_name, $candidate ) ) {
+                return $candidate;
+            }
+        }
+
+        return '';
+    }
+}
+
+if ( ! function_exists( 'loc_library_normalize_text' ) ) {
+    function loc_library_normalize_text( $text ) {
+        $text = wp_strip_all_tags( (string) $text );
+        $text = html_entity_decode( $text, ENT_QUOTES, 'UTF-8' );
+        $text = preg_replace( '/\s+/u', ' ', $text );
+        return trim( (string) $text );
+    }
+}
+
+if ( ! function_exists( 'loc_library_humanize_filter_value' ) ) {
+    function loc_library_humanize_filter_value( $value ) {
+        $value = trim( (string) $value );
+        if ( $value === '' ) {
+            return '';
+        }
+
+        $value = str_replace( array( '_', '-' ), ' ', $value );
+        $value = preg_replace( '/\s+/u', ' ', $value );
+        $value = trim( (string) $value );
+
+        if ( $value === '' ) {
+            return '';
+        }
+
+        if ( function_exists( 'mb_convert_case' ) ) {
+            return mb_convert_case( $value, MB_CASE_TITLE, 'UTF-8' );
+        }
+
+        return ucwords( $value );
+    }
+}
+
+if ( ! function_exists( 'loc_library_clean_excerpt_source' ) ) {
+    function loc_library_clean_excerpt_source( $text ) {
+        $text = (string) $text;
+        $text = html_entity_decode( $text, ENT_QUOTES, 'UTF-8' );
+        $text = wp_strip_all_tags( $text );
+        $text = str_replace( array( "\r\n", "\r" ), "\n", $text );
+
+        $text = preg_replace( '/\s*@@([A-Z0-9_ -]+):\s*/u', "\n@@$1: ", $text );
+
+        $lines = preg_split( '/\n+/u', $text );
+        $parts = array();
+
+        foreach ( (array) $lines as $line ) {
+            $line = trim( (string) $line );
+            if ( $line === '' ) {
+                continue;
+            }
+
+            if ( preg_match( '/^@@[A-Z0-9_ -]+:\s*(.*)$/u', $line, $matches ) ) {
+                $payload = trim( (string) $matches[1] );
+                if ( $payload !== '' ) {
+                    $parts[] = $payload;
+                }
+                continue;
+            }
+
+            $line = preg_replace( '/@@[A-Z0-9_ -]+:\s*/u', ' ', $line );
+            $line = trim( (string) $line );
+
+            if ( $line !== '' ) {
+                $parts[] = $line;
+            }
+        }
+
+        if ( ! empty( $parts ) ) {
+            $text = implode( ' • ', $parts );
+        }
+
+        $text = preg_replace( '/\s+/u', ' ', $text );
+        return trim( (string) $text );
+    }
+}
+
+if ( ! function_exists( 'loc_library_build_excerpt' ) ) {
+    function loc_library_build_excerpt( $row, $candidate_fields ) {
+        $fallback = '';
+
+        foreach ( (array) $candidate_fields as $field ) {
+            if ( ! isset( $row->{$field} ) || trim( (string) $row->{$field} ) === '' ) {
+                continue;
+            }
+
+            $clean = loc_library_clean_excerpt_source( $row->{$field} );
+            if ( $clean === '' ) {
+                continue;
+            }
+
+            if ( $fallback === '' ) {
+                $fallback = $clean;
+            }
+
+            if ( function_exists( 'mb_strlen' ) ) {
+                if ( mb_strlen( $clean, 'UTF-8' ) >= 24 ) {
+                    return wp_trim_words( $clean, 28, '…' );
+                }
+            } else {
+                if ( strlen( $clean ) >= 24 ) {
+                    return wp_trim_words( $clean, 28, '…' );
+                }
+            }
+        }
+
+        if ( $fallback !== '' ) {
+            return wp_trim_words( $fallback, 28, '…' );
+        }
+
+        return '';
+    }
+}
+
+if ( ! function_exists( 'loc_library_search_score' ) ) {
+    function loc_library_search_score( $title, $slug, $term, $excerpt = '' ) {
+        $title_l   = function_exists( 'mb_strtolower' ) ? mb_strtolower( (string) $title, 'UTF-8' )   : strtolower( (string) $title );
+        $slug_l    = function_exists( 'mb_strtolower' ) ? mb_strtolower( (string) $slug, 'UTF-8' )    : strtolower( (string) $slug );
+        $term_l    = function_exists( 'mb_strtolower' ) ? mb_strtolower( (string) $term, 'UTF-8' )    : strtolower( (string) $term );
+        $excerpt_l = function_exists( 'mb_strtolower' ) ? mb_strtolower( (string) $excerpt, 'UTF-8' ) : strtolower( (string) $excerpt );
+
+        $score = 0;
+
+        if ( $title_l === $term_l ) {
+            $score += 120;
+        }
+        if ( $slug_l === $term_l ) {
+            $score += 110;
+        }
+        if ( $term_l !== '' && strpos( $title_l, $term_l ) === 0 ) {
+            $score += 90;
+        }
+        if ( $term_l !== '' && strpos( $slug_l, $term_l ) === 0 ) {
+            $score += 80;
+        }
+        if ( $term_l !== '' && strpos( $title_l, $term_l ) !== false ) {
+            $score += 60;
+        }
+        if ( $term_l !== '' && strpos( $slug_l, $term_l ) !== false ) {
+            $score += 50;
+        }
+        if ( $term_l !== '' && $excerpt_l !== '' && strpos( $excerpt_l, $term_l ) !== false ) {
+            $score += 20;
+        }
+
+        return $score;
+    }
+}
+
+if ( ! function_exists( 'loc_library_result_url' ) ) {
+    function loc_library_result_url( $type, $row, $slug ) {
+        $slug = trim( (string) $slug );
+        if ( $slug === '' ) {
+            return home_url( '/' );
+        }
+
+        switch ( $type ) {
+            case 'gifts':
+                return home_url( '/gift/' . rawurlencode( $slug ) . '/' );
+
+            case 'careers':
+                return home_url( '/career/' . rawurlencode( $slug ) . '/' );
+
+            case 'skills':
+                return home_url( '/skill/' . rawurlencode( $slug ) . '/' );
+
+            case 'species':
+                return home_url( '/species/' . rawurlencode( $slug ) . '/' );
+
+            case 'books':
+                return home_url( '/book/' . rawurlencode( $slug ) . '/' );
+
+            case 'weapons':
+                $is_species_weapon = 0;
+
+                if ( isset( $row->ct_is_species_weapon ) ) {
+                    $is_species_weapon = (int) $row->ct_is_species_weapon;
+                }
+                if ( isset( $row->weapon_is_species_weapon ) ) {
+                    $is_species_weapon = (int) $row->weapon_is_species_weapon;
+                }
+
+                if ( $is_species_weapon === 1 ) {
+                    return home_url( '/species-weapons/' . rawurlencode( $slug ) . '/' );
+                }
+
+                return home_url( '/equipment/' . rawurlencode( $slug ) . '/' );
+
+            case 'equipment':
+            default:
+                return home_url( '/equipment/' . rawurlencode( $slug ) . '/' );
+        }
+    }
+}
+
+if ( ! function_exists( 'loc_library_run_search_table' ) ) {
+    function loc_library_run_search_table( $config, $search_term ) {
+        global $wpdb;
+
+        $table = $config['table'];
+
+        if ( ! loc_library_table_exists( $table ) ) {
+            return array();
+        }
+
+        $title_col = loc_library_first_existing_column( $table, $config['title_columns'] );
+        $slug_col  = loc_library_first_existing_column( $table, $config['slug_columns'] );
+
+        if ( $title_col === '' || $slug_col === '' ) {
+            return array();
+        }
+
+        $excerpt_columns = array();
+        foreach ( (array) $config['excerpt_columns'] as $column_name ) {
+            if ( loc_library_table_has_column( $table, $column_name ) ) {
+                $excerpt_columns[] = $column_name;
+            }
+        }
+
+        $search_columns = array_unique( array_merge( array( $title_col, $slug_col ), $excerpt_columns ) );
+
+        if ( empty( $search_columns ) ) {
+            return array();
+        }
+
+        $selects = array(
+            "`{$title_col}` AS result_title",
+            "`{$slug_col}` AS result_slug",
+        );
+
+        foreach ( $excerpt_columns as $column_name ) {
+            $selects[] = "`{$column_name}`";
+        }
+
+        if ( ! empty( $config['extra_columns'] ) ) {
+            foreach ( (array) $config['extra_columns'] as $column_name ) {
+                if ( loc_library_table_has_column( $table, $column_name ) ) {
+                    $selects[] = "`{$column_name}`";
+                }
+            }
+        }
+
+        $where  = array();
+        $params = array();
+
+        if ( ! empty( $config['published_column'] ) && loc_library_table_has_column( $table, $config['published_column'] ) ) {
+            $where[] = "`{$config['published_column']}` = 1";
+        }
+
+        if ( ! empty( $config['prepared_where'] ) && is_array( $config['prepared_where'] ) ) {
+            foreach ( $config['prepared_where'] as $prepared_clause ) {
+                if ( empty( $prepared_clause['sql'] ) ) {
+                    continue;
+                }
+
+                $where[] = '(' . $prepared_clause['sql'] . ')';
+
+                if ( ! empty( $prepared_clause['params'] ) && is_array( $prepared_clause['params'] ) ) {
+                    foreach ( $prepared_clause['params'] as $prepared_param ) {
+                        $params[] = $prepared_param;
+                    }
+                }
+            }
+        }
+
+        if ( ! empty( $config['where_sql'] ) ) {
+            $where[] = $config['where_sql'];
+        }
+
+        $like = '%' . $wpdb->esc_like( $search_term ) . '%';
+
+        $search_parts = array();
+        foreach ( $search_columns as $column_name ) {
+            $search_parts[] = "`{$column_name}` LIKE %s";
+            $params[] = $like;
+        }
+
+        $where[] = '(' . implode( ' OR ', $search_parts ) . ')';
+
+        $limit = isset( $config['limit'] ) ? (int) $config['limit'] : 30;
+        if ( $limit < 1 ) {
+            $limit = 30;
+        }
+
+        $sql = "
+            SELECT " . implode( ",\n                   ", array_unique( $selects ) ) . "
+            FROM `{$table}`
+            WHERE " . implode( ' AND ', $where ) . "
+            LIMIT %d
+        ";
+
+        $params[] = $limit;
+        $prepared = $wpdb->prepare( $sql, $params );
+        $rows     = $wpdb->get_results( $prepared );
+
+        if ( empty( $rows ) ) {
+            return array();
+        }
+
+        $results = array();
+
+        foreach ( $rows as $row ) {
+            $title = isset( $row->result_title ) ? loc_library_normalize_text( $row->result_title ) : '';
+            $slug  = isset( $row->result_slug ) ? loc_library_normalize_text( $row->result_slug ) : '';
+
+            if ( $title === '' || $slug === '' ) {
+                continue;
+            }
+
+            $excerpt = loc_library_build_excerpt( $row, $excerpt_columns );
+
+            $results[] = array(
+                'type'    => $config['type'],
+                'label'   => $config['label'],
+                'title'   => $title,
+                'slug'    => $slug,
+                'url'     => loc_library_result_url( $config['type'], $row, $slug ),
+                'excerpt' => $excerpt,
+                'score'   => loc_library_search_score( $title, $slug, $search_term, $excerpt ),
+            );
+        }
+
+        usort( $results, function( $a, $b ) {
+            if ( (int) $a['score'] !== (int) $b['score'] ) {
+                return ( (int) $b['score'] <=> (int) $a['score'] );
+            }
+
+            return strcasecmp( $a['title'], $b['title'] );
+        } );
+
+        return $results;
+    }
+}
+
+if ( ! function_exists( 'loc_library_default_search_configs' ) ) {
+    function loc_library_default_search_configs() {
+        return array(
+            array(
+                'type'             => 'gifts',
+                'label'            => 'Gifts',
+                'table'            => 'DcVnchxg4_customtables_table_gifts',
+                'title_columns'    => array( 'ct_gifts_name', 'ct_name' ),
+                'slug_columns'     => array( 'ct_slug' ),
+                'excerpt_columns'  => array( 'ct_gifts_effect_description', 'ct_gifts_effect', 'ct_description', 'ct_notes' ),
+                'extra_columns'    => array(),
+                'published_column' => 'published',
+                'where_sql'        => '',
+                'prepared_where'   => array(),
+                'limit'            => 30,
+            ),
+            array(
+                'type'             => 'equipment',
+                'label'            => 'Equipment',
+                'table'            => 'DcVnchxg4_customtables_table_equipment',
+                'title_columns'    => array( 'ct_name' ),
+                'slug_columns'     => array( 'ct_slug' ),
+                'excerpt_columns'  => array( 'ct_description', 'ct_effect', 'ct_notes', 'ct_descriptors' ),
+                'extra_columns'    => array(),
+                'published_column' => 'published',
+                'where_sql'        => '',
+                'prepared_where'   => array(),
+                'limit'            => 30,
+            ),
+            array(
+                'type'             => 'weapons',
+                'label'            => 'Weapons',
+                'table'            => 'DcVnchxg4_customtables_table_weapons',
+                'title_columns'    => array( 'ct_name', 'ct_weapons_name' ),
+                'slug_columns'     => array( 'ct_slug' ),
+                'excerpt_columns'  => array( 'ct_effect', 'ct_descriptors', 'ct_attack_dice', 'ct_range_band' ),
+                'extra_columns'    => array( 'ct_is_species_weapon' ),
+                'published_column' => 'published',
+                'where_sql'        => '',
+                'prepared_where'   => array(),
+                'limit'            => 30,
+            ),
+            array(
+                'type'             => 'species',
+                'label'            => 'Species',
+                'table'            => 'DcVnchxg4_customtables_table_species',
+                'title_columns'    => array( 'ct_species_name', 'ct_name' ),
+                'slug_columns'     => array( 'ct_slug' ),
+                'excerpt_columns'  => array( 'ct_species_description', 'ct_description' ),
+                'extra_columns'    => array(),
+                'published_column' => 'published',
+                'where_sql'        => '',
+                'prepared_where'   => array(),
+                'limit'            => 30,
+            ),
+            array(
+                'type'             => 'careers',
+                'label'            => 'Careers',
+                'table'            => 'DcVnchxg4_customtables_table_careers',
+                'title_columns'    => array( 'ct_career_name', 'ct_name' ),
+                'slug_columns'     => array( 'ct_slug' ),
+                'excerpt_columns'  => array( 'ct_career_description', 'ct_description', 'ct_notes' ),
+                'extra_columns'    => array(),
+                'published_column' => 'published',
+                'where_sql'        => '',
+                'prepared_where'   => array(),
+                'limit'            => 30,
+            ),
+            array(
+                'type'             => 'skills',
+                'label'            => 'Skills',
+                'table'            => 'DcVnchxg4_customtables_table_skills',
+                'title_columns'    => array( 'ct_skill_name', 'ct_name', 'ct_skills_name' ),
+                'slug_columns'     => array( 'ct_slug' ),
+                'excerpt_columns'  => array( 'ct_skill_description', 'ct_description', 'ct_notes' ),
+                'extra_columns'    => array(),
+                'published_column' => 'published',
+                'where_sql'        => '',
+                'prepared_where'   => array(),
+                'limit'            => 30,
+            ),
+            array(
+                'type'             => 'books',
+                'label'            => 'Books',
+                'table'            => 'DcVnchxg4_customtables_table_books',
+                'title_columns'    => array( 'ct_book_name', 'ct_name' ),
+                'slug_columns'     => array( 'ct_ct_slug', 'ct_slug' ),
+                'excerpt_columns'  => array( 'ct_book_description', 'ct_abstract', 'ct_description', 'ct_notes' ),
+                'extra_columns'    => array(),
+                'published_column' => 'published',
+                'where_sql'        => '',
+                'prepared_where'   => array(),
+                'limit'            => 30,
+            ),
+        );
+    }
+}
+
+if ( ! function_exists( 'loc_library_run_unified_search' ) ) {
+    function loc_library_run_unified_search( $search_term, $search_configs = null ) {
+        $search_term = trim( (string) $search_term );
+
+        if ( ! is_array( $search_configs ) ) {
+            $search_configs = loc_library_default_search_configs();
+        }
+
+        $grouped_results = array();
+        $total_results   = 0;
+
+        if ( $search_term !== '' ) {
+            foreach ( $search_configs as $config ) {
+                $items = loc_library_run_search_table( $config, $search_term );
+
+                if ( ! empty( $items ) ) {
+                    $grouped_results[ $config['type'] ] = array(
+                        'label' => $config['label'],
+                        'items' => $items,
+                    );
+                    $total_results += count( $items );
+                }
+            }
+        }
+
+        return array(
+            'search_term'     => $search_term,
+            'search_configs'  => $search_configs,
+            'grouped_results' => $grouped_results,
+            'total_results'   => $total_results,
+        );
+    }
+}
+
+// 3) Rewrite rules for detail pages
+add_action( 'init', function() {
+
+    // Equipment detail page:
+    // /equipment/<slug>/  ->  page slug: equipment-detail
+    add_rewrite_rule(
+        '^equipment/([^/]+)/?$',
+        'index.php?pagename=equipment-detail&equipment_slug=$matches[1]',
+        'top'
+    );
+
+    $base_rules = [
+        'book'    => 'book',
+        'career'  => 'career',
+        'gift'    => 'gift',
+        'skill'   => 'skill',
+        'species' => 'species',
+        'refresh' => 'refresh-details',
+    ];
+
+    foreach ( $base_rules as $slug => $page ) {
+        add_rewrite_rule(
+            "^{$slug}/([^/]+)/?$",
+            'index.php?pagename=' . $page . '&slug=$matches[1]',
+            'top'
+        );
+    }
+
+    $types = [
+        'species-habitat',
+        'species-diet',
+        'species-cycle',
+        'species-senses',
+        'species-weapons',
+        'career-type',
+        'career-archtype',
+        'gift-class',
+        'gift-type',
+        'skill-descriptor',
+    ];
+
+    foreach ( $types as $type ) {
+        add_rewrite_rule(
+            "^{$type}/([^/]+)/?$",
+            'index.php?pagename=' . $type . '-detail&slug=$matches[1]',
+            'top'
+        );
+    }
+} ); // <-- closes the init callback
+
+// 4) Allow custom query vars
+add_filter( 'query_vars', function( $vars ) {
+    $vars[] = 'slug';
+    $vars[] = 'equipment_slug';
+    return $vars;
+} ); // <-- closes the filter callback
+
+// 5) Friendly‐URL fallback redirect
+add_action( 'template_redirect', function() {
+    if ( is_404() ) {
+        global $wpdb;
+
+        $uri = trim( $_SERVER['REQUEST_URI'], '/' );
+        if ( ! $uri ) return;
+
+        $lookup_map = [
+            'species-habitat'  => [ 'DcVnchxg4_customtables_table_habitat',           'ct_slug' ],
+            'species-diet'     => [ 'DcVnchxg4_customtables_table_diet',              'ct_slug' ],
+            // …rest of your mappings…
+            'skill-descriptor' => [ 'DcVnchxg4_customtables_table_skillsdescriptors', 'ct_slug' ],
+        ];
+
+        foreach ( $lookup_map as $prefix => list( $table, $field ) ) {
+            $count = (int) $wpdb->get_var(
+                $wpdb->prepare(
+                    "SELECT COUNT(*) FROM {$table} WHERE {$field} = %s",
+                    $uri
+                )
+            );
+
+            if ( $count > 0 ) {
+                wp_redirect( home_url( "/{$prefix}/{$uri}/" ), 301 );
+                exit;
+            }
+        }
+    }
+} ); // <-- closes the template_redirect callback
+/**
+ * requirements-literacy-merge.php
+ * Library of Calabria — child theme snippet
+ *
+ * Merges paired generic/specific requirement boxes on gift pages, e.g.:
+ *
+ *   "Literacy"  +  "Literacy: Zho-ngwén"   → "Literacy: Zho-ngwén"
+ *   "Language"  +  "Language: Zhonggese"   → "Language: Zhonggese"
+ *   "Mystic of: [Choice]"  +  "Mystic: Elementalism"  → "Mystic: Elementalism"
+ *
+ * INSTALLATION
+ * Copy the two functions below into the child theme's functions.php (no <?php tag).
+ *
+ * SERVER PATH: wp-content/themes/<child-theme>/functions.php (append)
+ */
+
+if ( ! function_exists( 'loc_merge_gift_requirements' ) ) {
+    function loc_merge_gift_requirements( $content ) {
+        // Fast-exit: skip pages with none of the relevant keywords.
+        if ( false === stripos( $content, 'Literacy' )
+            && false === stripos( $content, 'Language' )
+            && false === stripos( $content, '[Choice]' ) ) {
+            return $content;
+        }
+        return loc_dom_merge_gift_pairs( $content );
+    }
+    add_filter( 'the_content', 'loc_merge_gift_requirements', 20 );
+}
+
+if ( ! function_exists( 'loc_dom_merge_gift_pairs' ) ) {
+    /**
+     * Parse the rendered HTML with DOMDocument and merge paired requirement elements
+     * that share the same parent container.
+     *
+     * Two merge patterns are handled:
+     *
+     *   Pattern 1 — generic + specific
+     *     Generic element text:  "Literacy"         (no colon)
+     *     Specific sibling text: "Literacy: Zho-ngwén"  (starts with generic + ": ")
+     *     Result: generic element becomes "Literacy: Zho-ngwén", specific removed.
+     *
+     *   Pattern 2 — placeholder + specific
+     *     Generic element text:  "Mystic of: [Choice]"  (contains "[Choice]")
+     *     Specific sibling text: "Mystic: Elementalism"  (starts with same prefix, no "[Choice]")
+     *     Result: generic element becomes "Mystic: Elementalism", specific removed.
+     *
+     * Only elements whose total text content is 1–120 characters are considered,
+     * which excludes large container elements while including individual requirement boxes.
+     * The match always requires both elements to share the same immediate parent, so
+     * content in unrelated page sections is never altered.
+     *
+     * @param  string $content  Rendered HTML from WordPress/CustomTables.
+     * @return string           Modified HTML with merged pairs.
+     */
+    function loc_dom_merge_gift_pairs( $content ) {
+        $dom = new DOMDocument( '1.0', 'UTF-8' );
+        libxml_use_internal_errors( true );
+        $dom->loadHTML(
+            '<html><head><meta charset="utf-8"></head><body>' . $content . '</body></html>',
+            LIBXML_NOBLANKS
+        );
+        libxml_clear_errors();
+
+        $xpath = new DOMXPath( $dom );
+
+        /*
+         * Select all elements whose total text length is between 1 and 120 chars.
+         * Using normalize-space(.) (dot = current node including all descendants)
+         * means we correctly read text even when it is wrapped in <em>, <strong>, etc.
+         */
+        $candidates = $xpath->query(
+            '//*[string-length(normalize-space(.)) >= 1 and string-length(normalize-space(.)) <= 120]'
+        );
+
+        // Group candidate elements by their immediate parent.
+        $by_parent = [];
+        foreach ( $candidates as $node ) {
+            if ( $node->parentNode === null ) {
+                continue;
+            }
+            $text = trim( $node->textContent );
+            if ( $text === '' ) {
+                continue;
+            }
+            $by_parent[ spl_object_hash( $node->parentNode ) ][] = [
+                'node' => $node,
+                'text' => $text,
+            ];
+        }
+
+        $changed = false;
+        $removed = new SplObjectStorage();
+
+        foreach ( $by_parent as $group ) {
+            if ( count( $group ) < 2 ) {
+                continue;
+            }
+
+            $n = count( $group );
+            for ( $i = 0; $i < $n; $i++ ) {
+                $item = $group[ $i ];
+
+                // Skip nodes already removed from the DOM.
+                if ( $removed->contains( $item['node'] ) || $item['node']->parentNode === null ) {
+                    continue;
+                }
+
+                $text = $item['text'];
+
+                // ── Pattern 1: "X" (no colon) — look for sibling "X: Y" ──────────
+                if ( strpos( $text, ':' ) === false ) {
+                    for ( $j = 0; $j < $n; $j++ ) {
+                        if ( $j === $i ) {
+                            continue;
+                        }
+                        $other = $group[ $j ];
+                        if ( $removed->contains( $other['node'] ) || $other['node']->parentNode === null ) {
+                            continue;
+                        }
+                        if ( 0 === stripos( $other['text'], $text . ': ' ) ) {
+                            loc_replace_element_text( $dom, $item['node'], $other['text'] );
+                            $other['node']->parentNode->removeChild( $other['node'] );
+                            $removed->attach( $other['node'] );
+                            $changed = true;
+                            break;
+                        }
+                    }
+                    continue;
+                }
+
+                // ── Pattern 2: "X: [Choice]" — look for sibling "X: Y" (concrete) ─
+                if ( preg_match( '/^(.+?):\s*\[Choice\]$/i', $text, $m ) ) {
+                    $prefix = trim( $m[1] );
+                    for ( $j = 0; $j < $n; $j++ ) {
+                        if ( $j === $i ) {
+                            continue;
+                        }
+                        $other = $group[ $j ];
+                        if ( $removed->contains( $other['node'] ) || $other['node']->parentNode === null ) {
+                            continue;
+                        }
+                        $otext = $other['text'];
+                        if ( 0 === stripos( $otext, $prefix . ': ' )
+                            && false === stripos( $otext, '[Choice]' ) ) {
+                            loc_replace_element_text( $dom, $item['node'], $otext );
+                            $other['node']->parentNode->removeChild( $other['node'] );
+                            $removed->attach( $other['node'] );
+                            $changed = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        if ( ! $changed ) {
+            return $content;
+        }
+
+        // Serialise only the body children — strips the html/head/body wrapper.
+        $body   = $dom->getElementsByTagName( 'body' )->item( 0 );
+        $output = '';
+        foreach ( $body->childNodes as $child ) {
+            $output .= $dom->saveHTML( $child );
+        }
+        return $output;
+    }
+}
+
+if ( ! function_exists( 'loc_replace_element_text' ) ) {
+    /**
+     * Replace all child nodes of $node with a single plain text node.
+     * This removes any <em>/<strong> wrappers while keeping the element itself.
+     *
+     * @param DOMDocument $dom
+     * @param DOMElement  $node
+     * @param string      $text
+     */
+    function loc_replace_element_text( $dom, $node, $text ) {
+        while ( $node->firstChild ) {
+            $node->removeChild( $node->firstChild );
+        }
+        $node->appendChild( $dom->createTextNode( $text ) );
+    }
+}
