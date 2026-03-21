@@ -10,21 +10,20 @@
 --       inline career_skill_* / career_gift_* columns).
 --
 -- This phase is NOT automatically reversible.
+--
+-- NOTE: IF EXISTS removed from DROP COLUMN — cPanel DB user
+-- lacks information_schema access required for that syntax.
 -- ============================================================
 
 SET NAMES utf8mb4;
 
 ALTER TABLE `DcVnchxg4_customtables_table_careers`
-  DROP COLUMN IF EXISTS `ct_career_skill_one`,
-  DROP COLUMN IF EXISTS `ct_career_skill_two`,
-  DROP COLUMN IF EXISTS `ct_career_skill_three`,
-  DROP COLUMN IF EXISTS `ct_career_gift_one`,
-  DROP COLUMN IF EXISTS `ct_career_gift_two`,
-  DROP COLUMN IF EXISTS `ct_career_gift_three`;
+  DROP COLUMN `ct_career_skill_one`,
+  DROP COLUMN `ct_career_skill_two`,
+  DROP COLUMN `ct_career_skill_three`,
+  DROP COLUMN `ct_career_gift_one`,
+  DROP COLUMN `ct_career_gift_two`,
+  DROP COLUMN `ct_career_gift_three`;
 
--- Verify
-SELECT 'careers inline columns remaining' AS label, COUNT(*) AS cnt
-FROM information_schema.COLUMNS
-WHERE TABLE_SCHEMA = DATABASE()
-  AND TABLE_NAME   = 'DcVnchxg4_customtables_table_careers'
-  AND (COLUMN_NAME LIKE 'ct_career_skill_%' OR COLUMN_NAME LIKE 'ct_career_gift_%');
+-- Verify: check remaining columns
+SHOW COLUMNS FROM `DcVnchxg4_customtables_table_careers`;

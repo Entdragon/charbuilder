@@ -11,63 +11,66 @@
 --
 -- This phase is NOT automatically reversible.
 -- Restore from the pre-phase-03 dump if rollback is needed.
+--
+-- NOTE: IF EXISTS is NOT used on DROP COLUMN because the cPanel
+-- database user lacks information_schema access. All columns
+-- listed here were confirmed present via SHOW COLUMNS before
+-- this file was written.
 -- ============================================================
 
 SET NAMES utf8mb4;
 
 -- ------------------------------------------------------------
--- Drop requires_1 … requires_19 inline columns from gifts
--- Actual column names in the table use the full word suffixes.
+-- Drop requires inline columns from gifts
 -- ------------------------------------------------------------
 ALTER TABLE `DcVnchxg4_customtables_table_gifts`
-  DROP COLUMN IF EXISTS `ct_gifts_requires`,
-  DROP COLUMN IF EXISTS `ct_gifts_requires_two`,
-  DROP COLUMN IF EXISTS `ct_gifts_requires_three`,
-  DROP COLUMN IF EXISTS `ct_gifts_requires_four`,
-  DROP COLUMN IF EXISTS `ct_gifts_requires_five`,
-  DROP COLUMN IF EXISTS `ct_gifts_requires_six`,
-  DROP COLUMN IF EXISTS `ct_gifts_requires_seven`,
-  DROP COLUMN IF EXISTS `ct_gifts_requires_eight`,
-  DROP COLUMN IF EXISTS `ct_gifts_requires_nine`,
-  DROP COLUMN IF EXISTS `ct_gifts_requires_ten`,
-  DROP COLUMN IF EXISTS `ct_gifts_requires_eleven`,
-  DROP COLUMN IF EXISTS `ct_gifts_requires_twelve`,
-  DROP COLUMN IF EXISTS `ct_gifts_requires_thirteen`,
-  DROP COLUMN IF EXISTS `ct_gifts_requires_fourteen`,
-  DROP COLUMN IF EXISTS `ct_gifts_requires_fifteen`,
-  DROP COLUMN IF EXISTS `ct_gifts_requires_sixteen`,
-  DROP COLUMN IF EXISTS `ct_gifts_requires_seventeen`,
-  DROP COLUMN IF EXISTS `ct_gifts_requires_eighteen`,
-  DROP COLUMN IF EXISTS `ct_gifts_requires_nineteen`;
+  DROP COLUMN `ct_gifts_requires`,
+  DROP COLUMN `ct_gifts_requires_two`,
+  DROP COLUMN `ct_gifts_requires_three`,
+  DROP COLUMN `ct_gifts_requires_four`,
+  DROP COLUMN `ct_gifts_requires_five`,
+  DROP COLUMN `ct_gifts_requires_six`,
+  DROP COLUMN `ct_gifts_requires_seven`,
+  DROP COLUMN `ct_gifts_requires_eight`,
+  DROP COLUMN `ct_gifts_requires_nine`,
+  DROP COLUMN `ct_gifts_requires_ten`,
+  DROP COLUMN `ct_gifts_requires_eleven`,
+  DROP COLUMN `ct_gifts_requires_twelve`,
+  DROP COLUMN `ct_gifts_requires_thirteen`,
+  DROP COLUMN `ct_gifts_requires_fourteen`,
+  DROP COLUMN `ct_gifts_requires_fifteen`,
+  DROP COLUMN `ct_gifts_requires_sixteen`,
+  DROP COLUMN `ct_gifts_requires_seventeen`,
+  DROP COLUMN `ct_gifts_requires_eighteen`,
+  DROP COLUMN `ct_gifts_requires_nineteen`;
 
 -- ------------------------------------------------------------
 -- Drop type inline columns from gifts
 -- Actual column names: ct_gift_type, ct_gift_type_two … ct_gift_type_eight
 -- ------------------------------------------------------------
 ALTER TABLE `DcVnchxg4_customtables_table_gifts`
-  DROP COLUMN IF EXISTS `ct_gift_type`,
-  DROP COLUMN IF EXISTS `ct_gift_type_two`,
-  DROP COLUMN IF EXISTS `ct_gift_type_three`,
-  DROP COLUMN IF EXISTS `ct_gift_type_four`,
-  DROP COLUMN IF EXISTS `ct_gift_type_five`,
-  DROP COLUMN IF EXISTS `ct_gift_type_six`,
-  DROP COLUMN IF EXISTS `ct_gift_type_seven`,
-  DROP COLUMN IF EXISTS `ct_gift_type_eight`;
+  DROP COLUMN `ct_gift_type`,
+  DROP COLUMN `ct_gift_type_two`,
+  DROP COLUMN `ct_gift_type_three`,
+  DROP COLUMN `ct_gift_type_four`,
+  DROP COLUMN `ct_gift_type_five`,
+  DROP COLUMN `ct_gift_type_six`,
+  DROP COLUMN `ct_gift_type_seven`,
+  DROP COLUMN `ct_gift_type_eight`;
 
--- Drop requires_special inline columns (legacy free-text, superseded by gift_requirements)
+-- ------------------------------------------------------------
+-- Drop requires_special inline columns
+-- ------------------------------------------------------------
 ALTER TABLE `DcVnchxg4_customtables_table_gifts`
-  DROP COLUMN IF EXISTS `ct_gifts_requires_special`,
-  DROP COLUMN IF EXISTS `ct_gifts_requires_special_two`,
-  DROP COLUMN IF EXISTS `ct_gifts_requires_special_three`,
-  DROP COLUMN IF EXISTS `ct_gifts_requires_special_four`,
-  DROP COLUMN IF EXISTS `ct_gifts_requires_special_five`,
-  DROP COLUMN IF EXISTS `ct_gifts_requires_special_six`,
-  DROP COLUMN IF EXISTS `ct_gifts_requires_special_seven`,
-  DROP COLUMN IF EXISTS `ct_gifts_requires_special_eight`;
+  DROP COLUMN `ct_gifts_requires_special`,
+  DROP COLUMN `ct_gifts_requires_special_two`,
+  DROP COLUMN `ct_gifts_requires_special_three`,
+  DROP COLUMN `ct_gifts_requires_special_four`,
+  DROP COLUMN `ct_gifts_requires_special_five`,
+  DROP COLUMN `ct_gifts_requires_special_six`,
+  DROP COLUMN `ct_gifts_requires_special_seven`,
+  DROP COLUMN `ct_gifts_requires_special_eight`;
 
--- Verify columns are gone
-SELECT 'gifts columns remaining' AS label, COUNT(*) AS cnt
-FROM information_schema.COLUMNS
-WHERE TABLE_SCHEMA = DATABASE()
-  AND TABLE_NAME   = 'DcVnchxg4_customtables_table_gifts'
-  AND (COLUMN_NAME LIKE 'ct_gifts_requires%' OR COLUMN_NAME LIKE 'ct_gift_type%');
+-- Verify: remaining columns should NOT include requires_* or ct_gift_type*
+-- (Does not require information_schema access)
+SHOW COLUMNS FROM `DcVnchxg4_customtables_table_gifts`;
