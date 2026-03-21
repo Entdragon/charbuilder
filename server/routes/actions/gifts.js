@@ -22,18 +22,6 @@ async function cg_get_language_gift(req, res) {
 
 async function cg_get_free_gifts(req, res) {
   const p = prefix();
-  const suffixes = [
-    '', 'two','three','four','five','six',
-    'seven','eight','nine','ten','eleven',
-    'twelve','thirteen','fourteen','fifteen',
-    'sixteen','seventeen','eighteen','nineteen',
-  ];
-  const requireCols = suffixes.map(s => s ? `ct_gifts_requires_${s}` : 'ct_gifts_requires').join(', ');
-
-  const requireSpecialSuffixes = ['','_two','_three','_four','_five','_six','_seven','_eight'];
-  const requireSpecialCols = requireSpecialSuffixes
-    .map(s => `ct_gifts_requires_special${s}`)
-    .join(', ');
 
   let rows;
   try {
@@ -44,10 +32,7 @@ async function cg_get_free_gifts(req, res) {
         ct_gifts_allows_multiple           AS allows_multiple,
         ct_gifts_manifold                  AS ct_gifts_manifold,
         ct_gifts_class                     AS giftclass,
-        ct_gifts_effect_description        AS effect_description,
-        ct_gifts_requires_special,
-        ${requireSpecialCols},
-        ${requireCols}
+        ct_gifts_effect_description        AS effect_description
       FROM ${p}customtables_table_gifts
       WHERE LOWER(TRIM(ct_gifts_class)) != 'natural'
       ORDER BY ct_gifts_name ASC
@@ -61,10 +46,7 @@ async function cg_get_free_gifts(req, res) {
           ct_gifts_allows_multiple AS allows_multiple,
           ct_gifts_manifold        AS ct_gifts_manifold,
           NULL                     AS giftclass,
-          NULL                     AS effect_description,
-          ct_gifts_requires_special,
-          ${requireSpecialCols},
-          ${requireCols}
+          NULL                     AS effect_description
         FROM ${p}customtables_table_gifts
         ORDER BY ct_gifts_name ASC
       `);
@@ -73,14 +55,12 @@ async function cg_get_free_gifts(req, res) {
     }
   }
 
-  // Build a map from gift id → gift object
   const giftMap = new Map();
   rows.forEach(r => {
     const id = String(r.id || '');
     if (id) giftMap.set(id, r);
   });
 
-  // Fetch all prereqs and requirements in bulk, then attach per-gift
   let prereqRows = [];
   let reqRows = [];
   let sectionRows = [];
@@ -101,7 +81,6 @@ async function cg_get_free_gifts(req, res) {
     );
   } catch (_) {}
 
-  // Fetch first 'rules' section body per gift as fallback effect description
   try {
     sectionRows = await query(
       `SELECT ct_gift_id AS gift_id, MIN(ct_sort) AS min_sort, ct_body AS body

@@ -34,7 +34,7 @@ NNN-short-description/             ← multi-file migration (phases)
 | # | File | Description | Applied |
 |---|------|-------------|---------|
 | 001 | `001-cleanup-drop-tables.sql` | Drop 39 redundant/backup tables | — |
-| 002 | `002-schema-normalisation/` | Full schema normalisation (expand→migrate→contract) | — |
+| 002 | `002-schema-normalisation/` | Full schema normalisation (expand→migrate→contract) — 11 SQL files written, ready to apply | — |
 
 ## Tables to never touch
 
