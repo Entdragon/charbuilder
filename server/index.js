@@ -12,6 +12,26 @@ const PORT = 5000;
 
 app.set('trust proxy', 1);
 
+// ── CORS (must be first — handles preflight before session) ───────────────────
+const CORS_ORIGINS = [
+  'https://libraryofcalbria.com',
+  'https://www.libraryofcalbria.com',
+  'https://characters.libraryofcalbria.com',
+];
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin || '';
+  if (CORS_ORIGINS.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin',      origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods',     'GET,POST,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers',     'Content-Type,X-CG-Secret,X-Requested-With');
+    res.setHeader('Vary',                             'Origin');
+  }
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
+
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 

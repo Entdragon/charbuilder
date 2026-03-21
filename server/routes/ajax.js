@@ -15,6 +15,7 @@ const PUBLIC_ACTIONS = new Set([
   'cg_logout_user',
   'cg_register_user',
   'cg_get_current_user',
+  'cg_sso_login',
 ]);
 
 const ACTION_MAP = {
@@ -22,6 +23,7 @@ const ACTION_MAP = {
   cg_logout_user:       authActions.cg_logout_user,
   cg_register_user:     authActions.cg_register_user,
   cg_get_current_user:  authActions.cg_get_current_user,
+  cg_sso_login:         authActions.cg_sso_login,
 
   cg_load_characters:   charActions.cg_load_characters,
   cg_get_character:     charActions.cg_get_character,

@@ -107,4 +107,55 @@ async function cg_get_current_user(req, res) {
   }});
 }
 
-module.exports = { cg_login_user, cg_logout_user, cg_register_user, cg_get_current_user };
+async function cg_sso_login(req, res) {
+  const token = (req.body.token || '').trim();
+  if (!token || !/^[a-f0-9]{32}$/.test(token)) {
+    return res.json({ success: false, data: 'Invalid SSO token.' });
+  }
+
+  const p = prefix();
+  const transientKey = `_transient_cg_sso_${token}`;
+
+  const row = await queryOne(
+    `SELECT option_value FROM ${p}options WHERE option_name = ? LIMIT 1`,
+    [transientKey]
+  );
+
+  if (!row || !row.option_value) {
+    return res.json({ success: false, data: 'SSO token not found or expired.' });
+  }
+
+  const userId = parseInt(row.option_value, 10);
+  if (!userId) {
+    return res.json({ success: false, data: 'SSO token invalid.' });
+  }
+
+  await query(
+    `DELETE FROM ${p}options WHERE option_name IN (?, ?)`,
+    [transientKey, `_transient_timeout_cg_sso_${token}`]
+  );
+
+  const user = await queryOne(
+    `SELECT ID, user_login, user_email FROM ${p}users WHERE ID = ? LIMIT 1`,
+    [userId]
+  );
+
+  if (!user) {
+    return res.json({ success: false, data: 'User not found.' });
+  }
+
+  const capRow = await queryOne(
+    `SELECT meta_value FROM ${p}usermeta WHERE user_id = ? AND meta_key = '${p}capabilities' LIMIT 1`,
+    [user.ID]
+  );
+  const capStr = capRow ? (capRow.meta_value || '') : '';
+
+  req.session.userId   = user.ID;
+  req.session.username = user.user_login;
+  req.session.email    = user.user_email;
+  req.session.isAdmin  = capStr.includes('administrator');
+
+  res.json({ success: true, data: { id: user.ID, username: user.user_login } });
+}
+
+module.exports = { cg_login_user, cg_logout_user, cg_register_user, cg_get_current_user, cg_sso_login };

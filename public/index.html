@@ -546,6 +546,26 @@
     @media (max-width: 640px) {
       #site-nav { display: none; }
     }
+
+    /* ── Embed mode (inside WordPress page) ────────────────
+       When body.cg-embed, hide the app's own chrome so the
+       WordPress theme header/nav/footer takes over.          */
+    body.cg-embed #site-header,
+    body.cg-embed #site-nav {
+      display: none !important;
+    }
+
+    body.cg-embed #site-wrapper {
+      margin:        0;
+      border:        none;
+      border-radius: 0;
+      box-shadow:    none;
+      min-height:    auto;
+    }
+
+    body.cg-embed #cg-auth-screen {
+      padding: 2rem 1rem;
+    }
   </style>
 </head>
 <body>
@@ -692,18 +712,27 @@
 <!-- ── Scripts ───────────────────────────────────────────────── -->
 <script src="/vendor/jquery/dist/jquery.js"></script>
 <script>
-  window.CG_AJAX = {
-    ajax_url:    '/api/ajax',
-    ajaxurl:     '/api/ajax',
-    nonce:       '1',
-    security:    '1',
-    _ajax_nonce: '1',
-  };
-  window.CG_NONCES = new Proxy({}, { get: () => '1' });
+  (function () {
+    var base = window.CG_API_BASE || '';
+    window.CG_AJAX = {
+      ajax_url:    base + '/api/ajax',
+      ajaxurl:     base + '/api/ajax',
+      nonce:       '1',
+      security:    '1',
+      _ajax_nonce: '1',
+    };
+    window.CG_NONCES = new Proxy({}, { get: () => '1' });
+
+    if (window.CG_EMBED) {
+      document.body.classList.add('cg-embed');
+    }
+  })();
 </script>
 
 <script>
 (function () {
+  var API_BASE = window.CG_API_BASE || '';
+
   const authScreen = document.getElementById('cg-auth-screen');
   const appScreen  = document.getElementById('cg-app-screen');
 
@@ -712,7 +741,11 @@
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 10000);
     try {
-      const r = await fetch('/api/ajax', { method: 'POST', body, signal: controller.signal });
+      const r = await fetch(API_BASE + '/api/ajax', {
+        method: 'POST', body,
+        signal: controller.signal,
+        credentials: 'include',
+      });
       clearTimeout(timer);
       return r.json();
     } catch (e) {
@@ -737,10 +770,26 @@
     try {
       const controller = new AbortController();
       setTimeout(() => controller.abort(), 4000);
-      const r = await fetch('/api/auth/me', { signal: controller.signal });
+      const r = await fetch(API_BASE + '/api/auth/me', {
+        signal: controller.signal,
+        credentials: 'include',
+      });
       const d = await r.json();
-      if (d.success) showApp(d.data.username);
+      if (d.success) {
+        showApp(d.data.username);
+        return;
+      }
     } catch (e) {}
+
+    if (window.CG_SSO_TOKEN) {
+      try {
+        const sso = await ajax('cg_sso_login', { token: window.CG_SSO_TOKEN });
+        if (sso.success) {
+          showApp(sso.data.username);
+          return;
+        }
+      } catch (e) {}
+    }
   }
 
   document.querySelectorAll('.auth-tab').forEach(tab => {
@@ -807,7 +856,7 @@
     if (bundleLoaded) return;
     bundleLoaded = true;
     const s = document.createElement('script');
-    s.src = '/assets/js/dist/core.bundle.js';
+    s.src = API_BASE + '/assets/js/dist/core.bundle.js';
     document.body.appendChild(s);
   }
 
