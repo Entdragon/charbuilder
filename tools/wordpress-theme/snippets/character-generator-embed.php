@@ -127,21 +127,29 @@
         }
 
         function init() {
+            console.log('[CG SSO] init — appUrl:', appUrl, '| SSO token present:', !!window.CG_SSO_TOKEN);
             var ctrl  = new AbortController();
             var timer = setTimeout(function() { ctrl.abort(); }, 4000);
             fetch(appUrl + '/api/auth/me', { signal: ctrl.signal, credentials: 'include' })
                 .then(function(r) { clearTimeout(timer); return r.json(); })
                 .then(function(d) {
+                    console.log('[CG SSO] /api/auth/me result:', d);
                     if (d.success) { showApp(d.data.username); return; }
-                    // Try SSO auto-login if WordPress user is logged in
                     if (window.CG_SSO_TOKEN) {
+                        console.log('[CG SSO] attempting SSO login with token:', window.CG_SSO_TOKEN);
                         return cgAjax('cg_sso_login', { token: window.CG_SSO_TOKEN })
                             .then(function(sso) {
+                                console.log('[CG SSO] cg_sso_login result:', sso);
                                 if (sso.success) showApp(sso.data.username);
+                                else console.warn('[CG SSO] SSO login failed:', sso.data);
                             });
+                    } else {
+                        console.log('[CG SSO] no SSO token — showing auth form');
                     }
                 })
-                .catch(function() {});
+                .catch(function(e) {
+                    console.error('[CG SSO] init error:', e);
+                });
         }
 
         // Tab switching
