@@ -21,7 +21,9 @@ async function cg_get_career_trappings(req, res) {
   const wp = `${p}customtables_table_weapons`;
   const ia = `${p}customtables_table_item_aliases`;
 
-  const rows = await query(`
+  let rows;
+  try {
+    rows = await query(`
     SELECT
       tm.ct_id            AS map_id,
       tm.ct_item_kind     AS kind,
@@ -76,6 +78,9 @@ async function cg_get_career_trappings(req, res) {
     WHERE tm.ct_career_id = ? AND tm.published = 1
     ORDER BY tm.ct_id ASC
   `, [careerId]);
+  } catch (err) {
+    return res.json({ success: true, data: [] });
+  }
 
   const trappings = rows.map(r => {
     const item = {
