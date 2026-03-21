@@ -50,11 +50,10 @@ function loc_character_generator_shortcode() {
 
     ob_start();
     ?>
-    <!-- ── Character Generator: assets ─────────────────────────────────── -->
+    <!-- ── Character Generator: fonts only (core.css loaded lazily on login) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap">
-    <link rel="stylesheet" href="<?php echo esc_url( $app_url ); ?>/assets/css/dist/core.css">
 
     <style>
     /* ── Design tokens ─────────────────────────────────────────────────── */
@@ -383,35 +382,38 @@ function loc_character_generator_shortcode() {
         function loadBundle() {
             if (window.__CG_BUNDLE_LOADED__) return;
             window.__CG_BUNDLE_LOADED__ = true;
+            // Load builder CSS lazily so it doesn't bleed into other WP pages
+            var link = document.createElement('link');
+            link.rel  = 'stylesheet';
+            link.href = appUrl + '/assets/css/dist/core.css';
+            document.head.appendChild(link);
             var s = document.createElement('script');
             s.src = appUrl + '/assets/js/dist/core.bundle.js';
             document.body.appendChild(s);
         }
 
         function init() {
-            console.log('[CG SSO] init — appUrl:', appUrl, '| SSO token present:', !!window.CG_SSO_TOKEN);
+            // If WordPress gave us an SSO token, use it first so the WordPress
+            // identity always wins over any stale character-generator session.
+            if (window.CG_SSO_TOKEN) {
+                cgAjax('cg_sso_login', { token: window.CG_SSO_TOKEN })
+                    .then(function(sso) {
+                        if (sso.success) { showApp(sso.data.username); return; }
+                        // SSO failed — fall back to existing session check
+                        checkExistingSession();
+                    });
+            } else {
+                checkExistingSession();
+            }
+        }
+
+        function checkExistingSession() {
             var ctrl  = new AbortController();
             var timer = setTimeout(function() { ctrl.abort(); }, 4000);
             fetch(appUrl + '/api/auth/me', { signal: ctrl.signal, credentials: 'include' })
                 .then(function(r) { clearTimeout(timer); return r.json(); })
-                .then(function(d) {
-                    console.log('[CG SSO] /api/auth/me result:', d);
-                    if (d.success) { showApp(d.data.username); return; }
-                    if (window.CG_SSO_TOKEN) {
-                        console.log('[CG SSO] attempting SSO login with token:', window.CG_SSO_TOKEN);
-                        return cgAjax('cg_sso_login', { token: window.CG_SSO_TOKEN })
-                            .then(function(sso) {
-                                console.log('[CG SSO] cg_sso_login result:', sso);
-                                if (sso.success) showApp(sso.data.username);
-                                else console.warn('[CG SSO] SSO login failed:', sso.data);
-                            });
-                    } else {
-                        console.log('[CG SSO] no SSO token — showing auth form (user not logged in to WordPress)');
-                    }
-                })
-                .catch(function(e) {
-                    console.error('[CG SSO] init error:', e);
-                });
+                .then(function(d) { if (d.success) showApp(d.data.username); })
+                .catch(function() {});
         }
 
         // Tab switching
