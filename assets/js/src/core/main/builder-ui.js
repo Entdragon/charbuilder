@@ -38,6 +38,12 @@ function waitForSelects(timeoutMs = 2000) {
 }
 
 async function ensureListsThenApply(record = {}) {
+  // Track whether init() is a no-op (already ran before this builder open).
+  // If _init was already true, init() does nothing → we must call refresh().
+  // If _init was false, init() will populate → skip redundant refresh() call.
+  const speciesAlreadyInit = !!SpeciesIndex._init;
+  const careerAlreadyInit  = !!CareerIndex._init;
+
   // Ask feature modules to build/bind (idempotent).
   SpeciesIndex.init();
   CareerIndex.init();
@@ -45,9 +51,18 @@ async function ensureListsThenApply(record = {}) {
   // Wait for selects to exist (form may render async).
   const { speciesEl, careerEl } = await waitForSelects();
 
-  // Populate options if empty (feature modules handle globals/AJAX and dedupe).
-  if (speciesEl && speciesEl.options.length <= 1) SpeciesIndex.refresh();
-  if (careerEl  && careerEl.options.length  <= 1) CareerIndex.refresh();
+  // Populate options if empty.
+  // Only call refresh() if init() was a no-op (already ran) AND select is still empty.
+  // When init() just ran it already started a populate — calling refresh() again
+  // would cause duplicate options (both share the in-flight AJAX dedup but both
+  // append the results independently).
+  if (speciesEl && speciesEl.options.length <= 1) {
+    if (speciesAlreadyInit) SpeciesIndex.refresh();
+    // else: init() just called populateSelect — let it resolve naturally
+  }
+  if (careerEl && careerEl.options.length <= 1) {
+    if (careerAlreadyInit) CareerIndex.refresh();
+  }
 
   // Apply record selections (id or name), then fire change so downstream recalcs run.
   if (speciesEl) {

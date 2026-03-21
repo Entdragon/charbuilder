@@ -3193,13 +3193,19 @@
   function ensureListsThenApply() {
     return __async(this, arguments, function* (record = {}) {
       var _a, _b, _c, _d;
+      const speciesAlreadyInit = !!species_default._init;
+      const careerAlreadyInit = !!career_default._init;
       species_default.init();
       career_default.init();
       const { speciesEl, careerEl } = yield waitForSelects();
-      if (speciesEl && speciesEl.options.length <= 1)
-        species_default.refresh();
-      if (careerEl && careerEl.options.length <= 1)
-        career_default.refresh();
+      if (speciesEl && speciesEl.options.length <= 1) {
+        if (speciesAlreadyInit)
+          species_default.refresh();
+      }
+      if (careerEl && careerEl.options.length <= 1) {
+        if (careerAlreadyInit)
+          career_default.refresh();
+      }
       if (speciesEl) {
         const want = (_b = (_a = record.species) != null ? _a : record.species_id) != null ? _b : "";
         if (want) {
