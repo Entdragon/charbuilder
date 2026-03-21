@@ -389,6 +389,11 @@ function buildPayload(raw) {
   character.weapons = Array.isArray(raw.weapons) ? raw.weapons : [];
   character.armor   = Array.isArray(raw.armor)   ? raw.armor   : [];
 
+  // Money
+  character.money_liras     = raw.money_liras     || '';
+  character.money_denarii   = raw.money_denarii   || '';
+  character.money_farthings = raw.money_farthings || '';
+
   // Skill notes (favourite use text per skill)
   character.skill_notes = (raw.skill_notes && typeof raw.skill_notes === 'object' && !Array.isArray(raw.skill_notes))
     ? raw.skill_notes

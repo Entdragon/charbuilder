@@ -110,6 +110,13 @@ const SummaryAPI = {
     const weapons = Array.isArray(data.weapons) ? data.weapons : [];
     const armor   = Array.isArray(data.armor)   ? data.armor   : [];
 
+    const moneyLiras     = data.money_liras     || '';
+    const moneyDenarii   = data.money_denarii   || '';
+    const moneyFarthings = data.money_farthings || '';
+    const hasMoney = moneyLiras || moneyDenarii || moneyFarthings;
+
+    const skillNotes = (data.skill_notes && typeof data.skill_notes === 'object') ? data.skill_notes : {};
+
     function dicePools(...dice) { return dice.filter(Boolean).join(' + ') || '—'; }
     const initiative = dicePools(data.speed, data.will);
     const dodge      = dicePools(data.speed, data.will);
@@ -119,20 +126,38 @@ const SummaryAPI = {
     extraCareers.forEach(ec => { if (ec.name) allCareerNames.push(ec.name); });
     const careerLabel = allCareerNames.length ? allCareerNames.join(' / ') : '—';
 
+    // ── Gift description lookup helper ────────────────────────
+    function giftDesc(giftId) {
+      if (!giftId) return '';
+      const fc = window.CG_FreeChoices;
+      const allGifts = (fc && Array.isArray(fc._allGifts)) ? fc._allGifts : [];
+      const g = allGifts.find(g => String(g.ct_id || g.id || '') === String(giftId));
+      if (!g) return '';
+      return String(g.effect_description || g.ct_gifts_effect_description || '').trim();
+    }
+
     // ── Species gifts block ────────────────────────────────────
     let speciesGiftsHtml = '';
     ['gift_1','gift_2','gift_3'].forEach((_, idx) => {
-      const gift = species[`gift_${idx+1}`];
-      const mult = species[`manifold_${idx+1}`] || 1;
-      if (gift) speciesGiftsHtml += `<li>${gift}${mult > 1 ? ` × ${mult}` : ''}</li>`;
+      const gift   = species[`gift_${idx+1}`];
+      const giftId = species[`gift_id_${idx+1}`];
+      const mult   = species[`manifold_${idx+1}`] || 1;
+      if (gift) {
+        const desc = giftDesc(giftId);
+        speciesGiftsHtml += `<li><strong>${gift}${mult > 1 ? ` × ${mult}` : ''}</strong>${desc ? `<span class="summary-gift-desc"> — ${desc}</span>` : ''}</li>`;
+      }
     });
 
     // ── Career gifts block ─────────────────────────────────────
     let careerGiftsHtml = '';
     ['gift_1','gift_2','gift_3'].forEach((_, idx) => {
-      const gift = career[`gift_${idx+1}`];
-      const mult = career[`manifold_${idx+1}`] || 1;
-      if (gift) careerGiftsHtml += `<li>${gift}${mult > 1 ? ` × ${mult}` : ''}</li>`;
+      const gift   = career[`gift_${idx+1}`];
+      const giftId = career[`gift_id_${idx+1}`];
+      const mult   = career[`manifold_${idx+1}`] || 1;
+      if (gift) {
+        const desc = giftDesc(giftId);
+        careerGiftsHtml += `<li><strong>${gift}${mult > 1 ? ` × ${mult}` : ''}</strong>${desc ? `<span class="summary-gift-desc"> — ${desc}</span>` : ''}</li>`;
+      }
     });
 
     // ── Traits block ───────────────────────────────────────────
@@ -173,7 +198,11 @@ const SummaryAPI = {
       const mkDie   = marksToDice(totalMk);
       const poolDice = [spDie, cpDie].concat(ecDies).concat([mkDie]).filter(Boolean);
       const pool = poolDice.length ? poolDice.join(' + ') : '—';
-      skillsHtml += `<tr><td>${skill.name}</td><td>${pool}</td></tr>`;
+      const note = skillNotes[id] ? String(skillNotes[id]).trim() : '';
+      const nameCell = note
+        ? `${skill.name}<span class="summary-skill-note"> (${note})</span>`
+        : skill.name;
+      skillsHtml += `<tr><td>${nameCell}</td><td>${pool}</td></tr>`;
     });
 
     // ── Weapons block ──────────────────────────────────────────
@@ -205,16 +234,66 @@ const SummaryAPI = {
         </table>`;
     }
 
+    // ── Equipment & Trappings section ──────────────────────────
+    let equipmentHtml = '';
+    if (weapons.length || armor.length) {
+      let equipList = '';
+      weapons.forEach(w => {
+        if (w.name) {
+          const details = [w.attack, w.damage, w.range !== 'Melee' ? w.range : ''].filter(Boolean).join(', ');
+          equipList += `<li><strong>${w.name}</strong>${details ? ` — ${details}` : ''}${w.notes ? ` (${w.notes})` : ''}</li>`;
+        }
+      });
+      armor.forEach(a => {
+        if (a.name) {
+          const details = [a.soak ? `Soak ${a.soak}` : '', a.penalty || ''].filter(Boolean).join(', ');
+          equipList += `<li><strong>${a.name}</strong>${details ? ` — ${details}` : ''}${a.notes ? ` (${a.notes})` : ''}</li>`;
+        }
+      });
+      if (equipList) {
+        equipmentHtml = `
+          <div class="summary-section summary-equipment">
+            <h3>Equipment &amp; Trappings</h3>
+            <ul>${equipList}</ul>
+          </div>`;
+      }
+    }
+
+    // ── Money section ───────────────────────────────────────────
+    let moneyHtml = '';
+    if (hasMoney) {
+      const parts = [];
+      if (moneyLiras)     parts.push(`<span><strong>Liras:</strong> ${moneyLiras}</span>`);
+      if (moneyDenarii)   parts.push(`<span><strong>Denarii:</strong> ${moneyDenarii}</span>`);
+      if (moneyFarthings) parts.push(`<span><strong>Farthings:</strong> ${moneyFarthings}</span>`);
+      moneyHtml = `
+        <div class="summary-section summary-money">
+          <h3>Money</h3>
+          <div class="summary-money-row">${parts.join('')}</div>
+        </div>`;
+    }
+
     // ── XP block ───────────────────────────────────────────────
     let xpHtml = '';
     if (xpGifts.length > 0 || xpEarned > 0 || xpMarksBudget > 0) {
+      let xpGiftsListHtml = '';
+      if (xpGifts.length > 0) {
+        const fc = window.CG_FreeChoices;
+        const allGifts = (fc && Array.isArray(fc._allGifts)) ? fc._allGifts : [];
+        xpGiftsListHtml = `<ul>${xpGifts.map(gId => {
+          const gObj = allGifts.find(g => String(g.ct_id || g.id || '') === String(gId));
+          const name = gObj ? String(gObj.ct_gift_name || gObj.name || gId) : String(gId);
+          const desc = gObj ? String(gObj.effect_description || gObj.ct_gifts_effect_description || '').trim() : '';
+          return `<li><strong>${name}</strong>${desc ? `<span class="summary-gift-desc"> — ${desc}</span>` : ''}</li>`;
+        }).join('')}</ul>`;
+      }
       xpHtml = `
         <div class="summary-section summary-xp">
           <h3>Experience Points</h3>
           <p><strong>Earned:</strong> ${xpEarned} &nbsp;|&nbsp;
              <strong>Spent:</strong> ${xpSpent} &nbsp;|&nbsp;
              <strong>Available:</strong> ${xpEarned - xpSpent}</p>
-          ${xpGifts.length > 0 ? `<ul>${xpGifts.map(g => `<li>${g.name}</li>`).join('')}</ul>` : ''}
+          ${xpGiftsListHtml}
         </div>`;
     }
 
@@ -304,6 +383,10 @@ const SummaryAPI = {
             </table>
           </div>
         </div>
+
+        ${equipmentHtml}
+
+        ${moneyHtml}
 
         ${xpHtml}
 

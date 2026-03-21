@@ -1872,6 +1872,57 @@
   font-size: 0.85rem;
 }
 
+.summary-gift-desc {
+  font-size: 0.82rem;
+  color: var(--cg-text-muted, #6a5b3e);
+  font-style: italic;
+  font-weight: normal;
+}
+
+.summary-skill-note {
+  font-size: 0.8rem;
+  color: var(--cg-text-muted, #6a5b3e);
+  font-style: italic;
+}
+
+.summary-money-row {
+  display: flex;
+  gap: 1.4em;
+  flex-wrap: wrap;
+  margin-top: 0.25em;
+}
+.summary-money-row span {
+  font-size: 0.88rem;
+  color: var(--cg-text, #2c2316);
+}
+.summary-money-row strong {
+  color: var(--cg-text, #2c2316);
+}
+
+.cg-money-section {
+  margin-top: 1em;
+}
+
+.cg-money-grid {
+  display: flex;
+  gap: 1em;
+  flex-wrap: wrap;
+  margin-top: 0.4em;
+}
+
+.cg-money-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3em;
+  font-size: 0.83rem;
+  color: var(--cg-text-muted, #6a5b3e);
+  font-weight: 600;
+}
+
+.cg-money-input {
+  width: 80px;
+}
+
 .cg-subsection {
   margin-top: 1.5em;
   padding: 0.75em 1em;
@@ -2179,6 +2230,29 @@
   .cg-summary-skills tr {
     break-inside: avoid !important;
   }
+  .summary-equipment {
+    break-inside: avoid !important;
+  }
+  .summary-money {
+    break-inside: avoid !important;
+  }
+  .summary-money-row {
+    display: flex !important;
+    gap: 1.4em !important;
+    flex-wrap: wrap !important;
+    margin-top: 2pt !important;
+    font-size: 9.5pt !important;
+  }
+  .summary-gift-desc {
+    font-size: 8.5pt !important;
+    color: #5a4a32 !important;
+    font-style: italic !important;
+  }
+  .summary-skill-note {
+    font-size: 8pt !important;
+    color: #5a4a32 !important;
+    font-style: italic !important;
+  }
   a {
     color: inherit !important;
     text-decoration: none !important;
@@ -2384,4 +2458,32 @@ body.cg-print-window .cg-summary-skills tr:nth-child(odd) td {
 }
 body.cg-print-window .cg-summary-skills tr {
   break-inside: avoid;
+}
+body.cg-print-window .summary-equipment {
+  break-inside: avoid;
+  margin-top: 8pt;
+}
+body.cg-print-window .summary-equipment ul {
+  margin: 2pt 0;
+}
+body.cg-print-window .summary-money {
+  break-inside: avoid;
+  margin-top: 6pt;
+}
+body.cg-print-window .summary-money-row {
+  display: flex;
+  gap: 1.4em;
+  flex-wrap: wrap;
+  margin-top: 2pt;
+  font-size: 9.5pt;
+}
+body.cg-print-window .summary-gift-desc {
+  font-size: 8.5pt;
+  color: #5a4a32;
+  font-style: italic;
+}
+body.cg-print-window .summary-skill-note {
+  font-size: 8pt;
+  color: #5a4a32;
+  font-style: italic;
 }

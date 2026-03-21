@@ -1452,6 +1452,9 @@
     character.xp_gifts = Array.isArray(core.xpGifts) ? core.xpGifts : [];
     character.weapons = Array.isArray(raw.weapons) ? raw.weapons : [];
     character.armor = Array.isArray(raw.armor) ? raw.armor : [];
+    character.money_liras = raw.money_liras || "";
+    character.money_denarii = raw.money_denarii || "";
+    character.money_farthings = raw.money_farthings || "";
     character.skill_notes = raw.skill_notes && typeof raw.skill_notes === "object" && !Array.isArray(raw.skill_notes) ? raw.skill_notes : {};
     character.gift_skill_marks = raw.gift_skill_marks && typeof raw.gift_skill_marks === "object" && !Array.isArray(raw.gift_skill_marks) ? raw.gift_skill_marks : {};
     const rawFGQ = raw.free_gift_quals || raw.cg_free_gift_quals || raw.freeGiftQuals;
@@ -5925,6 +5928,11 @@
       const xpSpent = xpMarksBudget * 4 + xpGiftSlots * 10;
       const weapons = Array.isArray(data.weapons) ? data.weapons : [];
       const armor = Array.isArray(data.armor) ? data.armor : [];
+      const moneyLiras = data.money_liras || "";
+      const moneyDenarii = data.money_denarii || "";
+      const moneyFarthings = data.money_farthings || "";
+      const hasMoney = moneyLiras || moneyDenarii || moneyFarthings;
+      const skillNotes = data.skill_notes && typeof data.skill_notes === "object" ? data.skill_notes : {};
       function dicePools(...dice) {
         return dice.filter(Boolean).join(" + ") || "\u2014";
       }
@@ -5937,19 +5945,35 @@
           allCareerNames.push(ec.name);
       });
       const careerLabel = allCareerNames.length ? allCareerNames.join(" / ") : "\u2014";
+      function giftDesc(giftId2) {
+        if (!giftId2)
+          return "";
+        const fc = window.CG_FreeChoices;
+        const allGifts = fc && Array.isArray(fc._allGifts) ? fc._allGifts : [];
+        const g = allGifts.find((g2) => String(g2.ct_id || g2.id || "") === String(giftId2));
+        if (!g)
+          return "";
+        return String(g.effect_description || g.ct_gifts_effect_description || "").trim();
+      }
       let speciesGiftsHtml = "";
       ["gift_1", "gift_2", "gift_3"].forEach((_, idx) => {
         const gift = species[`gift_${idx + 1}`];
+        const giftId2 = species[`gift_id_${idx + 1}`];
         const mult = species[`manifold_${idx + 1}`] || 1;
-        if (gift)
-          speciesGiftsHtml += `<li>${gift}${mult > 1 ? ` \xD7 ${mult}` : ""}</li>`;
+        if (gift) {
+          const desc = giftDesc(giftId2);
+          speciesGiftsHtml += `<li><strong>${gift}${mult > 1 ? ` \xD7 ${mult}` : ""}</strong>${desc ? `<span class="summary-gift-desc"> \u2014 ${desc}</span>` : ""}</li>`;
+        }
       });
       let careerGiftsHtml = "";
       ["gift_1", "gift_2", "gift_3"].forEach((_, idx) => {
         const gift = career[`gift_${idx + 1}`];
+        const giftId2 = career[`gift_id_${idx + 1}`];
         const mult = career[`manifold_${idx + 1}`] || 1;
-        if (gift)
-          careerGiftsHtml += `<li>${gift}${mult > 1 ? ` \xD7 ${mult}` : ""}</li>`;
+        if (gift) {
+          const desc = giftDesc(giftId2);
+          careerGiftsHtml += `<li><strong>${gift}${mult > 1 ? ` \xD7 ${mult}` : ""}</strong>${desc ? `<span class="summary-gift-desc"> \u2014 ${desc}</span>` : ""}</li>`;
+        }
       });
       let traitsHtml = "";
       TRAITS3.forEach((key) => {
@@ -5989,7 +6013,9 @@
         const mkDie = marksToDice(totalMk);
         const poolDice = [spDie, cpDie].concat(ecDies).concat([mkDie]).filter(Boolean);
         const pool = poolDice.length ? poolDice.join(" + ") : "\u2014";
-        skillsHtml += `<tr><td>${skill.name}</td><td>${pool}</td></tr>`;
+        const note = skillNotes[id] ? String(skillNotes[id]).trim() : "";
+        const nameCell = note ? `${skill.name}<span class="summary-skill-note"> (${note})</span>` : skill.name;
+        skillsHtml += `<tr><td>${nameCell}</td><td>${pool}</td></tr>`;
       });
       let weaponsHtml = "";
       if (weapons.length) {
@@ -6016,15 +6042,64 @@
           </tr>`).join("")}</tbody>
         </table>`;
       }
+      let equipmentHtml = "";
+      if (weapons.length || armor.length) {
+        let equipList = "";
+        weapons.forEach((w) => {
+          if (w.name) {
+            const details = [w.attack, w.damage, w.range !== "Melee" ? w.range : ""].filter(Boolean).join(", ");
+            equipList += `<li><strong>${w.name}</strong>${details ? ` \u2014 ${details}` : ""}${w.notes ? ` (${w.notes})` : ""}</li>`;
+          }
+        });
+        armor.forEach((a) => {
+          if (a.name) {
+            const details = [a.soak ? `Soak ${a.soak}` : "", a.penalty || ""].filter(Boolean).join(", ");
+            equipList += `<li><strong>${a.name}</strong>${details ? ` \u2014 ${details}` : ""}${a.notes ? ` (${a.notes})` : ""}</li>`;
+          }
+        });
+        if (equipList) {
+          equipmentHtml = `
+          <div class="summary-section summary-equipment">
+            <h3>Equipment &amp; Trappings</h3>
+            <ul>${equipList}</ul>
+          </div>`;
+        }
+      }
+      let moneyHtml = "";
+      if (hasMoney) {
+        const parts = [];
+        if (moneyLiras)
+          parts.push(`<span><strong>Liras:</strong> ${moneyLiras}</span>`);
+        if (moneyDenarii)
+          parts.push(`<span><strong>Denarii:</strong> ${moneyDenarii}</span>`);
+        if (moneyFarthings)
+          parts.push(`<span><strong>Farthings:</strong> ${moneyFarthings}</span>`);
+        moneyHtml = `
+        <div class="summary-section summary-money">
+          <h3>Money</h3>
+          <div class="summary-money-row">${parts.join("")}</div>
+        </div>`;
+      }
       let xpHtml = "";
       if (xpGifts.length > 0 || xpEarned > 0 || xpMarksBudget > 0) {
+        let xpGiftsListHtml = "";
+        if (xpGifts.length > 0) {
+          const fc = window.CG_FreeChoices;
+          const allGifts = fc && Array.isArray(fc._allGifts) ? fc._allGifts : [];
+          xpGiftsListHtml = `<ul>${xpGifts.map((gId) => {
+            const gObj = allGifts.find((g) => String(g.ct_id || g.id || "") === String(gId));
+            const name2 = gObj ? String(gObj.ct_gift_name || gObj.name || gId) : String(gId);
+            const desc = gObj ? String(gObj.effect_description || gObj.ct_gifts_effect_description || "").trim() : "";
+            return `<li><strong>${name2}</strong>${desc ? `<span class="summary-gift-desc"> \u2014 ${desc}</span>` : ""}</li>`;
+          }).join("")}</ul>`;
+        }
         xpHtml = `
         <div class="summary-section summary-xp">
           <h3>Experience Points</h3>
           <p><strong>Earned:</strong> ${xpEarned} &nbsp;|&nbsp;
              <strong>Spent:</strong> ${xpSpent} &nbsp;|&nbsp;
              <strong>Available:</strong> ${xpEarned - xpSpent}</p>
-          ${xpGifts.length > 0 ? `<ul>${xpGifts.map((g) => `<li>${g.name}</li>`).join("")}</ul>` : ""}
+          ${xpGiftsListHtml}
         </div>`;
       }
       const html = `
@@ -6112,6 +6187,10 @@
             </table>
           </div>
         </div>
+
+        ${equipmentHtml}
+
+        ${moneyHtml}
 
         ${xpHtml}
 
@@ -6608,6 +6687,27 @@
     </div>
   `;
   }
+  function renderMoneySection(data = {}) {
+    const liras = escape2(data.money_liras || "");
+    const denarii = escape2(data.money_denarii || "");
+    const farthings = escape2(data.money_farthings || "");
+    return `
+    <div class="cg-battle-section cg-money-section">
+      <h4 class="cg-battle-subhead">Money</h4>
+      <div class="cg-money-grid">
+        <label class="cg-money-label">Liras
+          <input type="number" min="0" class="cg-battle-input cg-money-input" id="cg-money-liras" value="${liras}" placeholder="0" />
+        </label>
+        <label class="cg-money-label">Denarii
+          <input type="number" min="0" class="cg-battle-input cg-money-input" id="cg-money-denarii" value="${denarii}" placeholder="0" />
+        </label>
+        <label class="cg-money-label">Farthings
+          <input type="number" min="0" class="cg-battle-input cg-money-input" id="cg-money-farthings" value="${farthings}" placeholder="0" />
+        </label>
+      </div>
+    </div>
+  `;
+  }
   function readWeaponsFromDom() {
     const out = [];
     document.querySelectorAll("#cg-weapons-tbody .cg-weapon-row").forEach((row) => {
@@ -6635,12 +6735,24 @@
     });
     return out;
   }
+  function readMoneyFromDom() {
+    var _a, _b, _c;
+    return {
+      money_liras: ((_a = document.getElementById("cg-money-liras")) == null ? void 0 : _a.value) || "",
+      money_denarii: ((_b = document.getElementById("cg-money-denarii")) == null ? void 0 : _b.value) || "",
+      money_farthings: ((_c = document.getElementById("cg-money-farthings")) == null ? void 0 : _c.value) || ""
+    };
+  }
   function persist() {
     if (!formBuilder_default)
       return;
     formBuilder_default._data = formBuilder_default._data || {};
     formBuilder_default._data.weapons = readWeaponsFromDom();
     formBuilder_default._data.armor = readArmorFromDom();
+    const money = readMoneyFromDom();
+    formBuilder_default._data.money_liras = money.money_liras;
+    formBuilder_default._data.money_denarii = money.money_denarii;
+    formBuilder_default._data.money_farthings = money.money_farthings;
   }
   function refreshPools() {
     const pools = buildCombatPools();
@@ -6665,7 +6777,7 @@
       const weapons = Array.isArray(data.weapons) ? data.weapons : [];
       const armor = Array.isArray(data.armor) ? data.armor : [];
       const pools = buildCombatPools();
-      container.innerHTML = renderPoolsSection(pools) + renderWeaponsTable(weapons) + renderArmorTable(armor);
+      container.innerHTML = renderPoolsSection(pools) + renderWeaponsTable(weapons) + renderArmorTable(armor) + renderMoneySection(data);
       this._bindEvents(container);
     },
     _bindEvents(container) {

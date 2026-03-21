@@ -212,6 +212,61 @@
 .summary-xp p { font-size: 0.88rem; }
 .summary-xp ul { font-size: 0.85rem; }
 
+// ── Gift descriptions ────────────────────────────────────────────
+.summary-gift-desc {
+  font-size:   0.82rem;
+  color:       var(--cg-text-muted, #6a5b3e);
+  font-style:  italic;
+  font-weight: normal;
+}
+
+// ── Skill favourite use notes ─────────────────────────────────────
+.summary-skill-note {
+  font-size:  0.8rem;
+  color:      var(--cg-text-muted, #6a5b3e);
+  font-style: italic;
+}
+
+// ── Money section ─────────────────────────────────────────────────
+.summary-money-row {
+  display:     flex;
+  gap:         1.4em;
+  flex-wrap:   wrap;
+  margin-top:  0.25em;
+
+  span {
+    font-size: 0.88rem;
+    color:     var(--cg-text, #2c2316);
+  }
+
+  strong { color: var(--cg-text, #2c2316); }
+}
+
+// ── Money input grid (battle panel) ──────────────────────────────
+.cg-money-section {
+  margin-top: 1em;
+}
+
+.cg-money-grid {
+  display:   flex;
+  gap:       1em;
+  flex-wrap: wrap;
+  margin-top:0.4em;
+}
+
+.cg-money-label {
+  display:     flex;
+  flex-direction: column;
+  gap:         0.3em;
+  font-size:   0.83rem;
+  color:       var(--cg-text-muted, #6a5b3e);
+  font-weight: 600;
+}
+
+.cg-money-input {
+  width: 80px;
+}
+
 // ── Old subsection (kept for back-compat) ────────────────────────
 .cg-subsection {
   margin-top:    1.5em;

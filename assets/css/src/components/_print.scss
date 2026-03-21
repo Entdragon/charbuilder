@@ -289,6 +289,34 @@
   .cg-summary-skills tr:nth-child(odd) td { background: #faf7f0 !important; }
   .cg-summary-skills tr                  { break-inside: avoid !important; }
 
+  // ── Equipment & Trappings section ──────────────────────────────────────────
+  .summary-equipment { break-inside: avoid !important; }
+
+  // ── Money section ──────────────────────────────────────────────────────────
+  .summary-money { break-inside: avoid !important; }
+
+  .summary-money-row {
+    display:   flex !important;
+    gap:       1.4em !important;
+    flex-wrap: wrap !important;
+    margin-top:2pt !important;
+    font-size: 9.5pt !important;
+  }
+
+  // ── Gift descriptions ────────────────────────────────────────────────────────
+  .summary-gift-desc {
+    font-size:  8.5pt !important;
+    color:      #5a4a32 !important;
+    font-style: italic !important;
+  }
+
+  // ── Skill notes ─────────────────────────────────────────────────────────────
+  .summary-skill-note {
+    font-size:  8pt !important;
+    color:      #5a4a32 !important;
+    font-style: italic !important;
+  }
+
   // ── Misc ───────────────────────────────────────────────────────────────────
   a   { color: inherit !important; text-decoration: none !important; }
   *   { box-shadow: none !important; text-shadow: none !important; }
@@ -378,4 +406,20 @@ body.cg-print-window {
     tr:nth-child(odd) td { background: #faf7f0; }
     tr { break-inside: avoid; }
   }
+
+  // Equipment & Trappings
+  .summary-equipment { break-inside: avoid; margin-top: 8pt; }
+  .summary-equipment ul { margin: 2pt 0; }
+
+  // Money
+  .summary-money { break-inside: avoid; margin-top: 6pt; }
+  .summary-money-row {
+    display: flex; gap: 1.4em; flex-wrap: wrap; margin-top: 2pt; font-size: 9.5pt;
+  }
+
+  // Gift descriptions
+  .summary-gift-desc { font-size: 8.5pt; color: #5a4a32; font-style: italic; }
+
+  // Skill notes
+  .summary-skill-note { font-size: 8pt; color: #5a4a32; font-style: italic; }
 }

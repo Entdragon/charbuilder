@@ -52,9 +52,25 @@ async function ensureSkillsExtColumns() {
   }
 }
 
+async function ensureMoneyColumns() {
+  const p = prefix();
+  const table = `${p}character_records`;
+  try {
+    const cols = await query(`SELECT COLUMN_NAME FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME IN ('money_liras','money_denarii','money_farthings')`, [table]);
+    const existing = new Set(cols.map(c => c.COLUMN_NAME || c.column_name));
+    if (!existing.has('money_liras'))     await query(`ALTER TABLE \`${table}\` ADD COLUMN money_liras VARCHAR(20) DEFAULT NULL`);
+    if (!existing.has('money_denarii'))   await query(`ALTER TABLE \`${table}\` ADD COLUMN money_denarii VARCHAR(20) DEFAULT NULL`);
+    if (!existing.has('money_farthings')) await query(`ALTER TABLE \`${table}\` ADD COLUMN money_farthings VARCHAR(20) DEFAULT NULL`);
+  } catch (err) {
+    console.warn('[ensureMoneyColumns] Could not add columns:', err.message);
+  }
+}
+
 // Run once at startup (non-blocking)
 ensureColumns().catch(() => {});
 ensureSkillsExtColumns().catch(() => {});
+ensureMoneyColumns().catch(() => {});
 
 function normalizeRow(row) {
   if (!row) return null;
@@ -254,6 +270,9 @@ async function cg_save_character(req, res) {
     xp_gifts:                     JSON.stringify(Array.isArray(data.xp_gifts) ? data.xp_gifts : (Array.isArray(data.xpGifts) ? data.xpGifts : [])),
     weapons:                      JSON.stringify(Array.isArray(data.weapons) ? data.weapons : []),
     armor:                        JSON.stringify(Array.isArray(data.armor)   ? data.armor   : []),
+    money_liras:                  (data.money_liras    || '').toString().slice(0, 20),
+    money_denarii:                (data.money_denarii  || '').toString().slice(0, 20),
+    money_farthings:              (data.money_farthings|| '').toString().slice(0, 20),
     skill_notes:                  JSON.stringify(typeof data.skill_notes === 'object' && !Array.isArray(data.skill_notes) ? data.skill_notes : {}),
     gift_skill_marks:             JSON.stringify(typeof data.gift_skill_marks === 'object' && !Array.isArray(data.gift_skill_marks) ? data.gift_skill_marks : {}),
     free_gift_quals:              JSON.stringify(typeof data.free_gift_quals === 'object' && !Array.isArray(data.free_gift_quals) ? data.free_gift_quals : {}),
