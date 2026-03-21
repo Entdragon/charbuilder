@@ -1,4 +1,271 @@
-/label>
+<?php
+/**
+ * Character Generator — WordPress Embed Snippet
+ *
+ * Place this file in your theme (or child theme) and add this line to functions.php:
+ *   require_once get_stylesheet_directory() . '/snippets/character-generator-embed.php';
+ *
+ * Then add the shortcode [character_generator] to your /character-generator/ page,
+ * OR call loc_character_generator_shortcode() directly from a page template.
+ *
+ * SSO: when a WordPress user is logged in, they are automatically logged into the
+ * character generator without needing to enter their credentials again.
+ *
+ * ──────────────────────────────────────────────────────────────────────────────
+ * CONFIGURATION
+ * ──────────────────────────────────────────────────────────────────────────────
+ */
+
+if ( ! defined( 'CG_APP_URL' ) ) {
+    // ── UPDATE THIS URL after deploying ───────────────────────────────────────
+    // Currently pointing to the Replit dev server.
+    // Once the app is deployed, replace this with the stable deployed URL, e.g.:
+    //   define( 'CG_APP_URL', 'https://charbuilder.replit.app' );
+    // OR point characters.libraryofcalbria.com DNS to the deployed app and use:
+    //   define( 'CG_APP_URL', 'https://characters.libraryofcalbria.com' );
+    define( 'CG_APP_URL', 'https://5ecd0e5e-b389-4903-83d6-ae996afcb45a-00-3c9iornauuqfo.janeway.replit.dev' );
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Shortcode: [character_generator]
+// Also callable directly as loc_character_generator_shortcode()
+// ──────────────────────────────────────────────────────────────────────────────
+
+add_shortcode( 'character_generator', 'loc_character_generator_shortcode' );
+
+function loc_character_generator_shortcode() {
+    $app_url = rtrim( CG_APP_URL, '/' );
+
+    // ── SSO token (one-time, 2 min TTL) ──────────────────────────────────────
+    $sso_token = '';
+    if ( is_user_logged_in() ) {
+        $user_id   = get_current_user_id();
+        $sso_token = bin2hex( random_bytes( 16 ) );
+        set_transient( 'cg_sso_' . $sso_token, $user_id, 120 );
+    }
+
+    $sso_js = $sso_token
+        ? "window.CG_SSO_TOKEN = " . json_encode( $sso_token ) . ";"
+        : '';
+
+    ob_start();
+    ?>
+    <!-- ── Character Generator: assets ─────────────────────────────────── -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap">
+    <link rel="stylesheet" href="<?php echo esc_url( $app_url ); ?>/assets/css/dist/core.css">
+
+    <style>
+    /* ── Design tokens ─────────────────────────────────────────────────── */
+    #cg-embed-root {
+        --bg:          #1a1714;
+        --surface:     #242019;
+        --surface-2:   #2d2820;
+        --gold:        #c9a84c;
+        --gold-light:  #e5c97a;
+        --gold-dark:   #a8822a;
+        --gold-border: rgba(201,168,76,0.28);
+        --gold-glow:   rgba(201,168,76,0.12);
+        --text:        #e8dcc4;
+        --text-muted:  #9a8a6a;
+        --text-dim:    #5a4f3a;
+        --error:       #d9534f;
+        font-family:   'Crimson Pro', Georgia, serif;
+        color:         var(--text);
+    }
+
+    /* ── Shared buttons ─────────────────────────────────────────────────── */
+    #cg-embed-root .btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        gap: 0.5rem; padding: 0.6rem 1.4rem;
+        font-family: 'Cinzel', Georgia, serif; font-size: 0.82rem;
+        font-weight: 600; letter-spacing: 0.06em; border-radius: 5px;
+        cursor: pointer; transition: all 0.2s; text-transform: uppercase;
+    }
+    #cg-embed-root .btn-gold {
+        background: linear-gradient(135deg, var(--gold-dark) 0%, var(--gold) 50%, var(--gold-dark) 100%);
+        color: #1a1410; border: 1px solid var(--gold-dark);
+        box-shadow: 0 2px 8px rgba(201,168,76,0.25);
+    }
+    #cg-embed-root .btn-gold:hover:not(:disabled) {
+        background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 50%, var(--gold) 100%);
+        box-shadow: 0 4px 16px rgba(201,168,76,0.35); transform: translateY(-1px);
+    }
+    #cg-embed-root .btn-gold:disabled { opacity: 0.5; cursor: not-allowed; }
+    #cg-embed-root .btn-ghost {
+        background: transparent; color: var(--text-muted);
+        border: 1px solid rgba(201,168,76,0.2);
+        font-family: 'Cinzel', Georgia, serif; font-size: 0.75rem;
+        letter-spacing: 0.05em; padding: 0.4rem 0.9rem; border-radius: 4px;
+        cursor: pointer; text-transform: uppercase; transition: all 0.2s;
+    }
+    #cg-embed-root .btn-ghost:hover { color: var(--gold-light); border-color: var(--gold-border); }
+
+    /* ── Button aliases used by bundle ──────────────────────────────────── */
+    #cg-embed-root .button,
+    #cg-embed-root .button.primary,
+    #cg-embed-root .button.secondary {
+        display: inline-flex; align-items: center; justify-content: center;
+        font-family: 'Cinzel', Georgia, serif; font-size: 0.78rem;
+        font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+        border-radius: 5px; padding: 0.55rem 1.2rem; cursor: pointer;
+        transition: all 0.18s; border: 1px solid var(--gold-border);
+        background: linear-gradient(135deg, var(--gold-dark) 0%, var(--gold) 50%, var(--gold-dark) 100%);
+        color: #1a1410; box-shadow: 0 2px 6px rgba(201,168,76,0.2);
+    }
+    #cg-embed-root .button:hover,
+    #cg-embed-root .button.primary:hover {
+        background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 50%, var(--gold) 100%);
+        box-shadow: 0 4px 12px rgba(201,168,76,0.3); transform: translateY(-1px);
+    }
+    #cg-embed-root .button.secondary {
+        background: transparent; color: var(--gold);
+        border-color: var(--gold-border); box-shadow: none;
+    }
+    #cg-embed-root .button.secondary:hover {
+        background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold);
+    }
+
+    /* ── Auth screen ────────────────────────────────────────────────────── */
+    #cg-embed-root #cg-auth-screen {
+        display: flex; align-items: center; justify-content: center; padding: 3rem 1rem;
+    }
+    #cg-embed-root .auth-card {
+        background: var(--surface); border: 1px solid var(--gold-border);
+        border-radius: 12px; padding: 0 2rem 2.5rem; width: 100%; max-width: 400px;
+        box-shadow: 0 24px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(201,168,76,0.1); overflow: hidden;
+    }
+    #cg-embed-root .auth-card-accent {
+        height: 3px;
+        background: linear-gradient(90deg, transparent, var(--gold), transparent);
+        margin: 0 -2rem 2.5rem;
+    }
+    #cg-embed-root .auth-emblem {
+        text-align: center; font-family: 'Cinzel', Georgia, serif;
+        font-size: 1.5rem; color: var(--gold); letter-spacing: 0.12em;
+        margin-bottom: 0.35rem; line-height: 1;
+    }
+    #cg-embed-root .auth-card h1 {
+        margin: 0 0 0.2rem; font-family: 'Cinzel', Georgia, serif;
+        font-size: 1.5rem; font-weight: 700; color: var(--gold-light);
+        text-align: center; letter-spacing: 0.06em;
+    }
+    #cg-embed-root .auth-card .subtitle {
+        text-align: center; color: var(--text-muted); font-size: 0.9rem;
+        font-family: 'Cinzel', Georgia, serif; letter-spacing: 0.1em;
+        text-transform: uppercase; margin-bottom: 2rem;
+    }
+    #cg-embed-root .auth-divider {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--gold-border), transparent);
+        margin: 0 -2rem 1.75rem;
+    }
+    #cg-embed-root .auth-tabs {
+        display: flex; border-bottom: 1px solid rgba(201,168,76,0.15); margin-bottom: 1.5rem;
+    }
+    #cg-embed-root .auth-tab {
+        flex: 1; background: none; border: none; border-bottom: 2px solid transparent;
+        margin-bottom: -1px; color: var(--text-dim); padding: 0.5rem;
+        font-family: 'Cinzel', Georgia, serif; font-size: 0.8rem; font-weight: 600;
+        letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; transition: all 0.2s;
+    }
+    #cg-embed-root .auth-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+    #cg-embed-root .auth-tab:hover:not(.active) { color: var(--text-muted); }
+    #cg-embed-root .auth-form { display: none; flex-direction: column; gap: 1rem; }
+    #cg-embed-root .auth-form.active { display: flex; }
+    #cg-embed-root .auth-field label {
+        font-family: 'Cinzel', Georgia, serif; font-size: 0.72rem; font-weight: 600;
+        letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted);
+        display: block; margin-bottom: 0.4rem;
+    }
+    #cg-embed-root .auth-field input {
+        width: 100%; padding: 0.65rem 0.9rem; background: rgba(10,8,5,0.5);
+        border: 1px solid rgba(201,168,76,0.18); border-radius: 5px; color: var(--text);
+        font-family: 'Crimson Pro', Georgia, serif; font-size: 1rem; outline: none;
+        transition: border-color 0.2s, box-shadow 0.2s; box-sizing: border-box;
+    }
+    #cg-embed-root .auth-field input:focus {
+        border-color: var(--gold); box-shadow: 0 0 0 2px rgba(201,168,76,0.12);
+    }
+    #cg-embed-root .auth-field input::placeholder { color: var(--text-dim); }
+    #cg-embed-root .auth-submit { width: 100%; padding: 0.8rem; margin-top: 0.25rem; }
+    #cg-embed-root .auth-error {
+        color: var(--error); font-size: 0.9rem; text-align: center;
+        min-height: 1.2em; font-style: italic;
+    }
+
+    /* ── App topbar ─────────────────────────────────────────────────────── */
+    #cg-embed-root .app-topbar {
+        display: flex; align-items: center; justify-content: flex-end;
+        padding: 0.5rem 1.5rem; background: var(--surface);
+        border-bottom: 1px solid var(--gold-border); gap: 1rem;
+    }
+    #cg-embed-root .app-topbar__username { font-size: 0.9rem; color: var(--text-muted); }
+    #cg-embed-root .app-topbar__username strong { color: var(--text); font-weight: 600; }
+
+    /* ── App hero ───────────────────────────────────────────────────────── */
+    #cg-embed-root .app-main {
+        flex: 1; display: flex; align-items: center; justify-content: center;
+        padding: 3rem 2rem;
+    }
+    #cg-embed-root .app-hero { text-align: center; max-width: 480px; }
+    #cg-embed-root .app-hero__ornament {
+        font-size: 2rem; color: var(--gold); display: block; margin-bottom: 1rem; opacity: 0.7;
+    }
+    #cg-embed-root .app-hero__title {
+        font-family: 'Cinzel', Georgia, serif; font-size: 2rem; font-weight: 700;
+        color: var(--gold-light); letter-spacing: 0.05em; margin: 0 0 0.4rem; line-height: 1.2;
+    }
+    #cg-embed-root .app-hero__subtitle {
+        font-family: 'Cinzel', Georgia, serif; font-size: 0.8rem; color: var(--text-muted);
+        letter-spacing: 0.15em; text-transform: uppercase; margin: 0 0 2rem;
+    }
+    #cg-embed-root .app-hero__rule {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--gold-border), transparent);
+        margin: 0 auto 2.5rem; width: 80%;
+    }
+    #cg-embed-root .app-hero__cta { padding: 0.9rem 2.5rem; font-size: 0.9rem; }
+    #cg-embed-root #cg-open-builder-trigger { display: none; }
+
+    /* ── Unsaved dialog ─────────────────────────────────────────────────── */
+    #cg-embed-root .unsaved-dialog { font-family: 'Crimson Pro', Georgia, serif; }
+    #cg-embed-root .unsaved-buttons {
+        display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;
+    }
+    </style>
+
+    <!-- ── Character Generator: HTML ────────────────────────────────────── -->
+    <div id="cg-embed-root">
+
+      <!-- Auth Screen -->
+      <div id="cg-auth-screen" style="display:flex">
+        <div class="auth-card">
+          <div class="auth-card-accent"></div>
+          <div class="auth-emblem">◆</div>
+          <h1>Library of Calabria</h1>
+          <p class="subtitle">Character Generator</p>
+          <div class="auth-divider"></div>
+          <div class="auth-tabs">
+            <button class="auth-tab active" data-tab="login">Sign In</button>
+            <button class="auth-tab" data-tab="register">Register</button>
+          </div>
+          <form class="auth-form active" id="login-form" onsubmit="return false;">
+            <div class="auth-field">
+              <label for="login-username">Username or Email</label>
+              <input type="text" id="login-username" name="username" autocomplete="username" placeholder="Enter your username">
+            </div>
+            <div class="auth-field">
+              <label for="login-password">Password</label>
+              <input type="password" id="login-password" name="password" autocomplete="current-password" placeholder="Enter your password">
+            </div>
+            <div class="auth-error" id="login-error"></div>
+            <button type="button" id="login-btn" class="btn btn-gold auth-submit">Sign In</button>
+          </form>
+          <form class="auth-form" id="register-form" onsubmit="return false;">
+            <div class="auth-field">
+              <label for="reg-username">Username</label>
               <input type="text" id="reg-username" name="username" autocomplete="username" placeholder="Choose a username">
             </div>
             <div class="auth-field">
@@ -79,11 +346,6 @@
         };
         window.CG_NONCES = new Proxy({}, { get: function() { return '1'; } });
 
-        // Use WordPress's jQuery if available
-        if (typeof jQuery !== 'undefined' && !window.jQuery) {
-            window.jQuery = jQuery;
-        }
-
         var authScreen = document.getElementById('cg-auth-screen');
         var appScreen  = document.getElementById('cg-app-screen');
 
@@ -144,7 +406,7 @@
                                 else console.warn('[CG SSO] SSO login failed:', sso.data);
                             });
                     } else {
-                        console.log('[CG SSO] no SSO token — showing auth form');
+                        console.log('[CG SSO] no SSO token — showing auth form (user not logged in to WordPress)');
                     }
                 })
                 .catch(function(e) {
@@ -201,7 +463,7 @@
             cgAjax('cg_logout_user', {}).then(function() { showAuth(); });
         });
 
-        // jQuery shim (bundle requires window.jQuery)
+        // Load jQuery if WordPress hasn't provided it, then run init
         if (typeof window.jQuery === 'undefined' && typeof jQuery !== 'undefined') {
             window.jQuery = jQuery;
         }
