@@ -23,14 +23,12 @@
 
 if ( ! function_exists( 'loc_req_ob_start' ) ) {
     /**
-     * Start output buffering on any page whose URL contains 'gift', 'gift' etc.
-     * The buffer callback runs after the full page is rendered.
+     * Start output buffering on every front-end page.
+     * The callback does a fast keyword check and exits immediately on pages
+     * that contain none of the trigger words, so the overhead is minimal.
      */
     function loc_req_ob_start() {
-        $uri = isset( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : '';
-        // Run on any URL that could be a gift detail page.
-        // Adjust the needle if your gift pages live under a different path.
-        if ( stripos( $uri, 'gift' ) === false ) {
+        if ( is_admin() ) {
             return;
         }
         ob_start( 'loc_req_ob_callback' );
