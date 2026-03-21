@@ -433,35 +433,249 @@ function computeOwnedGiftIdSet(selectedFreeGiftIds = []) {
   return owned;
 }
 
+function giftEffectDescription(g) {
+  if (!g) return '';
+  const v = g.effect_description ?? g.ct_gifts_effect_description ?? '';
+  return String(v || '').trim();
+}
+
+function isNaturalGift(g) {
+  if (!g) return false;
+  const cls = String(g.giftclass ?? g.ct_gifts_class ?? g.gift_class ?? '').trim().toLowerCase();
+  return cls === 'natural';
+}
+
+function getCharacterSpecies() {
+  const d = getBuilderData();
+  const raw = d.species || d.cg_species || d.species_name || d.speciesName || '';
+  return String(raw || '').trim().toLowerCase();
+}
+
+function speciesAnyofMet(prereq) {
+  const species = getCharacterSpecies();
+  if (!species) return null;
+  const allowed = String(prereq.req_value || '').split(/[|,]/).map(s =>
+    String(s || '').replace(/\bor\s+/i, '').trim().toLowerCase()
+  ).filter(Boolean);
+  if (!allowed.length) return null;
+  if (allowed.some(a => species.includes(a) || a.includes(species))) return true;
+  return false;
+}
+
+function speciesForbidMet(prereq) {
+  const species = getCharacterSpecies();
+  if (!species) return null;
+  const forbidden = String(prereq.req_value || '').split(/[|,]/).map(s =>
+    String(s || '').replace(/\bor\s+/i, '').trim().toLowerCase()
+  ).filter(Boolean);
+  if (!forbidden.length) return null;
+  if (forbidden.some(f => species.includes(f) || f.includes(species))) return false;
+  return true;
+}
+
+function traitMinStructuredMet(prereq) {
+  const traitKey = String(prereq.trait_key || '').trim().toLowerCase().replace(/_trait$/, '');
+  const needed = Number(prereq.die_min);
+  if (!traitKey || !Number.isFinite(needed)) return null;
+  const have = getTraitDieValue(traitKey);
+  if (have == null) return null;
+  const cmp = String(prereq.comparator || '>=');
+  if (cmp === '>=') return have >= needed;
+  if (cmp === '>') return have > needed;
+  if (cmp === '=') return have === needed;
+  if (cmp === '<') return have < needed;
+  if (cmp === '<=') return have <= needed;
+  return have >= needed;
+}
+
+function gmApprovalRequired(g) {
+  const prereqs = Array.isArray(g && g.prereqs) ? g.prereqs : [];
+  if (prereqs.some(p => p.kind === 'gm_permission')) return true;
+
+  const rs = requiresSpecialText(g);
+  return /permission\s+from\s+the\s+game\s+host/i.test(rs) ||
+         /gm\s+approval/i.test(rs) ||
+         /game\s+host\s+approval/i.test(rs);
+}
+
+function getGmApprovalReason(g) {
+  const prereqs = Array.isArray(g && g.prereqs) ? g.prereqs : [];
+  const gmPrereq = prereqs.find(p => p.kind === 'gm_permission');
+  if (gmPrereq) {
+    return String(gmPrereq.raw_text || gmPrereq.req_value || 'Permission from the Game Host').trim();
+  }
+
+  const rs = requiresSpecialText(g);
+  const lines = String(rs || '').split(/[\r\n]+/).map(s => s.trim()).filter(Boolean);
+  for (const line of lines) {
+    if (/permission\s+from\s+the\s+game\s+host/i.test(line) ||
+        /gm\s+approval/i.test(line) ||
+        /game\s+host\s+approval/i.test(line)) {
+      return line;
+    }
+  }
+  return 'Requires GM/Game Host approval';
+}
+
+const KNOWN_PREREQ_KINDS = new Set([
+  'gm_permission', 'species_anyof', 'species_forbid', 'trait_min',
+  'trait_compare', 'gift_trait', 'gift_ref', 'special_text', 'note',
+]);
+
+function evaluateStructuredPrereqs(g, ownedSet) {
+  const prereqs = Array.isArray(g && g.prereqs) ? g.prereqs : [];
+  const requirements = Array.isArray(g && g.requirements) ? g.requirements : [];
+
+  for (const prereq of prereqs) {
+    const kind = String(prereq.kind || '');
+
+    if (kind === 'gm_permission') continue;
+
+    if (kind === 'species_anyof') {
+      const result = speciesAnyofMet(prereq);
+      if (result === false) {
+        return String(prereq.raw_text || prereq.req_value || 'Species requirement not met');
+      }
+      continue;
+    }
+
+    if (kind === 'species_forbid') {
+      const result = speciesForbidMet(prereq);
+      if (result === false) {
+        return String(prereq.raw_text || prereq.req_value || 'Species forbidden');
+      }
+      continue;
+    }
+
+    if (kind === 'trait_min') {
+      const result = traitMinStructuredMet(prereq);
+      if (result === false) {
+        const traitKey = String(prereq.trait_key || '');
+        const needed = Number(prereq.die_min);
+        return `Requires: ${traitKey} d${needed}+`;
+      }
+      continue;
+    }
+
+    if (kind === 'trait_compare') {
+      if (!comparativeTraitsSatisfied(g)) {
+        return String(prereq.raw_text || 'Trait comparison requirement not met');
+      }
+      continue;
+    }
+
+    if (kind === 'gift_trait') {
+      const reqKey = String(prereq.req_key || prereq.req_value || '').trim();
+      if (reqKey && !ownedSet.has(reqKey)) {
+        return `Requires gift trait: ${reqKey}`;
+      }
+      continue;
+    }
+  }
+
+  for (const req of requirements) {
+    const kind = String(req.kind || '');
+
+    if (kind === 'gift_ref') {
+      const refId = String(req.ref_id || '');
+      if (refId && !ownedSet.has(refId)) {
+        const reqName = String(req.text || `gift #${refId}`).trim();
+        return `Requires: ${reqName}`;
+      }
+      continue;
+    }
+  }
+
+  return null;
+}
+
+function getUnknownPrereqNotes(g) {
+  const prereqs = Array.isArray(g && g.prereqs) ? g.prereqs : [];
+  const requirements = Array.isArray(g && g.requirements) ? g.requirements : [];
+  const notes = [];
+
+  for (const prereq of prereqs) {
+    const kind = String(prereq.kind || '');
+    if (KNOWN_PREREQ_KINDS.has(kind)) continue;
+    const text = String(prereq.raw_text || prereq.req_value || '').trim();
+    if (text) notes.push(text);
+  }
+
+  for (const req of requirements) {
+    const kind = String(req.kind || '');
+    if (KNOWN_PREREQ_KINDS.has(kind)) continue;
+    const text = String(req.text || '').trim();
+    if (text) notes.push(text);
+  }
+
+  return notes;
+}
+
+function giftIneligibleReason(g, ownedSet, otherSelectedIds = new Set()) {
+  if (!g) return 'Unknown gift';
+  const id = giftId(g);
+  const name = giftName(g);
+  if (!id || !name) return 'Invalid gift data';
+
+  if (isNaturalGift(g)) return 'Natural gift (granted by species)';
+
+  const structuredReason = evaluateStructuredPrereqs(g, ownedSet);
+  if (structuredReason) return structuredReason;
+
+  const reqIds = extractRequiredGiftIds(g);
+  for (const rid of reqIds) {
+    if (!ownedSet.has(String(rid))) {
+      return `Requires gift #${rid}`;
+    }
+  }
+
+  if (!traitMinimaSatisfied(g)) {
+    const rs = requiresSpecialText(g);
+    const mins = extractTraitMinimaFromRequiresSpecial(rs);
+    const parts = mins.map(m => {
+      const have = getTraitDieValue(m.traitKey);
+      if (have == null || have < m.need) return `${m.traitKey} d${m.need}+`;
+      return null;
+    }).filter(Boolean);
+    return 'Requires: ' + (parts.join(', ') || 'higher trait');
+  }
+
+  if (!comparativeTraitsSatisfied(g)) {
+    return 'Trait comparison requirement not met';
+  }
+
+  if (!qualPrereqsSatisfied(g)) {
+    const rs = requiresSpecialText(g);
+    const reqs = extractQualReqLinesFromRequiresSpecial(rs);
+    if (reqs.length) {
+      const parts = reqs.map(r => `${r.type}: ${r.raw}`);
+      return 'Requires: ' + parts.join('; ');
+    }
+    return 'Qualification prerequisite not met';
+  }
+
+  if (otherSelectedIds.has(id) && !allowsMultiple(g)) return 'Already selected in another slot';
+
+  return null;
+}
+
 function giftEligible(g, ownedSet, otherSelectedIds = new Set()) {
   if (!g) return false;
   const id = giftId(g);
   const name = giftName(g);
-      const __DBG471 = !!(W && W.__CG_DBG471__) && (String(id) === '471' || String(name).toLowerCase() === 'attendant fireball');
-    const __owned = (typeof ownedSet !== 'undefined') ? ownedSet : ((typeof owned !== 'undefined') ? owned : null);
-    const __others = (typeof otherSelectedIds !== 'undefined') ? otherSelectedIds : ((typeof others !== 'undefined') ? others : null);
-    if (__DBG471) {
-      console.log('[FreeChoices][DBG471] start', { id, name });
-      try { console.log('[FreeChoices][DBG471] owned', __owned ? Array.from(__owned) : __owned); } catch (_) {}
-      try { console.log('[FreeChoices][DBG471] others', __others ? Array.from(__others) : __others); } catch (_) {}
-      console.log('[FreeChoices][DBG471] fields', {
-        requires: g && g.requires,
-        ct_gifts_requires: g && g.ct_gifts_requires,
-        manifold: g && g.manifold,
-        ct_gifts_manifold: g && g.ct_gifts_manifold,
-        allows_multiple: g && g.allows_multiple,
-        ct_gifts_allows_multiple: g && g.ct_gifts_allows_multiple,
-        requires_special: g && (g.requires_special || g.ct_gifts_requires_special || g.requiresSpecial)
-      });
-    }
-if (!id || !name) { if (__DBG471) console.log('[FreeChoices][DBG471] FAIL: missing id/name', {id, name}); return false; }
+  if (!id || !name) return false;
+
+  if (isNaturalGift(g)) return false;
+
+  const structuredReason = evaluateStructuredPrereqs(g, ownedSet);
+  if (structuredReason) return false;
 
   const reqIds = extractRequiredGiftIds(g);
   for (const rid of reqIds) {
     if (!ownedSet.has(String(rid))) return false;
   }
 
-  if (!traitMinimaSatisfied(g)) { if (__DBG471) { try { const rs = requiresSpecialText(g); const mins = extractTraitMinimaFromRequiresSpecial(rs); const tv = {}; mins.forEach(t => tv[t.trait] = getTraitDieValue(t.trait)); console.log('[FreeChoices][DBG471] FAIL: trait minima', { rs, mins, tv }); } catch (_) {} } return false; }
+  if (!traitMinimaSatisfied(g)) return false;
 
   if (!comparativeTraitsSatisfied(g)) return false;
 
@@ -872,31 +1086,66 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
 
     const owned = computeOwnedGiftIdSet(slots.filter(Boolean));
 
+    const allGifts = Array.isArray(this._allGifts) ? this._allGifts : [];
+
     const htmlSlots = [0, 1, 2].map(i => {
       const selectedId = String(slots[i] || '').trim();
       const others = new Set(slots.map((v, idx) => (idx === i ? '' : String(v || '').trim())).filter(Boolean));
 
-      const eligible = (Array.isArray(this._allGifts) ? this._allGifts : []).filter(g => giftEligible(g, owned, others));
-
       const curGift = selectedId ? this._getGift(selectedId) : null;
-      const curOpt = curGift ? [{ id: giftId(curGift), name: giftName(curGift), _forced: true }] : [];
 
       const seen = new Set();
-      const options = []
-        .concat(curOpt.map(o => ({ _forced: true, id: o.id, name: o.name })))
-        .concat(eligible.map(g => ({ id: giftId(g), name: giftName(g) })))
-        .filter(o => o && o.id && o.name)
-        .filter(o => {
-          if (seen.has(o.id)) return false;
-          seen.add(o.id);
-          return true;
-        })
-        .map(o => {
-          const sel = (String(selectedId) === String(o.id)) ? ' selected' : '';
-          const suffix = o._forced ? ' (saved)' : '';
-          return `<option value="${String(o.id)}"${sel}>${String(o.name)}${suffix}</option>`;
-        })
-        .join('\n');
+      const optionItems = [];
+
+      if (curGift) {
+        const forcedId = giftId(curGift);
+        seen.add(forcedId);
+        optionItems.push({ id: forcedId, name: giftName(curGift), _forced: true, gift: curGift });
+      }
+
+      allGifts.forEach(g => {
+        if (isNaturalGift(g)) return;
+        const id = giftId(g);
+        const name = giftName(g);
+        if (!id || !name) return;
+        if (seen.has(id)) return;
+        seen.add(id);
+
+        const reason = giftIneligibleReason(g, owned, others);
+        const isGmOnly = !reason && gmApprovalRequired(g);
+        const unknownNotes = (!reason && !isGmOnly) ? getUnknownPrereqNotes(g) : [];
+        optionItems.push({ id, name, gift: g, reason, isGmOnly, unknownNotes });
+      });
+
+      const options = optionItems.map(o => {
+        const sel = (String(selectedId) === String(o.id)) ? ' selected' : '';
+        let label = String(o.name);
+
+        if (o._forced) {
+          label += ' (saved)';
+        } else if (o.reason) {
+          label += ` — [${o.reason}]`;
+        } else if (o.isGmOnly) {
+          const gmReason = getGmApprovalReason(o.gift);
+          label += ` — [Requires GM approval: ${gmReason}]`;
+        } else if (o.unknownNotes && o.unknownNotes.length) {
+          label += ` — [Note: ${o.unknownNotes[0]}]`;
+        }
+
+        const desc = giftEffectDescription(o.gift);
+        if (desc && !o._forced) {
+          label += ` — ${desc}`;
+        }
+
+        const disabled = (o.reason && !o._forced) ? ' disabled' : '';
+        const safeLabel = String(label).replace(/"/g, '&quot;');
+        return `<option value="${String(o.id)}"${sel}${disabled}>${safeLabel}</option>`;
+      }).join('\n');
+
+      const selectedDesc = curGift ? giftEffectDescription(curGift) : '';
+      const descHtml = selectedDesc
+        ? `<div class="cg-gift-effect-desc" style="margin-top:4px; font-size:0.82rem; color:var(--cg-text-muted); font-style:italic; padding-left:2px;">${String(selectedDesc).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`
+        : '';
 
       const extraCareerHint = selectedId === '184'
         ? `<span class="cg-gift-extra-career-hint">
@@ -914,6 +1163,7 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
               ${options}
             </select>
           </div>
+          ${descHtml}
           ${extraCareerHint}
           <div class="cg-free-slot-quals" data-slot="${i}"></div>
         </div>
@@ -1167,7 +1417,7 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
         .map((v, idx) => (idx === slotIndex ? '' : String(v || '').trim()))
         .filter(Boolean)
     );
-    return this._allGifts.filter(g => giftEligible(g, owned, others));
+    return this._allGifts.filter(g => !isNaturalGift(g) && giftEligible(g, owned, others));
   },
 
   debug() {

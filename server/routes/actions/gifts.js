@@ -35,19 +35,140 @@ async function cg_get_free_gifts(req, res) {
     .map(s => `ct_gifts_requires_special${s}`)
     .join(', ');
 
-  const rows = await query(`
-    SELECT
-      ct_id                    AS id,
-      ct_gifts_name            AS name,
-      ct_gifts_allows_multiple AS allows_multiple,
-      ct_gifts_manifold        AS ct_gifts_manifold,
-      ct_gifts_requires_special,
-      ${requireSpecialCols},
-      ${requireCols}
-    FROM ${p}customtables_table_gifts
-    ORDER BY ct_gifts_name ASC
-  `);
+  let rows;
+  try {
+    rows = await query(`
+      SELECT
+        ct_id                              AS id,
+        ct_gifts_name                      AS name,
+        ct_gifts_allows_multiple           AS allows_multiple,
+        ct_gifts_manifold                  AS ct_gifts_manifold,
+        ct_gifts_class                     AS giftclass,
+        ct_gifts_effect_description        AS effect_description,
+        ct_gifts_requires_special,
+        ${requireSpecialCols},
+        ${requireCols}
+      FROM ${p}customtables_table_gifts
+      WHERE LOWER(TRIM(ct_gifts_class)) != 'natural'
+      ORDER BY ct_gifts_name ASC
+    `);
+  } catch (err) {
+    if (err && /Unknown column.*ct_gifts_class|ct_gifts_effect_description/i.test(err.message)) {
+      rows = await query(`
+        SELECT
+          ct_id                    AS id,
+          ct_gifts_name            AS name,
+          ct_gifts_allows_multiple AS allows_multiple,
+          ct_gifts_manifold        AS ct_gifts_manifold,
+          NULL                     AS giftclass,
+          NULL                     AS effect_description,
+          ct_gifts_requires_special,
+          ${requireSpecialCols},
+          ${requireCols}
+        FROM ${p}customtables_table_gifts
+        ORDER BY ct_gifts_name ASC
+      `);
+    } else {
+      throw err;
+    }
+  }
+
+  // Build a map from gift id → gift object
+  const giftMap = new Map();
+  rows.forEach(r => {
+    const id = String(r.id || '');
+    if (id) giftMap.set(id, r);
+  });
+
+  // Fetch all prereqs and requirements in bulk, then attach per-gift
+  let prereqRows = [];
+  let reqRows = [];
+  let sectionRows = [];
+
+  try {
+    prereqRows = await query(
+      `SELECT id, gift_id, slot, kind, raw_text, req_key, req_value, trait_key, die_min, comparator, qty_required
+       FROM ${p}customtables_table_gift_prereq
+       ORDER BY gift_id ASC, slot ASC`
+    );
+  } catch (_) {}
+
+  try {
+    reqRows = await query(
+      `SELECT ct_id, ct_gift_id AS gift_id, ct_sort AS sort, ct_req_kind AS kind, ct_req_ref_id AS ref_id, ct_req_text AS text
+       FROM ${p}customtables_table_gift_requirements
+       ORDER BY ct_gift_id ASC, ct_sort ASC`
+    );
+  } catch (_) {}
+
+  // Fetch first 'rules' section body per gift as fallback effect description
+  try {
+    sectionRows = await query(
+      `SELECT ct_gift_id AS gift_id, MIN(ct_sort) AS min_sort, ct_body AS body
+       FROM ${p}customtables_table_gift_sections
+       WHERE ct_section_type = 'rules'
+       GROUP BY ct_gift_id`
+    );
+  } catch (_) {}
+
+  prereqRows.forEach(pr => {
+    const id = String(pr.gift_id || '');
+    if (!giftMap.has(id)) return;
+    const g = giftMap.get(id);
+    if (!g.prereqs) g.prereqs = [];
+    g.prereqs.push(pr);
+  });
+
+  reqRows.forEach(rr => {
+    const id = String(rr.gift_id || '');
+    if (!giftMap.has(id)) return;
+    const g = giftMap.get(id);
+    if (!g.requirements) g.requirements = [];
+    g.requirements.push(rr);
+  });
+
+  sectionRows.forEach(sr => {
+    const id = String(sr.gift_id || '');
+    if (!giftMap.has(id)) return;
+    const g = giftMap.get(id);
+    if (!g.effect_description || !String(g.effect_description || '').trim()) {
+      const body = String(sr.body || '').trim();
+      if (body) g.effect_description = body.length > 180 ? body.slice(0, 177) + '…' : body;
+    }
+  });
+
   res.json({ success: true, data: rows });
+}
+
+async function cg_get_gift_prereqs(req, res) {
+  const p = prefix();
+  const giftId = parseInt(req.body.gift_id || req.query.gift_id || '', 10);
+  if (!giftId) return res.json({ success: false, data: 'Missing gift_id.' });
+
+  let prereqs = [];
+  let requirements = [];
+
+  try {
+    prereqs = await query(
+      `SELECT id, gift_id, slot, kind, raw_text, req_key, req_value, trait_key, die_min, comparator, qty_required
+       FROM ${p}customtables_table_gift_prereq
+       WHERE gift_id = ?
+       ORDER BY slot ASC`,
+      [giftId]
+    );
+  } catch (_) {}
+
+  try {
+    requirements = await query(
+      `SELECT ct_id, ct_gift_id AS gift_id, ct_sort AS sort, ct_req_kind AS kind, ct_req_ref_id AS ref_id, ct_req_text AS text
+       FROM ${p}customtables_table_gift_requirements
+       WHERE ct_gift_id = ?
+       ORDER BY ct_sort ASC`,
+      [giftId]
+    );
+  } catch (_) {}
+
+  res.json({ success: true, data: { prereqs, requirements } });
 }
 
 const DEFAULT_LANGUAGES = [
@@ -89,10 +210,9 @@ async function cg_get_language_list(req, res) {
     const list = rows.map(r => String(r.name || '').trim()).filter(Boolean);
     res.json({ success: true, data: list });
   } catch (err) {
-    // Fallback: return hardcoded list so the app keeps working even if DB migration fails
     console.error('[cg_get_language_list] DB error, using fallback:', err.message);
     res.json({ success: true, data: DEFAULT_LANGUAGES.slice().sort((a, b) => a.localeCompare(b)) });
   }
 }
 
-module.exports = { cg_get_local_knowledge, cg_get_language_gift, cg_get_free_gifts, cg_get_language_list };
+module.exports = { cg_get_local_knowledge, cg_get_language_gift, cg_get_free_gifts, cg_get_language_list, cg_get_gift_prereqs };
