@@ -6,6 +6,7 @@ import SkillsAPI      from '../skills';
 import SummaryAPI     from '../summary';
 import ExperienceAPI  from '../experience';
 import BattleAPI      from '../battle/index.js';
+import TrappingsAPI   from '../trappings/index.js';
 
 const $ = window.jQuery;
 
@@ -44,6 +45,14 @@ export default function refreshTab() {
 
     case 'tab-trappings':
       BattleAPI.init();
+      try { TrappingsAPI._renderAll(); } catch (_) {}
+      try {
+        if (TrappingsAPI._catalogCache) {
+          TrappingsAPI._renderCatalog();
+        } else {
+          TrappingsAPI._ensureCatalog().then(() => TrappingsAPI._renderCatalog());
+        }
+      } catch (_) {}
       break;
 
     case 'tab-description':

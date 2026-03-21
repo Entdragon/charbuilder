@@ -405,6 +405,12 @@ function buildPayload(raw) {
     ? rawFGQ
     : {};
 
+  // Trappings & money
+  character.trappings_list = Array.isArray(raw.trappings_list) ? raw.trappings_list : [];
+  character.money_holdings = (raw.money_holdings && typeof raw.money_holdings === 'object')
+    ? raw.money_holdings
+    : {};
+
   flat.character = character;
 
   flat.character_json = JSON.stringify({ ...core });
@@ -753,6 +759,14 @@ const FormBuilderAPI = {
 
     d.weapons = Array.isArray(this._data.weapons) ? this._data.weapons : [];
     d.armor   = Array.isArray(this._data.armor)   ? this._data.armor   : [];
+
+    // Trappings & money (owned by TrappingsAPI, already in _data)
+    d.trappings_list = Array.isArray(this._data.trappings_list) ? this._data.trappings_list : [];
+    d.money_holdings = (this._data.money_holdings && typeof this._data.money_holdings === 'object')
+      ? this._data.money_holdings
+      : {};
+    this._data.trappings_list = d.trappings_list;
+    this._data.money_holdings = d.money_holdings;
 
     return d;
   },

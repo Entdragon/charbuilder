@@ -6,12 +6,13 @@ function safeJson(val) {
   return val;
 }
 
-async function ensureBattleColumns() {
+async function ensureColumns() {
   const p = prefix();
   const table = `${p}character_records`;
   try {
     const cols = await query(`SELECT COLUMN_NAME FROM information_schema.COLUMNS
-      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME IN ('weapons','armor')`, [table]);
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?
+        AND COLUMN_NAME IN ('weapons','armor','trappings_list','money_holdings')`, [table]);
     const existing = new Set(cols.map(c => c.COLUMN_NAME || c.column_name));
     if (!existing.has('weapons')) {
       await query(`ALTER TABLE \`${table}\` ADD COLUMN weapons TEXT DEFAULT NULL`);
@@ -19,8 +20,14 @@ async function ensureBattleColumns() {
     if (!existing.has('armor')) {
       await query(`ALTER TABLE \`${table}\` ADD COLUMN armor TEXT DEFAULT NULL`);
     }
+    if (!existing.has('trappings_list')) {
+      await query(`ALTER TABLE \`${table}\` ADD COLUMN trappings_list MEDIUMTEXT DEFAULT NULL`);
+    }
+    if (!existing.has('money_holdings')) {
+      await query(`ALTER TABLE \`${table}\` ADD COLUMN money_holdings TEXT DEFAULT NULL`);
+    }
   } catch (err) {
-    console.warn('[ensureBattleColumns] Could not add columns:', err.message);
+    console.warn('[ensureColumns] Could not add columns:', err.message);
   }
 }
 
@@ -46,7 +53,7 @@ async function ensureSkillsExtColumns() {
 }
 
 // Run once at startup (non-blocking)
-ensureBattleColumns().catch(() => {});
+ensureColumns().catch(() => {});
 ensureSkillsExtColumns().catch(() => {});
 
 function normalizeRow(row) {
@@ -145,6 +152,24 @@ function normalizeRow(row) {
     row.free_gift_quals = {};
   }
 
+  if (row.trappings_list) {
+    try {
+      if (typeof row.trappings_list === 'string') row.trappings_list = JSON.parse(row.trappings_list);
+      if (!Array.isArray(row.trappings_list)) row.trappings_list = [];
+    } catch (e) { row.trappings_list = []; }
+  } else {
+    row.trappings_list = [];
+  }
+
+  if (row.money_holdings) {
+    try {
+      if (typeof row.money_holdings === 'string') row.money_holdings = JSON.parse(row.money_holdings);
+      if (typeof row.money_holdings !== 'object' || Array.isArray(row.money_holdings)) row.money_holdings = {};
+    } catch (e) { row.money_holdings = {}; }
+  } else {
+    row.money_holdings = {};
+  }
+
   return row;
 }
 
@@ -232,6 +257,8 @@ async function cg_save_character(req, res) {
     skill_notes:                  JSON.stringify(typeof data.skill_notes === 'object' && !Array.isArray(data.skill_notes) ? data.skill_notes : {}),
     gift_skill_marks:             JSON.stringify(typeof data.gift_skill_marks === 'object' && !Array.isArray(data.gift_skill_marks) ? data.gift_skill_marks : {}),
     free_gift_quals:              JSON.stringify(typeof data.free_gift_quals === 'object' && !Array.isArray(data.free_gift_quals) ? data.free_gift_quals : {}),
+    trappings_list:               JSON.stringify(Array.isArray(data.trappings_list) ? data.trappings_list : []),
+    money_holdings:               JSON.stringify((data.money_holdings && typeof data.money_holdings === 'object') ? data.money_holdings : {}),
     updated:                      new Date().toISOString().slice(0, 19).replace('T', ' '),
   };
 

@@ -8,6 +8,7 @@ const giftsActions   = require('./actions/gifts');
 const skillsActions  = require('./actions/skills');
 const speciesActions = require('./actions/species');
 const diagActions    = require('./actions/diagnostics');
+const equipActions   = require('./actions/equipment');
 
 const PUBLIC_ACTIONS = new Set([
   'cg_login_user',
@@ -43,6 +44,10 @@ const ACTION_MAP = {
 
   cg_ping:              diagActions.cg_ping,
   cg_run_diagnostics:   diagActions.cg_run_diagnostics,
+
+  cg_get_career_trappings:  equipActions.cg_get_career_trappings,
+  cg_get_equipment_catalog: equipActions.cg_get_equipment_catalog,
+  cg_get_money_list:        equipActions.cg_get_money_list,
 };
 
 function requireAuth(req, res, next) {

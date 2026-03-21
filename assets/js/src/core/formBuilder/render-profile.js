@@ -1,6 +1,6 @@
 // assets/js/src/core/formBuilder/render-profile.js
 //
-// “Gifts” + “Trappings” panels
+// "Gifts" + "Trappings" panels
 // NOTE: Element IDs are intentionally unchanged so existing APIs keep working.
 
 export default {
@@ -38,6 +38,36 @@ export default {
           <h3>Battle &amp; Equipment</h3>
           <div id="cg-battle-panel">
             <p class="cg-battle-loading"><em>Loading battle array…</em></p>
+          </div>
+        </div>
+
+        <div class="cg-profile-box cg-trappings-box">
+          <h3>Trappings</h3>
+          <div id="cg-trappings-panel">
+            <p class="cg-battle-loading"><em>Loading trappings…</em></p>
+          </div>
+        </div>
+
+        <div class="cg-profile-box cg-money-box">
+          <h3>Money</h3>
+          <div id="cg-money-panel">
+            <p class="cg-battle-loading"><em>Loading currencies…</em></p>
+          </div>
+        </div>
+
+        <div class="cg-profile-box cg-catalog-box">
+          <h3>Equipment Catalog</h3>
+          <div class="cg-catalog-controls">
+            <input type="text" id="cg-equip-search" class="cg-catalog-search"
+              placeholder="Search items…" autocomplete="off" />
+            <select id="cg-equip-filter-kind" class="cg-free-select cg-catalog-filter">
+              <option value="">All types</option>
+              <option value="equipment">Equipment only</option>
+              <option value="weapon">Weapons only</option>
+            </select>
+          </div>
+          <div id="cg-equip-catalog-panel">
+            <p class="cg-battle-loading"><em>Browse catalog to add items…</em></p>
           </div>
         </div>
       </div>

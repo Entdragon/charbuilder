@@ -110,6 +110,9 @@ function openBuilder({ isNew = false, payload = {} } = {}) {
   // Critically: (re)build species/career options and push changes downstream.
   ensureListsThenApply(payload).then(() => {
     document.dispatchEvent(new CustomEvent('cg:builder:opened', { detail: { isNew, payload } }));
+    if (!isNew) {
+      document.dispatchEvent(new CustomEvent('cg:character:loaded', { detail: payload }));
+    }
   });
 }
 

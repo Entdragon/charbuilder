@@ -743,15 +743,15 @@
       return map;
     },
     enforceCounts() {
-      const $23 = window.jQuery;
+      const $24 = window.jQuery;
       const freq = { d8: 0, d6: 0, d4: 0 };
-      $23(".cg-trait-select").each(function() {
-        const v = $23(this).val();
+      $24(".cg-trait-select").each(function() {
+        const v = $24(this).val();
         if (v && v in freq)
           freq[v]++;
       });
-      $23(".cg-trait-select").each(function() {
-        const $sel = $23(this);
+      $24(".cg-trait-select").each(function() {
+        const $sel = $24(this);
         const current = $sel.val() || "";
         let options = '<option value="">\u2014 Select \u2014</option>';
         DICE_TYPES.forEach((die) => {
@@ -764,13 +764,13 @@
       });
     },
     updateAdjustedDisplays() {
-      const $23 = window.jQuery;
+      const $24 = window.jQuery;
       const boosts = this.calculateBoostMap();
       const totalCareerBoosts = boosts.trait_career || 0;
       const careerCounts = computeCareerBoostCounts(totalCareerBoosts);
       const careerMainBoosts = careerCounts.main || 0;
       TRAITS.forEach((traitKey) => {
-        const $sel = $23(`#cg-${traitKey}`);
+        const $sel = $24(`#cg-${traitKey}`);
         if (!$sel.length)
           return;
         const rawBase = String($sel.val() || "").trim();
@@ -782,11 +782,11 @@
         if (rawBase) {
           badgeText = count > 0 ? boostedDie(rawBase, count) : rawBase;
         }
-        const $badge = $23(`#cg-${traitKey}-badge`);
+        const $badge = $24(`#cg-${traitKey}-badge`);
         if ($badge.length)
           $badge.text(badgeText);
         if (traitKey === "trait_career") {
-          const $pb = $23("#cg-profile-trait_career-badge");
+          const $pb = $24("#cg-profile-trait_career-badge");
           if ($pb.length)
             $pb.text(badgeText);
         }
@@ -801,11 +801,11 @@
             note = origBoosts === 1 ? "Increased by gift" : `Increased by gift \xD7${origBoosts}`;
           }
         }
-        const $note = $23(`#cg-${traitKey}-adjusted`);
+        const $note = $24(`#cg-${traitKey}-adjusted`);
         if ($note.length)
           $note.text(note);
         if (traitKey === "trait_career") {
-          const $pn = $23("#cg-profile-trait_career-note");
+          const $pn = $24("#cg-profile-trait_career-note");
           if ($pn.length)
             $pn.text(note);
         }
@@ -1087,6 +1087,36 @@
           <h3>Battle &amp; Equipment</h3>
           <div id="cg-battle-panel">
             <p class="cg-battle-loading"><em>Loading battle array\u2026</em></p>
+          </div>
+        </div>
+
+        <div class="cg-profile-box cg-trappings-box">
+          <h3>Trappings</h3>
+          <div id="cg-trappings-panel">
+            <p class="cg-battle-loading"><em>Loading trappings\u2026</em></p>
+          </div>
+        </div>
+
+        <div class="cg-profile-box cg-money-box">
+          <h3>Money</h3>
+          <div id="cg-money-panel">
+            <p class="cg-battle-loading"><em>Loading currencies\u2026</em></p>
+          </div>
+        </div>
+
+        <div class="cg-profile-box cg-catalog-box">
+          <h3>Equipment Catalog</h3>
+          <div class="cg-catalog-controls">
+            <input type="text" id="cg-equip-search" class="cg-catalog-search"
+              placeholder="Search items\u2026" autocomplete="off" />
+            <select id="cg-equip-filter-kind" class="cg-free-select cg-catalog-filter">
+              <option value="">All types</option>
+              <option value="equipment">Equipment only</option>
+              <option value="weapon">Weapons only</option>
+            </select>
+          </div>
+          <div id="cg-equip-catalog-panel">
+            <p class="cg-battle-loading"><em>Browse catalog to add items\u2026</em></p>
           </div>
         </div>
       </div>
@@ -1426,6 +1456,8 @@
     character.gift_skill_marks = raw.gift_skill_marks && typeof raw.gift_skill_marks === "object" && !Array.isArray(raw.gift_skill_marks) ? raw.gift_skill_marks : {};
     const rawFGQ = raw.free_gift_quals || raw.cg_free_gift_quals || raw.freeGiftQuals;
     character.free_gift_quals = rawFGQ && typeof rawFGQ === "object" && !Array.isArray(rawFGQ) ? rawFGQ : {};
+    character.trappings_list = Array.isArray(raw.trappings_list) ? raw.trappings_list : [];
+    character.money_holdings = raw.money_holdings && typeof raw.money_holdings === "object" ? raw.money_holdings : {};
     flat.character = character;
     flat.character_json = JSON.stringify(__spreadValues({}, core));
     return flat;
@@ -1717,6 +1749,10 @@
       }
       d.weapons = Array.isArray(this._data.weapons) ? this._data.weapons : [];
       d.armor = Array.isArray(this._data.armor) ? this._data.armor : [];
+      d.trappings_list = Array.isArray(this._data.trappings_list) ? this._data.trappings_list : [];
+      d.money_holdings = this._data.money_holdings && typeof this._data.money_holdings === "object" ? this._data.money_holdings : {};
+      this._data.trappings_list = d.trappings_list;
+      this._data.money_holdings = d.money_holdings;
       return d;
     },
     /**
@@ -3214,6 +3250,9 @@
     activateDefaultTab();
     ensureListsThenApply(payload).then(() => {
       document.dispatchEvent(new CustomEvent("cg:builder:opened", { detail: { isNew, payload } }));
+      if (!isNew) {
+        document.dispatchEvent(new CustomEvent("cg:character:loaded", { detail: payload }));
+      }
     });
   }
   function closeBuilder() {
@@ -3529,9 +3568,9 @@
         src.qualifications = payload;
       }
       document.dispatchEvent(new CustomEvent("cg:quals:changed", { detail: { qualifications: payload } }));
-      const $23 = window.jQuery;
-      if ($23)
-        $23(document).trigger("cg:quals:changed", [{ qualifications: payload }]);
+      const $24 = window.jQuery;
+      if ($24)
+        $24(document).trigger("cg:quals:changed", [{ qualifications: payload }]);
     },
     getAll() {
       return JSON.parse(JSON.stringify(this.data || emptyData()));
@@ -6686,10 +6725,739 @@
   };
   var battle_default = BattleAPI;
 
-  // assets/js/src/core/main/builder-refresh.js
+  // assets/js/src/core/trappings/index.js
   var $19 = window.jQuery;
+  var WARN2 = (...a) => console.warn("[Trappings]", ...a);
+  function ajaxEnv6() {
+    var _a, _b;
+    const env = window.CG_AJAX || window.CG_Ajax || window.cgAjax || {};
+    const ajax_url = env.ajax_url || window.ajaxurl || ((_b = (_a = document.body) == null ? void 0 : _a.dataset) == null ? void 0 : _b.ajaxUrl) || "/wp-admin/admin-ajax.php";
+    const nonce = env.nonce || env.security || window.CG_NONCE || null;
+    return { ajax_url, nonce };
+  }
+  function postJSON3(url, data) {
+    return $19.post(url, data).then((res) => {
+      try {
+        return typeof res === "string" ? JSON.parse(res) : res;
+      } catch (_) {
+        return res;
+      }
+    });
+  }
+  function escape3(v) {
+    return String(v == null ? "" : v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  function dieToNumber(die) {
+    const m = String(die || "").match(/d(\d+)/i);
+    if (!m)
+      return 0;
+    return parseInt(m[1], 10) || 0;
+  }
+  function getTrappingsList() {
+    var _a;
+    return Array.isArray((_a = formBuilder_default._data) == null ? void 0 : _a.trappings_list) ? formBuilder_default._data.trappings_list : [];
+  }
+  function setTrappingsList(list) {
+    formBuilder_default._data = formBuilder_default._data || {};
+    formBuilder_default._data.trappings_list = Array.isArray(list) ? list : [];
+  }
+  function getMoneyHoldings() {
+    var _a;
+    const h = (_a = formBuilder_default._data) == null ? void 0 : _a.money_holdings;
+    return h && typeof h === "object" && !Array.isArray(h) ? __spreadValues({}, h) : {};
+  }
+  function setMoneyHoldings(h) {
+    formBuilder_default._data = formBuilder_default._data || {};
+    formBuilder_default._data.money_holdings = h && typeof h === "object" ? h : {};
+  }
+  var TrappingsAPI = {
+    _bound: false,
+    _inited: false,
+    _currencyList: [],
+    // from cg_get_money_list
+    _currencyBySlug: {},
+    _catalogCache: null,
+    // equipment catalog rows
+    _pendingCareer: null,
+    // career_id being fetched
+    init() {
+      if (this._inited)
+        return;
+      this._inited = true;
+      this._fetchCurrency().then(() => {
+        this._bindEvents();
+        this._renderAll();
+      });
+    },
+    _bindEvents() {
+      if (this._bound)
+        return;
+      this._bound = true;
+      $19(document).on("cg:career:changed.trappings", (e, detail) => {
+        const id = (detail == null ? void 0 : detail.id) ? parseInt(detail.id, 10) : 0;
+        if (id > 0) {
+          this._fillCareerTrappings(id);
+        } else {
+          this._removeCareerTrappings();
+          this._renderAll();
+        }
+      });
+      $19(document).on("cg:species:changed.trappings", () => {
+        this._fillSpeciesWeapons();
+        this._renderAll();
+      });
+      try {
+        window.__CG_EVT__ = window.__CG_EVT__ || {};
+        if (window.__CG_EVT__.trappingsSpeciesChanged) {
+          document.removeEventListener("cg:species:changed", window.__CG_EVT__.trappingsSpeciesChanged);
+        }
+        window.__CG_EVT__.trappingsSpeciesChanged = () => {
+          if (!window.jQuery) {
+            this._fillSpeciesWeapons();
+            this._renderAll();
+          }
+        };
+        document.addEventListener("cg:species:changed", window.__CG_EVT__.trappingsSpeciesChanged);
+      } catch (_) {
+      }
+      try {
+        window.__CG_EVT__ = window.__CG_EVT__ || {};
+        if (window.__CG_EVT__.trappingsCharacterLoaded) {
+          document.removeEventListener("cg:character:loaded", window.__CG_EVT__.trappingsCharacterLoaded);
+        }
+        window.__CG_EVT__.trappingsCharacterLoaded = () => {
+          this._onCharacterLoaded();
+        };
+        document.addEventListener("cg:character:loaded", window.__CG_EVT__.trappingsCharacterLoaded);
+      } catch (_) {
+      }
+      $19(document).on("click.trappings", ".cg-trap-remove-btn", (e) => {
+        const btn = e.currentTarget;
+        const uid = btn.dataset.uid;
+        if (!uid)
+          return;
+        const list = getTrappingsList().filter((t) => t.uid !== uid);
+        setTrappingsList(list);
+        this._renderAll();
+      });
+      $19(document).on("input.trappings", "#cg-equip-search", () => {
+        this._renderCatalog();
+      });
+      $19(document).on("change.trappings", "#cg-equip-filter-kind", () => {
+        this._renderCatalog();
+      });
+      $19(document).on("click.trappings", ".cg-equip-add-btn", (e) => {
+        const btn = e.currentTarget;
+        const slug = btn.dataset.slug;
+        const kind = btn.dataset.kind;
+        this._purchaseItem(slug, kind);
+      });
+      $19(document).on("change.trappings input.trappings", ".cg-money-input", (e) => {
+        const inp = e.currentTarget;
+        const slug = inp.dataset.slug;
+        if (!slug)
+          return;
+        const val = parseFloat(inp.value) || 0;
+        const h = getMoneyHoldings();
+        h[slug] = val;
+        setMoneyHoldings(h);
+      });
+      $19(document).on("click.trappings", "#cg-money-exchange-btn", () => {
+        this._showExchangeModal();
+      });
+    },
+    // ── Career trappings autofill ───────────────────────────────────────────────
+    _fillCareerTrappings(careerId) {
+      return __async(this, null, function* () {
+        if (this._pendingCareer === careerId)
+          return;
+        this._pendingCareer = careerId;
+        const { ajax_url, nonce } = ajaxEnv6();
+        if (!ajax_url)
+          return;
+        try {
+          const res = yield postJSON3(ajax_url, {
+            action: "cg_get_career_trappings",
+            career_id: careerId,
+            security: nonce,
+            nonce
+          });
+          if (!res || res.success !== true)
+            return;
+          const fetched = Array.isArray(res.data) ? res.data : [];
+          const existing = getTrappingsList();
+          const nonCareer = existing.filter((t) => t.source !== "career");
+          const careerItems = fetched.map((t) => ({
+            uid: `career-${t.map_id}`,
+            source: "career",
+            kind: t.kind || "equipment",
+            name: t.name || t.token || "",
+            qty: t.qty || 1,
+            slug: t.slug || "",
+            token: t.token || "",
+            // stats for battle array autofill
+            armor_dice: t.armor_dice || "",
+            cover_dice: t.cover_dice || "",
+            attack_dice: t.attack_dice || "",
+            damage_mod: t.damage_mod || 0,
+            range_band: t.range_band || "Melee",
+            parry_die: t.parry_die || "",
+            effect: t.effect || "",
+            cost_d: t.cost_d || null,
+            source_book: t.source_book || "",
+            pg_no: t.pg_no || ""
+          }));
+          setTrappingsList([...nonCareer, ...careerItems]);
+          this._syncBattleArray();
+          this._renderAll();
+          this._initStartingMoney();
+        } catch (err) {
+          WARN2("Failed to fetch career trappings:", err);
+        } finally {
+          this._pendingCareer = null;
+        }
+      });
+    },
+    _removeCareerTrappings() {
+      const list = getTrappingsList().filter((t) => t.source !== "career");
+      setTrappingsList(list);
+      this._syncBattleArray();
+    },
+    // ── Species natural weapons autofill ───────────────────────────────────────
+    _fillSpeciesWeapons() {
+      var _a;
+      const sp = ((_a = api_default) == null ? void 0 : _a.currentProfile) || null;
+      if (!sp) {
+        const list = getTrappingsList().filter((t) => t.source !== "species");
+        setTrappingsList(list);
+        this._syncBattleArray();
+        return;
+      }
+      const weapons = [sp.weapon_1, sp.weapon_2, sp.weapon_3].filter(Boolean).map((name, i) => ({
+        uid: `species-weapon-${i}`,
+        source: "species",
+        kind: "weapon",
+        name,
+        qty: 1,
+        slug: "",
+        token: name,
+        attack_dice: "",
+        damage_mod: 0,
+        range_band: "Melee",
+        parry_die: "",
+        cover_die: "",
+        effect: "",
+        cost_d: null
+      }));
+      const nonSpecies = getTrappingsList().filter((t) => t.source !== "species");
+      setTrappingsList([...nonSpecies, ...weapons]);
+      this._syncBattleArray();
+    },
+    // ── Equipment purchase ──────────────────────────────────────────────────────
+    _ensureCatalog() {
+      return __async(this, null, function* () {
+        if (this._catalogCache)
+          return this._catalogCache;
+        const { ajax_url, nonce } = ajaxEnv6();
+        if (!ajax_url)
+          return [];
+        const res = yield postJSON3(ajax_url, {
+          action: "cg_get_equipment_catalog",
+          security: nonce,
+          nonce
+        });
+        this._catalogCache = res && res.success && Array.isArray(res.data) ? res.data : [];
+        return this._catalogCache;
+      });
+    },
+    _totalDenarii() {
+      const holdings = getMoneyHoldings();
+      return this._currencyList.reduce((sum, c) => {
+        const count = parseFloat(holdings[c.slug] || 0);
+        const rate = parseFloat(c.value_denarii || 0);
+        return sum + count * rate;
+      }, 0);
+    },
+    _deductCost(costD) {
+      if (costD <= 0)
+        return true;
+      const holdings = getMoneyHoldings();
+      const totalVal = this._totalDenarii();
+      if (totalVal < costD - 1e-3)
+        return false;
+      let remaining = costD;
+      const sorted = this._currencyList.filter((c) => parseFloat(c.value_denarii || 0) > 0).sort((a, b) => parseFloat(a.value_denarii) - parseFloat(b.value_denarii));
+      for (const c of sorted) {
+        if (remaining <= 1e-3)
+          break;
+        const rate = parseFloat(c.value_denarii || 0);
+        if (rate <= 0)
+          continue;
+        const have = parseFloat(holdings[c.slug] || 0);
+        if (have <= 0)
+          continue;
+        const needed = Math.min(have, Math.ceil(remaining / rate * 1e3) / 1e3);
+        const spent = needed * rate;
+        holdings[c.slug] = Math.max(0, have - needed);
+        remaining -= spent;
+      }
+      setMoneyHoldings(holdings);
+      return true;
+    },
+    _purchaseItem(slug, kind) {
+      const catalog = this._catalogCache || [];
+      const item = catalog.find((c) => c.slug === slug && c.kind === kind);
+      if (!item) {
+        WARN2("Item not found in catalog:", slug, kind);
+        return;
+      }
+      const cost = parseFloat(item.cost_d) || 0;
+      if (cost > 0) {
+        const totalVal = this._totalDenarii();
+        if (totalVal < cost - 1e-3) {
+          alert(`Not enough funds. Need ${cost}D, have ${totalVal.toFixed(2)}D total across all currencies.`);
+          return;
+        }
+        if (!this._deductCost(cost)) {
+          alert(`Could not deduct ${cost}D from holdings.`);
+          return;
+        }
+      }
+      const uid = `purchase-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const trapping = {
+        uid,
+        source: "purchase",
+        kind: item.kind,
+        name: item.name,
+        qty: 1,
+        slug: item.slug,
+        token: item.name,
+        armor_dice: item.armor_dice || "",
+        cover_dice: item.cover_dice || "",
+        attack_dice: item.attack_dice || "",
+        damage_mod: item.damage_mod || 0,
+        range_band: item.range_band || "Melee",
+        parry_die: item.parry_die || "",
+        effect: item.effect || "",
+        cost_d: item.cost_d || null
+      };
+      const list = getTrappingsList();
+      list.push(trapping);
+      setTrappingsList(list);
+      this._syncBattleArray();
+      this._renderAll();
+    },
+    // ── Battle Array autofill ───────────────────────────────────────────────────
+    _syncBattleArray() {
+      var _a, _b;
+      const list = getTrappingsList();
+      const weaponTrappings = list.filter((t) => t.kind === "weapon");
+      const armorTrappings = list.filter((t) => t.kind === "equipment" && t.armor_dice);
+      const existingWeapons = Array.isArray((_a = formBuilder_default._data) == null ? void 0 : _a.weapons) ? formBuilder_default._data.weapons.filter((w) => !w._from_trappings) : [];
+      const trappingWeapons = weaponTrappings.map((t) => {
+        let attack = t.attack_dice || "";
+        if (!attack && t.damage_mod) {
+          attack = `Damage +${t.damage_mod}`;
+        }
+        let range = t.range_band || "Melee";
+        const rmap = {
+          "Close": "Melee",
+          "Short": "Short",
+          "Medium": "Medium",
+          "Long": "Long",
+          "Thrown": "Thrown",
+          "Melee": "Melee"
+        };
+        range = rmap[range] || "Melee";
+        return {
+          _from_trappings: true,
+          _trapping_uid: t.uid,
+          name: t.name,
+          attack,
+          damage: t.damage_mod != null ? `+${t.damage_mod}` : "",
+          range,
+          notes: t.effect || ""
+        };
+      });
+      formBuilder_default._data.weapons = [...existingWeapons, ...trappingWeapons];
+      const existingArmor = Array.isArray((_b = formBuilder_default._data) == null ? void 0 : _b.armor) ? formBuilder_default._data.armor.filter((a) => !a._from_trappings) : [];
+      const trappingArmor = armorTrappings.map((t) => ({
+        _from_trappings: true,
+        _trapping_uid: t.uid,
+        name: t.name,
+        soak: t.armor_dice || "",
+        penalty: "",
+        notes: ""
+      }));
+      formBuilder_default._data.armor = [...existingArmor, ...trappingArmor];
+      try {
+        const BattleAPI2 = window.CG_BattleAPI;
+        if (BattleAPI2 && typeof BattleAPI2.init === "function") {
+          BattleAPI2.init();
+        }
+      } catch (_) {
+      }
+    },
+    // ── Starting money ──────────────────────────────────────────────────────────
+    _initStartingMoney() {
+      var _a;
+      const holdings = getMoneyHoldings();
+      if (Object.keys(holdings).length > 0)
+        return;
+      const die = ((_a = formBuilder_default._data) == null ? void 0 : _a.trait_career) || "";
+      const amount = dieToNumber(die);
+      if (amount > 0) {
+        holdings["denar"] = amount;
+        setMoneyHoldings(holdings);
+      }
+    },
+    // ── Currency ─────────────────────────────────────────────────────────────────
+    _fetchCurrency() {
+      return __async(this, null, function* () {
+        const { ajax_url, nonce } = ajaxEnv6();
+        if (!ajax_url)
+          return;
+        try {
+          const res = yield postJSON3(ajax_url, {
+            action: "cg_get_money_list",
+            security: nonce,
+            nonce
+          });
+          if (res && res.success && Array.isArray(res.data)) {
+            this._currencyList = res.data;
+            this._currencyBySlug = {};
+            res.data.forEach((c) => {
+              this._currencyBySlug[c.slug] = c;
+            });
+          }
+        } catch (err) {
+          WARN2("Failed to fetch currency list:", err);
+        }
+      });
+    },
+    // ── Character loaded ──────────────────────────────────────────────────────────
+    _onCharacterLoaded() {
+      var _a;
+      this._syncBattleArray();
+      this._renderAll();
+      const careerId = parseInt(((_a = formBuilder_default._data) == null ? void 0 : _a.career_id) || "0", 10);
+      const careerTrappings = getTrappingsList().filter((t) => t.source === "career");
+      if (careerId > 0 && careerTrappings.length === 0) {
+        this._fillCareerTrappings(careerId);
+      }
+      this._fillSpeciesWeapons();
+    },
+    // ── Rendering ─────────────────────────────────────────────────────────────────
+    _renderAll() {
+      this._renderTrappingsPanel();
+      this._renderMoneyPanel();
+    },
+    _renderTrappingsPanel() {
+      const panel = document.getElementById("cg-trappings-panel");
+      if (!panel)
+        return;
+      const list = getTrappingsList();
+      const bySource = { career: [], species: [], purchase: [], manual: [] };
+      list.forEach((t) => {
+        const src = t.source || "manual";
+        if (!bySource[src])
+          bySource[src] = [];
+        bySource[src].push(t);
+      });
+      const renderGroup = (items, label, cls) => {
+        if (!items.length)
+          return "";
+        const rows = items.map((t) => `
+        <tr class="cg-trap-row cg-trap-row--${escape3(t.source || "manual")}">
+          <td class="cg-trap-qty">${escape3(t.qty || 1)}</td>
+          <td class="cg-trap-name">${escape3(t.name || t.token || "")}</td>
+          <td class="cg-trap-kind">${escape3(t.kind === "weapon" ? "\u2694" : "\u{1F392}")}</td>
+          <td class="cg-trap-stats">${escape3(this._statSummary(t))}</td>
+          <td class="cg-trap-actions">
+            ${t.source === "purchase" || t.source === "manual" ? `<button type="button" class="cg-trap-remove-btn cg-btn-sm" data-uid="${escape3(t.uid)}" title="Remove">\u2715</button>` : ""}
+          </td>
+        </tr>
+      `).join("");
+        return `
+        <div class="cg-trap-group">
+          <div class="cg-trap-group-label ${cls}">${label}</div>
+          <table class="cg-trap-table">
+            <thead><tr><th>Qty</th><th>Item</th><th></th><th>Stats</th><th></th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+      };
+      const html = `
+      <div class="cg-trappings-inner">
+        ${renderGroup(bySource.species, "Natural Weapons (Species)", "cg-trap-label--species")}
+        ${renderGroup(bySource.career, "Career Starting Trappings", "cg-trap-label--career")}
+        ${renderGroup(bySource.purchase, "Purchased Equipment", "cg-trap-label--purchase")}
+        ${renderGroup(bySource.manual, "Other Trappings", "cg-trap-label--manual")}
+        ${list.length === 0 ? '<p class="cg-trap-empty">No trappings yet. Select a career or browse the catalog below.</p>' : ""}
+      </div>
+    `;
+      panel.innerHTML = html;
+    },
+    _statSummary(t) {
+      if (t.kind === "weapon") {
+        const parts = [];
+        if (t.attack_dice)
+          parts.push(t.attack_dice);
+        if (t.damage_mod)
+          parts.push(`Dmg +${t.damage_mod}`);
+        if (t.effect)
+          parts.push(t.effect.slice(0, 40));
+        return parts.join(", ");
+      } else {
+        const parts = [];
+        if (t.armor_dice)
+          parts.push(`Armor ${t.armor_dice}`);
+        if (t.cover_dice)
+          parts.push(`Cover ${t.cover_dice}`);
+        return parts.join(", ");
+      }
+    },
+    _renderMoneyPanel() {
+      const panel = document.getElementById("cg-money-panel");
+      if (!panel)
+        return;
+      const holdings = getMoneyHoldings();
+      const currencies = this._currencyList;
+      if (!currencies.length) {
+        panel.innerHTML = '<p class="cg-money-loading"><em>Loading currency\u2026</em></p>';
+        return;
+      }
+      const calabrese = currencies.filter((c) => c.source_book == null || c.source_book !== 101);
+      const zhongguo = currencies.filter((c) => c.source_book == 101);
+      const renderCurrencyRow = (c) => {
+        const val = parseFloat(holdings[c.slug] || 0);
+        const xr = c.exchange_rate_text ? `<span class="cg-money-xr">${escape3(c.exchange_rate_text)}</span>` : "";
+        return `
+        <tr class="cg-money-row">
+          <td class="cg-money-name">${escape3(c.name)}</td>
+          <td class="cg-money-val">
+            <input type="number" class="cg-money-input" data-slug="${escape3(c.slug)}"
+              value="${val}" min="0" step="0.001" />
+          </td>
+          <td class="cg-money-xr-cell">${xr}</td>
+        </tr>
+      `;
+      };
+      const totalDenarii = currencies.reduce((sum, c) => {
+        const count = parseFloat(holdings[c.slug] || 0);
+        const rate = parseFloat(c.value_denarii || 0);
+        return sum + count * rate;
+      }, 0);
+      panel.innerHTML = `
+      <div class="cg-money-inner">
+        <div class="cg-money-total">
+          Total value: <strong>${totalDenarii.toFixed(2)}D</strong>
+        </div>
+
+        <h5 class="cg-money-subhead">Calabrese Coins</h5>
+        <table class="cg-money-table">
+          <thead><tr><th>Currency</th><th>Amount</th><th>Exchange rate</th></tr></thead>
+          <tbody>${calabrese.map(renderCurrencyRow).join("")}</tbody>
+        </table>
+
+        ${zhongguo.length ? `
+          <h5 class="cg-money-subhead">Zhongguo Coins</h5>
+          <table class="cg-money-table">
+            <thead><tr><th>Currency</th><th>Amount</th><th>Exchange rate</th></tr></thead>
+            <tbody>${zhongguo.map(renderCurrencyRow).join("")}</tbody>
+          </table>
+        ` : ""}
+      </div>
+    `;
+    },
+    _renderCatalog() {
+      return __async(this, null, function* () {
+        const panel = document.getElementById("cg-equip-catalog-panel");
+        if (!panel)
+          return;
+        const catalog = yield this._ensureCatalog();
+        const searchEl = document.getElementById("cg-equip-search");
+        const filterEl = document.getElementById("cg-equip-filter-kind");
+        const search = ((searchEl == null ? void 0 : searchEl.value) || "").toLowerCase().trim();
+        const filterKind = (filterEl == null ? void 0 : filterEl.value) || "";
+        let items = catalog;
+        if (search)
+          items = items.filter((c) => (c.name || "").toLowerCase().includes(search));
+        if (filterKind)
+          items = items.filter((c) => c.kind === filterKind);
+        if (!items.length) {
+          panel.innerHTML = '<p class="cg-catalog-empty">No items match your search.</p>';
+          return;
+        }
+        const totalVal = this._totalDenarii();
+        const rows = items.slice(0, 200).map((c) => {
+          const cost = parseFloat(c.cost_d) || 0;
+          const costText = cost > 0 ? `${cost}D` : c.cost_text || "\u2014";
+          const canAfford = cost === 0 || totalVal >= cost - 1e-3;
+          const stats = this._catalogStatSummary(c);
+          return `
+        <tr class="cg-catalog-row">
+          <td class="cg-catalog-name">${escape3(c.name)}</td>
+          <td class="cg-catalog-kind">${escape3(c.kind === "weapon" ? "Weapon" : "Equipment")}</td>
+          <td class="cg-catalog-cat">${escape3(c.category || "")}</td>
+          <td class="cg-catalog-cost">${escape3(costText)}</td>
+          <td class="cg-catalog-stats cg-text-sm">${escape3(stats)}</td>
+          <td class="cg-catalog-action">
+            <button type="button" class="cg-equip-add-btn cg-btn-sm${canAfford ? "" : " cg-btn-disabled"}"
+              data-slug="${escape3(c.slug)}" data-kind="${escape3(c.kind)}"
+              title="Add to trappings"${canAfford ? "" : " disabled"}>
+              + Add
+            </button>
+          </td>
+        </tr>
+      `;
+        }).join("");
+        panel.innerHTML = `
+      <table class="cg-catalog-table">
+        <thead>
+          <tr><th>Name</th><th>Type</th><th>Category</th><th>Cost</th><th>Stats</th><th></th></tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+      ${items.length > 200 ? `<p class="cg-catalog-note">Showing 200 of ${items.length} items. Use search to narrow results.</p>` : ""}
+    `;
+      });
+    },
+    _catalogStatSummary(c) {
+      if (c.kind === "weapon") {
+        const parts = [];
+        if (c.attack_dice)
+          parts.push(c.attack_dice);
+        if (c.damage_mod)
+          parts.push(`Dmg +${c.damage_mod}`);
+        if (c.range_band)
+          parts.push(c.range_band);
+        if (c.effect)
+          parts.push(c.effect.slice(0, 40));
+        return parts.join(", ");
+      } else {
+        const parts = [];
+        if (c.armor_dice)
+          parts.push(`Armor ${c.armor_dice}`);
+        if (c.cover_dice)
+          parts.push(`Cover ${c.cover_dice}`);
+        return parts.join(", ");
+      }
+    },
+    _showExchangeModal() {
+      const currencies = this._currencyList.filter((c) => parseFloat(c.value_denarii || 0) > 0);
+      if (currencies.length < 2) {
+        alert("Not enough currencies available for exchange.");
+        return;
+      }
+      const holdings = getMoneyHoldings();
+      const optionsHtml = currencies.map(
+        (c) => `<option value="${escape3(c.slug)}">${escape3(c.name)} (${parseFloat(c.value_denarii || 0)}D each)</option>`
+      ).join("");
+      const modal = document.createElement("div");
+      modal.className = "cg-exchange-overlay";
+      modal.innerHTML = `
+      <div class="cg-exchange-modal">
+        <h4>Currency Exchange</h4>
+        <p class="cg-exchange-info">Exchange between currencies at table-defined rates.</p>
+        <div class="cg-exchange-row">
+          <label>From:</label>
+          <select id="cg-xch-from" class="cg-free-select">${optionsHtml}</select>
+          <input type="number" id="cg-xch-amount" class="cg-money-input" value="1" min="0.001" step="0.001" />
+        </div>
+        <div class="cg-exchange-row">
+          <label>To:</label>
+          <select id="cg-xch-to" class="cg-free-select">${optionsHtml}</select>
+        </div>
+        <div id="cg-xch-preview" class="cg-exchange-preview"></div>
+        <div class="cg-exchange-actions">
+          <button type="button" id="cg-xch-confirm" class="cg-btn cg-btn-gold">Exchange</button>
+          <button type="button" id="cg-xch-cancel" class="cg-btn">Cancel</button>
+        </div>
+      </div>
+    `;
+      document.body.appendChild(modal);
+      const fromEl = modal.querySelector("#cg-xch-from");
+      const toEl = modal.querySelector("#cg-xch-to");
+      const amtEl = modal.querySelector("#cg-xch-amount");
+      const previewEl = modal.querySelector("#cg-xch-preview");
+      if (currencies.length > 1)
+        toEl.selectedIndex = 1;
+      const updatePreview = () => {
+        const fromSlug = fromEl.value;
+        const toSlug = toEl.value;
+        const amount = parseFloat(amtEl.value) || 0;
+        const fromCur = this._currencyBySlug[fromSlug];
+        const toCur = this._currencyBySlug[toSlug];
+        if (!fromCur || !toCur || amount <= 0) {
+          previewEl.textContent = "";
+          return;
+        }
+        const fromRate = parseFloat(fromCur.value_denarii || 0);
+        const toRate = parseFloat(toCur.value_denarii || 0);
+        if (toRate <= 0) {
+          previewEl.textContent = "Cannot convert to this currency.";
+          return;
+        }
+        const result = amount * fromRate / toRate;
+        const have = parseFloat(holdings[fromSlug] || 0);
+        previewEl.textContent = `${amount} ${fromCur.name} = ${result.toFixed(3)} ${toCur.name}` + (have < amount ? ` (you only have ${have})` : "");
+      };
+      fromEl.addEventListener("change", updatePreview);
+      toEl.addEventListener("change", updatePreview);
+      amtEl.addEventListener("input", updatePreview);
+      updatePreview();
+      modal.querySelector("#cg-xch-cancel").addEventListener("click", () => {
+        modal.remove();
+      });
+      modal.querySelector("#cg-xch-confirm").addEventListener("click", () => {
+        const fromSlug = fromEl.value;
+        const toSlug = toEl.value;
+        const amount = parseFloat(amtEl.value) || 0;
+        const fromCur = this._currencyBySlug[fromSlug];
+        const toCur = this._currencyBySlug[toSlug];
+        if (!fromCur || !toCur || amount <= 0)
+          return;
+        if (fromSlug === toSlug) {
+          alert("Cannot exchange a currency for itself.");
+          return;
+        }
+        const h = getMoneyHoldings();
+        const have = parseFloat(h[fromSlug] || 0);
+        if (have < amount) {
+          alert(`Not enough ${fromCur.name}. You have ${have}.`);
+          return;
+        }
+        const fromRate = parseFloat(fromCur.value_denarii || 0);
+        const toRate = parseFloat(toCur.value_denarii || 0);
+        if (toRate <= 0) {
+          alert("Cannot convert to this currency.");
+          return;
+        }
+        const result = amount * fromRate / toRate;
+        h[fromSlug] = Math.max(0, have - amount);
+        h[toSlug] = parseFloat(h[toSlug] || 0) + result;
+        setMoneyHoldings(h);
+        modal.remove();
+        this._renderAll();
+        this._renderCatalog();
+      });
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal)
+          modal.remove();
+      });
+    }
+  };
+  var trappings_default = TrappingsAPI;
+  if (typeof window !== "undefined") {
+    window.CG_TrappingsAPI = TrappingsAPI;
+  }
+
+  // assets/js/src/core/main/builder-refresh.js
+  var $20 = window.jQuery;
   function refreshTab() {
-    const tab = String($19("#cg-modal .cg-tabs li.active").data("tab") || "");
+    const tab = String($20("#cg-modal .cg-tabs li.active").data("tab") || "");
     switch (tab) {
       case "tab-details":
         experience_default.initWidget();
@@ -6714,6 +7482,18 @@
         break;
       case "tab-trappings":
         battle_default.init();
+        try {
+          trappings_default._renderAll();
+        } catch (_) {
+        }
+        try {
+          if (trappings_default._catalogCache) {
+            trappings_default._renderCatalog();
+          } else {
+            trappings_default._ensureCatalog().then(() => trappings_default._renderCatalog());
+          }
+        } catch (_) {
+        }
         break;
       case "tab-description":
         break;
@@ -6724,7 +7504,7 @@
   }
 
   // assets/js/src/core/main/builder-load.js
-  var $20 = window.jQuery;
+  var $21 = window.jQuery;
   var LOG2 = (...a) => console.log("[BuilderLoad]", ...a);
   var ERR = (...a) => console.error("[BuilderLoad]", ...a);
   var _inited2 = false;
@@ -6778,18 +7558,18 @@
       return _inFlight;
     const now = Date.now();
     if (force && now - _lastForceFetchAt < FORCE_THROTTLE_MS && _cacheRows) {
-      return $20.Deferred().resolve(_cacheRows).promise();
+      return $21.Deferred().resolve(_cacheRows).promise();
     }
     if (!force && _cacheRows && now - _cacheAt < CACHE_MS) {
-      return $20.Deferred().resolve(_cacheRows).promise();
+      return $21.Deferred().resolve(_cacheRows).promise();
     }
     LOG2("fetching characters via AJAX\u2026", force ? "(force)" : "");
     const req = _getListRequest();
     if (!req) {
       ERR("No listCharacters()/fetchCharacters() available on FormBuilderAPI");
-      return $20.Deferred().resolve([]).promise();
+      return $21.Deferred().resolve([]).promise();
     }
-    const d = $20.Deferred();
+    const d = $21.Deferred();
     _inFlight = d.promise();
     if (force)
       _lastForceFetchAt = now;
@@ -6822,7 +7602,7 @@
     return _inFlight;
   }
   function populateLoadSelect(rows) {
-    const $sel = $20("#cg-splash-load-select");
+    const $sel = $21("#cg-splash-load-select");
     if (!$sel.length)
       return;
     _populating = true;
@@ -6830,14 +7610,14 @@
     try {
       const current = String($sel.val() || "");
       $sel.empty();
-      $sel.append($20("<option>", { value: "", text: "-- Select a character --" }));
+      $sel.append($21("<option>", { value: "", text: "-- Select a character --" }));
       (rows || []).forEach((r) => {
         var _a, _b;
         const id = String((_a = r == null ? void 0 : r.id) != null ? _a : "");
         const name = String((_b = r == null ? void 0 : r.name) != null ? _b : "");
         if (!id)
           return;
-        $sel.append($20("<option>", { value: id, text: name || `#${id}` }));
+        $sel.append($21("<option>", { value: id, text: name || `#${id}` }));
       });
       if (current)
         $sel.val(current);
@@ -6855,7 +7635,7 @@
     _lastEnsureAt = now;
     if (_populating || _suppressObserver)
       return;
-    const $sel = $20("#cg-splash-load-select");
+    const $sel = $21("#cg-splash-load-select");
     if (!$sel.length)
       return;
     const count = $sel.find("option").length;
@@ -6930,25 +7710,25 @@
   }
 
   // assets/js/src/core/main/builder-save.js
-  var $21 = window.jQuery;
+  var $22 = window.jQuery;
   var LOG3 = (...a) => console.log("[BuilderSave]", ...a);
-  var WARN2 = (...a) => console.warn("[BuilderSave]", ...a);
+  var WARN3 = (...a) => console.warn("[BuilderSave]", ...a);
   function setSaveButtonsDisabled(disabled) {
     try {
-      $21("#cg-modal .cg-save-button").prop("disabled", !!disabled).toggleClass("cg-disabled", !!disabled);
+      $22("#cg-modal .cg-save-button").prop("disabled", !!disabled).toggleClass("cg-disabled", !!disabled);
     } catch (_) {
     }
   }
   function bindSaveEvents() {
-    $21(document).off("click", ".cg-save-button");
-    $21(document).off("click", ".cg-close-after-save");
-    $21(document).on("click.cg", ".cg-save-button", function(e) {
+    $22(document).off("click", ".cg-save-button");
+    $22(document).off("click", ".cg-close-after-save");
+    $22(document).on("click.cg", ".cg-save-button", function(e) {
       e.preventDefault();
       e.stopImmediatePropagation();
-      const $btn = $21(this);
+      const $btn = $22(this);
       const shouldClose = $btn.hasClass("cg-close-after-save");
       if (window.CG_SAVE_IN_FLIGHT) {
-        WARN2("Save click ignored: CG_SAVE_IN_FLIGHT already true", { shouldClose });
+        WARN3("Save click ignored: CG_SAVE_IN_FLIGHT already true", { shouldClose });
         return;
       }
       setSaveButtonsDisabled(true);
@@ -6963,15 +7743,15 @@
   }
 
   // assets/js/src/core/main/builder-events.js
-  var $22 = window.jQuery;
+  var $23 = window.jQuery;
   var LOG4 = (...a) => console.log("[BuilderEvents]", ...a);
   var SEL = {
     species: '#cg-species, select[name="species"], select[data-cg="species"], .cg-species',
     career: '#cg-career,  select[name="career"],  select[data-cg="career"],  .cg-career'
   };
   function firstSelect(selector) {
-    const $sel = $22(selector);
-    const $modalSel = $22("#cg-modal").find(selector);
+    const $sel = $23(selector);
+    const $modalSel = $23("#cg-modal").find(selector);
     if ($modalSel.length)
       return $modalSel.first();
     return $sel.length ? $sel.first() : null;
@@ -6988,7 +7768,7 @@
     if (String($sel.val() || "") === val)
       return true;
     const $byText = $sel.find("option").filter(function() {
-      return $22(this).text() === val;
+      return $23(this).text() === val;
     }).first();
     if ($byText.length) {
       $sel.val($byText.val());
@@ -7017,7 +7797,7 @@
     const $sel = firstSelect(selector);
     if (!$sel) {
       LOG4(`no ${kind} select found`);
-      return $22.Deferred().resolve().promise();
+      return $23.Deferred().resolve().promise();
     }
     const el = $sel.get(0);
     const beforeVal = String($sel.val() || "").trim();
@@ -7031,10 +7811,10 @@
     }
     const ensureOptions = () => {
       if (el.options.length > 1 && !force)
-        return $22.Deferred().resolve().promise();
+        return $23.Deferred().resolve().promise();
       const API = kind === "species" ? api_default : api_default2;
       if (typeof (API == null ? void 0 : API.populateSelect) !== "function")
-        return $22.Deferred().resolve().promise();
+        return $23.Deferred().resolve().promise();
       return API.populateSelect(el, { force: !!force });
     };
     const doApply = () => {
@@ -7053,7 +7833,7 @@
         }
       }
     };
-    return $22.Deferred(function(dfr) {
+    return $23.Deferred(function(dfr) {
       setTimeout(() => {
         ensureOptions().then(() => {
           doApply();
@@ -7063,7 +7843,7 @@
     }).promise();
   }
   function hydrateSpeciesAndCareer(opts = {}) {
-    return $22.when(
+    return $23.when(
       hydrateSelect("species", opts),
       hydrateSelect("career", opts)
     );
@@ -7074,15 +7854,19 @@
     }, 0);
   }
   function bindUIEvents() {
-    var _a, _b;
+    var _a, _b, _c, _d;
     LOG4("bindUIEvents() called");
     try {
       (_b = (_a = gifts_default) == null ? void 0 : _a.init) == null ? void 0 : _b.call(_a);
     } catch (_) {
     }
-    $22(document).off("input.cg change.cg", "#cg-modal input, #cg-modal select, #cg-modal textarea").on("input.cg change.cg", "#cg-modal input, #cg-modal select, #cg-modal textarea", function() {
+    try {
+      (_d = (_c = trappings_default) == null ? void 0 : _c.init) == null ? void 0 : _d.call(_c);
+    } catch (_) {
+    }
+    $23(document).off("input.cg change.cg", "#cg-modal input, #cg-modal select, #cg-modal textarea").on("input.cg change.cg", "#cg-modal input, #cg-modal select, #cg-modal textarea", function() {
       builder_ui_default.markDirty();
-      const $el = $22(this);
+      const $el = $23(this);
       if ($el.hasClass("skill-marks")) {
         const skillId = $el.data("skill-id");
         const val = parseInt($el.val(), 10) || 0;
@@ -7096,11 +7880,11 @@
       const key = id.replace(/^cg-/, "");
       formBuilder_default._data[key] = $el.val();
     });
-    $22(document).off("click.cg", "#cg-open-builder").on("click.cg", "#cg-open-builder", (e) => {
+    $23(document).off("click.cg", "#cg-open-builder").on("click.cg", "#cg-open-builder", (e) => {
       e.preventDefault();
-      $22("#cg-modal-splash").removeClass("cg-hidden").addClass("visible");
+      $23("#cg-modal-splash").removeClass("cg-hidden").addClass("visible");
       try {
-        const $sel = $22("#cg-splash-load-select");
+        const $sel = $23("#cg-splash-load-select");
         const optCount = $sel.length ? $sel.find("option").length : 0;
         if ($sel.length && optCount <= 1) {
           document.dispatchEvent(new CustomEvent("cg:characters:refresh", { detail: { source: "splash-open" } }));
@@ -7108,9 +7892,9 @@
       } catch (_) {
       }
     });
-    $22(document).off("click.cg", "#cg-new-splash").on("click.cg", "#cg-new-splash", (e) => {
+    $23(document).off("click.cg", "#cg-new-splash").on("click.cg", "#cg-new-splash", (e) => {
       e.preventDefault();
-      $22("#cg-modal-splash").removeClass("visible").addClass("cg-hidden");
+      $23("#cg-modal-splash").removeClass("visible").addClass("cg-hidden");
       builder_ui_default.openBuilder({ isNew: true, payload: {} });
       formBuilder_default._data.skillMarks = {};
       formBuilder_default._data.species = "";
@@ -7119,9 +7903,9 @@
         window.CG_FreeChoicesState.selected = ["", "", ""];
       }
     });
-    $22(document).off("click.cg", "#cg-load-splash").on("click.cg", "#cg-load-splash", (e) => {
+    $23(document).off("click.cg", "#cg-load-splash").on("click.cg", "#cg-load-splash", (e) => {
       e.preventDefault();
-      const charId = $22("#cg-splash-load-select").val();
+      const charId = $23("#cg-splash-load-select").val();
       if (!charId) {
         alert("Please select a character to load.");
         return;
@@ -7135,7 +7919,7 @@
           alert("Character could not be loaded.");
           return;
         }
-        $22("#cg-modal-splash").removeClass("visible").addClass("cg-hidden");
+        $23("#cg-modal-splash").removeClass("visible").addClass("cg-hidden");
         builder_ui_default.openBuilder({ isNew: false, payload: record });
         setTimeout(() => {
           hydrateSpeciesAndCareer({ force: true, record });
@@ -7147,39 +7931,39 @@
     });
     bindLoadEvents();
     bindSaveEvents();
-    $22(document).off("click.cg", "#cg-modal .cg-tabs li").on("click.cg", "#cg-modal .cg-tabs li", function(e) {
+    $23(document).off("click.cg", "#cg-modal .cg-tabs li").on("click.cg", "#cg-modal .cg-tabs li", function(e) {
       e.preventDefault();
-      const fromTab = $22("#cg-modal .cg-tabs li.active").data("tab");
-      const tabName = $22(this).data("tab");
-      $22("#cg-modal .cg-tabs li").removeClass("active");
-      $22(this).addClass("active");
-      $22(".tab-panel").removeClass("active");
-      $22(`#${tabName}`).addClass("active");
+      const fromTab = $23("#cg-modal .cg-tabs li.active").data("tab");
+      const tabName = $23(this).data("tab");
+      $23("#cg-modal .cg-tabs li").removeClass("active");
+      $23(this).addClass("active");
+      $23(".tab-panel").removeClass("active");
+      $23(`#${tabName}`).addClass("active");
       emitTabChanged(fromTab, tabName);
       refreshTab();
       setTimeout(() => {
         hydrateSpeciesAndCareer({ force: false });
       }, 0);
     });
-    $22(document).off("click.cg", "#cg-modal-close").on("click.cg", "#cg-modal-close", (e) => {
+    $23(document).off("click.cg", "#cg-modal-close").on("click.cg", "#cg-modal-close", (e) => {
       e.preventDefault();
       builder_ui_default.showUnsaved();
     });
-    $22(document).off("click.cg", "#cg-modal-overlay").on("click.cg", "#cg-modal-overlay", function(e) {
+    $23(document).off("click.cg", "#cg-modal-overlay").on("click.cg", "#cg-modal-overlay", function(e) {
       if (e.target !== this)
         return;
       builder_ui_default.showUnsaved();
     });
-    $22(document).off("click.cg", "#unsaved-save").on("click.cg", "#unsaved-save", (e) => {
+    $23(document).off("click.cg", "#unsaved-save").on("click.cg", "#unsaved-save", (e) => {
       e.preventDefault();
       console.log("[BuilderEvents] Prompt: SAVE & EXIT clicked");
       formBuilder_default.save(true);
     });
-    $22(document).off("click.cg", "#unsaved-exit").on("click.cg", "#unsaved-exit", (e) => {
+    $23(document).off("click.cg", "#unsaved-exit").on("click.cg", "#unsaved-exit", (e) => {
       e.preventDefault();
       builder_ui_default.closeBuilder();
     });
-    $22(document).off("click.cg", "#unsaved-cancel").on("click.cg", "#unsaved-cancel", (e) => {
+    $23(document).off("click.cg", "#unsaved-cancel").on("click.cg", "#unsaved-cancel", (e) => {
       e.preventDefault();
       builder_ui_default.hideUnsaved();
     });
