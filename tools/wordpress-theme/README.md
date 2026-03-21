@@ -105,3 +105,7 @@ if ( stripos( $uri, '/your-path/' ) === false ) {
 ### How the DOMDocument merge works
 
 The merge targets **siblings within the same parent container** — so it cannot accidentally remove content from unrelated sections. The XPath query `//*[not(child::*) and normalize-space(text())="Literacy"]` restricts to pure-text leaf elements, excluding headings or labels that happen to contain the word "Literacy" alongside other markup.
+
+**Safe-failure guarantee:** If a gift has "Literacy" and "Literacy: Zhongwén" in *different* parent elements (non-siblings), the sibling search finds no match and neither element is altered. The worst case is the merge does nothing for that gift — the original two-line display is preserved, no content is removed.
+
+**HTML normalisation note:** DOMDocument re-serialises the full `the_content` block on gift pages. In practice this is harmless for CT-generated HTML, but if gift content ever includes inline `<script>` tags or tightly formatted markup, spot-check the rendered output after installation.
