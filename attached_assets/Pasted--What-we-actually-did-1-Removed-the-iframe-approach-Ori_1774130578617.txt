@@ -1,0 +1,127 @@
+🔧 What we actually did
+1. Removed the iframe approach
+
+Originally:
+
+<iframe src="/characters/"></iframe>
+
+➡️ Problem:
+
+Separate document context
+Cookie/session weirdness
+JS globals conflict
+Hard to control styling
+2. Switched to server-side embedding
+
+We changed to:
+
+require ABSPATH . 'characters/index.php';
+
+➡️ This means:
+
+The app now runs inside the WordPress page
+Same DOM, same session, same cookies
+
+👉 This is the single biggest improvement.
+
+3. Added “embed mode” (CG_EMBED_MODE)
+define('CG_EMBED_MODE', true);
+
+➡️ This tells your app:
+
+“You are inside WordPress now”
+Don’t behave like a full standalone site
+4. Forced correct AJAX endpoint
+The real bug you hit
+
+Your console showed:
+
+ajax_url: /wp-admin/admin-ajax.php ❌
+
+But your app needs:
+
+/characters/ajax.php ✅
+Why it broke
+
+WordPress (or a script) overwrote:
+
+window.CG_AJAX
+
+So login was posting to the wrong endpoint → 400 + 0
+
+Fix we applied
+
+We force override it in the page:
+
+window.CG_AJAX = {
+  ajax_url: '/characters/ajax.php',
+  ajaxurl: '/characters/ajax.php',
+  nonce: '1',
+  security: '1',
+  _ajax_nonce: '1'
+};
+
+…and we re-apply it multiple times to beat race conditions.
+
+➡️ Result:
+
+Login works again
+Builder loads data correctly
+5. Kept your app intact
+
+We did NOT rewrite your app logic
+
+We only:
+
+Adjusted how it’s loaded
+Ensured correct environment (AJAX, auth, layout)
+6. Cleaned the page UI
+
+Removed:
+
+Helper text
+Deployment note
+
+Left:
+
+Title
+Embedded app
+🧠 Why this solution is correct
+
+This setup is now:
+
+✔ Same-origin (no iframe)
+Cookies + sessions behave normally
+No cross-document JS issues
+✔ Single DOM
+WordPress + app coexist cleanly
+✔ Controlled globals
+CG_AJAX no longer gets hijacked
+✔ Stable routing
+Users see /character-generator/, not /characters/
+⚠️ Important thing to remember
+
+Your app still physically lives in:
+
+/public_html/characters/
+
+The WordPress page is just a wrapper + host environment.
+
+🧩 Mental model (simple)
+
+Think of it like this:
+
+Before:
+WordPress page → iframe → separate app world
+
+Now:
+WordPress page → directly runs app code inside it
+🚀 Current state
+
+You now have:
+
+✅ Clean public URL
+✅ Working login
+✅ Working builder
+✅ Unified styling
+✅ No iframe issues
