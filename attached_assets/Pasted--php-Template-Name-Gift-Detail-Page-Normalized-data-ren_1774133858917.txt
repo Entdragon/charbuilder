@@ -1,0 +1,878 @@
+<?php
+/**
+ * Template Name: Gift Detail Page
+ *
+ * Normalized-data renderer (v8 + table support):
+ * - Uses normalized child tables:
+ *   - DcVnchxg4_customtables_table_gift_requirements
+ *   - DcVnchxg4_customtables_table_gift_triggers
+ *   - DcVnchxg4_customtables_table_gift_rules
+ *   - DcVnchxg4_customtables_table_gift_sections
+ *
+ * Restores the "tiles" / related blocks that were present in earlier versions:
+ * - Multiple Times / Manifold tiles
+ * - Class tile
+ * - Types tiles
+ * - Source book tile
+ * - Species + Careers that use this gift
+ *
+ * Display polish:
+ * - Effect: groups fragmented rule rows into one card and moves very long clauses into "details"
+ * - Effect Description:
+ *   - De-wraps accidental hard line breaks + accidental blank lines within sentences
+ *   - Inserts paragraph breaks before common inline headings (Choosing an Altitude, Landing, New action, etc.)
+ *   - Limit-only lines like "X (...)" render as de-duped badges
+ *   - Trigger sections: heading becomes quoted label (e.g. "Fall") or the trigger condition; condition shown as note
+ *   - Duplicate "Requires:" rows in gift_sections are suppressed when normalized requirements exist
+ *   - Plain `Stunt "..."` section rows get cleaner accordion headings
+ *   - Suppresses metadata tags like @@REFRESH from effect-description output
+ *   - Supports @@TABLE: sections using pipe-delimited rows
+ */
+
+get_header();
+
+/* -----------------------------
+ * Helpers
+ * ----------------------------- */
+function cg_norm_text($t) {
+  $t = is_string($t) ? $t : '';
+  $t = str_replace(array("\r\n", "\r"), "\n", $t);
+  return trim($t);
+}
+
+function cg_strip_effect_description_tags($text) {
+  $text = cg_norm_text($text);
+  if ($text === '') return '';
+
+  // Remove whole metadata lines such as:
+  // @@REFRESH: Scene
+  // @@REFRESH Scene
+  $text = preg_replace('/^[ \t]*@@REFRESH\b[^\n]*(?:\n+|$)/mi', '', $text);
+
+  // Remove any leftover inline occurrence on a line.
+  $text = preg_replace('/[ \t]*@@REFRESH\b(?::)?[ \t]*[^\n]*/i', '', $text);
+
+  // Tidy extra blank lines left behind.
+  $text = preg_replace("/\n{3,}/", "\n\n", $text);
+
+  return trim($text);
+}
+
+function cg_rule_type_label($t) {
+  $t = strtolower(trim((string)$t));
+  $map = array(
+    'passive' => 'Passive',
+    'action' => 'Action',
+    'reaction' => 'Reaction',
+    'improved_action' => 'Improved Action',
+    'long_action' => 'Long action',
+    'start' => 'Start',
+    'stunt' => 'Stunt',
+    'note' => 'Note',
+  );
+  return $map[$t] ?? 'Rule';
+}
+
+function cg_is_limit_line($line) {
+  $line = cg_norm_text($line);
+  return (bool) preg_match('/^X\s*\([^)]*\)\s*$/i', $line);
+}
+
+function cg_is_bare_type_line($line) {
+  $line = strtolower(cg_norm_text($line));
+  return in_array($line, array('passive','action','reaction','improved action','long action','start'), true);
+}
+
+function cg_parse_semicolon_clauses($summary, $drop_leading_type = true) {
+  $summary = cg_norm_text($summary);
+  if ($summary === '') return array();
+
+  $summary = preg_replace('/^(Passive|Action|Reaction|Improved Action|Long action|Start)\s*:\s*/i', '$1; ', $summary);
+
+  $parts = array_map('trim', explode(';', $summary));
+  $parts = array_values(array_filter($parts, function($x){ return $x !== ''; }));
+
+  if ($drop_leading_type && !empty($parts)) {
+    $lead = strtolower($parts[0]);
+    if (in_array($lead, array('passive','action','reaction','improved action','long action','start'), true)) {
+      array_shift($parts);
+    }
+  }
+  return $parts;
+}
+
+function cg_extract_title_from_actionish_line($line) {
+  $line = cg_norm_text($line);
+  if ($line === '') return array('', $line);
+
+  if (preg_match('/^(Action|Improved Action|Reaction|Long action|Extra Action|New action|New stunt|Stunt|Start)\b/i', $line, $m)) {
+    $kind = trim($m[1]);
+    if (preg_match('/"([^"]+)"/', $line, $mm)) {
+      return array($kind . ': ' . $mm[1], $line);
+    }
+    return array($kind, $line);
+  }
+  return array('', $line);
+}
+
+function cg_strip_actionish_prefix_from_body($line) {
+  $line = cg_norm_text($line);
+  if ($line === '') return '';
+
+  $stripped = preg_replace(
+    '/^(Action|Improved Action|Reaction|Long action|Extra Action|New action|New stunt|Stunt|Start)\b\s*:?\s*(?:"[^"]+"\s*)?/i',
+    '',
+    $line,
+    1
+  );
+
+  $stripped = ltrim((string) $stripped);
+  return $stripped !== '' ? $stripped : $line;
+}
+
+function cg_pretty_breaks($text) {
+  $text = cg_strip_effect_description_tags($text);
+  $text = cg_norm_text($text);
+  if ($text === '') return '';
+
+  $t = $text;
+
+  $patterns = array(
+    '/\s+(Choosing an Altitude:)/i',
+    '/\s+(Landing)\b/i',
+    '/\s+(Use your)\b/i',
+    '/\s+(You may fly over obstacles)\b/i',
+    '/\s+(New action\b)/i',
+    '/\s+(New stunt\b)/i',
+    '/\s+(Trigger:\s)/i',
+  );
+
+  foreach ($patterns as $p) {
+    $t = preg_replace($p, "\n\n$1", $t);
+  }
+
+  $t = preg_replace("/\n{3,}/", "\n\n", $t);
+  return trim($t);
+}
+
+function cg_merge_accidental_paras($paras) {
+  $out = array();
+  foreach ($paras as $p) {
+    $p = trim($p);
+    if ($p === '') continue;
+
+    if (empty($out)) {
+      $out[] = $p;
+      continue;
+    }
+
+    $prev = $out[count($out)-1];
+    $prev_trim = rtrim($prev);
+    $next_trim = ltrim($p);
+
+    if (preg_match('/^[A-Z][^\n]{0,90}:\s*$/', $prev_trim)) { $out[] = $p; continue; }
+    if (preg_match('/^([-•]|\d+\.)\s+/', $next_trim)) { $out[] = $p; continue; }
+    if (preg_match('/[\.!\?:"”\)\]]\s*$/u', $prev_trim)) { $out[] = $p; continue; }
+
+    if (preg_match('/^[a-z]/', $next_trim) || preg_match('/^(and|or|but|because|so|then|that|which|who|where|when)\b/i', $next_trim)) {
+      $out[count($out)-1] = $prev_trim . ' ' . $next_trim;
+      continue;
+    }
+
+    $out[] = $p;
+  }
+  return $out;
+}
+
+function cg_parse_pipe_table_text($text) {
+  $text = cg_norm_text($text);
+  if ($text === '') return null;
+
+  $lines = preg_split("/\n+/", $text);
+  $lines = array_values(array_filter(array_map('trim', $lines), function($x){ return $x !== ''; }));
+
+  $rows = array();
+
+  foreach ($lines as $ln) {
+    if (strpos($ln, '|') === false) continue;
+
+    $cells = array_map('trim', explode('|', $ln));
+
+    // Allow optional leading/trailing pipes: | a | b |
+    if (count($cells) >= 2 && $cells[0] === '') array_shift($cells);
+    if (count($cells) >= 2 && end($cells) === '') array_pop($cells);
+
+    $cells = array_values(array_map(function($c){
+      return trim(preg_replace('/\s+/', ' ', (string) $c));
+    }, $cells));
+
+    if (count($cells) >= 2) {
+      $rows[] = $cells;
+    }
+  }
+
+  if (count($rows) < 2) return null; // need header + at least one data row
+
+  $headers = array_shift($rows);
+  $col_count = count($headers);
+
+  foreach ($rows as &$row) {
+    if (count($row) < $col_count) {
+      $row = array_pad($row, $col_count, '');
+    } elseif (count($row) > $col_count) {
+      $head = array_slice($row, 0, $col_count - 1);
+      $tail = implode(' | ', array_slice($row, $col_count - 1));
+      $row = array_merge($head, array($tail));
+    }
+  }
+  unset($row);
+
+  return array(
+    'headers' => $headers,
+    'rows'    => $rows,
+  );
+}
+
+function cg_extract_table_block($heading, $body) {
+  $raw_heading = cg_norm_text($heading);
+  $raw_body    = cg_norm_text($body);
+
+  $title = '';
+  $table_text = '';
+
+  if (preg_match('/^@@TABLE\s*:?\s*(.*)$/i', $raw_heading, $m)) {
+    $title = trim($m[1]);
+    $table_text = $raw_body;
+  } elseif (preg_match('/^@@TABLE\s*:?\s*(.*)$/i', $raw_body)) {
+    $lines = preg_split("/\n+/", $raw_body);
+    $first = array_shift($lines);
+    $title = trim(preg_replace('/^@@TABLE\s*:?\s*/i', '', (string) $first));
+    $table_text = trim(implode("\n", $lines));
+  } else {
+    return null;
+  }
+
+  $parsed = cg_parse_pipe_table_text($table_text);
+  if (!$parsed) return null;
+
+  return array(
+    'title'   => ($title !== '' ? $title : 'Table'),
+    'headers' => $parsed['headers'],
+    'rows'    => $parsed['rows'],
+  );
+}
+
+function cg_render_table_html($table) {
+  if (
+    empty($table) ||
+    empty($table['headers']) ||
+    empty($table['rows'])
+  ) {
+    return '';
+  }
+
+  $out = '<div class="gift-table-wrap">';
+  $out .= '<table class="gift-table">';
+  $out .= '<thead><tr>';
+
+  foreach ($table['headers'] as $h) {
+    $out .= '<th>' . esc_html($h) . '</th>';
+  }
+
+  $out .= '</tr></thead><tbody>';
+
+  foreach ($table['rows'] as $row) {
+    $out .= '<tr>';
+    foreach ($row as $cell) {
+      $out .= '<td>' . nl2br(esc_html($cell)) . '</td>';
+    }
+    $out .= '</tr>';
+  }
+
+  $out .= '</tbody></table>';
+  $out .= '</div>';
+
+  return $out;
+}
+
+function cg_heading_from_body($body) {
+  $b = cg_norm_text($body);
+  if ($b === '') return 'Trigger';
+
+  $one = preg_replace('/\s+/', ' ', $b);
+  $cut = $one;
+  if (preg_match('/^(.{1,120}?)([\.!\?])\s/', $one, $m)) $cut = $m[1];
+  if (mb_strlen($cut) > 70) $cut = mb_substr($cut, 0, 67) . '…';
+  return $cut !== '' ? $cut : 'Trigger';
+}
+
+function cg_render_text_blocks($text) {
+  $text = cg_strip_effect_description_tags($text);
+  $text = cg_pretty_breaks($text);
+  $text = cg_norm_text($text);
+  if ($text === '') return '';
+
+  $paras = preg_split("/\n{2,}/", $text);
+  $paras = cg_merge_accidental_paras($paras);
+
+  $out = '';
+  foreach ($paras as $p) {
+    $p = trim($p);
+    if ($p === '') continue;
+
+    // Support inline @@TABLE blocks in body text.
+    $table = cg_extract_table_block('', $p);
+    if ($table) {
+      $out .= cg_render_table_html($table);
+      continue;
+    }
+
+    $lines = preg_split("/\n+/", $p);
+    $lines = array_values(array_filter(array_map('trim', $lines), function($x){ return $x !== ''; }));
+
+    if (count($lines) === 1) {
+      $ln = $lines[0];
+      if (mb_strlen($ln) <= 90 && (substr($ln, -1) === ':' || preg_match('/^(Landing|Choosing an Altitude:|Use your|New action|New stunt|You may fly over obstacles|Trigger:)/i', $ln))) {
+        $out .= '<h4 class="gift-subhead">' . esc_html(rtrim($ln)) . '</h4>';
+        continue;
+      }
+    }
+
+    $list_items = array();
+    foreach ($lines as $ln) {
+      if (preg_match('/^[-•]\s+/', $ln)) { $list_items[] = preg_replace('/^[-•]\s+/', '', $ln); continue; }
+      if (preg_match('/^(No successes|One success|Two successes|Three successes|Four successes|Five successes)\b/i', $ln)) { $list_items[] = $ln; continue; }
+      if (preg_match('/^(Remove|Replace|Add|Gain|Subtract)\b/i', $ln)) { $list_items[] = $ln; continue; }
+      if (preg_match('/^[+\-]\s*\d+/', $ln)) { $list_items[] = $ln; continue; }
+    }
+
+    if (count($list_items) >= 2) {
+      $out .= '<ul class="gift-list gift-desc-list">';
+      foreach ($list_items as $it) $out .= '<li>' . esc_html($it) . '</li>';
+      $out .= '</ul>';
+    } else {
+      $out .= '<p class="gift-text">' . esc_html(implode(' ', $lines)) . '</p>';
+    }
+  }
+
+  return $out;
+}
+
+function cg_group_rule_rows($rules) {
+  $cards = array();
+  $cur = null;
+
+  $flush = function() use (&$cards, &$cur) {
+    if (!$cur) return;
+    $has_any = (!empty($cur['clauses']) || !empty($cur['details']) || !empty($cur['limit']));
+    if ($has_any) $cards[] = $cur;
+    $cur = null;
+  };
+
+  foreach ($rules as $r) {
+    $sum = cg_norm_text($r->ct_summary ?? '');
+    if ($sum === '' || strtoupper($sum) === 'NULL') continue;
+
+    if (cg_is_limit_line($sum)) {
+      if ($cur && empty($cur['limit'])) $cur['limit'] = $sum;
+      else {
+        $flush();
+        $cur = array('type' => 'Note', 'title' => '', 'limit' => $sum, 'clauses' => array(), 'details' => '');
+        $flush();
+      }
+      continue;
+    }
+
+    if (cg_is_bare_type_line($sum)) {
+      if ($cur && (!empty($cur['clauses']) || !empty($cur['details']) || !empty($cur['limit']))) $flush();
+      $cur = array('type' => ucwords($sum), 'title' => '', 'limit' => '', 'clauses' => array(), 'details' => '');
+      continue;
+    }
+
+    if (!$cur) {
+      $cur = array(
+        'type' => cg_rule_type_label($r->ct_rule_type ?? 'passive'),
+        'title' => cg_norm_text($r->ct_rule_title ?? ''),
+        'limit' => cg_norm_text($r->ct_limit_text ?? ''),
+        'clauses' => array(),
+        'details' => ''
+      );
+    } else {
+      if (empty($cur['title']) && !empty($r->ct_rule_title)) $cur['title'] = cg_norm_text($r->ct_rule_title);
+      if (empty($cur['limit']) && !empty($r->ct_limit_text)) $cur['limit'] = cg_norm_text($r->ct_limit_text);
+    }
+
+    if (strpos($sum, ';') !== false) {
+      $clauses = cg_parse_semicolon_clauses($sum, true);
+      foreach ($clauses as $c) {
+        if (mb_strlen($c) > 240) $cur['details'] = trim($cur['details'] . "\n\n" . $c);
+        else $cur['clauses'][] = $c;
+      }
+      continue;
+    }
+
+    if (mb_strlen($sum) > 240) {
+      $cur['details'] = trim($cur['details'] . "\n\n" . $sum);
+      continue;
+    }
+
+    $cur['clauses'][] = $sum;
+  }
+
+  $flush();
+  return $cards;
+}
+?>
+
+<main class="site-main gift-detail">
+<?php
+global $wpdb;
+$slug = sanitize_text_field(get_query_var('slug'));
+
+$gift = $wpdb->get_row($wpdb->prepare("
+  SELECT 
+    g.*,
+    gc.ct_class_name AS class_name,
+    gc.ct_slug AS class_slug,
+    gt1.ct_type_name AS type1, gt1.ct_slug AS type1_slug,
+    gt2.ct_type_name AS type2, gt2.ct_slug AS type2_slug,
+    gt3.ct_type_name AS type3, gt3.ct_slug AS type3_slug,
+    gt4.ct_type_name AS type4, gt4.ct_slug AS type4_slug,
+    gt5.ct_type_name AS type5, gt5.ct_slug AS type5_slug,
+    gt6.ct_type_name AS type6, gt6.ct_slug AS type6_slug,
+    gt7.ct_type_name AS type7, gt7.ct_slug AS type7_slug,
+    gt8.ct_type_name AS type8, gt8.ct_slug AS type8_slug,
+    rf.ct_refresh_name AS refresh_name, rf.ct_slug AS refresh_slug,
+    b.ct_book_name,
+    b.ct_ct_slug AS book_slug
+  FROM DcVnchxg4_customtables_table_gifts AS g
+  LEFT JOIN DcVnchxg4_customtables_table_giftclass AS gc ON g.ct_gift_class = gc.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt1 ON g.ct_gift_type = gt1.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt2 ON g.ct_gift_type_two = gt2.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt3 ON g.ct_gift_type_three = gt3.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt4 ON g.ct_gift_type_four = gt4.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt5 ON g.ct_gift_type_five = gt5.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt6 ON g.ct_gift_type_six = gt6.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt7 ON g.ct_gift_type_seven = gt7.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt8 ON g.ct_gift_type_eight = gt8.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_refresh AS rf ON g.ct_gifts_refresh = rf.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_books AS b ON g.ct_book_id = b.ct_id
+  WHERE g.ct_slug = %s
+    AND g.published = 1
+", $slug));
+
+if (!$gift) {
+  global $wp_query;
+  $wp_query->set_404();
+  status_header(404);
+  nocache_headers();
+  echo '<p>Sorry, that gift couldn’t be found.</p>';
+  get_footer();
+  exit;
+}
+
+$req_rows = $wpdb->get_results($wpdb->prepare("
+  SELECT r.ct_id, r.ct_sort, r.ct_req_kind, r.ct_req_ref_id, r.ct_req_text,
+         g2.ct_slug AS ref_slug, g2.ct_gifts_name AS ref_name
+  FROM DcVnchxg4_customtables_table_gift_requirements r
+  LEFT JOIN DcVnchxg4_customtables_table_gifts g2
+    ON r.ct_req_kind = 'gift_ref'
+   AND g2.ct_id = r.ct_req_ref_id
+   AND g2.published = 1
+  WHERE r.ct_gift_id = %d
+  ORDER BY r.ct_sort, r.ct_id
+", $gift->ct_id));
+
+$triggers = $wpdb->get_results($wpdb->prepare("
+  SELECT ct_id, ct_sort, ct_trigger_kind, ct_trigger_text
+  FROM DcVnchxg4_customtables_table_gift_triggers
+  WHERE ct_gift_id = %d
+  ORDER BY ct_sort, ct_id
+", $gift->ct_id));
+
+$rule_rows = $wpdb->get_results($wpdb->prepare("
+  SELECT ct_id, ct_sort, ct_rule_type, ct_rule_title, ct_cost_text, ct_limit_text, ct_summary, ct_details
+  FROM DcVnchxg4_customtables_table_gift_rules
+  WHERE ct_gift_id = %d
+  ORDER BY ct_sort, ct_id
+", $gift->ct_id));
+$rules = cg_group_rule_rows($rule_rows);
+
+$sections = $wpdb->get_results($wpdb->prepare("
+  SELECT ct_id, ct_sort, ct_section_type, ct_heading, ct_body
+  FROM DcVnchxg4_customtables_table_gift_sections
+  WHERE ct_gift_id = %d
+  ORDER BY ct_sort, ct_id
+", $gift->ct_id));
+?>
+
+<header class="gift-header">
+  <h1 class="gift-title"><?php echo esc_html($gift->ct_gifts_name); ?></h1>
+</header>
+
+<style id="cg-gift-detail-readability-fix">
+  .gift-detail .gift-section--effect,
+  .gift-detail .gift-section--effect *,
+  .gift-detail .gift-section--sections,
+  .gift-detail .gift-section--sections * {
+    color: #f2e6c9;
+  }
+
+  .gift-detail .gift-badge.gift-badge--type,
+  .gift-detail .gift-badge.gift-badge--limit {
+    color: #f0c35a;
+  }
+
+  .gift-detail .gift-accordion,
+  .gift-detail .gift-rule {
+    border-color: rgba(240, 195, 90, 0.28);
+  }
+
+  .gift-detail .gift-accordion__summary {
+    background: transparent;
+  }
+
+  .gift-detail .gift-table-wrap {
+    margin: 14px 0 18px;
+    overflow-x: auto;
+    border: 1px solid rgba(240, 195, 90, 0.28);
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.18);
+  }
+
+  .gift-detail .gift-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 640px;
+  }
+
+  .gift-detail .gift-table th,
+  .gift-detail .gift-table td {
+    padding: 10px 12px;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid rgba(240, 195, 90, 0.18);
+  }
+
+  .gift-detail .gift-table thead th {
+    color: #f0c35a;
+    background: rgba(240, 195, 90, 0.08);
+    font-weight: 700;
+  }
+
+  .gift-detail .gift-table tbody td {
+    color: #f2e6c9;
+  }
+
+  .gift-detail .gift-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+</style>
+
+<hr class="gift-sep">
+
+<h2>Gift Details</h2>
+
+<div class="skill-grid" style="margin-bottom: 20px;">
+  <?php if (!empty($gift->ct_gifts_allows_multiple)) : ?>
+    <div class="skill-card" style="background-color: #e6f9e6;">
+      <a href="/gifts-multiple/">Multiple Times</a>
+    </div>
+  <?php endif; ?>
+
+  <?php if (!empty($gift->ct_gifts_manifold)) : ?>
+    <div class="skill-card" style="background-color: #e6f9e6;">
+      <a href="/gifts-manifold/">Manifold Gift</a>
+    </div>
+  <?php endif; ?>
+
+  <?php if (!empty($gift->class_slug)) : ?>
+    <div class="skill-card">
+      <a href="/gift-class/<?php echo esc_attr($gift->class_slug); ?>/">
+        <?php echo esc_html($gift->class_name); ?>
+      </a>
+    </div>
+  <?php endif; ?>
+</div>
+
+<?php
+$types = array();
+for ($i = 1; $i <= 8; $i++) {
+  $namef = "type{$i}";
+  $slugf = "type{$i}_slug";
+  if (!empty($gift->$namef)) $types[] = array('name' => $gift->$namef, 'slug' => $gift->$slugf);
+}
+if ($types) :
+?>
+  <h3>Types</h3>
+  <div class="skill-grid" style="margin-bottom: 20px;">
+    <?php foreach ($types as $t) : ?>
+      <div class="skill-card">
+        <a href="/gift-type/<?php echo esc_attr($t['slug']); ?>/"><?php echo esc_html($t['name']); ?></a>
+      </div>
+    <?php endforeach; ?>
+  </div>
+<?php endif; ?>
+
+<?php if (!empty($req_rows)) : ?>
+  <h3>Gift Requires</h3>
+  <div class="skill-grid" style="margin-bottom: 20px;">
+    <?php foreach ($req_rows as $r) : ?>
+      <?php if ($r->ct_req_kind === 'gift_ref' && !empty($r->ref_slug)) : ?>
+        <div class="skill-card">
+          <a href="/gift/<?php echo esc_attr($r->ref_slug); ?>/">
+            <?php echo esc_html(!empty($r->ref_name) ? $r->ref_name : $r->ct_req_text); ?>
+          </a>
+        </div>
+      <?php else : ?>
+        <div class="skill-card"><em><?php echo esc_html($r->ct_req_text); ?></em></div>
+      <?php endif; ?>
+    <?php endforeach; ?>
+  </div>
+<?php endif; ?>
+
+<?php if (!empty($triggers)) : ?>
+  <section class="gift-section gift-section--trigger">
+    <h3>Trigger</h3>
+    <ul class="gift-list gift-trigger-list">
+      <?php foreach ($triggers as $t) : ?>
+        <li><?php echo esc_html(cg_norm_text($t->ct_trigger_text)); ?></li>
+      <?php endforeach; ?>
+    </ul>
+  </section>
+<?php endif; ?>
+
+<?php if (!empty($gift->refresh_name)) : ?>
+  <h3>Refresh</h3>
+  <div class="skill-grid" style="margin-bottom: 20px;">
+    <div class="skill-card">
+      <a href="/refresh/<?php echo esc_attr($gift->refresh_slug); ?>/">
+        <?php echo esc_html($gift->refresh_name); ?>
+      </a>
+    </div>
+  </div>
+<?php endif; ?>
+
+<?php if (!empty($rules)) : ?>
+  <section class="gift-section gift-section--effect">
+    <h3>Effect</h3>
+
+    <?php foreach ($rules as $card) : ?>
+      <?php
+      $type_label = $card['type'] ?? 'Rule';
+      $title = cg_norm_text($card['title'] ?? '');
+      $limit = cg_norm_text($card['limit'] ?? '');
+      $clauses = $card['clauses'] ?? array();
+      $details = cg_norm_text($card['details'] ?? '');
+      ?>
+      <div class="gift-rule">
+        <div class="gift-rule__head">
+          <?php if ($type_label !== 'Passive') : ?><span class="gift-badge gift-badge--type"><?php echo esc_html($type_label); ?></span><?php endif; ?>
+          <?php if ($title !== '') : ?><span class="gift-rule__title"><?php echo esc_html($title); ?></span><?php endif; ?>
+          <?php if ($limit !== '') : ?><span class="gift-badge gift-badge--limit"><?php echo esc_html($limit); ?></span><?php endif; ?>
+        </div>
+
+        <?php if (!empty($clauses)) : ?>
+          <ul class="gift-list gift-effect-clauses">
+            <?php foreach ($clauses as $c) : ?>
+              <li><?php echo esc_html($c); ?></li>
+            <?php endforeach; ?>
+          </ul>
+        <?php endif; ?>
+
+        <?php if ($details !== '') : ?>
+          <details class="gift-more" open>
+            <summary>Show details</summary>
+            <div class="gift-more__body">
+              <?php echo cg_render_text_blocks($details); ?>
+            </div>
+          </details>
+        <?php endif; ?>
+      </div>
+    <?php endforeach; ?>
+  </section>
+<?php endif; ?>
+
+<?php if (!empty($sections)) : ?>
+  <section class="gift-section gift-section--sections">
+    <h3>Effect Description</h3>
+
+    <?php
+    foreach ($sections as $idx => $s) :
+      $raw_heading = cg_norm_text($s->ct_heading);
+      $raw_body    = cg_norm_text($s->ct_body);
+
+      $table = cg_extract_table_block($raw_heading, $raw_body);
+      if ($table) {
+        $open_attr = ' open';
+        ?>
+        <details class="gift-accordion"<?php echo $open_attr; ?>>
+          <summary class="gift-accordion__summary">
+            <span class="gift-accordion__heading"><?php echo esc_html($table['title']); ?></span>
+          </summary>
+          <div class="gift-accordion__body">
+            <?php echo cg_render_table_html($table); ?>
+          </div>
+        </details>
+        <?php
+        continue;
+      }
+
+      $heading = cg_strip_effect_description_tags($raw_heading);
+      $body = cg_strip_effect_description_tags($raw_body);
+      $display_body = $body;
+      $trigger_note = '';
+      $section_type = strtolower(cg_norm_text($s->ct_section_type));
+
+      if ($heading === '' && $body === '') {
+        continue;
+      }
+
+      // Flavour sections should read as heading-only, without repeating the same prose underneath.
+      // Detect flavour both from ct_section_type and from literal @@FLAVOUR tags stored in heading/body.
+      $is_flavour = in_array($section_type, array('flavour', 'flavor'), true)
+        || preg_match('/^@@FLAVOUR\s*:?/i', $raw_heading)
+        || preg_match('/^@@FLAVOUR\s*:?/i', $raw_body);
+
+      if ($is_flavour) {
+        $flavour_text = '';
+
+        if (preg_match('/^@@FLAVOUR\s*:?\s*(.*)$/is', $raw_heading, $m)) {
+          $flavour_text = trim($m[1]);
+        } elseif (preg_match('/^@@FLAVOUR\s*:?\s*(.*)$/is', $raw_body, $m)) {
+          $flavour_text = trim($m[1]);
+        } elseif ($heading !== '') {
+          $flavour_text = $heading;
+        } else {
+          $flavour_text = $body;
+        }
+
+        $flavour_text = trim(cg_strip_effect_description_tags($flavour_text));
+        $heading = ($flavour_text !== '') ? $flavour_text : 'Flavour';
+        $display_body = '';
+      }
+
+      if (!empty($req_rows)) {
+        if (stripos($heading, 'Requires:') === 0 || stripos($body, 'Requires:') === 0) {
+          continue;
+        }
+      }
+
+      if (cg_is_limit_line($body) || cg_is_limit_line($heading)) {
+        continue;
+      }
+
+      if (stripos($heading, 'Trigger:') === 0) {
+        $trigger_note = $heading;
+        if (preg_match('/^"([^"]+)"/', $body, $mm)) {
+          $heading = $mm[1];
+        } else {
+          $cond = trim(preg_replace('/^Trigger:\s*/i', '', $trigger_note));
+          if ($cond !== '') {
+            if (mb_strlen($cond) > 70) $cond = mb_substr($cond, 0, 67) . '…';
+            $heading = $cond;
+          } else {
+            $heading = cg_heading_from_body($body);
+          }
+        }
+      }
+
+      if ($heading === '') {
+        list($derived, $original) = cg_extract_title_from_actionish_line($body);
+        if ($derived !== '') {
+          $heading = $derived;
+          $display_body = cg_strip_actionish_prefix_from_body($body);
+        } else {
+          $first_line = trim(strtok($body, "\n"));
+          $heading = $first_line !== '' ? $first_line : 'Details';
+          if (mb_strlen($heading) > 120) $heading = mb_substr($heading, 0, 117) . '…';
+        }
+      }
+
+      $open_attr = ' open';
+      ?>
+      <details class="gift-accordion"<?php echo $open_attr; ?>>
+        <summary class="gift-accordion__summary">
+          <span class="gift-accordion__heading"><?php echo esc_html($heading); ?></span>
+        </summary>
+        <div class="gift-accordion__body">
+          <?php if ($trigger_note !== '') : ?>
+            <p class="gift-meta"><strong><?php echo esc_html($trigger_note); ?></strong></p>
+          <?php endif; ?>
+          <?php echo cg_render_text_blocks($display_body); ?>
+        </div>
+      </details>
+    <?php endforeach; ?>
+  </section>
+<?php endif; ?>
+
+<h2>Source</h2>
+<?php if (!empty($gift->ct_book_name)) : ?>
+  <div class="skill-grid" style="margin-bottom: 20px;">
+    <div class="skill-card">
+      <a href="/book/<?php echo esc_attr($gift->book_slug); ?>/" target="_blank" rel="noopener noreferrer">
+        <?php echo esc_html($gift->ct_book_name); ?>
+      </a>
+      <?php if (!empty($gift->ct_pg_no)) : ?>
+        <br><small>Pg. No. <?php echo intval($gift->ct_pg_no); ?></small>
+      <?php endif; ?>
+    </div>
+  </div>
+<?php endif; ?>
+
+<?php
+$species = $wpdb->get_results($wpdb->prepare("
+  SELECT ct_species_name, ct_slug
+  FROM DcVnchxg4_customtables_table_species
+  WHERE ct_species_gift_one = %d OR ct_species_gift_two = %d OR ct_species_gift_three = %d
+", $gift->ct_id, $gift->ct_id, $gift->ct_id));
+
+if ($species) :
+?>
+  <h3>Species That Use This Gift</h3>
+  <div class="skill-grid" style="margin-bottom: 20px;">
+    <?php foreach ($species as $sp) : ?>
+      <div class="skill-card">
+        <a href="/species/<?php echo esc_attr($sp->ct_slug); ?>/">
+          <?php echo esc_html($sp->ct_species_name); ?>
+        </a>
+      </div>
+    <?php endforeach; ?>
+  </div>
+<?php endif; ?>
+
+<?php
+$careers = $wpdb->get_results($wpdb->prepare("
+  SELECT ct_career_name, ct_slug
+  FROM DcVnchxg4_customtables_table_careers
+  WHERE published = 1 AND (
+    ct_career_gift_one = %d OR
+    ct_career_gift_two = %d OR
+    ct_career_gift_three = %d
+  )
+  ORDER BY ct_career_name ASC
+", $gift->ct_id, $gift->ct_id, $gift->ct_id));
+
+if ($careers) :
+?>
+  <h3>Careers That Use This Gift</h3>
+  <div class="skill-grid" style="margin-bottom: 20px;">
+    <?php foreach ($careers as $c) : ?>
+      <div class="skill-card">
+        <a href="/career/<?php echo esc_attr($c->ct_slug); ?>/">
+          <?php echo esc_html($c->ct_career_name); ?>
+        </a>
+      </div>
+    <?php endforeach; ?>
+  </div>
+<?php endif; ?>
+
+<div class="skill-grid" style="margin-top: 40px;">
+  <div class="skill-card">
+    <a href="/gifts/">← Back to Gifts</a>
+  </div>
+</div>
+
+</main>
+
+<?php get_footer(); ?>
