@@ -43,8 +43,7 @@ If you are unsure of the child theme directory name, check **WordPress Admin →
 
 | File in this repo | Goes to on server | Purpose |
 |---|---|---|
-| `snippets/requirements-literacy-merge.php` | Copy snippet into `functions.php` | Enqueues the requirements-merge JS on gift detail pages |
-| `js/gift-requirements-merge.js` | `js/gift-requirements-merge.js` | Merges duplicate literacy requirement lines in the DOM |
+| `snippets/requirements-literacy-merge.php` | Add functions to `functions.php` | Merges duplicate literacy requirement lines at render time (PHP, no JS) |
 
 ---
 
@@ -65,49 +64,44 @@ These should display as one merged line:
 Literacy: Zhongwén
 ```
 
-This happens because the structured `gift_requirements` table has a generic "Literacy" gift_ref row, and `ct_gifts_requires_special` has the language-specific pair "Literacy: Zhongwén" — both are rendered by the CustomTables layout.
+This happens because the `gift_requirements` table has a generic "Literacy" gift_ref row **and** `ct_gifts_requires_special` has the language-specific pair "Literacy: Zhongwén". CustomTables renders both, producing two lines.
 
 ### Solution
 
-A JavaScript post-processor (`js/gift-requirements-merge.js`) runs on DOM ready and merges the two items into one. It is enqueued only on gift detail pages via a `functions.php` hook.
+A `the_content` PHP filter (`loc_merge_literacy_requirements`) runs at priority 20 — after CustomTables shortcodes have fully rendered (priority 11). It parses the rendered HTML with DOMDocument and merges the two sibling elements into one:
 
-### Installation steps
+- Finds every leaf element whose text is exactly `"Literacy"`.
+- Searches that element's siblings (within the same parent) for `"Literacy: X"`, `"Must be literate in X"`, or `"Literate in X"`.
+- If a sibling match exists: updates the generic element to `"Literacy: X"` and removes the sibling.
+- Only runs on pages whose URL path contains `/gifts/`.
+- No JavaScript; works entirely server-side.
 
-1. Copy `js/gift-requirements-merge.js` to the child theme:
-   ```
-   wp-content/themes/<child-theme>/js/gift-requirements-merge.js
-   ```
+### Installation
 
-2. Open the child theme's `functions.php` and paste the contents of
-   `snippets/requirements-literacy-merge.php` at the bottom of the file.
+1. Open `wp-content/themes/<child-theme>/functions.php`.
+2. Paste the entire contents of `snippets/requirements-literacy-merge.php` at the bottom.
+3. Save and upload (cPanel File Manager or SFTP).
 
-3. Visit a gift detail page that has a Literacy: [language] requirement (e.g. a Zhongwén-literacy gift).
+### Verification checklist
 
-4. Open the browser console (F12 → Console). Look for `[LOC-req-merge]` log lines:
-   - "Generic literacy item found: Literacy" — the plain item was detected
-   - "Specific literacy item found: Literacy: Zhongwén" — the language item was detected
-   - "Merging → 'Literacy: Zhongwén'" — the merge succeeded
-   - If you see "No items matched REQUIREMENT_ITEM_SELECTOR" — update the
-     `REQUIREMENT_ITEM_SELECTOR` constant inside the JS file to match your CT layout HTML.
-     Inspect the page source to find what element wraps each requirement line.
+Test these three cases after installing:
 
-5. Once the merge is confirmed working, set `DEBUG = false` inside the JS file and re-upload it.
-
-6. Commit the final JS back to this repo (`git add`, `git commit`, `git push`).
-
-### Adjusting the selector
-
-If step 4 shows "No items matched", inspect your gift page HTML. Each requirement line will be in some element — common patterns:
-
-| CT layout style | Selector to try |
+| Page / gift type | Expected result |
 |---|---|
-| Table layout | `'td'` |
-| Unordered list | `'li'` |
-| CustomTables default | `'.ct-field-value'` or `'.customtables-record td'` |
-| Div-based | `'.ct_record div'` |
+| Gift with "Literacy" + "Literacy: Zhongwén" | Single line: "Literacy: Zhongwén" |
+| Gift with only generic "Literacy" (no language) | Line unchanged: "Literacy" |
+| Gift with non-literacy requirements | All other requirements unchanged |
 
-Set `REQUIREMENT_ITEM_SELECTOR` to the right value and refresh to test.
+### Adjusting the URL scope
 
-### URL detection (which pages load the script)
+By default the filter only runs when the page URL contains `/gifts/`. If your gift detail pages live under a different path (e.g. `/gift/` singular or `/catalogue/`), update the `$uri` check in `loc_merge_literacy_requirements`:
 
-By default the script loads on any page whose URL contains `/gifts/`. If your gift pages use a different URL pattern (e.g. `/gift/` singular, or a page slug like `/catalogue/`), update the `$load_on_this_page` condition in the `loc_enqueue_requirements_merge` function inside `functions.php`.
+```php
+if ( stripos( $uri, '/your-path/' ) === false ) {
+    return $content;
+}
+```
+
+### How the DOMDocument merge works
+
+The merge targets **siblings within the same parent container** — so it cannot accidentally remove content from unrelated sections. The XPath query `//*[not(child::*) and normalize-space(text())="Literacy"]` restricts to pure-text leaf elements, excluding headings or labels that happen to contain the word "Literacy" alongside other markup.
