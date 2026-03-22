@@ -31,14 +31,14 @@ async function cg_get_free_gifts(req, res) {
         ct_gifts_name                      AS name,
         ct_gifts_allows_multiple           AS allows_multiple,
         ct_gifts_manifold                  AS ct_gifts_manifold,
-        ct_gifts_class                     AS giftclass,
+        ct_gift_class                      AS giftclass,
         ct_gifts_effect_description        AS effect_description
       FROM ${p}customtables_table_gifts
-      WHERE LOWER(TRIM(ct_gifts_class)) != 'natural'
+      WHERE LOWER(TRIM(ct_gift_class)) != 'natural'
       ORDER BY ct_gifts_name ASC
     `);
   } catch (err) {
-    if (err && /Unknown column.*ct_gifts_class|ct_gifts_effect_description/i.test(err.message)) {
+    if (err && /Unknown column.*ct_gift[s]?_class|ct_gifts_effect_description/i.test(err.message)) {
       rows = await query(`
         SELECT
           ct_id                    AS id,

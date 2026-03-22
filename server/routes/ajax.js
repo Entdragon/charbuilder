@@ -17,6 +17,21 @@ const PUBLIC_ACTIONS = new Set([
   'cg_register_user',
   'cg_get_current_user',
   'cg_sso_login',
+  // Static game reference data — not user-specific, no auth needed
+  'cg_get_career_list',
+  'cg_get_career_gifts',
+  'cg_get_career_trappings',
+  'cg_get_species_list',
+  'cg_get_species_profile',
+  'cg_get_skills_list',
+  'cg_get_skill_detail',
+  'cg_get_free_gifts',
+  'cg_get_local_knowledge',
+  'cg_get_language_gift',
+  'cg_get_language_list',
+  'cg_get_gift_prereqs',
+  'cg_get_equipment_catalog',
+  'cg_get_money_list',
 ]);
 
 const ACTION_MAP = {
