@@ -116,8 +116,10 @@ function normalizeGiftReplacements(src) {
  */
 function ajaxEnv() {
   const env = window.CG_AJAX || window.CG_Ajax || window.cgAjax || {};
+  const base = (typeof window.CG_API_BASE === 'string' && window.CG_API_BASE)
+    ? window.CG_API_BASE.replace(/\/+$/, '') : '';
   return {
-    url:   env.ajax_url || window.ajaxurl || document.body?.dataset?.ajaxUrl || '/wp-admin/admin-ajax.php',
+    url:   (base ? base + '/api/ajax' : '') || env.ajax_url || window.ajaxurl || document.body?.dataset?.ajaxUrl || '/wp-admin/admin-ajax.php',
     nonce: env.nonce    || env.security   || window.CG_NONCE || null
   };
 }

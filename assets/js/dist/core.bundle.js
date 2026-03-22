@@ -46,7 +46,8 @@
   function ajaxEnv() {
     var _a, _b;
     const env = window.CG_AJAX || window.CG_Ajax || window.cgAjax || {};
-    const ajax_url = env.ajax_url || window.ajaxurl || ((_b = (_a = document.body) == null ? void 0 : _a.dataset) == null ? void 0 : _b.ajaxUrl) || "/wp-admin/admin-ajax.php";
+    const base = typeof window.CG_API_BASE === "string" && window.CG_API_BASE ? window.CG_API_BASE.replace(/\/+$/, "") : "";
+    const ajax_url = (base ? base + "/api/ajax" : "") || env.ajax_url || window.ajaxurl || ((_b = (_a = document.body) == null ? void 0 : _a.dataset) == null ? void 0 : _b.ajaxUrl) || "/wp-admin/admin-ajax.php";
     const nonce = env.nonce || env.security || window.CG_NONCE || null;
     return { ajax_url, nonce };
   }
@@ -231,7 +232,8 @@
   function ajaxEnv2() {
     var _a, _b;
     const env = window.CG_AJAX || window.CG_Ajax || window.cgAjax || {};
-    const ajax_url = env.ajax_url || window.ajaxurl || ((_b = (_a = document.body) == null ? void 0 : _a.dataset) == null ? void 0 : _b.ajaxUrl) || "/wp-admin/admin-ajax.php";
+    const base = typeof window.CG_API_BASE === "string" && window.CG_API_BASE ? window.CG_API_BASE.replace(/\/+$/, "") : "";
+    const ajax_url = (base ? base + "/api/ajax" : "") || env.ajax_url || window.ajaxurl || ((_b = (_a = document.body) == null ? void 0 : _a.dataset) == null ? void 0 : _b.ajaxUrl) || "/wp-admin/admin-ajax.php";
     const nonce = env.nonce || env.security || window.CG_NONCE || null;
     return { ajax_url, nonce };
   }
@@ -1279,8 +1281,9 @@
   function ajaxEnv3() {
     var _a, _b;
     const env = window.CG_AJAX || window.CG_Ajax || window.cgAjax || {};
+    const base = typeof window.CG_API_BASE === "string" && window.CG_API_BASE ? window.CG_API_BASE.replace(/\/+$/, "") : "";
     return {
-      url: env.ajax_url || window.ajaxurl || ((_b = (_a = document.body) == null ? void 0 : _a.dataset) == null ? void 0 : _b.ajaxUrl) || "/wp-admin/admin-ajax.php",
+      url: (base ? base + "/api/ajax" : "") || env.ajax_url || window.ajaxurl || ((_b = (_a = document.body) == null ? void 0 : _a.dataset) == null ? void 0 : _b.ajaxUrl) || "/wp-admin/admin-ajax.php",
       nonce: env.nonce || env.security || window.CG_NONCE || null
     };
   }
@@ -2258,7 +2261,8 @@
   function ajaxEnv4() {
     var _a, _b;
     const env = window.CG_AJAX || window.CG_Ajax || window.cgAjax || {};
-    const ajax_url = env.ajax_url || window.ajaxurl || ((_b = (_a = document.body) == null ? void 0 : _a.dataset) == null ? void 0 : _b.ajaxUrl) || "/wp-admin/admin-ajax.php";
+    const base = typeof window.CG_API_BASE === "string" && window.CG_API_BASE ? window.CG_API_BASE.replace(/\/+$/, "") : "";
+    const ajax_url = (base ? base + "/api/ajax" : "") || env.ajax_url || window.ajaxurl || ((_b = (_a = document.body) == null ? void 0 : _a.dataset) == null ? void 0 : _b.ajaxUrl) || "/wp-admin/admin-ajax.php";
     const perAction = window.CG_NONCES && window.CG_NONCES.cg_get_career_gifts ? window.CG_NONCES.cg_get_career_gifts : null;
     const generic = env.nonce || env.security || env._ajax_nonce || window.CG_NONCE || null;
     return { ajax_url, nonce: perAction || generic };
@@ -3704,7 +3708,11 @@
     }
   }
   function getAjax() {
-    return W.CG_AJAX || W.CG_Ajax || {};
+    const env = W.CG_AJAX || W.CG_Ajax || {};
+    const base = typeof W.CG_API_BASE === "string" && W.CG_API_BASE ? W.CG_API_BASE.replace(/\/+$/, "") : "";
+    if (base)
+      return Object.assign({ ajax_url: base + "/api/ajax" }, env);
+    return env;
   }
   function getNonceFor(action) {
     const nonces = W.CG_NONCES || {};
@@ -5758,7 +5766,8 @@
   function ajaxEnv5() {
     var _a, _b;
     const env = window.CG_AJAX || window.CG_Ajax || window.cgAjax || {};
-    const ajax_url = env.ajax_url || window.ajaxurl || ((_b = (_a = document.body) == null ? void 0 : _a.dataset) == null ? void 0 : _b.ajaxUrl) || "/wp-admin/admin-ajax.php";
+    const base = typeof window.CG_API_BASE === "string" && window.CG_API_BASE ? window.CG_API_BASE.replace(/\/+$/, "") : "";
+    const ajax_url = (base ? base + "/api/ajax" : "") || env.ajax_url || window.ajaxurl || ((_b = (_a = document.body) == null ? void 0 : _a.dataset) == null ? void 0 : _b.ajaxUrl) || "/wp-admin/admin-ajax.php";
     const nonce = env.nonce || env.security || window.CG_NONCE || null;
     return { ajax_url, nonce };
   }
@@ -6849,7 +6858,8 @@
   function ajaxEnv6() {
     var _a, _b;
     const env = window.CG_AJAX || window.CG_Ajax || window.cgAjax || {};
-    const ajax_url = env.ajax_url || window.ajaxurl || ((_b = (_a = document.body) == null ? void 0 : _a.dataset) == null ? void 0 : _b.ajaxUrl) || "/wp-admin/admin-ajax.php";
+    const base = typeof window.CG_API_BASE === "string" && window.CG_API_BASE ? window.CG_API_BASE.replace(/\/+$/, "") : "";
+    const ajax_url = (base ? base + "/api/ajax" : "") || env.ajax_url || window.ajaxurl || ((_b = (_a = document.body) == null ? void 0 : _a.dataset) == null ? void 0 : _b.ajaxUrl) || "/wp-admin/admin-ajax.php";
     const nonce = env.nonce || env.security || window.CG_NONCE || null;
     return { ajax_url, nonce };
   }

@@ -1,0 +1,36 @@
+Failed to load resource: net::ERR_BLOCKED_BY_CLIENTUnderstand this error
+injection-topics.js:1 Browsing Topics API removed from https://libraryofcalbria.com/character-generator/ which is main frame
+index.js:20 [Core] bundle loaded (#1)
+index.js:28 [Core] init() called
+index.js:7 [MainAPI] init() called
+builder-events.js:36 [BuilderEvents] bindUIEvents() called
+builder-load.js:6 [BuilderLoad] init
+builder-load.js:6 [BuilderLoad] populating #cg-splash-load-select
+builder-load.js:6 [BuilderLoad] fetching characters via AJAX… 
+wp-admin/admin-ajax.php:1  Failed to load resource: the server responded with a status of 400 ()Understand this error
+free-choices.js:30 [FreeChoices] Failed to fetch gifts error
+warn3 @ free-choices.js:30Understand this warning
+wp-admin/admin-ajax.php:1  Failed to load resource: the server responded with a status of 400 ()Understand this error
+builder-load.js:7 [BuilderLoad] character list request failed Object
+ERR @ builder-load.js:7Understand this error
+wp-admin/admin-ajax.php:1  Failed to load resource: the server responded with a status of 400 ()Understand this error
+index.js:17 [Trappings] Failed to fetch currency list: Object
+WARN2 @ index.js:17Understand this warning
+// Step 1: Diagnose — see what's actually in the DB
+jQuery.post(window.CG_AJAX.ajax_url, { action: 'cg_schema_probe', nonce: window.CG_AJAX.nonce })
+  .done(r => console.log(JSON.stringify(r.data, null, 2)));
+{readyState: 1, getResponseHeader: ƒ, getAllResponseHeaders: ƒ, setRequestHeader: ƒ, overrideMimeType: ƒ, …}
+jquery.js:9940  POST https://libraryofcalbria.com/wp-admin/admin-ajax.php 400 (Bad Request)
+send @ jquery.js:9940
+ajax @ jquery.js:9521
+(anonymous) @ jquery.js:9677
+(anonymous) @ VM904:2Understand this error
+// Step 2: Migrate data from old FK columns into junction tables
+jQuery.post(window.CG_AJAX.ajax_url, { action: 'cg_migrate_junctions', nonce: window.CG_AJAX.nonce })
+  .done(r => console.log(JSON.stringify(r.data, null, 2)));
+{readyState: 1, getResponseHeader: ƒ, getAllResponseHeaders: ƒ, setRequestHeader: ƒ, overrideMimeType: ƒ, …}
+jquery.js:9940  POST https://libraryofcalbria.com/wp-admin/admin-ajax.php 400 (Bad Request)
+send @ jquery.js:9940
+ajax @ jquery.js:9521
+(anonymous) @ jquery.js:9677
+(anonymous) @ VM908:2Understand this error

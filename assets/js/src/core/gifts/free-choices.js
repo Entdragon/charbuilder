@@ -84,7 +84,11 @@ function setBuilderKey(key, value) {
 }
 
 function getAjax() {
-  return W.CG_AJAX || W.CG_Ajax || {};
+  const env = W.CG_AJAX || W.CG_Ajax || {};
+  const base = (typeof W.CG_API_BASE === 'string' && W.CG_API_BASE)
+    ? W.CG_API_BASE.replace(/\/+$/, '') : '';
+  if (base) return Object.assign({ ajax_url: base + '/api/ajax' }, env);
+  return env;
 }
 
 function getNonceFor(action) {

@@ -37,7 +37,10 @@ function boostSelectId(slot) { return `cg-inc-trait-career-target-${slot}`; }
 
 function ajaxEnv() {
   const env = window.CG_AJAX || window.CG_Ajax || window.cgAjax || {};
+  const base = (typeof window.CG_API_BASE === 'string' && window.CG_API_BASE)
+    ? window.CG_API_BASE.replace(/\/+$/, '') : '';
   const ajax_url =
+    (base ? base + '/api/ajax' : '') ||
     env.ajax_url ||
     window.ajaxurl ||
     document.body?.dataset?.ajaxUrl ||
