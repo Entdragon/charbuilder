@@ -114,7 +114,7 @@
             link.href = appUrl + '/assets/css/dist/core.css';
             document.head.appendChild(link);
             var s = document.createElement('script');
-            s.src = appUrl + '/assets/js/dist/core.bundle.js';
+            s.src = appUrl + '/assets/js/dist/core.bundle.js?v=<?php echo time(); ?>';
             document.body.appendChild(s);
         }
 

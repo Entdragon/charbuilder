@@ -87,7 +87,7 @@ function getAjax() {
   const env = W.CG_AJAX || W.CG_Ajax || {};
   const base = (typeof W.CG_API_BASE === 'string' && W.CG_API_BASE)
     ? W.CG_API_BASE.replace(/\/+$/, '') : '';
-  if (base) return Object.assign({ ajax_url: base + '/api/ajax' }, env);
+  if (base) return Object.assign({}, env, { ajax_url: base + '/api/ajax' });
   return env;
 }
 
