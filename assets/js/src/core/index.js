@@ -27,6 +27,10 @@ const Core = {
 
     console.log('[Core] init() called');
 
+    if (typeof g.jQuery === 'function' && typeof g.jQuery.ajaxSetup === 'function') {
+      g.jQuery.ajaxSetup({ xhrFields: { withCredentials: true }, crossDomain: true });
+    }
+
     try {
       MainAPI.init();
     } catch (err) {

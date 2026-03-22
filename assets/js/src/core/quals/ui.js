@@ -198,10 +198,14 @@ function fetchLanguageList(onLoaded) {
   _languageListLoading = true;
 
   try {
-    const ajaxUrl = (W.CG_AJAX && W.CG_AJAX.ajax_url) ? W.CG_AJAX.ajax_url : '/api/ajax';
+    const base = (typeof W.CG_API_BASE === 'string' && W.CG_API_BASE)
+      ? W.CG_API_BASE.replace(/\/+$/, '') : '';
+    const ajaxUrl = (base ? base + '/api/ajax' : null)
+      || (W.CG_AJAX && W.CG_AJAX.ajax_url)
+      || '/api/ajax';
     fetch(ajaxUrl, {
       method: 'POST',
-      credentials: 'same-origin',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'cg_get_language_list' }),
     })

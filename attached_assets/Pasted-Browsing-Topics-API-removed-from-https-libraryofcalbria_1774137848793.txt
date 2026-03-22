@@ -1,0 +1,914 @@
+Browsing Topics API removed from https://libraryofcalbria.com/character-generator/ which is main frame
+index.js:20 [Core] bundle loaded (#1)
+index.js:28 [Core] init() called
+index.js:7 [MainAPI] init() called
+builder-events.js:36 [BuilderEvents] bindUIEvents() called
+builder-load.js:6 [BuilderLoad] init
+builder-load.js:6 [BuilderLoad] populating #cg-splash-load-select
+builder-load.js:6 [BuilderLoad] fetching characters via AJAX… 
+jquery.js:9940  POST https://libraryofcalbria.com/wp-admin/admin-ajax.php 400 (Bad Request)
+send @ jquery.js:9940
+ajax @ jquery.js:9521
+(anonymous) @ free-choices.js:117
+ajaxPost @ free-choices.js:116
+(anonymous) @ free-choices.js:1034
+(anonymous) @ core.bundle.js:38
+__async @ core.bundle.js:22
+_fetchAllGifts @ free-choices.js:1029
+(anonymous) @ free-choices.js:1025
+(anonymous) @ core.bundle.js:38
+__async @ core.bundle.js:22
+refresh @ free-choices.js:1024
+init @ free-choices.js:976
+init @ index.js:18
+bindUIEvents @ builder-events.js:177
+init @ index.js:9
+init @ index.js:31
+bootOnce @ index.js:41
+(anonymous) @ index.js:48
+(anonymous) @ index.js:73
+PendingScript
+loadBundle @ character-generator/:625
+showApp @ character-generator/:612
+(anonymous) @ character-generator/:634
+Promise.then
+init @ character-generator/:633
+jq.onload @ character-generator/:708
+script
+(anonymous) @ character-generator/:706
+(anonymous) @ character-generator/:713Understand this error
+free-choices.js:30 [FreeChoices] Failed to fetch gifts error
+warn3 @ free-choices.js:30
+(anonymous) @ free-choices.js:1059
+rejected @ core.bundle.js:32
+Promise.then
+step @ core.bundle.js:37
+(anonymous) @ core.bundle.js:38
+__async @ core.bundle.js:22
+_fetchAllGifts @ free-choices.js:1029
+(anonymous) @ free-choices.js:1025
+(anonymous) @ core.bundle.js:38
+__async @ core.bundle.js:22
+refresh @ free-choices.js:1024
+init @ free-choices.js:976
+init @ index.js:18
+bindUIEvents @ builder-events.js:177
+init @ index.js:9
+init @ index.js:31
+bootOnce @ index.js:41
+(anonymous) @ index.js:48
+(anonymous) @ index.js:73
+PendingScript
+loadBundle @ character-generator/:625
+showApp @ character-generator/:612
+(anonymous) @ character-generator/:634
+Promise.then
+init @ character-generator/:633
+jq.onload @ character-generator/:708
+script
+(anonymous) @ character-generator/:706
+(anonymous) @ character-generator/:713Understand this warning
+jquery.js:9940  POST https://5ecd0e5e-b389-4903-83d6-ae996afcb45a-00-3c9iornauuqfo.janeway.replit.dev/api/ajax 401 (Unauthorized)
+send @ jquery.js:9940
+ajax @ jquery.js:9521
+listCharacters @ index.js:847
+_getListRequest @ builder-load.js:29
+fetchCharacterList @ builder-load.js:80
+ensurePopulated @ builder-load.js:174
+bindLoadEvents @ builder-load.js:195
+bindUIEvents @ builder-events.js:290
+init @ index.js:9
+init @ index.js:31
+bootOnce @ index.js:41
+(anonymous) @ index.js:48
+(anonymous) @ index.js:73
+PendingScript
+loadBundle @ character-generator/:625
+showApp @ character-generator/:612
+(anonymous) @ character-generator/:634
+Promise.then
+init @ character-generator/:633
+jq.onload @ character-generator/:708
+script
+(anonymous) @ character-generator/:706
+(anonymous) @ character-generator/:713Understand this error
+jquery.js:9940  POST https://5ecd0e5e-b389-4903-83d6-ae996afcb45a-00-3c9iornauuqfo.janeway.replit.dev/api/ajax 401 (Unauthorized)
+send @ jquery.js:9940
+ajax @ jquery.js:9521
+jQuery.<computed> @ jquery.js:9677
+postJSON3 @ index.js:34
+(anonymous) @ index.js:466
+(anonymous) @ core.bundle.js:38
+__async @ core.bundle.js:22
+_fetchCurrency @ index.js:461
+init @ index.js:90
+bindUIEvents @ builder-events.js:180
+init @ index.js:9
+init @ index.js:31
+bootOnce @ index.js:41
+(anonymous) @ index.js:48
+(anonymous) @ index.js:73
+PendingScript
+loadBundle @ character-generator/:625
+showApp @ character-generator/:612
+(anonymous) @ character-generator/:634
+Promise.then
+init @ character-generator/:633
+jq.onload @ character-generator/:708
+script
+(anonymous) @ character-generator/:706
+(anonymous) @ character-generator/:713Understand this error
+builder-load.js:7 [BuilderLoad] character list request failed {readyState: 4, getResponseHeader: ƒ, getAllResponseHeaders: ƒ, setRequestHeader: ƒ, overrideMimeType: ƒ, …}
+ERR @ builder-load.js:7
+(anonymous) @ builder-load.js:112
+Promise.catch
+fetchCharacterList @ builder-load.js:111
+ensurePopulated @ builder-load.js:174
+bindLoadEvents @ builder-load.js:195
+bindUIEvents @ builder-events.js:290
+init @ index.js:9
+init @ index.js:31
+bootOnce @ index.js:41
+(anonymous) @ index.js:48
+(anonymous) @ index.js:73
+PendingScript
+loadBundle @ character-generator/:625
+showApp @ character-generator/:612
+(anonymous) @ character-generator/:634
+Promise.then
+init @ character-generator/:633
+jq.onload @ character-generator/:708
+script
+(anonymous) @ character-generator/:706
+(anonymous) @ character-generator/:713Understand this error
+index.js:17 [Trappings] Failed to fetch currency list: {readyState: 4, getResponseHeader: ƒ, getAllResponseHeaders: ƒ, setRequestHeader: ƒ, overrideMimeType: ƒ, …}
+WARN2 @ index.js:17
+(anonymous) @ index.js:479
+rejected @ core.bundle.js:32
+Promise.then
+step @ core.bundle.js:37
+(anonymous) @ core.bundle.js:38
+__async @ core.bundle.js:22
+_fetchCurrency @ index.js:461
+init @ index.js:90
+bindUIEvents @ builder-events.js:180
+init @ index.js:9
+init @ index.js:31
+bootOnce @ index.js:41
+(anonymous) @ index.js:48
+(anonymous) @ index.js:73
+PendingScript
+loadBundle @ character-generator/:625
+showApp @ character-generator/:612
+(anonymous) @ character-generator/:634
+Promise.then
+init @ character-generator/:633
+jq.onload @ character-generator/:708
+script
+(anonymous) @ character-generator/:706
+(anonymous) @ character-generator/:713Understand this warning
+builder-load.js:6 [BuilderLoad] received cg:characters:refresh → repopulating load list
+builder-load.js:6 [BuilderLoad] fetching characters via AJAX… (force)
+builder-events.js:36 [BuilderEvents] no species select found
+builder-events.js:36 [BuilderEvents] no career select found
+jquery.js:9940  POST https://5ecd0e5e-b389-4903-83d6-ae996afcb45a-00-3c9iornauuqfo.janeway.replit.dev/api/ajax 401 (Unauthorized)
+send @ jquery.js:9940
+ajax @ jquery.js:9521
+listCharacters @ index.js:847
+_getListRequest @ builder-load.js:29
+fetchCharacterList @ builder-load.js:80
+window.__CG_EVT__.charactersRefreshLoad @ builder-load.js:224
+(anonymous) @ builder-events.js:218
+dispatch @ jquery.js:5145
+elemData.handle @ jquery.js:4949Understand this error
+builder-load.js:7 [BuilderLoad] character list request failed {readyState: 4, getResponseHeader: ƒ, getAllResponseHeaders: ƒ, setRequestHeader: ƒ, overrideMimeType: ƒ, …}
+ERR @ builder-load.js:7
+(anonymous) @ builder-load.js:112
+Promise.catch
+fetchCharacterList @ builder-load.js:111
+window.__CG_EVT__.charactersRefreshLoad @ builder-load.js:224
+(anonymous) @ builder-events.js:218
+dispatch @ jquery.js:5145
+elemData.handle @ jquery.js:4949Understand this error
+builder-ui.js:108 [BuilderUI] openBuilder() {isNew: true, payload: {…}}
+form-builder.js:11 🛠️ FormBuilder.buildForm fired: {isNew: true}
+api.js:7 [SpeciesAPI] Fetching species via AJAX…
+api.js:8 [CareerAPI] Fetching careers via AJAX…
+form-builder.js:35 🔽 [buildForm] SELECT VALUES AFTER RENDER: {will: '', speed: '', body: '', mind: '', trait_species: '', …}
+events.js:72 [SpeciesEvents] selected species → 
+events.js:322 [CareerEvents] selected career → 
+builder-load.js:6 [BuilderLoad] populating #cg-splash-load-select
+builder-load.js:6 [BuilderLoad] fetching characters via AJAX… 
+ui.js:202  POST https://libraryofcalbria.com/wp-admin/admin-ajax.php 400 (Bad Request)
+fetchLanguageList @ ui.js:202
+render @ ui.js:412
+run @ ui.js:335
+requestAnimationFrame
+_scheduleRender @ ui.js:343
+_onQualsChanged @ ui.js:353
+persist @ state.js:88
+init @ state.js:69
+_onBuilderOpened @ ui.js:351
+dispatch @ jquery.js:5145
+elemData.handle @ jquery.js:4949
+(anonymous) @ builder-ui.js:127
+Promise.then
+openBuilder @ builder-ui.js:126
+(anonymous) @ builder-events.js:233
+dispatch @ jquery.js:5145
+elemData.handle @ jquery.js:4949Understand this error
+jquery.js:9940  POST https://5ecd0e5e-b389-4903-83d6-ae996afcb45a-00-3c9iornauuqfo.janeway.replit.dev/api/ajax 401 (Unauthorized)
+send @ jquery.js:9940
+ajax @ jquery.js:9521
+jQuery.<computed> @ jquery.js:9677
+postJSON @ api.js:64
+getList @ api.js:121
+populateSelect @ api.js:163
+init @ index.js:23
+(anonymous) @ builder-ui.js:48
+(anonymous) @ core.bundle.js:38
+__async @ core.bundle.js:22
+ensureListsThenApply @ builder-ui.js:40
+openBuilder @ builder-ui.js:126
+(anonymous) @ builder-events.js:233
+dispatch @ jquery.js:5145
+elemData.handle @ jquery.js:4949Understand this error
+api.js:8 [SpeciesAPI] AJAX species list failed: error Unauthorized {"success":false,"data":"Not logged in."}
+warn @ api.js:8
+(anonymous) @ api.js:131
+mightThrow @ jquery.js:3489
+process @ jquery.js:3557
+setTimeout
+(anonymous) @ jquery.js:3602
+fire @ jquery.js:3223
+fireWith @ jquery.js:3353
+fire @ jquery.js:3361
+fire @ jquery.js:3223
+fireWith @ jquery.js:3353
+process @ jquery.js:3577
+setTimeout
+(anonymous) @ jquery.js:3602
+fire @ jquery.js:3223
+fireWith @ jquery.js:3353
+fire @ jquery.js:3361
+fire @ jquery.js:3223
+fireWith @ jquery.js:3353
+done @ jquery.js:9629
+(anonymous) @ jquery.js:9888
+XMLHttpRequest.send
+send @ jquery.js:9940
+ajax @ jquery.js:9521
+jQuery.<computed> @ jquery.js:9677
+postJSON @ api.js:64
+getList @ api.js:121
+populateSelect @ api.js:163
+init @ index.js:23
+(anonymous) @ builder-ui.js:48
+(anonymous) @ core.bundle.js:38
+__async @ core.bundle.js:22
+ensureListsThenApply @ builder-ui.js:40
+openBuilder @ builder-ui.js:126
+(anonymous) @ builder-events.js:233
+dispatch @ jquery.js:5145
+elemData.handle @ jquery.js:4949Understand this warning
+jquery.js:9940  POST https://5ecd0e5e-b389-4903-83d6-ae996afcb45a-00-3c9iornauuqfo.janeway.replit.dev/api/ajax 401 (Unauthorized)
+send @ jquery.js:9940
+ajax @ jquery.js:9521
+jQuery.<computed> @ jquery.js:9677
+postJSON2 @ api.js:78
+getList @ api.js:171
+populateSelect @ api.js:203
+init @ index.js:28
+(anonymous) @ builder-ui.js:49
+(anonymous) @ core.bundle.js:38
+__async @ core.bundle.js:22
+ensureListsThenApply @ builder-ui.js:40
+openBuilder @ builder-ui.js:126
+(anonymous) @ builder-events.js:233
+dispatch @ jquery.js:5145
+elemData.handle @ jquery.js:4949Understand this error
+api.js:9 [CareerAPI] AJAX career list failed: error Unauthorized {"success":false,"data":"Not logged in."}
+warn2 @ api.js:9
+(anonymous) @ api.js:180
+fire @ jquery.js:3223
+fireWith @ jquery.js:3353
+process @ jquery.js:3577
+setTimeout
+(anonymous) @ jquery.js:3602
+fire @ jquery.js:3223
+fireWith @ jquery.js:3353
+fire @ jquery.js:3361
+fire @ jquery.js:3223
+fireWith @ jquery.js:3353
+process @ jquery.js:3577
+setTimeout
+(anonymous) @ jquery.js:3602
+fire @ jquery.js:3223
+fireWith @ jquery.js:3353
+fire @ jquery.js:3361
+fire @ jquery.js:3223
+fireWith @ jquery.js:3353
+done @ jquery.js:9629
+(anonymous) @ jquery.js:9888
+XMLHttpRequest.send
+send @ jquery.js:9940
+ajax @ jquery.js:9521
+jQuery.<computed> @ jquery.js:9677
+postJSON2 @ api.js:78
+getList @ api.js:171
+populateSelect @ api.js:203
+init @ index.js:28
+(anonymous) @ builder-ui.js:49
+(anonymous) @ core.bundle.js:38
+__async @ core.bundle.js:22
+ensureListsThenApply @ builder-ui.js:40
+openBuilder @ builder-ui.js:126
+(anonymous) @ builder-events.js:233
+dispatch @ jquery.js:5145
+elemData.handle @ jquery.js:4949Understand this warning
+jquery.js:9940  POST https://5ecd0e5e-b389-4903-83d6-ae996afcb45a-00-3c9iornauuqfo.janeway.replit.dev/api/ajax 401 (Unauthorized)
+send @ jquery.js:9940
+ajax @ jquery.js:9521
+listCharacters @ index.js:847
+_getListRequest @ builder-load.js:29
+fetchCharacterList @ builder-load.js:80
+ensurePopulated @ builder-load.js:174
+(anonymous) @ builder-load.js:183
+setTimeout
+(anonymous) @ builder-load.js:181
+(anonymous) @ builder-load.js:210
+childList
+(anonymous) @ jquery.js:6171
+access @ jquery.js:3905
+html @ jquery.js:6149
+init @ index.js:438
+openBuilder @ builder-ui.js:113
+(anonymous) @ builder-events.js:233
+dispatch @ jquery.js:5145
+elemData.handle @ jquery.js:4949Understand this error
+builder-load.js:7 [BuilderLoad] character list request failed {readyState: 4, getResponseHeader: ƒ, getAllResponseHeaders: ƒ, setRequestHeader: ƒ, overrideMimeType: ƒ, …}
+ERR @ builder-load.js:7
+(anonymous) @ builder-load.js:112
+Promise.catch
+fetchCharacterList @ builder-load.js:111
+ensurePopulated @ builder-load.js:174
+(anonymous) @ builder-load.js:183
+setTimeout
+(anonymous) @ builder-load.js:181
+(anonymous) @ builder-load.js:210
+childList
+(anonymous) @ jquery.js:6171
+access @ jquery.js:3905
+html @ jquery.js:6149
+init @ index.js:438
+openBuilder @ builder-ui.js:113
+(anonymous) @ builder-events.js:233
+dispatch @ jquery.js:5145
+elemData.handle @ jquery.js:4949Understand this error
+api.js:7 [SpeciesAPI] Fetching species via AJAX…
+api.js:8 [CareerAPI] Fetching careers via AJAX…
+builder-load.js:6 [BuilderLoad] populating #cg-splash-load-select
+builder-load.js:6 [BuilderLoad] fetching characters via AJAX… 
+jquery.js:9940  POST https://5ecd0e5e-b389-4903-83d6-ae996afcb45a-00-3c9iornauuqfo.janeway.replit.dev/api/ajax 401 (Unauthorized)
+send @ jquery.js:9940
+ajax @ jquery.js:9521
+jQuery.<computed> @ jquery.js:9677
+postJSON @ api.js:64
+getList @ api.js:121
+populateSelect @ api.js:163
+refresh @ index.js:37
+hydrateSelect @ builder-events.js:117
+hydrateSpeciesAndCareer @ builder-events.js:161
+(anonymous) @ builder-events.js:315
+setTimeout
+(anonymous) @ builder-events.js:314
+dispatch @ jquery.js:5145
+elemData.handle @ jquery.js:4949Understand this error
+api.js:8 [SpeciesAPI] AJAX species list failed: error Unauthorized {"success":false,"data":"Not logged in."}
+warn @ api.js:8
+(anonymous) @ api.js:131
+mightThrow @ jquery.js:3489
+process @ jquery.js:3557
+setTimeout
+(anonymous) @ jquery.js:3602
+fire @ jquery.js:3223
+fireWith @ jquery.js:3353
+fire @ jquery.js:3361
+fire @ jquery.js:3223
+fireWith @ jquery.js:3353
+process @ jquery.js:3577
+setTimeout
+(anonymous) @ jquery.js:3602
+fire @ jquery.js:3223
+fireWith @ jquery.js:3353
+fire @ jquery.js:3361
+fire @ jquery.js:3223
+fireWith @ jquery.js:3353
+done @ jquery.js:9629
+(anonymous) @ jquery.js:9888
+XMLHttpRequest.send
+send @ jquery.js:9940
+ajax @ jquery.js:9521
+jQuery.<computed> @ jquery.js:9677
+postJSON @ api.js:64
+getList @ api.js:121
+populateSelect @ api.js:163
+refresh @ index.js:37
+hydrateSelect @ builder-events.js:117
+hydrateSpeciesAndCareer @ builder-events.js:161
+(anonymous) @ builder-events.js:315
+setTimeout
+(anonymous) @ builder-events.js:314
+dispatch @ jquery.js:5145
+elemData.handle @ jquery.js:4949Understand this warning
+jquery.js:9940  POST https://5ecd0e5e-b389-4903-83d6-ae996afcb45a-00-3c9iornauuqfo.janeway.replit.dev/api/ajax 401 (Unauthorized)
+send @ jquery.js:9940
+ajax @ jquery.js:9521
+jQuery.<computed> @ jquery.js:9677
+postJSON2 @ api.js:78
+getList @ api.js:171
+populateSelect @ api.js:203
+refresh @ index.js:42
+hydrateSelect @ builder-events.js:117
+hydrateSpeciesAndCareer @ builder-events.js:162
+(anonymous) @ builder-events.js:315
+setTimeout
+(anonymous) @ builder-events.js:314
+dispatch @ jquery.js:5145
+elemData.handle @ jquery.js:4949Understand this error
+api.js:9 [CareerAPI] AJAX career list failed: error Unauthorized {"success":false,"data":"Not logged in."}
+warn2 @ api.js:9
+(anonymous) @ api.js:180
+fire @ jquery.js:3223
+fireWith @ jquery.js:3353
+process @ jquery.js:3577
+setTimeout
+(anonymous) @ jquery.js:3602
+fire @ jquery.js:3223
+fireWith @ jquery.js:3353
+fire @ jquery.js:3361
+fire @ jquery.js:3223
+fireWith @ jquery.js:3353
+process @ jquery.js:3577
+setTimeout
+(anonymous) @ jquery.js:3602
+fire @ jquery.js:3223
+fireWith @ jquery.js:3353
+fire @ jquery.js:3361
+fire @ jquery.js:3223
+fireWith @ jquery.js:3353
+done @ jquery.js:9629
+(anonymous) @ jquery.js:9888
+XMLHttpRequest.send
+send @ jquery.js:9940
+ajax @ jquery.js:9521
+jQuery.<computed> @ jquery.js:9677
+postJSON2 @ api.js:78
+getList @ api.js:171
+populateSelect @ api.js:203
+refresh @ index.js:42
+hydrateSelect @ builder-events.js:117
+hydrateSpeciesAndCareer @ builder-events.js:162
+(anonymous) @ builder-events.js:315
+setTimeout
+(anonymous) @ builder-events.js:314
+dispatch @ jquery.js:5145
+elemData.handle @ jquery.js:4949Understand this warning
+jquery.js:9940  POST https://5ecd0e5e-b389-4903-83d6-ae996afcb45a-00-3c9iornauuqfo.janeway.replit.dev/api/ajax 401 (Unauthorized)
+send @ jquery.js:9940
+ajax @ jquery.js:9521
+listCharacters @ index.js:847
+_getListRequest @ builder-load.js:29
+fetchCharacterList @ builder-load.js:80
+ensurePopulated @ builder-load.js:174
+(anonymous) @ builder-load.js:183
+setTimeout
+(anonymous) @ builder-load.js:181
+(anonymous) @ builder-load.js:210
+childList
+(anonymous) @ jquery.js:6171
+access @ jquery.js:3905
+html @ jquery.js:6149
+(anonymous) @ index.js:178
+(anonymous) @ core.bundle.js:38
+__async @ core.bundle.js:22
+renderXpGifts @ index.js:172
+refreshTab @ builder-refresh.js:39
+(anonymous) @ builder-events.js:311
+dispatch @ jquery.js:5145
+elemData.handle @ jquery.js:4949Understand this error
+builder-load.js:7 [BuilderLoad] character list request failed {readyState: 4, getResponseHeader: ƒ, getAllResponseHeaders: ƒ, setRequestHeader: ƒ, overrideMimeType: ƒ, …}
+ERR @ builder-load.js:7
+(anonymous) @ builder-load.js:112
+Promise.catch
+fetchCharacterList @ builder-load.js:111
+ensurePopulated @ builder-load.js:174
+(anonymous) @ builder-load.js:183
+setTimeout
+(anonymous) @ builder-load.js:181
+(anonymous) @ builder-load.js:210
+childList
+(anonymous) @ jquery.js:6171
+access @ jquery.js:3905
+html @ jquery.js:6149
+(anonymous) @ index.js:178
+(anonymous) @ core.bundle.js:38
+__async @ core.bundle.js:22
+renderXpGifts @ index.js:172
+refreshTab @ builder-refresh.js:39
+(anonymous) @ builder-events.js:311
+dispatch @ jquery.js:5145
+elemData.handle @ jquery.js:4949Understand this error
+api.js:7 [SpeciesAPI] Fetching species via AJAX…
+api.js:8 [CareerAPI] Fetching careers via AJAX…
+builder-load.js:6 [BuilderLoad] populating #cg-splash-load-select
+builder-load.js:6 [BuilderLoad] fetching characters via AJAX… 
+jquery.js:9940  POST https://5ecd0e5e-b389-4903-83d6-ae996afcb45a-00-3c9iornauuqfo.janeway.replit.dev/api/ajax 401 (Unauthorized)
+send @ jquery.js:9940
+ajax @ jquery.js:9521
+jQuery.<computed> @ jquery.js:9677
+postJSON2 @ api.js:78
+getList @ api.js:171
+populateSelect @ api.js:203
+refresh @ index.js:42
+hydrateSelect @ builder-events.js:117
+hydrateSpeciesAndCareer @ builder-events.js:162
+(anonymous) @ builder-events.js:315
+setTimeout
+(anonymous) @ builder-events.js:314
+dispatch @ jquery.js:5145
+elemData.handle @ jquery.js:4949Understand this error
+api.js:9 [CareerAPI] AJAX career list failed: error Unauthorized {"success":false,"data":"Not logged in."}
+warn2 @ api.js:9
+(anonymous) @ api.js:180
+fire @ jquery.js:3223
+fireWith @ jquery.js:3353
+process @ jquery.js:3577
+setTimeout
+(anonymous) @ jquery.js:3602
+fire @ jquery.js:3223
+fireWith @ jquery.js:3353
+fire @ jquery.js:3361
+fire @ jquery.js:3223
+fireWith @ jquery.js:3353
+process @ jquery.js:3577
+setTimeout
+(anonymous) @ jquery.js:3602
+fire @ jquery.js:3223
+fireWith @ jquery.js:3353
+fire @ jquery.js:3361
+fire @ jquery.js:3223
+fireWith @ jquery.js:3353
+done @ jquery.js:9629
+(anonymous) @ jquery.js:9888
+XMLHttpRequest.send
+send @ jquery.js:9940
+ajax @ jquery.js:9521
+jQuery.<computed> @ jquery.js:9677
+postJSON2 @ api.js:78
+getList @ api.js:171
+populateSelect @ api.js:203
+refresh @ index.js:42
+hydrateSelect @ builder-events.js:117
+hydrateSpeciesAndCareer @ builder-events.js:162
+(anonymous) @ builder-events.js:315
+setTimeout
+(anonymous) @ builder-events.js:314
+dispatch @ jquery.js:5145
+elemData.handle @ jquery.js:4949Understand this warning
+jquery.js:9940  POST https://5ecd0e5e-b389-4903-83d6-ae996afcb45a-00-3c9iornauuqfo.janeway.replit.dev/api/ajax 401 (Unauthorized)
+send @ jquery.js:9940
+ajax @ jquery.js:9521
+jQuery.<computed> @ jquery.js:9677
+postJSON @ api.js:64
+getList @ api.js:121
+populateSelect @ api.js:163
+refresh @ index.js:37
+hydrateSelect @ builder-events.js:117
+hydrateSpeciesAndCareer @ builder-events.js:161
+(anonymous) @ builder-events.js:315
+setTimeout
+(anonymous) @ builder-events.js:314
+dispatch @ jquery.js:5145
+elemData.handle @ jquery.js:4949Understand this error
+api.js:8 [SpeciesAPI] AJAX species list failed: error Unauthorized {"success":false,"data":"Not logged in."}
+warn @ api.js:8
+(anonymous) @ api.js:131
+mightThrow @ jquery.js:3489
+process @ jquery.js:3557
+setTimeout
+(anonymous) @ jquery.js:3602
+fire @ jquery.js:3223
+fireWith @ jquery.js:3353
+fire @ jquery.js:3361
+fire @ jquery.js:3223
+fireWith @ jquery.js:3353
+process @ jquery.js:3577
+setTimeout
+(anonymous) @ jquery.js:3602
+fire @ jquery.js:3223
+fireWith @ jquery.js:3353
+fire @ jquery.js:3361
+fire @ jquery.js:3223
+fireWith @ jquery.js:3353
+done @ jquery.js:9629
+(anonymous) @ jquery.js:9888
+XMLHttpRequest.send
+send @ jquery.js:9940
+ajax @ jquery.js:9521
+jQuery.<computed> @ jquery.js:9677
+postJSON @ api.js:64
+getList @ api.js:121
+populateSelect @ api.js:163
+refresh @ index.js:37
+hydrateSelect @ builder-events.js:117
+hydrateSpeciesAndCareer @ builder-events.js:161
+(anonymous) @ builder-events.js:315
+setTimeout
+(anonymous) @ builder-events.js:314
+dispatch @ jquery.js:5145
+elemData.handle @ jquery.js:4949Understand this warning
+jquery.js:9940  POST https://5ecd0e5e-b389-4903-83d6-ae996afcb45a-00-3c9iornauuqfo.janeway.replit.dev/api/ajax 401 (Unauthorized)
+send @ jquery.js:9940
+ajax @ jquery.js:9521
+listCharacters @ index.js:847
+_getListRequest @ builder-load.js:29
+fetchCharacterList @ builder-load.js:80
+ensurePopulated @ builder-load.js:174
+(anonymous) @ builder-load.js:183
+setTimeout
+(anonymous) @ builder-load.js:181
+(anonymous) @ builder-load.js:210
+childList
+render @ free-choices.js:1177
+run @ free-choices.js:949
+requestAnimationFrame
+_scheduleRender @ free-choices.js:962
+(anonymous) @ free-choices.js:983
+dispatch @ jquery.js:5145
+elemData.handle @ jquery.js:4949
+emitTabChanged @ builder-events.js:88
+(anonymous) @ builder-events.js:309
+dispatch @ jquery.js:5145
+elemData.handle @ jquery.js:4949Understand this error
+builder-load.js:7 [BuilderLoad] character list request failed {readyState: 4, getResponseHeader: ƒ, getAllResponseHeaders: ƒ, setRequestHeader: ƒ, overrideMimeType: ƒ, …}
+ERR @ builder-load.js:7
+(anonymous) @ builder-load.js:112
+Promise.catch
+fetchCharacterList @ builder-load.js:111
+ensurePopulated @ builder-load.js:174
+(anonymous) @ builder-load.js:183
+setTimeout
+(anonymous) @ builder-load.js:181
+(anonymous) @ builder-load.js:210
+childList
+render @ free-choices.js:1177
+run @ free-choices.js:949
+requestAnimationFrame
+_scheduleRender @ free-choices.js:962
+(anonymous) @ free-choices.js:983
+dispatch @ jquery.js:5145
+elemData.handle @ jquery.js:4949
+emitTabChanged @ builder-events.js:88
+(anonymous) @ builder-events.js:309
+dispatch @ jquery.js:5145
+elemData.handle @ jquery.js:4949Understand this error
+jQuery.post(window.CG_AJAX.ajax_url, { action: 'cg_schema_probe', nonce: window.CG_AJAX.nonce })
+  .done(r => console.log(JSON.stringify(r.data, null, 2)));
+{readyState: 1, getResponseHeader: ƒ, getAllResponseHeaders: ƒ, setRequestHeader: ƒ, overrideMimeType: ƒ, …}
+jquery.js:9940  POST https://libraryofcalbria.com/wp-admin/admin-ajax.php 400 (Bad Request)
+send @ jquery.js:9940
+ajax @ jquery.js:9521
+jQuery.<computed> @ jquery.js:9677
+(anonymous) @ VM1336:1Understand this error
+builder-load.js:6 [BuilderLoad] populating #cg-splash-load-select
+builder-load.js:6 [BuilderLoad] fetching characters via AJAX… 
+jquery.js:9940  POST https://5ecd0e5e-b389-4903-83d6-ae996afcb45a-00-3c9iornauuqfo.janeway.replit.dev/api/ajax 401 (Unauthorized)
+send @ jquery.js:9940
+ajax @ jquery.js:9521
+listCharacters @ index.js:847
+_getListRequest @ builder-load.js:29
+fetchCharacterList @ builder-load.js:80
+ensurePopulated @ builder-load.js:174
+(anonymous) @ builder-load.js:183
+setTimeout
+(anonymous) @ builder-load.js:181
+(anonymous) @ builder-load.js:210
+childList
+Qi @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+Qi @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+Pi @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+Sj @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+t.unstable_runWithPriority @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+qr @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+Jj @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+$i @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+t.unstable_runWithPriority @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+qr @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+Yr @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+Qr @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+Ig @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+Yo @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+e @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+i @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+f @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+dispatch @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:1
+n @ googlesitekit-vendor-568c1105b8e4f20eff16.js:1
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:1
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:1
+n @ googlesitekit-vendor-568c1105b8e4f20eff16.js:1
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:1
+t @ googlesitekit-vendor-568c1105b8e4f20eff16.js:1
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:1
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+u @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+_next @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+ee @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+Z @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:1
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+u @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+_next @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+setTimeout
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:1
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+u @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+_next @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+f @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+l @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+s @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-datastore-site-d81d1d7e77fb878db074.js:23
+t @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+n @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-adminbar-edc2347b3d5db1c50fe9.js:39
+g @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+AdminBarApp @ googlesitekit-adminbar-edc2347b3d5db1c50fe9.js:39
+Wo @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+Ba @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+Qj @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+Kj @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+$i @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+t.unstable_runWithPriority @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+qr @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+Yr @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+Qr @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+Ig @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+Yo @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-adminbar-edc2347b3d5db1c50fe9.js:34
+await in (anonymous)
+(anonymous) @ googlesitekit-adminbar-edc2347b3d5db1c50fe9.js:34
+Ii @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+Vj @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+t.unstable_runWithPriority @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+qr @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+Dj @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+z @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+k.port1.onmessage @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9Understand this error
+builder-load.js:7 [BuilderLoad] character list request failed {readyState: 4, getResponseHeader: ƒ, getAllResponseHeaders: ƒ, setRequestHeader: ƒ, overrideMimeType: ƒ, …}
+ERR @ builder-load.js:7
+(anonymous) @ builder-load.js:112
+Promise.catch
+fetchCharacterList @ builder-load.js:111
+ensurePopulated @ builder-load.js:174
+(anonymous) @ builder-load.js:183
+setTimeout
+(anonymous) @ builder-load.js:181
+(anonymous) @ builder-load.js:210
+childList
+Qi @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+Qi @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+Pi @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+Sj @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+t.unstable_runWithPriority @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+qr @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+Jj @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+$i @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+t.unstable_runWithPriority @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+qr @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+Yr @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+Qr @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+Ig @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+Yo @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+e @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+i @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+f @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+dispatch @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:1
+n @ googlesitekit-vendor-568c1105b8e4f20eff16.js:1
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:1
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:1
+n @ googlesitekit-vendor-568c1105b8e4f20eff16.js:1
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:1
+t @ googlesitekit-vendor-568c1105b8e4f20eff16.js:1
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:1
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+u @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+_next @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+ee @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+Z @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:1
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+u @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+_next @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+setTimeout
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:1
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+u @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+_next @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+f @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+l @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+s @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-datastore-site-d81d1d7e77fb878db074.js:23
+t @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+n @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-adminbar-edc2347b3d5db1c50fe9.js:39
+g @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+AdminBarApp @ googlesitekit-adminbar-edc2347b3d5db1c50fe9.js:39
+Wo @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+Ba @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+Qj @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+Kj @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+$i @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+t.unstable_runWithPriority @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+qr @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+Yr @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+Qr @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+Ig @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+Yo @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-adminbar-edc2347b3d5db1c50fe9.js:34
+await in (anonymous)
+(anonymous) @ googlesitekit-adminbar-edc2347b3d5db1c50fe9.js:34
+Ii @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+Vj @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+t.unstable_runWithPriority @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+qr @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+Dj @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+(anonymous) @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+z @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9
+k.port1.onmessage @ googlesitekit-vendor-568c1105b8e4f20eff16.js:9Understand this error
+jQuery.post(window.CG_AJAX.ajax_url, { action: 'cg_migrate_junctions', nonce: window.CG_AJAX.nonce })
+  .done(r => console.log(JSON.stringify(r.data, null, 2)));
+{readyState: 1, getResponseHeader: ƒ, getAllResponseHeaders: ƒ, setRequestHeader: ƒ, overrideMimeType: ƒ, …}
+jquery.js:9940  POST https://libraryofcalbria.com/wp-admin/admin-ajax.php 400 (Bad Request)
+send @ jquery.js:9940
+ajax @ jquery.js:9521
+jQuery.<computed> @ jquery.js:9677
+(anonymous) @ VM1340:1Understand this error

@@ -5143,10 +5143,11 @@
       return;
     _languageListLoading = true;
     try {
-      const ajaxUrl = W2.CG_AJAX && W2.CG_AJAX.ajax_url ? W2.CG_AJAX.ajax_url : "/api/ajax";
+      const base = typeof W2.CG_API_BASE === "string" && W2.CG_API_BASE ? W2.CG_API_BASE.replace(/\/+$/, "") : "";
+      const ajaxUrl = (base ? base + "/api/ajax" : null) || W2.CG_AJAX && W2.CG_AJAX.ajax_url || "/api/ajax";
       fetch(ajaxUrl, {
         method: "POST",
-        credentials: "same-origin",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "cg_get_language_list" })
       }).then((r) => r.json()).then((json) => {
@@ -8136,6 +8137,9 @@
         return;
       g[BOOT_KEY] = true;
       console.log("[Core] init() called");
+      if (typeof g.jQuery === "function" && typeof g.jQuery.ajaxSetup === "function") {
+        g.jQuery.ajaxSetup({ xhrFields: { withCredentials: true }, crossDomain: true });
+      }
       try {
         main_default.init();
       } catch (err) {
