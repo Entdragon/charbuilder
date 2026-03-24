@@ -5,7 +5,7 @@
  * Updated for Migration 002: all FK columns on the species table were replaced
  * by the species_traits junction table (trait_key: habitat, diet, cycle,
  * sense_1/2/3, weapon_1/2/3, skill_1/2/3, gift_1/2/3).
- * Skills are now stored as plain text_value — they display without a link.
+ * Skills are stored as text_value = skill ct_id; resolved via JOIN to skills table.
  */
 get_header();
 ?>
@@ -32,9 +32,9 @@ $species = $wpdb->get_row( $wpdb->prepare( "
     w2.ct_weapons_name AS weapon_two,   w2.ct_slug AS weapon_two_slug,
     w3.ct_weapons_name AS weapon_three, w3.ct_slug AS weapon_three_slug,
 
-    ts1.text_value AS skill_one,
-    ts2.text_value AS skill_two,
-    ts3.text_value AS skill_three,
+    sk1.ct_skill_name AS skill_one,   sk1.ct_slug AS skill_one_slug,
+    sk2.ct_skill_name AS skill_two,   sk2.ct_slug AS skill_two_slug,
+    sk3.ct_skill_name AS skill_three, sk3.ct_slug AS skill_three_slug,
 
     g1.ct_gifts_name AS gift_one,   g1.ct_slug AS gift_one_slug,
     g2.ct_gifts_name AS gift_two,   g2.ct_slug AS gift_two_slug,
@@ -82,10 +82,18 @@ $species = $wpdb->get_row( $wpdb->prepare( "
 
   LEFT JOIN {$p}customtables_table_species_traits AS ts1
          ON ts1.species_id = s.ct_id AND ts1.trait_key = 'skill_1'
+  LEFT JOIN {$p}customtables_table_skills AS sk1
+         ON sk1.ct_id = CAST(ts1.text_value AS UNSIGNED)
+
   LEFT JOIN {$p}customtables_table_species_traits AS ts2
          ON ts2.species_id = s.ct_id AND ts2.trait_key = 'skill_2'
+  LEFT JOIN {$p}customtables_table_skills AS sk2
+         ON sk2.ct_id = CAST(ts2.text_value AS UNSIGNED)
+
   LEFT JOIN {$p}customtables_table_species_traits AS ts3
          ON ts3.species_id = s.ct_id AND ts3.trait_key = 'skill_3'
+  LEFT JOIN {$p}customtables_table_skills AS sk3
+         ON sk3.ct_id = CAST(ts3.text_value AS UNSIGNED)
 
   LEFT JOIN {$p}customtables_table_species_traits AS tg1
          ON tg1.species_id = s.ct_id AND tg1.trait_key = 'gift_1'
@@ -168,12 +176,17 @@ if ( ! $species ) {
   <?php endif; endforeach; ?>
 </div>
 
-<!-- Skills (plain text — no slug available after migration) -->
+<!-- Skills -->
 <h2>Skills</h2>
 <div class="skill-grid" style="margin-bottom: 20px;">
   <?php foreach ( [ 'skill_one', 'skill_two', 'skill_three' ] as $sf ) :
-    if ( ! empty( $species->$sf ) ) : ?>
-      <div class="skill-card"><?php echo esc_html( $species->$sf ); ?></div>
+    if ( ! empty( $species->$sf ) ) :
+      $slug_field = $sf . '_slug'; ?>
+      <div class="skill-card">
+        <a href="/skill/<?php echo esc_attr( $species->$slug_field ); ?>/">
+          <?php echo esc_html( $species->$sf ); ?>
+        </a>
+      </div>
   <?php endif; endforeach; ?>
 </div>
 

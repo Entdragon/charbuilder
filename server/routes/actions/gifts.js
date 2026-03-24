@@ -27,18 +27,20 @@ async function cg_get_free_gifts(req, res) {
   try {
     rows = await query(`
       SELECT
-        ct_id                              AS id,
-        ct_gifts_name                      AS name,
-        ct_gifts_allows_multiple           AS allows_multiple,
-        ct_gifts_manifold                  AS ct_gifts_manifold,
-        ct_gift_class                      AS giftclass,
-        ct_gifts_effect_description        AS effect_description
-      FROM ${p}customtables_table_gifts
-      WHERE LOWER(TRIM(ct_gift_class)) != 'natural'
-      ORDER BY ct_gifts_name ASC
+        g.ct_id                              AS id,
+        g.ct_gifts_name                      AS name,
+        g.ct_gifts_allows_multiple           AS allows_multiple,
+        g.ct_gifts_manifold                  AS ct_gifts_manifold,
+        gc.ct_class_name                     AS giftclass,
+        g.ct_gifts_effect_description        AS effect_description
+      FROM ${p}customtables_table_gifts AS g
+      LEFT JOIN ${p}customtables_table_giftclass AS gc ON gc.ct_id = g.ct_gift_class
+      WHERE LOWER(TRIM(COALESCE(gc.ct_class_name, ''))) != 'natural'
+        AND g.published = 1
+      ORDER BY g.ct_gifts_name ASC
     `);
   } catch (err) {
-    if (err && /Unknown column.*ct_gift[s]?_class|ct_gifts_effect_description/i.test(err.message)) {
+    if (err && /Unknown column|doesn.*exist/i.test(err.message)) {
       rows = await query(`
         SELECT
           ct_id                    AS id,
@@ -48,6 +50,7 @@ async function cg_get_free_gifts(req, res) {
           NULL                     AS giftclass,
           NULL                     AS effect_description
         FROM ${p}customtables_table_gifts
+        WHERE published = 1
         ORDER BY ct_gifts_name ASC
       `);
     } else {

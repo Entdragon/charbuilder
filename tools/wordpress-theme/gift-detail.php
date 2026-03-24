@@ -426,27 +426,11 @@ $gift = $wpdb->get_row($wpdb->prepare("
     g.*,
     gc.ct_class_name AS class_name,
     gc.ct_slug AS class_slug,
-    gt1.ct_type_name AS type1, gt1.ct_slug AS type1_slug,
-    gt2.ct_type_name AS type2, gt2.ct_slug AS type2_slug,
-    gt3.ct_type_name AS type3, gt3.ct_slug AS type3_slug,
-    gt4.ct_type_name AS type4, gt4.ct_slug AS type4_slug,
-    gt5.ct_type_name AS type5, gt5.ct_slug AS type5_slug,
-    gt6.ct_type_name AS type6, gt6.ct_slug AS type6_slug,
-    gt7.ct_type_name AS type7, gt7.ct_slug AS type7_slug,
-    gt8.ct_type_name AS type8, gt8.ct_slug AS type8_slug,
     rf.ct_refresh_name AS refresh_name, rf.ct_slug AS refresh_slug,
     b.ct_book_name,
     b.ct_ct_slug AS book_slug
   FROM {$p}customtables_table_gifts AS g
   LEFT JOIN {$p}customtables_table_giftclass AS gc ON g.ct_gift_class = gc.ct_id
-  LEFT JOIN {$p}customtables_table_gifttype AS gt1 ON g.ct_gift_type = gt1.ct_id
-  LEFT JOIN {$p}customtables_table_gifttype AS gt2 ON g.ct_gift_type_two = gt2.ct_id
-  LEFT JOIN {$p}customtables_table_gifttype AS gt3 ON g.ct_gift_type_three = gt3.ct_id
-  LEFT JOIN {$p}customtables_table_gifttype AS gt4 ON g.ct_gift_type_four = gt4.ct_id
-  LEFT JOIN {$p}customtables_table_gifttype AS gt5 ON g.ct_gift_type_five = gt5.ct_id
-  LEFT JOIN {$p}customtables_table_gifttype AS gt6 ON g.ct_gift_type_six = gt6.ct_id
-  LEFT JOIN {$p}customtables_table_gifttype AS gt7 ON g.ct_gift_type_seven = gt7.ct_id
-  LEFT JOIN {$p}customtables_table_gifttype AS gt8 ON g.ct_gift_type_eight = gt8.ct_id
   LEFT JOIN {$p}customtables_table_refresh AS rf ON g.ct_gifts_refresh = rf.ct_id
   LEFT JOIN {$p}customtables_table_books AS b ON g.ct_book_id = b.ct_id
   WHERE g.ct_slug = %s
@@ -495,6 +479,14 @@ $sections = $wpdb->get_results($wpdb->prepare("
   FROM {$p}customtables_table_gift_sections
   WHERE ct_gift_id = %d
   ORDER BY ct_sort, ct_id
+", $gift->ct_id));
+
+$gift_type_rows = $wpdb->get_results($wpdb->prepare("
+  SELECT gt.ct_type_name AS type_name, gt.ct_slug AS type_slug
+  FROM {$p}customtables_table_gift_type_map AS m
+  JOIN {$p}customtables_table_gifttype AS gt ON gt.ct_id = m.type_id
+  WHERE m.gift_id = %d
+  ORDER BY m.sort, m.id
 ", $gift->ct_id));
 ?>
 
@@ -587,20 +579,12 @@ $sections = $wpdb->get_results($wpdb->prepare("
   <?php endif; ?>
 </div>
 
-<?php
-$types = array();
-for ($i = 1; $i <= 8; $i++) {
-  $namef = "type{$i}";
-  $slugf = "type{$i}_slug";
-  if (!empty($gift->$namef)) $types[] = array('name' => $gift->$namef, 'slug' => $gift->$slugf);
-}
-if ($types) :
-?>
+<?php if (!empty($gift_type_rows)) : ?>
   <h3>Types</h3>
   <div class="skill-grid" style="margin-bottom: 20px;">
-    <?php foreach ($types as $t) : ?>
+    <?php foreach ($gift_type_rows as $t) : ?>
       <div class="skill-card">
-        <a href="/gift-type/<?php echo esc_attr($t['slug']); ?>/"><?php echo esc_html($t['name']); ?></a>
+        <a href="/gift-type/<?php echo esc_attr($t->type_slug); ?>/"><?php echo esc_html($t->type_name); ?></a>
       </div>
     <?php endforeach; ?>
   </div>
