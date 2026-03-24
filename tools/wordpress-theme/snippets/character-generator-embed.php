@@ -31,6 +31,8 @@ if ( ! defined( 'CG_APP_URL' ) ) {
 // Also callable directly as loc_character_generator_shortcode()
 // ──────────────────────────────────────────────────────────────────────────────
 
+if ( ! function_exists( 'loc_character_generator_shortcode' ) ) {
+
 add_shortcode( 'character_generator', 'loc_character_generator_shortcode' );
 
 function loc_character_generator_shortcode() {
@@ -482,3 +484,5 @@ function loc_character_generator_shortcode() {
     <?php
     return ob_get_clean();
 }
+
+} // end if ( ! function_exists( 'loc_character_generator_shortcode' ) )
