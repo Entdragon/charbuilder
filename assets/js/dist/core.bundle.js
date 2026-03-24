@@ -3902,17 +3902,31 @@
       pools.push(d);
     }
     const keys = [traitKey, `trait_${traitKey}`, `${traitKey}_die`, `die_${traitKey}`];
+    let rawNum = null;
     for (const obj of pools) {
       for (const k of keys) {
         if (!obj || !(k in obj))
           continue;
-        const v = obj[k];
-        const n = diceToNum(v);
-        if (n != null)
-          return n;
+        const n = diceToNum(obj[k]);
+        if (n != null) {
+          rawNum = n;
+          break;
+        }
       }
+      if (rawNum != null)
+        break;
     }
-    return null;
+    try {
+      const boosted = service_default.getBoostedDie(traitKey);
+      if (boosted) {
+        const boostedNum = diceToNum(boosted);
+        if (boostedNum != null && (rawNum == null || boostedNum > rawNum)) {
+          return boostedNum;
+        }
+      }
+    } catch (_) {
+    }
+    return rawNum;
   }
   function extractTraitMinimaFromRequiresSpecial(rs) {
     const text = String(rs || "");

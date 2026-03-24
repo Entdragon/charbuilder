@@ -16,6 +16,7 @@ import FormBuilderAPI from '../formBuilder';
 import State from './state.js';
 import Quals from '../quals/index.js';
 import QualState from '../quals/state.js';
+import TraitsService from '../traits/service.js';
 
 function cgWin() {
   if (typeof globalThis !== 'undefined') return globalThis;
@@ -251,16 +252,29 @@ function getTraitDieValue(traitKey) {
 
   const keys = [traitKey, `trait_${traitKey}`, `${traitKey}_die`, `die_${traitKey}`];
 
+  let rawNum = null;
   for (const obj of pools) {
     for (const k of keys) {
       if (!obj || !(k in obj)) continue;
-      const v = obj[k];
-      const n = diceToNum(v);
-      if (n != null) return n;
+      const n = diceToNum(obj[k]);
+      if (n != null) { rawNum = n; break; }
     }
+    if (rawNum != null) break;
   }
 
-  return null;
+  // Also check the boosted die from TraitsService (accounts for "Improve Trait" gifts).
+  // Use whichever is higher so requirements correctly reflect gift improvements.
+  try {
+    const boosted = TraitsService.getBoostedDie(traitKey);
+    if (boosted) {
+      const boostedNum = diceToNum(boosted);
+      if (boostedNum != null && (rawNum == null || boostedNum > rawNum)) {
+        return boostedNum;
+      }
+    }
+  } catch (_) {}
+
+  return rawNum;
 }
 
 function extractTraitMinimaFromRequiresSpecial(rs) {
