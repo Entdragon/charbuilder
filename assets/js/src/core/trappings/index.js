@@ -108,6 +108,12 @@ const TrappingsAPI = {
       }
     });
 
+    // Trait die changed → try to initialise starting money from career trait die
+    $(document).on('cg:traits:changed.trappings', () => {
+      this._initStartingMoney();
+      this._renderMoneyPanel();
+    });
+
     // Species changed → autofill natural weapons (jQuery + native listener)
     $(document).on('cg:species:changed.trappings', () => {
       this._fillSpeciesWeapons();
@@ -446,13 +452,19 @@ const TrappingsAPI = {
 
   _initStartingMoney() {
     const holdings = getMoneyHoldings();
+    // Only set starting money if no holdings have been set yet
     if (Object.keys(holdings).length > 0) return;
 
-    const die = FormBuilderAPI._data?.trait_career || '';
+    // Read career trait die from FormBuilder data, falling back to the DOM element
+    const die = FormBuilderAPI._data?.trait_career
+      || $('[id="cg-trait_career"]').val()
+      || $('[name="trait_career"]').val()
+      || '';
     const amount = dieToNumber(die);
     if (amount > 0) {
       holdings['denar'] = amount;
       setMoneyHoldings(holdings);
+      LOG('Starting money initialised:', amount, 'denar from career die', die);
     }
   },
 

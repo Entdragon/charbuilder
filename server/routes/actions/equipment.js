@@ -19,42 +19,41 @@ async function cg_get_career_trappings(req, res) {
   const tm = `${p}customtables_table_trappings_map`;
   const eq = `${p}customtables_table_equipment`;
   const wp = `${p}customtables_table_weapons`;
-  const ia = `${p}customtables_table_item_aliases`;
 
   let rows;
   try {
     rows = await query(`
     SELECT
-      tm.ct_id            AS map_id,
-      tm.ct_item_kind     AS kind,
-      tm.ct_item_slug     AS item_slug,
-      tm.ct_qty           AS qty,
-      tm.ct_token         AS token,
+      tm.ct_id             AS map_id,
+      tm.ct_item_kind      AS kind,
+      tm.ct_item_slug      AS item_slug,
+      tm.ct_qty            AS qty,
+      tm.ct_token          AS token,
       tm.ct_resolve_method AS resolve_method,
 
-      COALESCE(eq.ct_name, eq_alias.ct_name)                  AS eq_name,
-      COALESCE(eq.ct_slug, eq_alias.ct_slug)                  AS eq_slug,
-      COALESCE(eq.ct_category, eq_alias.ct_category)          AS eq_category,
-      COALESCE(eq.ct_cost_d, eq_alias.ct_cost_d)              AS eq_cost_d,
-      COALESCE(eq.ct_cost_text, eq_alias.ct_cost_text)        AS eq_cost_text,
-      COALESCE(eq.ct_armor_dice, eq_alias.ct_armor_dice)      AS eq_armor_dice,
-      COALESCE(eq.ct_cover_dice, eq_alias.ct_cover_dice)      AS eq_cover_dice,
-      COALESCE(eq.ct_skill_dice, eq_alias.ct_skill_dice)      AS eq_skill_dice,
-      COALESCE(eq.ct_source_book, eq_alias.ct_source_book)    AS eq_source_book,
-      COALESCE(eq.ct_pg_no, eq_alias.ct_pg_no)                AS eq_pg_no,
+      eq.ct_name           AS eq_name,
+      eq.ct_slug           AS eq_slug,
+      eq.ct_category       AS eq_category,
+      eq.ct_cost_d         AS eq_cost_d,
+      eq.ct_cost_text      AS eq_cost_text,
+      eq.ct_armor_dice     AS eq_armor_dice,
+      eq.ct_cover_dice     AS eq_cover_dice,
+      eq.ct_skill_dice     AS eq_skill_dice,
+      eq.ct_source_book    AS eq_source_book,
+      eq.ct_pg_no          AS eq_pg_no,
 
-      COALESCE(wp.ct_weapons_name, wp_alias.ct_weapons_name)  AS wp_name,
-      COALESCE(wp.ct_slug, wp_alias.ct_slug)                  AS wp_slug,
-      COALESCE(wp.ct_weapon_class, wp_alias.ct_weapon_class)  AS wp_class,
-      COALESCE(wp.ct_attack_dice, wp_alias.ct_attack_dice)    AS wp_attack_dice,
-      COALESCE(wp.ct_damage_mod, wp_alias.ct_damage_mod)      AS wp_damage_mod,
-      COALESCE(wp.ct_range_band, wp_alias.ct_range_band)      AS wp_range_band,
-      COALESCE(wp.ct_parry_die, wp_alias.ct_parry_die)        AS wp_parry_die,
-      COALESCE(wp.ct_cover_die, wp_alias.ct_cover_die)        AS wp_cover_die,
-      COALESCE(wp.ct_effect, wp_alias.ct_effect)              AS wp_effect,
-      COALESCE(wp.ct_cost_d, wp_alias.ct_cost_d)              AS wp_cost_d,
-      COALESCE(wp.ct_source_book, wp_alias.ct_source_book)    AS wp_source_book,
-      COALESCE(wp.ct_pg_no, wp_alias.ct_pg_no)                AS wp_pg_no
+      wp.ct_weapons_name   AS wp_name,
+      wp.ct_slug           AS wp_slug,
+      wp.ct_weapon_class   AS wp_class,
+      wp.ct_attack_dice    AS wp_attack_dice,
+      wp.ct_damage_mod     AS wp_damage_mod,
+      wp.ct_range_band     AS wp_range_band,
+      wp.ct_parry_die      AS wp_parry_die,
+      wp.ct_cover_die      AS wp_cover_die,
+      wp.ct_effect         AS wp_effect,
+      wp.ct_cost_d         AS wp_cost_d,
+      wp.ct_source_book    AS wp_source_book,
+      wp.ct_pg_no          AS wp_pg_no
 
     FROM ${tm} tm
 
@@ -63,22 +62,11 @@ async function cg_get_career_trappings(req, res) {
     LEFT JOIN ${wp} wp
       ON (tm.ct_item_kind = 'weapon'    AND tm.ct_item_slug = wp.ct_slug AND wp.published = 1)
 
-    LEFT JOIN ${ia} alias_eq
-      ON (tm.ct_item_kind = 'equipment' AND eq.ct_slug IS NULL
-          AND alias_eq.ct_target_kind = 'equipment' AND alias_eq.ct_alias_slug = tm.ct_item_slug AND alias_eq.published = 1)
-    LEFT JOIN ${eq} eq_alias
-      ON (eq.ct_slug IS NULL AND alias_eq.ct_target_slug = eq_alias.ct_slug AND eq_alias.published = 1)
-
-    LEFT JOIN ${ia} alias_wp
-      ON (tm.ct_item_kind = 'weapon' AND wp.ct_slug IS NULL
-          AND alias_wp.ct_target_kind = 'weapon' AND alias_wp.ct_alias_slug = tm.ct_item_slug AND alias_wp.published = 1)
-    LEFT JOIN ${wp} wp_alias
-      ON (wp.ct_slug IS NULL AND alias_wp.ct_target_slug = wp_alias.ct_slug AND wp_alias.published = 1)
-
     WHERE tm.ct_career_id = ? AND tm.published = 1
     ORDER BY tm.ct_id ASC
   `, [careerId]);
   } catch (err) {
+    console.error('[cg_get_career_trappings] SQL error:', err.message || err);
     return res.json({ success: true, data: [] });
   }
 

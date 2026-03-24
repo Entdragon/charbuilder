@@ -7243,6 +7243,7 @@
 
   // assets/js/src/core/trappings/index.js
   var $19 = window.jQuery;
+  var LOG2 = (...a) => console.log("[Trappings]", ...a);
   var WARN2 = (...a) => console.warn("[Trappings]", ...a);
   function ajaxEnv6() {
     var _a, _b;
@@ -7318,6 +7319,10 @@
           this._removeCareerTrappings();
           this._renderAll();
         }
+      });
+      $19(document).on("cg:traits:changed.trappings", () => {
+        this._initStartingMoney();
+        this._renderMoneyPanel();
       });
       $19(document).on("cg:species:changed.trappings", () => {
         this._fillSpeciesWeapons();
@@ -7621,11 +7626,12 @@
       const holdings = getMoneyHoldings();
       if (Object.keys(holdings).length > 0)
         return;
-      const die = ((_a = formBuilder_default._data) == null ? void 0 : _a.trait_career) || "";
+      const die = ((_a = formBuilder_default._data) == null ? void 0 : _a.trait_career) || $19('[id="cg-trait_career"]').val() || $19('[name="trait_career"]').val() || "";
       const amount = dieToNumber(die);
       if (amount > 0) {
         holdings["denar"] = amount;
         setMoneyHoldings(holdings);
+        LOG2("Starting money initialised:", amount, "denar from career die", die);
       }
     },
     // ── Currency ─────────────────────────────────────────────────────────────────
@@ -8022,7 +8028,7 @@
 
   // assets/js/src/core/main/builder-load.js
   var $21 = window.jQuery;
-  var LOG2 = (...a) => console.log("[BuilderLoad]", ...a);
+  var LOG3 = (...a) => console.log("[BuilderLoad]", ...a);
   var ERR = (...a) => console.error("[BuilderLoad]", ...a);
   var _inited3 = false;
   var _cacheRows = null;
@@ -8080,7 +8086,7 @@
     if (!force && _cacheRows && now - _cacheAt < CACHE_MS) {
       return $21.Deferred().resolve(_cacheRows).promise();
     }
-    LOG2("fetching characters via AJAX\u2026", force ? "(force)" : "");
+    LOG3("fetching characters via AJAX\u2026", force ? "(force)" : "");
     const req = _getListRequest();
     if (!req) {
       ERR("No listCharacters()/fetchCharacters() available on FormBuilderAPI");
@@ -8098,7 +8104,7 @@
       const rows = _parseRows(resp);
       _cacheRows = Array.isArray(rows) ? rows : [];
       _cacheAt = Date.now();
-      LOG2(`fetched ${_cacheRows.length} records`);
+      LOG3(`fetched ${_cacheRows.length} records`);
       finalize(_cacheRows);
     };
     const onFail = (xhr, status, err) => {
@@ -8162,7 +8168,7 @@
       populateLoadSelect(_cacheRows);
       return;
     }
-    LOG2("populating #cg-splash-load-select");
+    LOG3("populating #cg-splash-load-select");
     fetchCharacterList(force).always(populateLoadSelect);
   }
   function _makeDebouncedEnsure() {
@@ -8180,7 +8186,7 @@
     if (_inited3)
       return;
     _inited3 = true;
-    LOG2("init");
+    LOG3("init");
     ensurePopulated({ force: false });
     try {
       window.__CG_EVT__ = window.__CG_EVT__ || {};
@@ -8204,7 +8210,7 @@
         document.removeEventListener("cg:characters:refresh", window.__CG_EVT__.charactersRefreshLoad);
       }
       window.__CG_EVT__.charactersRefreshLoad = () => {
-        LOG2("received cg:characters:refresh \u2192 repopulating load list");
+        LOG3("received cg:characters:refresh \u2192 repopulating load list");
         fetchCharacterList(true).always(populateLoadSelect);
       };
       document.addEventListener("cg:characters:refresh", window.__CG_EVT__.charactersRefreshLoad);
@@ -8228,7 +8234,7 @@
 
   // assets/js/src/core/main/builder-save.js
   var $22 = window.jQuery;
-  var LOG3 = (...a) => console.log("[BuilderSave]", ...a);
+  var LOG4 = (...a) => console.log("[BuilderSave]", ...a);
   var WARN3 = (...a) => console.warn("[BuilderSave]", ...a);
   function setSaveButtonsDisabled(disabled) {
     try {
@@ -8249,7 +8255,7 @@
         return;
       }
       setSaveButtonsDisabled(true);
-      LOG3("\u25B6 Saving character...", { shouldClose });
+      LOG4("\u25B6 Saving character...", { shouldClose });
       const req = formBuilder_default.save(!!shouldClose);
       if (req && typeof req.always === "function") {
         req.always(() => setSaveButtonsDisabled(false));
@@ -8261,7 +8267,7 @@
 
   // assets/js/src/core/main/builder-events.js
   var $23 = window.jQuery;
-  var LOG4 = (...a) => console.log("[BuilderEvents]", ...a);
+  var LOG5 = (...a) => console.log("[BuilderEvents]", ...a);
   var SEL = {
     species: '#cg-species, select[name="species"], select[data-cg="species"], .cg-species',
     career: '#cg-career,  select[name="career"],  select[data-cg="career"],  .cg-career'
@@ -8313,7 +8319,7 @@
     const selector = kind === "species" ? SEL.species : SEL.career;
     const $sel = firstSelect(selector);
     if (!$sel) {
-      LOG4(`no ${kind} select found`);
+      LOG5(`no ${kind} select found`);
       return $23.Deferred().resolve().promise();
     }
     const el = $sel.get(0);
@@ -8372,7 +8378,7 @@
   }
   function bindUIEvents() {
     var _a, _b, _c, _d;
-    LOG4("bindUIEvents() called");
+    LOG5("bindUIEvents() called");
     try {
       (_b = (_a = gifts_default) == null ? void 0 : _a.init) == null ? void 0 : _b.call(_a);
     } catch (_) {
