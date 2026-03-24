@@ -1,0 +1,50 @@
+[24-Mar-2026 16:05:19 UTC] PHP Warning:  Undefined property: stdClass::$ct_caeertype_name in /home/libraryo/public_html/wp-content/themes/twentytwentyfour-child/page-career-type-detail.php on line 25
+[24-Mar-2026 16:10:21 UTC] PHP Warning:  Undefined property: stdClass::$ct_caeertype_name in /home/libraryo/public_html/wp-content/themes/twentytwentyfour-child/page-career-type-detail.php on line 25
+[24-Mar-2026 17:01:01 UTC] WordPress database error Unknown column 'ct_gift_type' in 'WHERE' for query 
+      SELECT ct_gifts_name, ct_slug
+        FROM DcVnchxg4_customtables_table_gifts
+       WHERE ct_gift_type = 56
+       OR ct_gift_type_two = 56
+       OR ct_gift_type_three = 56
+       OR ct_gift_type_four = 56
+       OR ct_gift_type_five = 56
+       OR ct_gift_type_six = 56
+       OR ct_gift_type_seven = 56
+       OR ct_gift_type_eight = 56
+       ORDER BY ct_gifts_name ASC
+   made by require('wp-blog-header.php'), require_once('wp-includes/template-loader.php'), include('/themes/twentytwentyfour-child/page-gift-type-detail.php')
+[24-Mar-2026 17:18:33 UTC] WordPress database error Unknown column 'ct_gift_type' in 'WHERE' for query 
+      SELECT ct_gifts_name, ct_slug
+        FROM DcVnchxg4_customtables_table_gifts
+       WHERE ct_gift_type = 80
+       OR ct_gift_type_two = 80
+       OR ct_gift_type_three = 80
+       OR ct_gift_type_four = 80
+       OR ct_gift_type_five = 80
+       OR ct_gift_type_six = 80
+       OR ct_gift_type_seven = 80
+       OR ct_gift_type_eight = 80
+       ORDER BY ct_gifts_name ASC
+   made by require('wp-blog-header.php'), require_once('wp-includes/template-loader.php'), include('/themes/twentytwentyfour-child/page-gift-type-detail.php')
+[24-Mar-2026 19:02:58 UTC] WordPress database error Unknown column 'ct_species_weapon_one' in 'WHERE' for query 
+      SELECT ct_species_name, ct_slug
+        FROM DcVnchxg4_customtables_table_species
+       WHERE ct_species_weapon_one = 14
+       OR ct_species_weapon_two = 14
+       OR ct_species_weapon_three = 14
+       ORDER BY ct_species_name ASC
+   made by require('wp-blog-header.php'), require_once('wp-includes/template-loader.php'), include('/themes/twentytwentyfour-child/page-species-weapons-detail.php')
+[24-Mar-2026 19:34:23 UTC] WordPress database error Unknown column 'ct_species_cycle' in 'WHERE' for query 
+      SELECT ct_species_name, ct_slug
+        FROM DcVnchxg4_customtables_table_species
+       WHERE ct_species_cycle = 3
+       ORDER BY ct_species_name ASC
+   made by require('wp-blog-header.php'), require_once('wp-includes/template-loader.php'), include('/themes/twentytwentyfour-child/page-species-cycle-detail.php')
+[24-Mar-2026 20:16:03 UTC] WordPress database error Unknown column 'ct_species_weapon_one' in 'WHERE' for query 
+      SELECT ct_species_name, ct_slug
+        FROM DcVnchxg4_customtables_table_species
+       WHERE ct_species_weapon_one = 15
+       OR ct_species_weapon_two = 15
+       OR ct_species_weapon_three = 15
+       ORDER BY ct_species_name ASC
+   made by require('wp-blog-header.php'), require_once('wp-includes/template-loader.php'), include('/themes/twentytwentyfour-child/page-species-weapons-detail.php')
