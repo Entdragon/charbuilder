@@ -482,6 +482,8 @@ const TrappingsAPI = {
     setTrappingsList(list);
     this._syncBattleArray();
     this._renderAll();
+    // Re-render catalog so affordability (disabled state) reflects updated balance
+    if (this._catalogCache) this._renderCatalog();
   },
 
   // ── Battle Array autofill ───────────────────────────────────────────────────

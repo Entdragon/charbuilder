@@ -6195,6 +6195,7 @@
      * Build and inject the full summary into #cg-summary-sheet.
      */
     renderSummary(data = {}) {
+      var _a, _b;
       const $sheet = $16("#cg-summary-sheet").empty();
       const name = data.name || "\u2014";
       const age = data.age || "\u2014";
@@ -6250,10 +6251,11 @@
       const xpSpent = xpMarksBudget * 4 + xpGiftSlots * 10;
       const weapons = Array.isArray(data.weapons) ? data.weapons : [];
       const armor = Array.isArray(data.armor) ? data.armor : [];
-      const moneyLiras = data.money_liras || "";
-      const moneyDenarii = data.money_denarii || "";
-      const moneyFarthings = data.money_farthings || "";
-      const hasMoney = moneyLiras || moneyDenarii || moneyFarthings;
+      const trappingsList = Array.isArray((_a = formBuilder_default._data) == null ? void 0 : _a.trappings_list) ? formBuilder_default._data.trappings_list : [];
+      const moneyHoldings = ((_b = formBuilder_default._data) == null ? void 0 : _b.money_holdings) && typeof formBuilder_default._data.money_holdings === "object" ? formBuilder_default._data.money_holdings : {};
+      const trappingsAPI = window.CG_TrappingsAPI;
+      const currencyList = trappingsAPI && Array.isArray(trappingsAPI._currencyList) ? trappingsAPI._currencyList : [];
+      const hasMoney = currencyList.some((c) => parseFloat(moneyHoldings[c.slug] || 0) > 0) || Object.values(moneyHoldings).some((v) => parseFloat(v) > 0);
       const skillNotes = data.skill_notes && typeof data.skill_notes === "object" ? data.skill_notes : {};
       function dicePools(...dice) {
         return dice.filter(Boolean).join(" + ") || "\u2014";
@@ -6297,11 +6299,11 @@
         return allGifts.find((g) => String(g.ct_id || g.id || "") === sid) || null;
       }
       function giftDesc(giftId2) {
-        var _a;
+        var _a2;
         const g = _findGift(giftId2);
         if (!g)
           return "";
-        const short = String((_a = g.effect) != null ? _a : "").trim();
+        const short = String((_a2 = g.effect) != null ? _a2 : "").trim();
         return short || String(g.effect_description || g.ct_gifts_effect_description || "").trim();
       }
       function giftName2(giftId2) {
@@ -6396,7 +6398,7 @@
         </table>`;
       }
       let equipmentHtml = "";
-      if (weapons.length || armor.length) {
+      {
         let equipList = "";
         weapons.forEach((w) => {
           if (w.name) {
@@ -6410,6 +6412,13 @@
             equipList += `<li><strong>${a.name}</strong>${details ? ` \u2014 ${details}` : ""}${a.notes ? ` (${a.notes})` : ""}</li>`;
           }
         });
+        const gearItems = trappingsList.filter((t) => t.kind !== "weapon" && !t.armor_dice);
+        gearItems.forEach((t) => {
+          if (t.name) {
+            const qty = t.qty && t.qty > 1 ? `${t.qty}\xD7 ` : "";
+            equipList += `<li>${qty}<strong>${t.name}</strong>${t.token && t.token !== t.name ? ` <em>(${t.token})</em>` : ""}</li>`;
+          }
+        });
         if (equipList) {
           equipmentHtml = `
           <div class="summary-section summary-equipment">
@@ -6420,18 +6429,26 @@
       }
       let moneyHtml = "";
       if (hasMoney) {
-        const parts = [];
-        if (moneyLiras)
-          parts.push(`<span><strong>Liras:</strong> ${moneyLiras}</span>`);
-        if (moneyDenarii)
-          parts.push(`<span><strong>Denarii:</strong> ${moneyDenarii}</span>`);
-        if (moneyFarthings)
-          parts.push(`<span><strong>Farthings:</strong> ${moneyFarthings}</span>`);
-        moneyHtml = `
-        <div class="summary-section summary-money">
-          <h3>Money</h3>
-          <div class="summary-money-row">${parts.join("")}</div>
-        </div>`;
+        let parts = [];
+        if (currencyList.length) {
+          currencyList.forEach((c) => {
+            const amt = parseFloat(moneyHoldings[c.slug] || 0);
+            if (amt > 0)
+              parts.push(`<span><strong>${c.name}:</strong> ${amt % 1 === 0 ? amt : amt.toFixed(3)}</span>`);
+          });
+        } else {
+          Object.entries(moneyHoldings).forEach(([slug, amt]) => {
+            if (parseFloat(amt) > 0)
+              parts.push(`<span><strong>${slug}:</strong> ${amt}</span>`);
+          });
+        }
+        if (parts.length) {
+          moneyHtml = `
+          <div class="summary-section summary-money">
+            <h3>Money</h3>
+            <div class="summary-money-row">${parts.join("")}</div>
+          </div>`;
+        }
       }
       let xpHtml = "";
       if (xpGifts.length > 0 || xpEarned > 0 || xpMarksBudget > 0) {
@@ -6440,10 +6457,10 @@
           const fc = window.CG_FreeChoices;
           const allGifts = fc && Array.isArray(fc._allGifts) ? fc._allGifts : [];
           xpGiftsListHtml = `<ul>${xpGifts.map((gId) => {
-            var _a;
+            var _a2;
             const gObj = allGifts.find((g) => String(g.ct_id || g.id || "") === String(gId));
             const name2 = gObj ? String(gObj.ct_gift_name || gObj.name || gId) : String(gId);
-            const desc = gObj ? String((_a = gObj.effect) != null ? _a : "").trim() || String(gObj.effect_description || gObj.ct_gifts_effect_description || "").trim() : "";
+            const desc = gObj ? String((_a2 = gObj.effect) != null ? _a2 : "").trim() || String(gObj.effect_description || gObj.ct_gifts_effect_description || "").trim() : "";
             return `<li><strong>${name2}</strong>${desc ? `<span class="summary-gift-desc"> \u2014 ${desc}</span>` : ""}</li>`;
           }).join("")}</ul>`;
         }
@@ -6505,7 +6522,7 @@
           </div>
 
           ${(() => {
-        var _a, _b;
+        var _a2, _b2;
         const fc = window.CG_FreeChoices;
         const allG = fc && Array.isArray(fc._allGifts) ? fc._allGifts : [];
         const freeIds = Array.isArray(data.free_gifts) ? data.free_gifts : [data.free_gift_1, data.free_gift_2, data.free_gift_3];
@@ -6514,7 +6531,7 @@
         const lkRegion = String(data.local_knowledge_region || "").trim();
         giftItems.push(`<li><strong>Local Knowledge</strong>${lkRegion ? ` <em>(${lkRegion})</em>` : ""}${lkDesc ? `<span class="summary-gift-desc"> \u2014 ${lkDesc}</span>` : ""}</li>`);
         const quals = data.qualifications || data.quals || data.cg_quals || {};
-        const rawLang = (_b = (_a = quals.language) != null ? _a : data.language) != null ? _b : "";
+        const rawLang = (_b2 = (_a2 = quals.language) != null ? _a2 : data.language) != null ? _b2 : "";
         const langList = Array.isArray(rawLang) ? rawLang : rawLang ? [rawLang] : [];
         const langDisplay = langList.filter(Boolean).join(", ");
         const langDesc = giftDesc("236");
@@ -7666,6 +7683,8 @@
       setTrappingsList(list);
       this._syncBattleArray();
       this._renderAll();
+      if (this._catalogCache)
+        this._renderCatalog();
     },
     // ── Battle Array autofill ───────────────────────────────────────────────────
     _syncBattleArray() {

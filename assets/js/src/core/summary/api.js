@@ -110,10 +110,21 @@ const SummaryAPI = {
     const weapons = Array.isArray(data.weapons) ? data.weapons : [];
     const armor   = Array.isArray(data.armor)   ? data.armor   : [];
 
-    const moneyLiras     = data.money_liras     || '';
-    const moneyDenarii   = data.money_denarii   || '';
-    const moneyFarthings = data.money_farthings || '';
-    const hasMoney = moneyLiras || moneyDenarii || moneyFarthings;
+    // Full trappings list (from TrappingsAPI — stored directly on FormBuilderAPI._data)
+    const trappingsList = Array.isArray(FormBuilderAPI._data?.trappings_list)
+      ? FormBuilderAPI._data.trappings_list
+      : [];
+
+    // Money holdings (from TrappingsAPI — stored directly on FormBuilderAPI._data)
+    const moneyHoldings  = (FormBuilderAPI._data?.money_holdings && typeof FormBuilderAPI._data.money_holdings === 'object')
+      ? FormBuilderAPI._data.money_holdings
+      : {};
+    const trappingsAPI   = window.CG_TrappingsAPI;
+    const currencyList   = (trappingsAPI && Array.isArray(trappingsAPI._currencyList))
+      ? trappingsAPI._currencyList
+      : [];
+    const hasMoney = currencyList.some(c => parseFloat(moneyHoldings[c.slug] || 0) > 0)
+      || Object.values(moneyHoldings).some(v => parseFloat(v) > 0);
 
     const skillNotes = (data.skill_notes && typeof data.skill_notes === 'object') ? data.skill_notes : {};
 
@@ -268,18 +279,28 @@ const SummaryAPI = {
 
     // ── Equipment & Trappings section ──────────────────────────
     let equipmentHtml = '';
-    if (weapons.length || armor.length) {
+    {
       let equipList = '';
+      // Weapons (from synced battle array)
       weapons.forEach(w => {
         if (w.name) {
           const details = [w.attack, w.damage, w.range !== 'Melee' ? w.range : ''].filter(Boolean).join(', ');
           equipList += `<li><strong>${w.name}</strong>${details ? ` — ${details}` : ''}${w.notes ? ` (${w.notes})` : ''}</li>`;
         }
       });
+      // Armor (from synced battle array)
       armor.forEach(a => {
         if (a.name) {
           const details = [a.soak ? `Soak ${a.soak}` : '', a.penalty || ''].filter(Boolean).join(', ');
           equipList += `<li><strong>${a.name}</strong>${details ? ` — ${details}` : ''}${a.notes ? ` (${a.notes})` : ''}</li>`;
+        }
+      });
+      // Other (non-weapon, non-armor) trappings from the live trappings list
+      const gearItems = trappingsList.filter(t => t.kind !== 'weapon' && !t.armor_dice);
+      gearItems.forEach(t => {
+        if (t.name) {
+          const qty = (t.qty && t.qty > 1) ? `${t.qty}× ` : '';
+          equipList += `<li>${qty}<strong>${t.name}</strong>${t.token && t.token !== t.name ? ` <em>(${t.token})</em>` : ''}</li>`;
         }
       });
       if (equipList) {
@@ -294,15 +315,25 @@ const SummaryAPI = {
     // ── Money section ───────────────────────────────────────────
     let moneyHtml = '';
     if (hasMoney) {
-      const parts = [];
-      if (moneyLiras)     parts.push(`<span><strong>Liras:</strong> ${moneyLiras}</span>`);
-      if (moneyDenarii)   parts.push(`<span><strong>Denarii:</strong> ${moneyDenarii}</span>`);
-      if (moneyFarthings) parts.push(`<span><strong>Farthings:</strong> ${moneyFarthings}</span>`);
-      moneyHtml = `
-        <div class="summary-section summary-money">
-          <h3>Money</h3>
-          <div class="summary-money-row">${parts.join('')}</div>
-        </div>`;
+      let parts = [];
+      if (currencyList.length) {
+        currencyList.forEach(c => {
+          const amt = parseFloat(moneyHoldings[c.slug] || 0);
+          if (amt > 0) parts.push(`<span><strong>${c.name}:</strong> ${amt % 1 === 0 ? amt : amt.toFixed(3)}</span>`);
+        });
+      } else {
+        // Fallback: show raw slug:value pairs if currency list not loaded
+        Object.entries(moneyHoldings).forEach(([slug, amt]) => {
+          if (parseFloat(amt) > 0) parts.push(`<span><strong>${slug}:</strong> ${amt}</span>`);
+        });
+      }
+      if (parts.length) {
+        moneyHtml = `
+          <div class="summary-section summary-money">
+            <h3>Money</h3>
+            <div class="summary-money-row">${parts.join('')}</div>
+          </div>`;
+      }
     }
 
     // ── XP block ───────────────────────────────────────────────
