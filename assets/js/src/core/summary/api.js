@@ -133,7 +133,16 @@ const SummaryAPI = {
       const allGifts = (fc && Array.isArray(fc._allGifts)) ? fc._allGifts : [];
       const g = allGifts.find(g => String(g.ct_id || g.id || '') === String(giftId));
       if (!g) return '';
-      return String(g.effect_description || g.ct_gifts_effect_description || '').trim();
+      const short = String(g.effect ?? '').trim();
+      return short || String(g.effect_description || g.ct_gifts_effect_description || '').trim();
+    }
+
+    function giftName(giftId) {
+      if (!giftId) return '';
+      const fc = window.CG_FreeChoices;
+      const allGifts = (fc && Array.isArray(fc._allGifts)) ? fc._allGifts : [];
+      const g = allGifts.find(g => String(g.ct_id || g.id || '') === String(giftId));
+      return g ? String(g.ct_gift_name || g.name || giftId) : String(giftId);
     }
 
     // ── Species gifts block ────────────────────────────────────
@@ -283,7 +292,7 @@ const SummaryAPI = {
         xpGiftsListHtml = `<ul>${xpGifts.map(gId => {
           const gObj = allGifts.find(g => String(g.ct_id || g.id || '') === String(gId));
           const name = gObj ? String(gObj.ct_gift_name || gObj.name || gId) : String(gId);
-          const desc = gObj ? String(gObj.effect_description || gObj.ct_gifts_effect_description || '').trim() : '';
+          const desc = gObj ? (String(gObj.effect ?? '').trim() || String(gObj.effect_description || gObj.ct_gifts_effect_description || '').trim()) : '';
           return `<li><strong>${name}</strong>${desc ? `<span class="summary-gift-desc"> — ${desc}</span>` : ''}</li>`;
         }).join('')}</ul>`;
       }
@@ -341,6 +350,50 @@ const SummaryAPI = {
             <h3>Career: ${careerLabel}</h3>
             ${careerGiftsHtml ? `<ul>${careerGiftsHtml}</ul>` : ''}
           </div>
+
+          ${(() => {
+            const fc   = window.CG_FreeChoices;
+            const allG = (fc && Array.isArray(fc._allGifts)) ? fc._allGifts : [];
+
+            const freeIds = Array.isArray(data.free_gifts) ? data.free_gifts
+              : [data.free_gift_1, data.free_gift_2, data.free_gift_3];
+
+            const giftItems = [];
+
+            // ── Always-acquired defaults ──────────────────────────
+            const lkRegion = String(data.local_knowledge_region || '').trim();
+            giftItems.push(`<li><strong>Local Knowledge</strong>${lkRegion ? ` <em>(${lkRegion})</em>` : ''}</li>`);
+
+            const quals = data.qualifications || data.quals || data.cg_quals || {};
+            const rawLang = quals.language ?? data.language ?? '';
+            const langList = Array.isArray(rawLang) ? rawLang : (rawLang ? [rawLang] : []);
+            const langDisplay = langList.filter(Boolean).join(', ');
+            giftItems.push(`<li><strong>Language</strong>${langDisplay ? ` <em>(${langDisplay})</em>` : ''}</li>`);
+
+            giftItems.push(`<li><strong>Combat Save</strong></li>`);
+
+            const personality = String(data.personality_trait || '').trim();
+            if (personality) {
+              giftItems.push(`<li><strong>Personality:</strong> ${personality}</li>`);
+            }
+
+            // ── Free-choice gifts ─────────────────────────────────
+            (freeIds || []).forEach(id => {
+              const sid = String(id || '').trim();
+              if (!sid) return;
+              const name = giftName(sid);
+              const desc = giftDesc(sid);
+              if (name && name !== sid) {
+                giftItems.push(`<li><strong>${name}</strong>${desc ? `<span class="summary-gift-desc"> — ${desc}</span>` : ''}</li>`);
+              }
+            });
+
+            return giftItems.length ? `
+          <div class="summary-section summary-gifts">
+            <h3>Gifts</h3>
+            <ul>${giftItems.join('')}</ul>
+          </div>` : '';
+          })()}
 
         </div><!-- /col-left -->
 

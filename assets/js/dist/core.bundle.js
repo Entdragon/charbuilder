@@ -4052,10 +4052,13 @@
     return owned;
   }
   function giftEffectDescription(g) {
-    var _a, _b;
+    var _a, _b, _c;
     if (!g)
       return "";
-    const v = (_b = (_a = g.effect_description) != null ? _a : g.ct_gifts_effect_description) != null ? _b : "";
+    const short = String((_a = g.effect) != null ? _a : "").trim();
+    if (short)
+      return short;
+    const v = (_c = (_b = g.effect_description) != null ? _b : g.ct_gifts_effect_description) != null ? _c : "";
     return String(v || "").trim();
   }
   function isNaturalGift(g) {
@@ -6151,6 +6154,7 @@
       });
       const careerLabel = allCareerNames.length ? allCareerNames.join(" / ") : "\u2014";
       function giftDesc(giftId2) {
+        var _a;
         if (!giftId2)
           return "";
         const fc = window.CG_FreeChoices;
@@ -6158,7 +6162,16 @@
         const g = allGifts.find((g2) => String(g2.ct_id || g2.id || "") === String(giftId2));
         if (!g)
           return "";
-        return String(g.effect_description || g.ct_gifts_effect_description || "").trim();
+        const short = String((_a = g.effect) != null ? _a : "").trim();
+        return short || String(g.effect_description || g.ct_gifts_effect_description || "").trim();
+      }
+      function giftName2(giftId2) {
+        if (!giftId2)
+          return "";
+        const fc = window.CG_FreeChoices;
+        const allGifts = fc && Array.isArray(fc._allGifts) ? fc._allGifts : [];
+        const g = allGifts.find((g2) => String(g2.ct_id || g2.id || "") === String(giftId2));
+        return g ? String(g.ct_gift_name || g.name || giftId2) : String(giftId2);
       }
       let speciesGiftsHtml = "";
       ["gift_1", "gift_2", "gift_3"].forEach((_, idx) => {
@@ -6292,9 +6305,10 @@
           const fc = window.CG_FreeChoices;
           const allGifts = fc && Array.isArray(fc._allGifts) ? fc._allGifts : [];
           xpGiftsListHtml = `<ul>${xpGifts.map((gId) => {
+            var _a;
             const gObj = allGifts.find((g) => String(g.ct_id || g.id || "") === String(gId));
             const name2 = gObj ? String(gObj.ct_gift_name || gObj.name || gId) : String(gId);
-            const desc = gObj ? String(gObj.effect_description || gObj.ct_gifts_effect_description || "").trim() : "";
+            const desc = gObj ? String((_a = gObj.effect) != null ? _a : "").trim() || String(gObj.effect_description || gObj.ct_gifts_effect_description || "").trim() : "";
             return `<li><strong>${name2}</strong>${desc ? `<span class="summary-gift-desc"> \u2014 ${desc}</span>` : ""}</li>`;
           }).join("")}</ul>`;
         }
@@ -6354,6 +6368,41 @@
             <h3>Career: ${careerLabel}</h3>
             ${careerGiftsHtml ? `<ul>${careerGiftsHtml}</ul>` : ""}
           </div>
+
+          ${(() => {
+        var _a, _b;
+        const fc = window.CG_FreeChoices;
+        const allG = fc && Array.isArray(fc._allGifts) ? fc._allGifts : [];
+        const freeIds = Array.isArray(data.free_gifts) ? data.free_gifts : [data.free_gift_1, data.free_gift_2, data.free_gift_3];
+        const giftItems = [];
+        const lkRegion = String(data.local_knowledge_region || "").trim();
+        giftItems.push(`<li><strong>Local Knowledge</strong>${lkRegion ? ` <em>(${lkRegion})</em>` : ""}</li>`);
+        const quals = data.qualifications || data.quals || data.cg_quals || {};
+        const rawLang = (_b = (_a = quals.language) != null ? _a : data.language) != null ? _b : "";
+        const langList = Array.isArray(rawLang) ? rawLang : rawLang ? [rawLang] : [];
+        const langDisplay = langList.filter(Boolean).join(", ");
+        giftItems.push(`<li><strong>Language</strong>${langDisplay ? ` <em>(${langDisplay})</em>` : ""}</li>`);
+        giftItems.push(`<li><strong>Combat Save</strong></li>`);
+        const personality = String(data.personality_trait || "").trim();
+        if (personality) {
+          giftItems.push(`<li><strong>Personality:</strong> ${personality}</li>`);
+        }
+        (freeIds || []).forEach((id) => {
+          const sid = String(id || "").trim();
+          if (!sid)
+            return;
+          const name2 = giftName2(sid);
+          const desc = giftDesc(sid);
+          if (name2 && name2 !== sid) {
+            giftItems.push(`<li><strong>${name2}</strong>${desc ? `<span class="summary-gift-desc"> \u2014 ${desc}</span>` : ""}</li>`);
+          }
+        });
+        return giftItems.length ? `
+          <div class="summary-section summary-gifts">
+            <h3>Gifts</h3>
+            <ul>${giftItems.join("")}</ul>
+          </div>` : "";
+      })()}
 
         </div><!-- /col-left -->
 

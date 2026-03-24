@@ -32,6 +32,7 @@ async function cg_get_free_gifts(req, res) {
         g.ct_gifts_allows_multiple           AS allows_multiple,
         g.ct_gifts_manifold                  AS ct_gifts_manifold,
         gc.ct_class_name                     AS giftclass,
+        g.ct_gifts_effect                    AS effect,
         g.ct_gifts_effect_description        AS effect_description
       FROM ${p}customtables_table_gifts AS g
       LEFT JOIN ${p}customtables_table_giftclass AS gc ON gc.ct_id = g.ct_gift_class
@@ -48,6 +49,7 @@ async function cg_get_free_gifts(req, res) {
           ct_gifts_allows_multiple AS allows_multiple,
           ct_gifts_manifold        AS ct_gifts_manifold,
           NULL                     AS giftclass,
+          ct_gifts_effect          AS effect,
           NULL                     AS effect_description
         FROM ${p}customtables_table_gifts
         WHERE published = 1
@@ -113,10 +115,11 @@ async function cg_get_free_gifts(req, res) {
     const id = String(sr.gift_id || '');
     if (!giftMap.has(id)) return;
     const g = giftMap.get(id);
-    if (!g.effect_description || !String(g.effect_description || '').trim()) {
-      const body = String(sr.body || '').trim();
-      if (body) g.effect_description = body.length > 180 ? body.slice(0, 177) + '…' : body;
-    }
+    const body = String(sr.body || '').trim();
+    if (!body) return;
+    const short = body.length > 180 ? body.slice(0, 177) + '…' : body;
+    if (!g.effect || !String(g.effect || '').trim()) g.effect = short;
+    if (!g.effect_description || !String(g.effect_description || '').trim()) g.effect_description = short;
   });
 
   res.json({ success: true, data: rows });
@@ -157,12 +160,13 @@ async function cg_get_combat_save(req, res) {
   const p = prefix();
   const row = await queryOne(
     `SELECT ct_id AS id, ct_gifts_name AS name, ct_gifts_manifold AS ct_gifts_manifold,
+            ct_gifts_effect AS effect,
             ct_gifts_effect_description AS effect_description
      FROM ${p}customtables_table_gifts WHERE ct_id = 159 LIMIT 1`
   );
   if (!row) return res.json({ success: false, data: 'Combat Save gift not found.' });
 
-  if (!row.effect_description || !String(row.effect_description || '').trim()) {
+  if (!row.effect && !row.effect_description || !String(row.effect || row.effect_description || '').trim()) {
     try {
       const sect = await queryOne(
         `SELECT ct_body AS body FROM ${p}customtables_table_gift_sections
@@ -170,7 +174,9 @@ async function cg_get_combat_save(req, res) {
       );
       if (sect && sect.body) {
         const body = String(sect.body).trim();
-        row.effect_description = body.length > 180 ? body.slice(0, 177) + '…' : body;
+        const short = body.length > 180 ? body.slice(0, 177) + '…' : body;
+        if (!row.effect) row.effect = short;
+        if (!row.effect_description) row.effect_description = short;
       }
     } catch (_) {}
   }

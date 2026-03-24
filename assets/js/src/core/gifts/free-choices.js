@@ -439,6 +439,8 @@ function computeOwnedGiftIdSet(selectedFreeGiftIds = []) {
 
 function giftEffectDescription(g) {
   if (!g) return '';
+  const short = String(g.effect ?? '').trim();
+  if (short) return short;
   const v = g.effect_description ?? g.ct_gifts_effect_description ?? '';
   return String(v || '').trim();
 }
