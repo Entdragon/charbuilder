@@ -104,6 +104,16 @@ Features:
 - The manual creation-mark budget (3 per skill, 13 total) is independent of gift marks — players can still place up to 3 creation marks on a skill that already has a gift mark.
 - Removing a Knack For gift or changing its skill choice cleans up the bonus mark automatically.
 
+## Gift Requirements Logic (added Mar 2026)
+- Gift eligibility (`getTraitDieValue` in `free-choices.js`) now reads the **boosted** trait die value — i.e. base die + any "Increase Trait" gift improvements — so gifts with trait prerequisites (e.g. Giant requires Body d12) correctly unlock when the character qualifies via gifts rather than just the raw base die.
+- `TraitsService` is imported into `free-choices.js` and consulted after the raw trait value; the higher of the two is used.
+
+## Career Gift Replacement Logic (verified Mar 2026)
+- When a career gift is the same non-repeatable gift already granted by the chosen species, the career gift slot is replaced with a dropdown to select an "Increase Trait" gift instead.
+- Works regardless of whether species or career is selected first — re-renders whenever either selection changes.
+- Confirmed working combinations include: Hedgehog + Clown (Coward), Gorilla + Brute (Strength), Wolf + Hunter (Tracking and Hiking — two replacements), Fox + Bodyguard (Danger Sense), Giraffe + Jailer (Counter-Tactics), Yak + Worker (Team Player).
+- 6 "Increase Trait" replacement options available: Body, Mind, Speed, Will, Career, Species.
+
 ## Build System
 - `npm run build` – Rebuild JS bundle and CSS (after source changes)
 - `npm run watch:core` / `npm run watch:css` – Watch modes for development
