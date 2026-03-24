@@ -1114,7 +1114,8 @@
         </div>
 
         <div class="cg-profile-box cg-catalog-box">
-          <h3>Equipment Catalog</h3>
+          <h3>Equipment Shop</h3>
+          <p class="cg-catalog-intro">Purchase additional equipment from the catalog below. Career and gift trappings above are free \u2014 only shop purchases deduct money.</p>
           <div class="cg-catalog-controls">
             <input type="text" id="cg-equip-search" class="cg-catalog-search"
               placeholder="Search items\u2026" autocomplete="off" />
@@ -1123,9 +1124,10 @@
               <option value="equipment">Equipment only</option>
               <option value="weapon">Weapons only</option>
             </select>
+            <button type="button" id="cg-equip-browse-btn" class="cg-btn cg-btn-gold">Browse All Items</button>
           </div>
           <div id="cg-equip-catalog-panel">
-            <p class="cg-battle-loading"><em>Browse catalog to add items\u2026</em></p>
+            <p class="cg-catalog-hint"><em>Search above or click "Browse All Items" to see the full catalog.</em></p>
           </div>
         </div>
       </div>
@@ -7298,6 +7300,8 @@
     // equipment catalog rows
     _pendingCareer: null,
     // career_id being fetched
+    _giftTrappings: {},
+    // giftId → trapping items[]
     init() {
       if (this._inited)
         return;
@@ -7305,6 +7309,8 @@
       this._fetchCurrency().then(() => {
         this._bindEvents();
         this._renderAll();
+        this._ensureCatalog().catch(() => {
+        });
       });
     },
     _bindEvents() {
@@ -7323,6 +7329,9 @@
       $19(document).on("cg:traits:changed.trappings", () => {
         this._initStartingMoney();
         this._renderMoneyPanel();
+      });
+      $19(document).on("cg:free-gift:changed.trappings", () => {
+        this._syncGiftTrappings();
       });
       $19(document).on("cg:species:changed.trappings", () => {
         this._fillSpeciesWeapons();
@@ -7362,11 +7371,17 @@
         setTrappingsList(list);
         this._renderAll();
       });
+      $19(document).on("click.trappings", "#cg-equip-browse-btn", () => {
+        this._ensureCatalog().then(() => this._renderCatalog()).catch(() => {
+        });
+      });
       $19(document).on("input.trappings", "#cg-equip-search", () => {
-        this._renderCatalog();
+        this._ensureCatalog().then(() => this._renderCatalog()).catch(() => {
+        });
       });
       $19(document).on("change.trappings", "#cg-equip-filter-kind", () => {
-        this._renderCatalog();
+        this._ensureCatalog().then(() => this._renderCatalog()).catch(() => {
+        });
       });
       $19(document).on("click.trappings", ".cg-equip-add-btn", (e) => {
         const btn = e.currentTarget;
@@ -7444,6 +7459,89 @@
       const list = getTrappingsList().filter((t) => t.source !== "career");
       setTrappingsList(list);
       this._syncBattleArray();
+    },
+    // ── Gift trappings (e.g. "Cleric's Trappings", "Dilettante's Trappings") ──
+    _fetchGiftTrappingsData(giftId2) {
+      return __async(this, null, function* () {
+        if (this._giftTrappings[giftId2] !== void 0)
+          return this._giftTrappings[giftId2];
+        const { ajax_url, nonce } = ajaxEnv6();
+        if (!ajax_url)
+          return [];
+        try {
+          const res = yield postJSON4(ajax_url, {
+            action: "cg_get_gift_trappings",
+            gift_id: giftId2,
+            security: nonce,
+            nonce
+          });
+          const fetched = res && res.success && Array.isArray(res.data) ? res.data : [];
+          this._giftTrappings[giftId2] = fetched;
+          return fetched;
+        } catch (err) {
+          WARN2("Failed to fetch gift trappings for gift", giftId2, err);
+          this._giftTrappings[giftId2] = [];
+          return [];
+        }
+      });
+    },
+    _syncGiftTrappings() {
+      return __async(this, null, function* () {
+        const data = formBuilder_default._data || {};
+        const selectedIds = /* @__PURE__ */ new Set();
+        const rawFree = Array.isArray(data.free_gifts) ? data.free_gifts : [];
+        rawFree.forEach((id) => {
+          if (id && parseInt(id, 10) > 0)
+            selectedIds.add(parseInt(id, 10));
+        });
+        const replacements = data.career_gift_replacements || {};
+        Object.values(replacements).forEach((id) => {
+          if (id && parseInt(id, 10) > 0)
+            selectedIds.add(parseInt(id, 10));
+        });
+        let list = getTrappingsList().filter((t) => {
+          if (t.source !== "gift")
+            return true;
+          return selectedIds.has(parseInt(t.gift_id || 0, 10));
+        });
+        setTrappingsList(list);
+        const promises = [...selectedIds].map((giftId2) => __async(this, null, function* () {
+          const items = yield this._fetchGiftTrappingsData(giftId2);
+          if (!items.length)
+            return;
+          const current = getTrappingsList();
+          const alreadyAdded = current.some((t) => t.source === "gift" && parseInt(t.gift_id, 10) === giftId2);
+          if (alreadyAdded)
+            return;
+          const giftItems = items.map((t) => ({
+            uid: `gift-${giftId2}-${t.map_id}`,
+            source: "gift",
+            gift_id: giftId2,
+            gift_name: t.gift_name || "",
+            kind: t.kind || "equipment",
+            name: t.name || t.token || "",
+            qty: t.qty || 1,
+            slug: t.slug || "",
+            token: t.token || "",
+            armor_dice: t.armor_dice || "",
+            cover_dice: t.cover_dice || "",
+            attack_dice: t.attack_dice || "",
+            damage_mod: t.damage_mod || 0,
+            range_band: t.range_band || "Melee",
+            parry_die: t.parry_die || "",
+            effect: t.effect || "",
+            cost_d: null,
+            // gift trappings are always free
+            source_book: t.source_book || "",
+            pg_no: t.pg_no || ""
+          }));
+          const updated = getTrappingsList();
+          setTrappingsList([...updated, ...giftItems]);
+        }));
+        yield Promise.all(promises);
+        this._syncBattleArray();
+        this._renderAll();
+      });
     },
     // ── Species natural weapons autofill ───────────────────────────────────────
     _fillSpeciesWeapons() {
@@ -7669,6 +7767,7 @@
         this._fillCareerTrappings(careerId);
       }
       this._fillSpeciesWeapons();
+      this._syncGiftTrappings();
     },
     // ── Rendering ─────────────────────────────────────────────────────────────────
     _renderAll() {
@@ -7680,7 +7779,7 @@
       if (!panel)
         return;
       const list = getTrappingsList();
-      const bySource = { career: [], species: [], purchase: [], manual: [] };
+      const bySource = { career: [], species: [], gift: [], purchase: [], manual: [] };
       list.forEach((t) => {
         const src = t.source || "manual";
         if (!bySource[src])
@@ -7715,9 +7814,10 @@
       <div class="cg-trappings-inner">
         ${renderGroup(bySource.species, "Natural Weapons (Species)", "cg-trap-label--species")}
         ${renderGroup(bySource.career, "Career Starting Trappings", "cg-trap-label--career")}
+        ${renderGroup(bySource.gift, "Gift Trappings (free)", "cg-trap-label--gift")}
         ${renderGroup(bySource.purchase, "Purchased Equipment", "cg-trap-label--purchase")}
         ${renderGroup(bySource.manual, "Other Trappings", "cg-trap-label--manual")}
-        ${list.length === 0 ? '<p class="cg-trap-empty">No trappings yet. Select a career or browse the catalog below.</p>' : ""}
+        ${list.length === 0 ? '<p class="cg-trap-empty">No trappings yet. Select a career to get your starting gear, or use the shop below to purchase equipment.</p>' : ""}
       </div>
     `;
       panel.innerHTML = html;

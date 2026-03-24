@@ -63,7 +63,8 @@ export default {
         </div>
 
         <div class="cg-profile-box cg-catalog-box">
-          <h3>Equipment Catalog</h3>
+          <h3>Equipment Shop</h3>
+          <p class="cg-catalog-intro">Purchase additional equipment from the catalog below. Career and gift trappings above are free — only shop purchases deduct money.</p>
           <div class="cg-catalog-controls">
             <input type="text" id="cg-equip-search" class="cg-catalog-search"
               placeholder="Search items…" autocomplete="off" />
@@ -72,9 +73,10 @@ export default {
               <option value="equipment">Equipment only</option>
               <option value="weapon">Weapons only</option>
             </select>
+            <button type="button" id="cg-equip-browse-btn" class="cg-btn cg-btn-gold">Browse All Items</button>
           </div>
           <div id="cg-equip-catalog-panel">
-            <p class="cg-battle-loading"><em>Browse catalog to add items…</em></p>
+            <p class="cg-catalog-hint"><em>Search above or click "Browse All Items" to see the full catalog.</em></p>
           </div>
         </div>
       </div>

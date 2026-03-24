@@ -27,6 +27,7 @@
 
   &.cg-trap-label--species  { color: #7ec8e3; background: rgba(126,200,227,0.1); }
   &.cg-trap-label--career   { color: var(--cg-gold, #c9a84c); background: rgba(201,168,76,0.1); }
+  &.cg-trap-label--gift     { color: #c08ae0; background: rgba(192,138,224,0.1); }
   &.cg-trap-label--purchase { color: #a8e09a; background: rgba(168,224,154,0.1); }
   &.cg-trap-label--manual   { color: var(--cg-text-muted, #a09070); background: rgba(160,144,112,0.1); }
 }
@@ -160,6 +161,43 @@
 }
 
 // ── Equipment catalog ─────────────────────────────────────────────────────────
+.cg-catalog-intro {
+  font-size:     0.84rem;
+  color:         var(--cg-text-muted, #a09070);
+  margin:        0 0 0.9em;
+  line-height:   1.5;
+}
+
+.cg-catalog-hint {
+  color:      var(--cg-text-muted, #a09070);
+  font-size:  0.84rem;
+  margin:     0.4em 0;
+}
+
+.cg-btn {
+  display:       inline-block;
+  padding:       6px 14px;
+  border-radius: 5px;
+  font-size:     0.82rem;
+  cursor:        pointer;
+  border:        1px solid rgba(201,168,76,0.3);
+  background:    transparent;
+  color:         var(--cg-text-light, #e8dcc4);
+  font-family:   inherit;
+  line-height:   1.4;
+
+  &:hover { border-color: rgba(201,168,76,0.55); }
+}
+
+.cg-btn-gold {
+  background:   var(--cg-gold, #c9a84c);
+  color:        #1a1610 !important;
+  border-color: var(--cg-gold, #c9a84c);
+  font-weight:  600;
+
+  &:hover { background: #d4b35a; }
+}
+
 .cg-catalog-controls {
   display:     flex;
   gap:         0.7em;

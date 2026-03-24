@@ -21,6 +21,7 @@ const PUBLIC_ACTIONS = new Set([
   'cg_get_career_list',
   'cg_get_career_gifts',
   'cg_get_career_trappings',
+  'cg_get_gift_trappings',
   'cg_get_species_list',
   'cg_get_species_profile',
   'cg_get_skills_list',
@@ -72,6 +73,7 @@ const ACTION_MAP = {
   cg_migrate_junctions: migrateActions.cg_migrate_junctions,
 
   cg_get_career_trappings:  equipActions.cg_get_career_trappings,
+  cg_get_gift_trappings:    equipActions.cg_get_gift_trappings,
   cg_get_equipment_catalog: equipActions.cg_get_equipment_catalog,
   cg_get_money_list:        equipActions.cg_get_money_list,
 };
