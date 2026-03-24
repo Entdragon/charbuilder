@@ -153,6 +153,52 @@ async function cg_get_gift_prereqs(req, res) {
   res.json({ success: true, data: { prereqs, requirements } });
 }
 
+async function cg_get_combat_save(req, res) {
+  const p = prefix();
+  const row = await queryOne(
+    `SELECT ct_id AS id, ct_gifts_name AS name, ct_gifts_manifold AS ct_gifts_manifold,
+            ct_gifts_effect_description AS effect_description
+     FROM ${p}customtables_table_gifts WHERE ct_id = 159 LIMIT 1`
+  );
+  if (!row) return res.json({ success: false, data: 'Combat Save gift not found.' });
+
+  if (!row.effect_description || !String(row.effect_description || '').trim()) {
+    try {
+      const sect = await queryOne(
+        `SELECT ct_body AS body FROM ${p}customtables_table_gift_sections
+         WHERE ct_gift_id = 159 AND ct_section_type = 'rules' ORDER BY ct_sort ASC LIMIT 1`
+      );
+      if (sect && sect.body) {
+        const body = String(sect.body).trim();
+        row.effect_description = body.length > 180 ? body.slice(0, 177) + '…' : body;
+      }
+    } catch (_) {}
+  }
+
+  res.json({ success: true, data: row });
+}
+
+const DEFAULT_PERSONALITIES = [
+  'Altruistic','Bold','Charitable','Chaste','Cheerful','Courageous',
+  'Determined','Devoted','Diplomatic','Energetic','Faithful','Generous',
+  'Honest','Humble','Industrious','Just','Kind','Loyal','Merciful',
+  'Modest','Patient','Pious','Prudent','Reckless','Selfless','Tenacious',
+  'Valiant','Wise',
+];
+
+async function cg_get_personality_list(req, res) {
+  const p = prefix();
+  try {
+    const rows = await query(
+      `SELECT name FROM \`${p}cg_personality\` ORDER BY sort_order ASC, name ASC`
+    );
+    const list = rows.map(r => String(r.name || '').trim()).filter(Boolean);
+    return res.json({ success: true, data: list.length ? list : DEFAULT_PERSONALITIES.slice().sort((a, b) => a.localeCompare(b)) });
+  } catch (_) {
+    return res.json({ success: true, data: DEFAULT_PERSONALITIES.slice().sort((a, b) => a.localeCompare(b)) });
+  }
+}
+
 const DEFAULT_LANGUAGES = [
   'Calabrian', 'Common', 'Dwarven', 'Elven', 'Goblin', 'Hesperian',
   'Kawtaw', 'Mordic', 'Old Calabrian', 'Orcish', 'Sylvan', 'Urathi',
@@ -197,4 +243,4 @@ async function cg_get_language_list(req, res) {
   }
 }
 
-module.exports = { cg_get_local_knowledge, cg_get_language_gift, cg_get_free_gifts, cg_get_language_list, cg_get_gift_prereqs };
+module.exports = { cg_get_local_knowledge, cg_get_language_gift, cg_get_free_gifts, cg_get_language_list, cg_get_gift_prereqs, cg_get_combat_save, cg_get_personality_list };

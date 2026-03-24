@@ -520,6 +520,52 @@
   padding-left: 0;
 }
 
+.cg-default-gift-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  flex-wrap: wrap;
+  margin: 0.15em 0;
+}
+
+.cg-default-gift-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--cg-text, #2c2316);
+  white-space: nowrap;
+}
+
+.cg-default-gift-text {
+  flex: 1;
+  min-width: 180px;
+  max-width: 320px;
+  font-size: 0.88rem;
+  font-family: "Crimson Pro", Georgia, serif;
+  font-style: italic;
+  color: var(--cg-text, #2c2316);
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid var(--cg-parchment-3, #e0d8c0);
+  border-radius: 4px;
+  padding: 3px 8px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.cg-default-gift-text:focus {
+  border-color: var(--cg-gold, #c9a84c);
+}
+.cg-default-gift-text::placeholder {
+  color: var(--cg-text-muted, #6a5b3e);
+  opacity: 0.7;
+}
+
+.cg-default-gift-effect {
+  margin-top: 4px;
+  font-size: 0.82rem;
+  font-style: italic;
+  color: var(--cg-text-muted, #6a5b3e);
+  line-height: 1.4;
+}
+
 .cg-gift-extra-career-hint {
   display: inline;
   font-size: 0.82rem;
@@ -714,6 +760,7 @@
 .cg-skills-table td {
   padding: 0.5em 0.85em;
   border: 1px solid var(--cg-parchment-3);
+  color: var(--cg-text, #2c2316);
 }
 
 .cg-skills-table th {
@@ -1311,7 +1358,7 @@
 .cg-trap-table td {
   padding: 4px 6px;
   border: 1px solid rgba(201, 168, 76, 0.1);
-  color: var(--cg-text-light, #e8dcc4);
+  color: var(--cg-text, #2c2316);
   vertical-align: middle;
 }
 .cg-trap-table tr:nth-child(odd) td {
@@ -1374,7 +1421,7 @@
 
 .cg-money-total {
   font-size: 0.88rem;
-  color: var(--cg-text-light, #e8dcc4);
+  color: var(--cg-text, #2c2316);
   margin-bottom: 0.8em;
 }
 .cg-money-total strong {
@@ -1402,7 +1449,7 @@
 .cg-money-table td {
   padding: 4px 6px;
   border: 1px solid rgba(201, 168, 76, 0.1);
-  color: var(--cg-text-light, #e8dcc4);
+  color: var(--cg-text, #2c2316);
   vertical-align: middle;
 }
 .cg-money-table tr:nth-child(odd) td {
@@ -1497,7 +1544,7 @@
 .cg-catalog-table td {
   padding: 4px 6px;
   border: 1px solid rgba(201, 168, 76, 0.08);
-  color: var(--cg-text-light, #e8dcc4);
+  color: var(--cg-text, #2c2316);
   vertical-align: middle;
 }
 .cg-catalog-table tr:nth-child(odd) td {
@@ -1593,7 +1640,7 @@
   padding: 1.8em 2em;
   min-width: 340px;
   max-width: 480px;
-  color: var(--cg-text-light, #e8dcc4);
+  color: var(--cg-text, #2c2316);
 }
 .cg-exchange-modal h4 {
   font-family: var(--cg-heading-font, "Cinzel", serif);
@@ -1620,7 +1667,7 @@
   min-width: 40px;
   font-size: 0.84rem;
   font-weight: 600;
-  color: var(--cg-text-light, #e8dcc4);
+  color: var(--cg-text, #2c2316);
 }
 .cg-exchange-row select, .cg-exchange-row input {
   flex: 1;
@@ -1645,7 +1692,7 @@
   cursor: pointer;
   border: 1px solid rgba(201, 168, 76, 0.3);
   background: transparent;
-  color: var(--cg-text-light, #e8dcc4);
+  color: var(--cg-text, #2c2316);
   font-family: inherit;
 }
 .cg-exchange-actions .cg-btn:hover {
@@ -1748,6 +1795,19 @@
 
 .summary-section {
   margin-bottom: 0.8em;
+}
+
+.summary-species-traits {
+  font-size: 0.83rem;
+  color: var(--cg-text-muted, #6a5b3e);
+  margin: 0.2em 0 0.5em;
+  line-height: 1.5;
+  flex-wrap: wrap;
+  display: flex;
+  gap: 0.4em 0;
+}
+.summary-species-traits strong {
+  color: var(--cg-text, #2c2316);
 }
 
 #cg-summary-sheet ul {

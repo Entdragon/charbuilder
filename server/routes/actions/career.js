@@ -5,7 +5,6 @@ async function cg_get_career_list(req, res) {
   const c  = `${p}customtables_table_careers`;
   const cs = `${p}customtables_table_career_skills`;
   const cg = `${p}customtables_table_career_gifts`;
-  const sk = `${p}customtables_table_skills`;
 
   const rows = await query(`
     SELECT
@@ -14,9 +13,9 @@ async function cg_get_career_list(req, res) {
       cg1.gift_id      AS gift_id_1,
       cg2.gift_id      AS gift_id_2,
       cg3.gift_id      AS gift_id_3,
-      sk1.ct_skill_name AS skill_one,
-      sk2.ct_skill_name AS skill_two,
-      sk3.ct_skill_name AS skill_three
+      cs1.skill_id     AS skill_one,
+      cs2.skill_id     AS skill_two,
+      cs3.skill_id     AS skill_three
     FROM ${c} c
     LEFT JOIN ${cg} cg1 ON cg1.career_id = c.ct_id AND cg1.sort = 1
     LEFT JOIN ${cg} cg2 ON cg2.career_id = c.ct_id AND cg2.sort = 2
@@ -24,9 +23,6 @@ async function cg_get_career_list(req, res) {
     LEFT JOIN ${cs} cs1 ON cs1.career_id = c.ct_id AND cs1.sort = 1
     LEFT JOIN ${cs} cs2 ON cs2.career_id = c.ct_id AND cs2.sort = 2
     LEFT JOIN ${cs} cs3 ON cs3.career_id = c.ct_id AND cs3.sort = 3
-    LEFT JOIN ${sk} sk1 ON sk1.id = cs1.skill_id
-    LEFT JOIN ${sk} sk2 ON sk2.id = cs2.skill_id
-    LEFT JOIN ${sk} sk3 ON sk3.id = cs3.skill_id
     ORDER BY c.ct_career_name ASC
   `);
 
@@ -43,7 +39,6 @@ async function cg_get_career_gifts(req, res) {
   const c  = `${p}customtables_table_careers`;
   const cs = `${p}customtables_table_career_skills`;
   const cg = `${p}customtables_table_career_gifts`;
-  const sk = `${p}customtables_table_skills`;
   const g  = `${p}customtables_table_gifts`;
 
   const row = await queryOne(`
@@ -62,9 +57,9 @@ async function cg_get_career_gifts(req, res) {
       g3.ct_gifts_name     AS gift_3,
       g3.ct_gifts_manifold AS manifold_3,
 
-      sk1.ct_skill_name AS skill_one,
-      sk2.ct_skill_name AS skill_two,
-      sk3.ct_skill_name AS skill_three
+      cs1.skill_id AS skill_one,
+      cs2.skill_id AS skill_two,
+      cs3.skill_id AS skill_three
     FROM ${c} c
     LEFT JOIN ${cg} cg1 ON cg1.career_id = c.ct_id AND cg1.sort = 1
     LEFT JOIN ${cg} cg2 ON cg2.career_id = c.ct_id AND cg2.sort = 2
@@ -75,9 +70,6 @@ async function cg_get_career_gifts(req, res) {
     LEFT JOIN ${cs} cs1 ON cs1.career_id = c.ct_id AND cs1.sort = 1
     LEFT JOIN ${cs} cs2 ON cs2.career_id = c.ct_id AND cs2.sort = 2
     LEFT JOIN ${cs} cs3 ON cs3.career_id = c.ct_id AND cs3.sort = 3
-    LEFT JOIN ${sk} sk1 ON sk1.id = cs1.skill_id
-    LEFT JOIN ${sk} sk2 ON sk2.id = cs2.skill_id
-    LEFT JOIN ${sk} sk3 ON sk3.id = cs3.skill_id
     WHERE c.ct_id = ?
   `, [careerId]);
 

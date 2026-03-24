@@ -1070,6 +1070,12 @@
             <div id="cg-language" class="cg-gift-item" style="margin:0;"></div>
           </div>
 
+          <div class="cg-gift-label" style="margin-top:1em;">Combat Save</div>
+          <div id="cg-combat-save" class="cg-gift-item"></div>
+
+          <div class="cg-gift-label">Personality</div>
+          <div id="cg-personality" class="cg-gift-item"></div>
+
           <div class="cg-gift-label">Species Gifts</div>
           <ul id="species-gift-block" class="cg-gift-item"></ul>
 
@@ -4589,9 +4595,9 @@
       document.removeEventListener("cg:builder:opened", rerenderSoon);
       document.addEventListener("cg:builder:opened", rerenderSoon);
       try {
-        const W3 = window;
-        W3.__CG_EVT__ = W3.__CG_EVT__ || {};
-        const EVT = W3.__CG_EVT__;
+        const W4 = window;
+        W4.__CG_EVT__ = W4.__CG_EVT__ || {};
+        const EVT = W4.__CG_EVT__;
         if (EVT.freeChoicesRerenderSoon) {
           try {
             document.removeEventListener("cg:tab:changed", EVT.freeChoicesRerenderSoon);
@@ -4710,30 +4716,25 @@
             return;
           seen.add(id);
           const reason = giftIneligibleReason(g, owned, others);
-          const isGmOnly = !reason && gmApprovalRequired(g);
-          const unknownNotes = !reason && !isGmOnly ? getUnknownPrereqNotes(g) : [];
-          optionItems.push({ id, name, gift: g, reason, isGmOnly, unknownNotes });
+          if (reason)
+            return;
+          const isGmOnly = gmApprovalRequired(g);
+          const unknownNotes = !isGmOnly ? getUnknownPrereqNotes(g) : [];
+          optionItems.push({ id, name, gift: g, isGmOnly, unknownNotes });
         });
         const options = optionItems.map((o) => {
           const sel = String(selectedId) === String(o.id) ? " selected" : "";
           let label = String(o.name);
           if (o._forced) {
             label += " (saved)";
-          } else if (o.reason) {
-            label += ` \u2014 [${o.reason}]`;
           } else if (o.isGmOnly) {
             const gmReason = getGmApprovalReason(o.gift);
-            label += ` \u2014 [Requires GM approval: ${gmReason}]`;
+            label += ` \u2014 [GM approval: ${gmReason}]`;
           } else if (o.unknownNotes && o.unknownNotes.length) {
-            label += ` \u2014 [Note: ${o.unknownNotes[0]}]`;
+            label += ` \u2014 [${o.unknownNotes[0]}]`;
           }
-          const desc = giftEffectDescription(o.gift);
-          if (desc && !o._forced) {
-            label += ` \u2014 ${desc}`;
-          }
-          const disabled = o.reason && !o._forced ? " disabled" : "";
           const safeLabel = String(label).replace(/"/g, "&quot;");
-          return `<option value="${String(o.id)}"${sel}${disabled}>${safeLabel}</option>`;
+          return `<option value="${String(o.id)}"${sel}>${safeLabel}</option>`;
         }).join("\n");
         const selectedDesc = curGift ? giftEffectDescription(curGift) : "";
         const descHtml = selectedDesc ? `<div class="cg-gift-effect-desc" style="margin-top:4px; font-size:0.82rem; color:var(--cg-text-muted); font-style:italic; padding-left:2px;">${String(selectedDesc).replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>` : "";
@@ -5144,8 +5145,8 @@
     _languageListLoading = true;
     try {
       const base = typeof W2.CG_API_BASE === "string" && W2.CG_API_BASE ? W2.CG_API_BASE.replace(/\/+$/, "") : "";
-      const ajaxUrl = (base ? base + "/api/ajax" : null) || W2.CG_AJAX && W2.CG_AJAX.ajax_url || "/api/ajax";
-      fetch(ajaxUrl, {
+      const ajaxUrl2 = (base ? base + "/api/ajax" : null) || W2.CG_AJAX && W2.CG_AJAX.ajax_url || "/api/ajax";
+      fetch(ajaxUrl2, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -5342,8 +5343,192 @@
   W2.CG_QualUI = QualUI;
   var ui_default = QualUI;
 
-  // assets/js/src/core/gifts/index.js
+  // assets/js/src/core/gifts/defaults.js
+  function cgWin3() {
+    if (typeof globalThis !== "undefined")
+      return globalThis;
+    if (typeof window !== "undefined")
+      return window;
+    return {};
+  }
+  var W3 = cgWin3();
+  function ajaxUrl() {
+    const base = typeof W3.CG_API_BASE === "string" && W3.CG_API_BASE ? W3.CG_API_BASE.replace(/\/+$/, "") : "";
+    if (base)
+      return base + "/api/ajax";
+    const env = W3.CG_AJAX || W3.CG_Ajax || {};
+    return env.ajax_url || W3.ajaxurl || "/api/ajax";
+  }
+  function postJSON3(url, data) {
+    return fetch(url, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    }).then((r) => r.json()).catch(() => null);
+  }
+  function safeHtml(s) {
+    return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  function effectDescHtml(desc) {
+    if (!desc)
+      return "";
+    const clean = String(desc).replace(/@@\w+[:\s]*/g, " ").replace(/\s+/g, " ").trim();
+    const short = clean.length > 220 ? clean.slice(0, 217) + "\u2026" : clean;
+    return `<div class="cg-default-gift-effect">${safeHtml(short)}</div>`;
+  }
+  function getData() {
+    var _a;
+    if (formBuilder_default && formBuilder_default._data)
+      return formBuilder_default._data;
+    if (typeof ((_a = formBuilder_default) == null ? void 0 : _a.getData) === "function")
+      return formBuilder_default.getData() || {};
+    return {};
+  }
+  function setKey(key, value) {
+    const d = getData();
+    if (formBuilder_default && formBuilder_default._data) {
+      formBuilder_default._data[key] = value;
+    } else {
+      d[key] = value;
+    }
+    try {
+      document.dispatchEvent(new CustomEvent("cg:defaults:changed", { detail: { key, value } }));
+    } catch (_) {
+    }
+  }
+  var _lkGift = null;
+  function fetchLKGift() {
+    return __async(this, null, function* () {
+      if (_lkGift)
+        return _lkGift;
+      const res = yield postJSON3(ajaxUrl(), { action: "cg_get_local_knowledge" });
+      if (res && res.success && res.data)
+        _lkGift = res.data;
+      return _lkGift;
+    });
+  }
+  function renderLK(host) {
+    if (!host)
+      return;
+    const data = getData();
+    const regionVal = safeHtml(String(data.local_knowledge_region || ""));
+    const gift = _lkGift;
+    const name = gift ? safeHtml(String(gift.name || "Local Knowledge")) : "Local Knowledge";
+    const desc = gift ? effectDescHtml(gift.effect_description || "") : "";
+    host.innerHTML = `
+    <div class="cg-default-gift-row">
+      <span class="cg-default-gift-name">${name}</span>
+      <input
+        type="text"
+        id="cg-local-knowledge-region"
+        class="cg-default-gift-text"
+        placeholder="Region / area of knowledge\u2026"
+        value="${regionVal}"
+        maxlength="120"
+        title="Specify your character's area of local knowledge"
+      />
+    </div>
+    ${desc}
+  `;
+    const inp = host.querySelector("#cg-local-knowledge-region");
+    if (inp) {
+      inp.addEventListener("input", (e) => {
+        setKey("local_knowledge_region", String(e.target.value || "").trim());
+      });
+    }
+  }
+  var _csGift = null;
+  function fetchCombatSave() {
+    return __async(this, null, function* () {
+      if (_csGift)
+        return _csGift;
+      const res = yield postJSON3(ajaxUrl(), { action: "cg_get_combat_save" });
+      if (res && res.success && res.data)
+        _csGift = res.data;
+      return _csGift;
+    });
+  }
+  function renderCombatSave(host) {
+    if (!host)
+      return;
+    const gift = _csGift;
+    const name = gift ? safeHtml(String(gift.name || "Combat Save")) : "Combat Save";
+    const desc = gift ? effectDescHtml(gift.effect_description || "") : "";
+    host.innerHTML = `
+    <div class="cg-default-gift-row">
+      <span class="cg-default-gift-name">${name}</span>
+    </div>
+    ${desc}
+  `;
+  }
+  var _personalityList = null;
+  function fetchPersonalityList() {
+    return __async(this, null, function* () {
+      if (_personalityList)
+        return _personalityList;
+      const res = yield postJSON3(ajaxUrl(), { action: "cg_get_personality_list" });
+      if (res && res.success && Array.isArray(res.data))
+        _personalityList = res.data;
+      return _personalityList || [];
+    });
+  }
+  function renderPersonality(host) {
+    if (!host)
+      return;
+    const data = getData();
+    const cur = String(data.personality_trait || "");
+    const list = _personalityList || [];
+    const opts = list.map((name) => {
+      const safe = safeHtml(name);
+      const sel2 = safe === safeHtml(cur) ? " selected" : "";
+      return `<option value="${safe}"${sel2}>${safe}</option>`;
+    }).join("");
+    host.innerHTML = `
+    <select id="cg-personality-select" class="cg-free-select" style="max-width:300px;">
+      <option value="">\u2014 Select personality trait \u2014</option>
+      ${opts}
+    </select>
+  `;
+    const sel = host.querySelector("#cg-personality-select");
+    if (sel) {
+      sel.addEventListener("change", (e) => {
+        setKey("personality_trait", String(e.target.value || "").trim());
+      });
+    }
+  }
+  var _inited = false;
   function init() {
+    return __async(this, null, function* () {
+      if (_inited) {
+        return render();
+      }
+      _inited = true;
+      yield Promise.all([fetchLKGift(), fetchCombatSave(), fetchPersonalityList()]);
+      render();
+    });
+  }
+  function render() {
+    const modal = document.getElementById("cg-modal");
+    if (!modal)
+      return;
+    const lkHost = modal.querySelector("#cg-local-knowledge");
+    const csHost = modal.querySelector("#cg-combat-save");
+    const pHost = modal.querySelector("#cg-personality");
+    if (lkHost)
+      renderLK(lkHost);
+    if (csHost)
+      renderCombatSave(csHost);
+    if (pHost)
+      renderPersonality(pHost);
+  }
+  var GiftsDefaults = { init, render };
+  if (typeof W3 !== "undefined")
+    W3.CG_GiftsDefaults = GiftsDefaults;
+  var defaults_default = GiftsDefaults;
+
+  // assets/js/src/core/gifts/index.js
+  function init2() {
     try {
       state_default.init();
     } catch (_) {
@@ -5354,6 +5539,10 @@
     }
     try {
       ui_default.init();
+    } catch (_) {
+    }
+    try {
+      defaults_default.init();
     } catch (_) {
     }
     try {
@@ -5370,7 +5559,7 @@
   function getSelected() {
     return Array.isArray(state_default.selected) ? state_default.selected : [];
   }
-  var GiftsAPI = { init, refresh, getSelected };
+  var GiftsAPI = { init: init2, refresh, getSelected };
   var gifts_default = GiftsAPI;
 
   // assets/js/src/utils/marks-dice.js
@@ -5748,7 +5937,7 @@
 
   // assets/js/src/core/skills/index.js
   var $15 = window.jQuery;
-  var _inited = false;
+  var _inited2 = false;
   var _fetching = false;
   var _fetchDone = false;
   function isSkillsTabActive3() {
@@ -5812,8 +6001,8 @@
   }
   var skills_default = {
     init() {
-      if (!_inited) {
-        _inited = true;
+      if (!_inited2) {
+        _inited2 = true;
         formBuilder_default._data = formBuilder_default._data || {};
         if (!Array.isArray(formBuilder_default._data.skillsList) || !formBuilder_default._data.skillsList.length) {
           if (Array.isArray(window.CG_SKILLS_LIST) && window.CG_SKILLS_LIST.length) {
@@ -6145,6 +6334,19 @@
 
           <div class="summary-section summary-species">
             <h3>Species: ${species.speciesName || "\u2014"}</h3>
+            ${(() => {
+        const parts = [];
+        if (species.habitat)
+          parts.push(`<span><strong>Habitat:</strong> ${species.habitat}</span>`);
+        if (species.diet)
+          parts.push(`<span><strong>Diet:</strong> ${species.diet}</span>`);
+        if (species.cycle)
+          parts.push(`<span><strong>Cycle:</strong> ${species.cycle}</span>`);
+        const senses = [species.sense_1, species.sense_2, species.sense_3].filter(Boolean);
+        if (senses.length)
+          parts.push(`<span><strong>Senses:</strong> ${senses.join(", ")}</span>`);
+        return parts.length ? `<div class="summary-species-traits">${parts.join(" &nbsp;|&nbsp; ")}</div>` : "";
+      })()}
             ${speciesGiftsHtml ? `<ul>${speciesGiftsHtml}</ul>` : ""}
           </div>
 
@@ -6369,23 +6571,23 @@
   var $17 = window.jQuery;
   var XP_MARK_COST = 4;
   var XP_GIFT_COST = 10;
-  function getData() {
+  function getData2() {
     return formBuilder_default._data || {};
   }
   function getXpEarned() {
-    return parseInt(getData().experience_points, 10) || 0;
+    return parseInt(getData2().experience_points, 10) || 0;
   }
   function getXpMarksBudget() {
-    return parseInt(getData().xpMarksBudget, 10) || 0;
+    return parseInt(getData2().xpMarksBudget, 10) || 0;
   }
   function getXpGiftSlots() {
-    return parseInt(getData().xpGiftSlots, 10) || 0;
+    return parseInt(getData2().xpGiftSlots, 10) || 0;
   }
   function getXpGifts() {
-    return Array.isArray(getData().xpGifts) ? getData().xpGifts : [];
+    return Array.isArray(getData2().xpGifts) ? getData2().xpGifts : [];
   }
   function getXpSkillMarks() {
-    return getData().xpSkillMarks || {};
+    return getData2().xpSkillMarks || {};
   }
   function calcSpent() {
     return getXpMarksBudget() * XP_MARK_COST + getXpGiftSlots() * XP_GIFT_COST;
@@ -6864,7 +7066,7 @@
     const nonce = env.nonce || env.security || window.CG_NONCE || null;
     return { ajax_url, nonce };
   }
-  function postJSON3(url, data) {
+  function postJSON4(url, data) {
     return $19.post(url, data).then((res) => {
       try {
         return typeof res === "string" ? JSON.parse(res) : res;
@@ -7005,7 +7207,7 @@
         if (!ajax_url)
           return;
         try {
-          const res = yield postJSON3(ajax_url, {
+          const res = yield postJSON4(ajax_url, {
             action: "cg_get_career_trappings",
             career_id: careerId,
             security: nonce,
@@ -7090,7 +7292,7 @@
         const { ajax_url, nonce } = ajaxEnv6();
         if (!ajax_url)
           return [];
-        const res = yield postJSON3(ajax_url, {
+        const res = yield postJSON4(ajax_url, {
           action: "cg_get_equipment_catalog",
           security: nonce,
           nonce
@@ -7247,7 +7449,7 @@
         if (!ajax_url)
           return;
         try {
-          const res = yield postJSON3(ajax_url, {
+          const res = yield postJSON4(ajax_url, {
             action: "cg_get_money_list",
             security: nonce,
             nonce
@@ -7636,7 +7838,7 @@
   var $21 = window.jQuery;
   var LOG2 = (...a) => console.log("[BuilderLoad]", ...a);
   var ERR = (...a) => console.error("[BuilderLoad]", ...a);
-  var _inited2 = false;
+  var _inited3 = false;
   var _cacheRows = null;
   var _cacheAt = 0;
   var CACHE_MS = 3e4;
@@ -7789,9 +7991,9 @@
     };
   }
   function bindLoadEvents() {
-    if (_inited2)
+    if (_inited3)
       return;
-    _inited2 = true;
+    _inited3 = true;
     LOG2("init");
     ensurePopulated({ force: false });
     try {

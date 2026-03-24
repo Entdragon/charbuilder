@@ -1116,9 +1116,10 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
         seen.add(id);
 
         const reason = giftIneligibleReason(g, owned, others);
-        const isGmOnly = !reason && gmApprovalRequired(g);
-        const unknownNotes = (!reason && !isGmOnly) ? getUnknownPrereqNotes(g) : [];
-        optionItems.push({ id, name, gift: g, reason, isGmOnly, unknownNotes });
+        if (reason) return;
+        const isGmOnly = gmApprovalRequired(g);
+        const unknownNotes = !isGmOnly ? getUnknownPrereqNotes(g) : [];
+        optionItems.push({ id, name, gift: g, isGmOnly, unknownNotes });
       });
 
       const options = optionItems.map(o => {
@@ -1127,23 +1128,15 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
 
         if (o._forced) {
           label += ' (saved)';
-        } else if (o.reason) {
-          label += ` — [${o.reason}]`;
         } else if (o.isGmOnly) {
           const gmReason = getGmApprovalReason(o.gift);
-          label += ` — [Requires GM approval: ${gmReason}]`;
+          label += ` — [GM approval: ${gmReason}]`;
         } else if (o.unknownNotes && o.unknownNotes.length) {
-          label += ` — [Note: ${o.unknownNotes[0]}]`;
+          label += ` — [${o.unknownNotes[0]}]`;
         }
 
-        const desc = giftEffectDescription(o.gift);
-        if (desc && !o._forced) {
-          label += ` — ${desc}`;
-        }
-
-        const disabled = (o.reason && !o._forced) ? ' disabled' : '';
         const safeLabel = String(label).replace(/"/g, '&quot;');
-        return `<option value="${String(o.id)}"${sel}${disabled}>${safeLabel}</option>`;
+        return `<option value="${String(o.id)}"${sel}>${safeLabel}</option>`;
       }).join('\n');
 
       const selectedDesc = curGift ? giftEffectDescription(curGift) : '';

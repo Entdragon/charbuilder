@@ -98,6 +98,50 @@
   }
 }
 
+// Default gift display (Local Knowledge, Combat Save, Personality)
+
+.cg-default-gift-row {
+  display:     flex;
+  align-items: center;
+  gap:         0.6em;
+  flex-wrap:   wrap;
+  margin:      0.15em 0;
+}
+
+.cg-default-gift-name {
+  font-weight:    600;
+  font-size:      0.95rem;
+  color:          var(--cg-text, #2c2316);
+  white-space:    nowrap;
+}
+
+.cg-default-gift-text {
+  flex:          1;
+  min-width:     180px;
+  max-width:     320px;
+  font-size:     0.88rem;
+  font-family:   'Crimson Pro', Georgia, serif;
+  font-style:    italic;
+  color:         var(--cg-text, #2c2316);
+  background:    rgba(255,255,255,0.55);
+  border:        1px solid var(--cg-parchment-3, #e0d8c0);
+  border-radius: 4px;
+  padding:       3px 8px;
+  outline:       none;
+  transition:    border-color 0.15s;
+
+  &:focus { border-color: var(--cg-gold, #c9a84c); }
+  &::placeholder { color: var(--cg-text-muted, #6a5b3e); opacity: 0.7; }
+}
+
+.cg-default-gift-effect {
+  margin-top:  4px;
+  font-size:   0.82rem;
+  font-style:  italic;
+  color:       var(--cg-text-muted, #6a5b3e);
+  line-height: 1.4;
+}
+
 // Extra Career gift hint (Gifts tab)
 
 .cg-gift-extra-career-hint {

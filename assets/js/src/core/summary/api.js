@@ -325,6 +325,15 @@ const SummaryAPI = {
 
           <div class="summary-section summary-species">
             <h3>Species: ${species.speciesName || '—'}</h3>
+            ${(() => {
+              const parts = [];
+              if (species.habitat) parts.push(`<span><strong>Habitat:</strong> ${species.habitat}</span>`);
+              if (species.diet)    parts.push(`<span><strong>Diet:</strong> ${species.diet}</span>`);
+              if (species.cycle)   parts.push(`<span><strong>Cycle:</strong> ${species.cycle}</span>`);
+              const senses = [species.sense_1, species.sense_2, species.sense_3].filter(Boolean);
+              if (senses.length)   parts.push(`<span><strong>Senses:</strong> ${senses.join(', ')}</span>`);
+              return parts.length ? `<div class="summary-species-traits">${parts.join(' &nbsp;|&nbsp; ')}</div>` : '';
+            })()}
             ${speciesGiftsHtml ? `<ul>${speciesGiftsHtml}</ul>` : ''}
           </div>
 

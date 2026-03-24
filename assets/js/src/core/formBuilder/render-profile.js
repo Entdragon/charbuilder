@@ -19,6 +19,12 @@ export default {
             <div id="cg-language" class="cg-gift-item" style="margin:0;"></div>
           </div>
 
+          <div class="cg-gift-label" style="margin-top:1em;">Combat Save</div>
+          <div id="cg-combat-save" class="cg-gift-item"></div>
+
+          <div class="cg-gift-label">Personality</div>
+          <div id="cg-personality" class="cg-gift-item"></div>
+
           <div class="cg-gift-label">Species Gifts</div>
           <ul id="species-gift-block" class="cg-gift-item"></ul>
 

@@ -30,6 +30,8 @@ const PUBLIC_ACTIONS = new Set([
   'cg_get_language_gift',
   'cg_get_language_list',
   'cg_get_gift_prereqs',
+  'cg_get_combat_save',
+  'cg_get_personality_list',
   'cg_get_equipment_catalog',
   'cg_get_money_list',
 ]);
@@ -53,6 +55,8 @@ const ACTION_MAP = {
   cg_get_free_gifts:      giftsActions.cg_get_free_gifts,
   cg_get_language_list:   giftsActions.cg_get_language_list,
   cg_get_gift_prereqs:    giftsActions.cg_get_gift_prereqs,
+  cg_get_combat_save:     giftsActions.cg_get_combat_save,
+  cg_get_personality_list: giftsActions.cg_get_personality_list,
 
   cg_get_skills_list:   skillsActions.cg_get_skills_list,
   cg_get_skill_detail:  skillsActions.cg_get_skill_detail,

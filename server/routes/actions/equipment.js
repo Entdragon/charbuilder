@@ -218,24 +218,29 @@ async function cg_get_equipment_catalog(req, res) {
 
 async function cg_get_money_list(req, res) {
   const p = prefix();
-  const rows = await query(`
-    SELECT
-      ct_id             AS id,
-      ct_name           AS name,
-      ct_slug           AS slug,
-      ct_kind           AS kind,
-      ct_value_denarii  AS value_denarii,
-      ct_trade_value_denarii AS trade_value_denarii,
-      ct_exchange_rate_text  AS exchange_rate_text,
-      ct_is_legal_tender     AS is_legal_tender,
-      ct_is_proscribed       AS is_proscribed,
-      ct_notes               AS notes,
-      ct_source_book         AS source_book
-    FROM ${p}customtables_table_money
-    WHERE published = 1
-    ORDER BY ct_value_denarii DESC
-  `);
-  res.json({ success: true, data: rows });
+  try {
+    const rows = await query(`
+      SELECT
+        ct_id             AS id,
+        ct_name           AS name,
+        ct_slug           AS slug,
+        ct_kind           AS kind,
+        ct_value_denarii  AS value_denarii,
+        ct_trade_value_denarii AS trade_value_denarii,
+        ct_exchange_rate_text  AS exchange_rate_text,
+        ct_is_legal_tender     AS is_legal_tender,
+        ct_is_proscribed       AS is_proscribed,
+        ct_notes               AS notes,
+        ct_source_book         AS source_book
+      FROM ${p}customtables_table_money
+      WHERE published = 1
+      ORDER BY ct_value_denarii DESC
+    `);
+    res.json({ success: true, data: rows });
+  } catch (err) {
+    console.warn('[cg_get_money_list] query failed:', err.message);
+    res.json({ success: true, data: [] });
+  }
 }
 
 module.exports = { cg_get_career_trappings, cg_get_equipment_catalog, cg_get_money_list };
