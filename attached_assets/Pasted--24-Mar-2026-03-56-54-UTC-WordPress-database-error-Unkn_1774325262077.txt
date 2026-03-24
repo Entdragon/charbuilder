@@ -1,0 +1,161 @@
+[24-Mar-2026 03:56:54 UTC] WordPress database error Unknown column 'g.ct_gift_type' in 'ON' for query 
+  SELECT
+    g.*,
+    gc.ct_class_name AS class_name,
+    gc.ct_slug AS class_slug,
+    gt1.ct_type_name AS type1, gt1.ct_slug AS type1_slug,
+    gt2.ct_type_name AS type2, gt2.ct_slug AS type2_slug,
+    gt3.ct_type_name AS type3, gt3.ct_slug AS type3_slug,
+    gt4.ct_type_name AS type4, gt4.ct_slug AS type4_slug,
+    gt5.ct_type_name AS type5, gt5.ct_slug AS type5_slug,
+    gt6.ct_type_name AS type6, gt6.ct_slug AS type6_slug,
+    gt7.ct_type_name AS type7, gt7.ct_slug AS type7_slug,
+    gt8.ct_type_name AS type8, gt8.ct_slug AS type8_slug,
+    rf.ct_refresh_name AS refresh_name, rf.ct_slug AS refresh_slug,
+    b.ct_book_name,
+    b.ct_ct_slug AS book_slug
+  FROM DcVnchxg4_customtables_table_gifts AS g
+  LEFT JOIN DcVnchxg4_customtables_table_giftclass AS gc ON g.ct_gift_class = gc.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt1 ON g.ct_gift_type = gt1.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt2 ON g.ct_gift_type_two = gt2.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt3 ON g.ct_gift_type_three = gt3.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt4 ON g.ct_gift_type_four = gt4.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt5 ON g.ct_gift_type_five = gt5.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt6 ON g.ct_gift_type_six = gt6.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt7 ON g.ct_gift_type_seven = gt7.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt8 ON g.ct_gift_type_eight = gt8.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_refresh AS rf ON g.ct_gifts_refresh = rf.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_books AS b ON g.ct_book_id = b.ct_id
+  WHERE g.ct_slug = 'increased-trait-body'
+    AND g.published = 1
+ made by require('wp-blog-header.php'), require_once('wp-includes/template-loader.php'), include('/themes/twentytwentyfour-child/page-gift.php')
+[24-Mar-2026 03:58:35 UTC] WordPress database error Unknown column 'g.ct_gift_type' in 'ON' for query 
+  SELECT
+    g.*,
+    gc.ct_class_name AS class_name,
+    gc.ct_slug AS class_slug,
+    gt1.ct_type_name AS type1, gt1.ct_slug AS type1_slug,
+    gt2.ct_type_name AS type2, gt2.ct_slug AS type2_slug,
+    gt3.ct_type_name AS type3, gt3.ct_slug AS type3_slug,
+    gt4.ct_type_name AS type4, gt4.ct_slug AS type4_slug,
+    gt5.ct_type_name AS type5, gt5.ct_slug AS type5_slug,
+    gt6.ct_type_name AS type6, gt6.ct_slug AS type6_slug,
+    gt7.ct_type_name AS type7, gt7.ct_slug AS type7_slug,
+    gt8.ct_type_name AS type8, gt8.ct_slug AS type8_slug,
+    rf.ct_refresh_name AS refresh_name, rf.ct_slug AS refresh_slug,
+    b.ct_book_name,
+    b.ct_ct_slug AS book_slug
+  FROM DcVnchxg4_customtables_table_gifts AS g
+  LEFT JOIN DcVnchxg4_customtables_table_giftclass AS gc ON g.ct_gift_class = gc.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt1 ON g.ct_gift_type = gt1.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt2 ON g.ct_gift_type_two = gt2.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt3 ON g.ct_gift_type_three = gt3.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt4 ON g.ct_gift_type_four = gt4.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt5 ON g.ct_gift_type_five = gt5.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt6 ON g.ct_gift_type_six = gt6.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt7 ON g.ct_gift_type_seven = gt7.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt8 ON g.ct_gift_type_eight = gt8.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_refresh AS rf ON g.ct_gifts_refresh = rf.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_books AS b ON g.ct_book_id = b.ct_id
+  WHERE g.ct_slug = 'abjure-monster'
+    AND g.published = 1
+ made by require('wp-blog-header.php'), require_once('wp-includes/template-loader.php'), include('/themes/twentytwentyfour-child/page-gift.php')
+[24-Mar-2026 03:59:09 UTC] PHP Parse error:  syntax error, unexpected token "<", expecting end of file in /home/libraryo/public_html/wp-content/themes/twentytwentyfour-child/snippets/character-generator-embed.php on line 484
+[24-Mar-2026 03:59:20 UTC] PHP Parse error:  syntax error, unexpected token "<", expecting end of file in /home/libraryo/public_html/wp-content/themes/twentytwentyfour-child/snippets/character-generator-embed.php on line 484
+[24-Mar-2026 04:00:31 UTC] PHP Parse error:  syntax error, unexpected token "<", expecting end of file in /home/libraryo/public_html/wp-content/themes/twentytwentyfour-child/snippets/character-generator-embed.php on line 484
+[24-Mar-2026 04:01:50 UTC] PHP Parse error:  syntax error, unexpected token "<", expecting end of file in /home/libraryo/public_html/wp-content/themes/twentytwentyfour-child/snippets/character-generator-embed.php on line 484
+[24-Mar-2026 04:01:51 UTC] PHP Parse error:  syntax error, unexpected token "<", expecting end of file in /home/libraryo/public_html/wp-content/themes/twentytwentyfour-child/snippets/character-generator-embed.php on line 484
+[24-Mar-2026 04:03:03 UTC] PHP Parse error:  syntax error, unexpected token "<", expecting end of file in /home/libraryo/public_html/wp-content/themes/twentytwentyfour-child/snippets/character-generator-embed.php on line 484
+[24-Mar-2026 04:04:16 UTC] WordPress database error Unknown column 'g.ct_gift_type' in 'ON' for query 
+  SELECT
+    g.*,
+    gc.ct_class_name AS class_name,
+    gc.ct_slug AS class_slug,
+    gt1.ct_type_name AS type1, gt1.ct_slug AS type1_slug,
+    gt2.ct_type_name AS type2, gt2.ct_slug AS type2_slug,
+    gt3.ct_type_name AS type3, gt3.ct_slug AS type3_slug,
+    gt4.ct_type_name AS type4, gt4.ct_slug AS type4_slug,
+    gt5.ct_type_name AS type5, gt5.ct_slug AS type5_slug,
+    gt6.ct_type_name AS type6, gt6.ct_slug AS type6_slug,
+    gt7.ct_type_name AS type7, gt7.ct_slug AS type7_slug,
+    gt8.ct_type_name AS type8, gt8.ct_slug AS type8_slug,
+    rf.ct_refresh_name AS refresh_name, rf.ct_slug AS refresh_slug,
+    b.ct_book_name,
+    b.ct_ct_slug AS book_slug
+  FROM DcVnchxg4_customtables_table_gifts AS g
+  LEFT JOIN DcVnchxg4_customtables_table_giftclass AS gc ON g.ct_gift_class = gc.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt1 ON g.ct_gift_type = gt1.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt2 ON g.ct_gift_type_two = gt2.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt3 ON g.ct_gift_type_three = gt3.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt4 ON g.ct_gift_type_four = gt4.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt5 ON g.ct_gift_type_five = gt5.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt6 ON g.ct_gift_type_six = gt6.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt7 ON g.ct_gift_type_seven = gt7.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt8 ON g.ct_gift_type_eight = gt8.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_refresh AS rf ON g.ct_gifts_refresh = rf.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_books AS b ON g.ct_book_id = b.ct_id
+  WHERE g.ct_slug = 'abjure-monster'
+    AND g.published = 1
+ made by require('wp-blog-header.php'), require_once('wp-includes/template-loader.php'), include('/themes/twentytwentyfour-child/page-gift.php')
+[24-Mar-2026 04:06:20 UTC] WordPress database error Unknown column 'g.ct_gift_type' in 'ON' for query 
+  SELECT
+    g.*,
+    gc.ct_class_name AS class_name,
+    gc.ct_slug AS class_slug,
+    gt1.ct_type_name AS type1, gt1.ct_slug AS type1_slug,
+    gt2.ct_type_name AS type2, gt2.ct_slug AS type2_slug,
+    gt3.ct_type_name AS type3, gt3.ct_slug AS type3_slug,
+    gt4.ct_type_name AS type4, gt4.ct_slug AS type4_slug,
+    gt5.ct_type_name AS type5, gt5.ct_slug AS type5_slug,
+    gt6.ct_type_name AS type6, gt6.ct_slug AS type6_slug,
+    gt7.ct_type_name AS type7, gt7.ct_slug AS type7_slug,
+    gt8.ct_type_name AS type8, gt8.ct_slug AS type8_slug,
+    rf.ct_refresh_name AS refresh_name, rf.ct_slug AS refresh_slug,
+    b.ct_book_name,
+    b.ct_ct_slug AS book_slug
+  FROM DcVnchxg4_customtables_table_gifts AS g
+  LEFT JOIN DcVnchxg4_customtables_table_giftclass AS gc ON g.ct_gift_class = gc.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt1 ON g.ct_gift_type = gt1.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt2 ON g.ct_gift_type_two = gt2.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt3 ON g.ct_gift_type_three = gt3.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt4 ON g.ct_gift_type_four = gt4.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt5 ON g.ct_gift_type_five = gt5.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt6 ON g.ct_gift_type_six = gt6.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt7 ON g.ct_gift_type_seven = gt7.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt8 ON g.ct_gift_type_eight = gt8.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_refresh AS rf ON g.ct_gifts_refresh = rf.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_books AS b ON g.ct_book_id = b.ct_id
+  WHERE g.ct_slug = 'increased-trait-will'
+    AND g.published = 1
+ made by require('wp-blog-header.php'), require_once('wp-includes/template-loader.php'), include('/themes/twentytwentyfour-child/page-gift.php')
+[24-Mar-2026 04:06:22 UTC] WordPress database error Unknown column 'g.ct_gift_type' in 'ON' for query 
+  SELECT
+    g.*,
+    gc.ct_class_name AS class_name,
+    gc.ct_slug AS class_slug,
+    gt1.ct_type_name AS type1, gt1.ct_slug AS type1_slug,
+    gt2.ct_type_name AS type2, gt2.ct_slug AS type2_slug,
+    gt3.ct_type_name AS type3, gt3.ct_slug AS type3_slug,
+    gt4.ct_type_name AS type4, gt4.ct_slug AS type4_slug,
+    gt5.ct_type_name AS type5, gt5.ct_slug AS type5_slug,
+    gt6.ct_type_name AS type6, gt6.ct_slug AS type6_slug,
+    gt7.ct_type_name AS type7, gt7.ct_slug AS type7_slug,
+    gt8.ct_type_name AS type8, gt8.ct_slug AS type8_slug,
+    rf.ct_refresh_name AS refresh_name, rf.ct_slug AS refresh_slug,
+    b.ct_book_name,
+    b.ct_ct_slug AS book_slug
+  FROM DcVnchxg4_customtables_table_gifts AS g
+  LEFT JOIN DcVnchxg4_customtables_table_giftclass AS gc ON g.ct_gift_class = gc.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt1 ON g.ct_gift_type = gt1.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt2 ON g.ct_gift_type_two = gt2.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt3 ON g.ct_gift_type_three = gt3.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt4 ON g.ct_gift_type_four = gt4.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt5 ON g.ct_gift_type_five = gt5.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt6 ON g.ct_gift_type_six = gt6.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt7 ON g.ct_gift_type_seven = gt7.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_gifttype AS gt8 ON g.ct_gift_type_eight = gt8.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_refresh AS rf ON g.ct_gifts_refresh = rf.ct_id
+  LEFT JOIN DcVnchxg4_customtables_table_books AS b ON g.ct_book_id = b.ct_id
+  WHERE g.ct_slug = 'abjure-monster'
+    AND g.published = 1
+ made by require('wp-blog-header.php'), require_once('wp-includes/template-loader.php'), include('/themes/twentytwentyfour-child/page-gift.php')
