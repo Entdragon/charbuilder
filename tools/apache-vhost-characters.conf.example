@@ -1,0 +1,68 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# Apache VirtualHost: characters.libraryofcalbria.com
+#
+# This proxies the subdomain to the Node/Express character generator app
+# running on localhost:5000.
+#
+# HOW TO DEPLOY
+# ─────────────────────────────────────────────────────────────────────────────
+# 1. Copy this file to:
+#      /etc/apache2/sites-available/characters.libraryofcalbria.com.conf
+#    (Debian/Ubuntu) OR
+#      /etc/httpd/conf.d/characters.libraryofcalbria.com.conf
+#    (cPanel / CentOS / AlmaLinux)
+#
+# 2. Enable required Apache modules (run once as root):
+#      a2enmod proxy proxy_http proxy_wstunnel headers rewrite
+#
+# 3. If using cPanel / WHM, check "Proxy Subdomains" is disabled for this
+#    subdomain, or use the raw configuration include box in WHM → Apache Config.
+#
+# 4. Enable the site and reload (Debian/Ubuntu):
+#      a2ensite characters.libraryofcalbria.com.conf
+#      systemctl reload apache2
+#
+# 5. Obtain a Let's Encrypt certificate via Certbot:
+#      certbot --apache -d characters.libraryofcalbria.com
+#    Certbot will update the HTTPS block automatically.
+#
+# 6. Make sure the Node app is running (see tools/pm2.config.js for details).
+# ──────────────────────────────────────────────────────────────────────────────
+
+# ── HTTP → HTTPS redirect ─────────────────────────────────────────────────────
+<VirtualHost *:80>
+    ServerName characters.libraryofcalbria.com
+
+    RewriteEngine On
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+</VirtualHost>
+
+# ── HTTPS: proxy to Express on port 5000 ─────────────────────────────────────
+<VirtualHost *:443>
+    ServerName characters.libraryofcalbria.com
+
+    # ── SSL (Certbot will fill these in automatically) ─────────────────────
+    SSLEngine on
+    # SSLCertificateFile    /etc/letsencrypt/live/characters.libraryofcalbria.com/fullchain.pem
+    # SSLCertificateKeyFile /etc/letsencrypt/live/characters.libraryofcalbria.com/privkey.pem
+
+    # ── Proxy to Express ──────────────────────────────────────────────────
+    ProxyPreserveHost On
+    ProxyRequests     Off
+
+    # WebSocket support (needed if the app ever uses WS)
+    RewriteEngine On
+    RewriteCond %{HTTP:Upgrade} websocket [NC]
+    RewriteRule /(.*) ws://127.0.0.1:5000/$1 [P,L]
+
+    ProxyPass        / http://127.0.0.1:5000/
+    ProxyPassReverse / http://127.0.0.1:5000/
+
+    # ── Forward real client IP to Express ────────────────────────────────
+    RequestHeader set X-Forwarded-Proto "https"
+    RequestHeader set X-Forwarded-For   "%{REMOTE_ADDR}s"
+
+    # ── Logging ───────────────────────────────────────────────────────────
+    ErrorLog  ${APACHE_LOG_DIR}/characters.libraryofcalbria.com-error.log
+    CustomLog ${APACHE_LOG_DIR}/characters.libraryofcalbria.com-access.log combined
+</VirtualHost>
