@@ -48,6 +48,10 @@ If you are unsure of the child theme directory name, check **WordPress Admin →
 | `snippets/data-editor-ajax.php` | Add functions to `functions.php` | Three AJAX endpoints that power the data editor |
 | `css/data-editor.css` | `css/data-editor.css` | Styles for the data editor page |
 | `js/data-editor.js` | `js/data-editor.js` | Client-side JS for the data editor |
+| `snippets/detail-page-routing.php` | Add functions to `functions.php` | Registers `slug` query var + rewrite rules for `/gift/`, `/career/`, `/species/` detail pages |
+| `gift-detail.php` | `gift-detail.php` (root of child theme) | Page template: gift detail view |
+| `career-detail.php` | `career-detail.php` (root of child theme) | Page template: career detail view |
+| `species-detail.php` | `species-detail.php` (root of child theme) | Page template: species detail view |
 
 ---
 
@@ -182,3 +186,66 @@ Edit the `LOC_DE_TABLES` constant in `data-editor-ajax.php` (and the matching `c
 ### Adding child table support for other tables
 
 Edit the `LOC_DE_CHILD_TABLES` constant in `data-editor-ajax.php`. Add a key matching the table slug, with each child table's `table` name (unprefixed), `fk` (foreign key column), and `editable` column list.
+
+---
+
+## Task — Gift / Career / Species detail page routing
+
+### Problem
+
+All three detail page templates (`gift-detail.php`, `career-detail.php`, `species-detail.php`) read the record slug via `get_query_var('slug')`. WordPress does not know what `slug` is until it is registered, and it has no rewrite rules to route `/gift/agility/` to the gift detail page — so the query always returns empty and the page shows "not found".
+
+### Solution
+
+`snippets/detail-page-routing.php` adds three things to WordPress:
+
+1. **Registers `slug`** as a recognised query variable so `get_query_var('slug')` works.
+2. **Adds rewrite rules** so `/gift/{slug}/`, `/career/{slug}/`, `/species/{slug}/` are routed to the corresponding WordPress page with the slug appended as a query var.
+3. **Prevents false 404s** — stops WordPress's own 404 logic from firing when a valid slug is present.
+
+### Prerequisites — WordPress pages
+
+Before the routing can work you need three WordPress pages with the right slugs and page templates:
+
+| WordPress page slug | Page template to assign | Example URL |
+|---|---|---|
+| `gift` | Gift Detail Page | `/gift/agility/` |
+| `career` | Career Detail Page | `/career/soldier/` |
+| `species` | Species Detail Page | `/species/valka/` |
+
+The page slug is the last segment of the page's permalink. If any of your slugs differ (e.g. `gifts` plural), update the constants at the top of `detail-page-routing.php`:
+
+```php
+define( 'LOC_GIFT_BASE',    'gift' );    // change to match your page slug
+define( 'LOC_CAREER_BASE',  'career' );
+define( 'LOC_SPECIES_BASE', 'species' );
+```
+
+### Installation steps
+
+1. **Upload the three template files** to the root of your child theme directory:
+   ```
+   wp-content/themes/twentytwentyfour-child/gift-detail.php
+   wp-content/themes/twentytwentyfour-child/career-detail.php
+   wp-content/themes/twentytwentyfour-child/species-detail.php
+   ```
+
+2. **Create the three WordPress pages** (if they don't exist yet):
+   - WordPress Admin → Pages → Add New
+   - Set the slug and assign the matching page template (Gift Detail Page / Career Detail Page / Species Detail Page)
+   - Publish
+
+3. **Add the routing code to functions.php** — paste the entire contents of `snippets/detail-page-routing.php` at the bottom of your child theme's `functions.php`.
+
+4. **Flush permalinks** — go to WordPress Admin → Settings → Permalinks and click **Save Changes**. This is mandatory; the rewrite rules do not take effect until the cache is flushed.
+
+5. **Test** — visit `/gift/some-gift-slug/` (use an actual slug from the `DcVnchxg4_customtables_table_gifts` table's `ct_slug` column). You should see the gift detail page render with full data.
+
+### Troubleshooting
+
+| Symptom | Likely cause |
+|---|---|
+| Page still shows "not found" | Permalinks not flushed — go to Settings → Permalinks and Save Changes |
+| Blank page / PHP error | Template file not uploaded, or PHP version mismatch |
+| "That gift couldn't be found" | Slug in URL does not match any `ct_slug` value in the database, or the page template constant (`LOC_GIFT_BASE`) does not match the WordPress page slug |
+| URL returns the wrong page | Rewrite rule `'top'` priority is being overridden — check for conflicting rewrite rules from other plugins |
