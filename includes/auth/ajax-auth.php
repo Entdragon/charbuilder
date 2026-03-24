@@ -11,6 +11,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Nonce + shared helpers live in includes/ajax-nonce.php:
  * - cg_ajax_require_nonce_multi()
  * - cg_ajax_require_post()
+ *
+ * Login and Register do NOT require a nonce: these endpoints are only
+ * accessible to guests (nopriv), authenticate via credentials, and may be
+ * called from login forms on pages where CG_AJAX is not loaded.
+ * Logout DOES require a nonce because it runs as a logged-in user action
+ * and the nonce is always available on the character-generator page.
  */
 require_once __DIR__ . '/../ajax-nonce.php';
 
@@ -20,7 +26,6 @@ require_once __DIR__ . '/../ajax-nonce.php';
 if ( ! function_exists( 'cg_register_user' ) ) {
     function cg_register_user() {
         cg_ajax_require_post();
-        cg_ajax_require_nonce_multi();
 
         if ( is_user_logged_in() ) {
             wp_send_json_error( 'You are already logged in.' );
@@ -60,7 +65,6 @@ if ( ! function_exists( 'cg_register_user' ) ) {
 if ( ! function_exists( 'cg_login_user' ) ) {
     function cg_login_user() {
         cg_ajax_require_post();
-        cg_ajax_require_nonce_multi();
 
         if ( is_user_logged_in() ) {
             wp_send_json_error( 'You are already logged in.' );
