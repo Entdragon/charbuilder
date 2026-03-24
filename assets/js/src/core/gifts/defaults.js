@@ -152,12 +152,20 @@ function renderCombatSave(host) {
 // ── Personality ────────────────────────────────────────────────────────────────
 
 let _personalityList = null;
+let _personalityGift = null;
 
 async function fetchPersonalityList() {
   if (_personalityList) return _personalityList;
   const res = await postJSON(ajaxUrl(), { action: 'cg_get_personality_list' });
   if (res && res.success && Array.isArray(res.data)) _personalityList = res.data;
   return _personalityList || [];
+}
+
+async function fetchPersonalityGift() {
+  if (_personalityGift) return _personalityGift;
+  const res = await postJSON(ajaxUrl(), { action: 'cg_get_personality_gift' });
+  if (res && res.success && res.data) _personalityGift = res.data;
+  return _personalityGift;
 }
 
 function renderPersonality(host) {
@@ -172,11 +180,16 @@ function renderPersonality(host) {
     return `<option value="${safe}"${sel}>${safe}</option>`;
   }).join('');
 
+  const gift = _personalityGift;
+  const raw = gift ? (String(gift.effect ?? '').trim() || String(gift.effect_description ?? '').trim()) : '';
+  const desc = effectDescHtml(raw);
+
   host.innerHTML = `
     <select id="cg-personality-select" class="cg-free-select" style="max-width:300px;">
       <option value="">— Select personality trait —</option>
       ${opts}
     </select>
+    ${desc}
   `;
 
   const sel = host.querySelector('#cg-personality-select');
@@ -195,7 +208,7 @@ async function init() {
   if (_inited) { return render(); }
   _inited = true;
 
-  await Promise.all([fetchLKGift(), fetchLanguageGift(), fetchCombatSave(), fetchPersonalityList()]);
+  await Promise.all([fetchLKGift(), fetchLanguageGift(), fetchCombatSave(), fetchPersonalityList(), fetchPersonalityGift()]);
   render();
 }
 
@@ -217,9 +230,10 @@ function render() {
 const GiftsDefaults = {
   init,
   render,
-  get _lkGift()   { return _lkGift;   },
-  get _langGift()  { return _langGift;  },
-  get _csGift()    { return _csGift;    },
+  get _lkGift()          { return _lkGift;          },
+  get _langGift()         { return _langGift;         },
+  get _csGift()           { return _csGift;           },
+  get _personalityGift()  { return _personalityGift;  },
 };
 
 if (typeof W !== 'undefined') W.CG_GiftsDefaults = GiftsDefaults;

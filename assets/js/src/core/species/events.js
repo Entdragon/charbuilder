@@ -39,25 +39,43 @@ function normalizeSpeciesProfile(raw = {}) {
   return out;
 }
 
+function escapeHtml(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function giftEffect(giftId) {
+  if (!giftId) return '';
+  const fc = window.CG_FreeChoices;
+  const all = (fc && Array.isArray(fc._allGifts)) ? fc._allGifts : [];
+  const g = all.find(g => String(g.ct_id || g.id || '') === String(giftId));
+  if (!g) return '';
+  return String(g.effect ?? '').trim() || String(g.effect_description ?? g.ct_gifts_effect_description ?? '').trim();
+}
+
 function renderGiftList($ul, items = []) {
   if (!$ul || !$ul.length) return;
   $ul.empty();
-  items.forEach(txt => {
-    if (!txt) return;
-    $ul.append(`<li>${txt}</li>`);
+  items.forEach(item => {
+    if (!item) return;
+    const display = typeof item === 'string' ? item : item.display;
+    const eff     = typeof item === 'string' ? '' : (item.eff || '');
+    if (!display) return;
+    $ul.append(`<li>${escapeHtml(display)}${eff ? `<span class="cg-gift-effect-inline"> — ${escapeHtml(eff)}</span>` : ''}</li>`);
   });
 }
 
 function namesFromProfile(profile = {}) {
-  // Prefer gift_1..gift_3 (names), otherwise nothing
-  const names = [profile.gift_1, profile.gift_2, profile.gift_3]
-    .map(v => (v == null ? '' : String(v)))
-    .filter(Boolean);
-  // Add × manifold if > 1
-  return names.map((name, i) => {
-    const m = profile[`manifold_${i+1}`];
-    const mult = parseInt(m, 10) || 1;
-    return mult > 1 ? `${name} × ${mult}` : name;
+  const entries = [
+    { name: profile.gift_1, id: profile.gift_id_1, m: profile.manifold_1 },
+    { name: profile.gift_2, id: profile.gift_id_2, m: profile.manifold_2 },
+    { name: profile.gift_3, id: profile.gift_id_3, m: profile.manifold_3 },
+  ].filter(e => e.name);
+
+  return entries.map(e => {
+    const mult    = parseInt(e.m, 10) || 1;
+    const display = mult > 1 ? `${e.name} \xd7 ${mult}` : e.name;
+    const eff     = giftEffect(e.id);
+    return { display, eff };
   });
 }
 
@@ -69,7 +87,7 @@ export default function bindSpeciesEvents() {
     .off('change.cg', '#cg-species')
     .on('change.cg', '#cg-species', e => {
       const val = (e.currentTarget && e.currentTarget.value) || '';
-      console.log('[SpeciesEvents] selected species →', val);
+      console.log('[SpeciesEvents] selected species \u2192', val);
 
       if (!val) {
         SpeciesAPI.currentProfile = null;
@@ -82,9 +100,9 @@ export default function bindSpeciesEvents() {
         const profile = normalizeSpeciesProfile(profileRaw || {});
         SpeciesAPI.currentProfile = profile;
 
-        // Render gifts (from profile)
-        const giftNames = namesFromProfile(profile);
-        renderGiftList($('#species-gift-block'), giftNames);
+        // Render gifts (from profile) with short effect descriptions
+        const giftItems = namesFromProfile(profile);
+        renderGiftList($('#species-gift-block'), giftItems);
 
         $(document).trigger('cg:species:changed', [{ id: String(val), profile }]);
       });

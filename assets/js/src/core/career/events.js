@@ -82,6 +82,14 @@ function normalizeReplacementMap(src) {
   return {};
 }
 
+function getGiftEffect(giftId) {
+  if (!giftId) return '';
+  const all = getAllGiftsList();
+  const g = all.find(g => String(g.ct_id || g.id || '') === String(giftId));
+  if (!g) return '';
+  return String(g.effect ?? '').trim() || String(g.effect_description ?? g.ct_gifts_effect_description ?? '').trim();
+}
+
 function getAllGiftsList() {
   return (window.CG_FreeChoices && Array.isArray(window.CG_FreeChoices._allGifts))
     ? window.CG_FreeChoices._allGifts
@@ -178,7 +186,9 @@ function renderCareerGiftsWithReplacements(profile) {
       const display = name ? String(name) : (gid ? `Gift #${gid}` : '');
       if (!display) continue;
 
-      li.push(`<li>${escapeHtml(mult > 1 ? `${display} × ${mult}` : display)}</li>`);
+      const eff0 = getGiftEffect(gid);
+      const txt0 = escapeHtml(mult > 1 ? `${display} \xd7 ${mult}` : display);
+      li.push(`<li>${txt0}${eff0 ? `<span class="cg-gift-effect-inline"> \u2014 ${escapeHtml(eff0)}</span>` : ''}</li>`);
     }
     $ul.html(li.join(''));
 
@@ -220,8 +230,9 @@ function renderCareerGiftsWithReplacements(profile) {
     const needsReplace = !!(dupeWithSpecies && !repeatable);
 
     if (!needsReplace) {
-      const txt = mult > 1 ? `${baseName} × ${mult}` : baseName;
-      li.push(`<li>${escapeHtml(txt)}</li>`);
+      const txt = mult > 1 ? `${baseName} \xd7 ${mult}` : baseName;
+      const eff = getGiftEffect(gid);
+      li.push(`<li>${escapeHtml(txt)}${eff ? `<span class="cg-gift-effect-inline"> \u2014 ${escapeHtml(eff)}</span>` : ''}</li>`);
       continue;
     }
 

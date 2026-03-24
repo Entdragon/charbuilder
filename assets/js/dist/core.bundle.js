@@ -1876,22 +1876,45 @@
     });
     return out;
   }
+  function escapeHtml(s) {
+    return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+  function giftEffect(giftId2) {
+    var _a, _b, _c;
+    if (!giftId2)
+      return "";
+    const fc = window.CG_FreeChoices;
+    const all = fc && Array.isArray(fc._allGifts) ? fc._allGifts : [];
+    const g = all.find((g2) => String(g2.ct_id || g2.id || "") === String(giftId2));
+    if (!g)
+      return "";
+    return String((_a = g.effect) != null ? _a : "").trim() || String((_c = (_b = g.effect_description) != null ? _b : g.ct_gifts_effect_description) != null ? _c : "").trim();
+  }
   function renderGiftList($ul, items = []) {
     if (!$ul || !$ul.length)
       return;
     $ul.empty();
-    items.forEach((txt) => {
-      if (!txt)
+    items.forEach((item) => {
+      if (!item)
         return;
-      $ul.append(`<li>${txt}</li>`);
+      const display = typeof item === "string" ? item : item.display;
+      const eff = typeof item === "string" ? "" : item.eff || "";
+      if (!display)
+        return;
+      $ul.append(`<li>${escapeHtml(display)}${eff ? `<span class="cg-gift-effect-inline"> \u2014 ${escapeHtml(eff)}</span>` : ""}</li>`);
     });
   }
   function namesFromProfile(profile = {}) {
-    const names = [profile.gift_1, profile.gift_2, profile.gift_3].map((v) => v == null ? "" : String(v)).filter(Boolean);
-    return names.map((name, i) => {
-      const m = profile[`manifold_${i + 1}`];
-      const mult = parseInt(m, 10) || 1;
-      return mult > 1 ? `${name} \xD7 ${mult}` : name;
+    const entries = [
+      { name: profile.gift_1, id: profile.gift_id_1, m: profile.manifold_1 },
+      { name: profile.gift_2, id: profile.gift_id_2, m: profile.manifold_2 },
+      { name: profile.gift_3, id: profile.gift_id_3, m: profile.manifold_3 }
+    ].filter((e) => e.name);
+    return entries.map((e) => {
+      const mult = parseInt(e.m, 10) || 1;
+      const display = mult > 1 ? `${e.name} \xD7 ${mult}` : e.name;
+      const eff = giftEffect(e.id);
+      return { display, eff };
     });
   }
   function bindSpeciesEvents() {
@@ -1910,8 +1933,8 @@
       api_default.fetchProfile(val).done((profileRaw) => {
         const profile = normalizeSpeciesProfile(profileRaw || {});
         api_default.currentProfile = profile;
-        const giftNames = namesFromProfile(profile);
-        renderGiftList($6("#species-gift-block"), giftNames);
+        const giftItems = namesFromProfile(profile);
+        renderGiftList($6("#species-gift-block"), giftItems);
         $6(document).trigger("cg:species:changed", [{ id: String(val), profile }]);
       });
     });
@@ -1972,7 +1995,7 @@
     });
     return out;
   }
-  function escapeHtml(s) {
+  function escapeHtml2(s) {
     return String(s != null ? s : "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
   }
   function normalizeReplacementMap(src) {
@@ -2006,6 +2029,16 @@
       return out;
     }
     return {};
+  }
+  function getGiftEffect(giftId2) {
+    var _a, _b, _c;
+    if (!giftId2)
+      return "";
+    const all = getAllGiftsList();
+    const g = all.find((g2) => String(g2.ct_id || g2.id || "") === String(giftId2));
+    if (!g)
+      return "";
+    return String((_a = g.effect) != null ? _a : "").trim() || String((_c = (_b = g.effect_description) != null ? _b : g.ct_gifts_effect_description) != null ? _c : "").trim();
   }
   function getAllGiftsList() {
     return window.CG_FreeChoices && Array.isArray(window.CG_FreeChoices._allGifts) ? window.CG_FreeChoices._allGifts : [];
@@ -2092,7 +2125,9 @@
         const display = name ? String(name) : gid ? `Gift #${gid}` : "";
         if (!display)
           continue;
-        li2.push(`<li>${escapeHtml(mult > 1 ? `${display} \xD7 ${mult}` : display)}</li>`);
+        const eff0 = getGiftEffect(gid);
+        const txt0 = escapeHtml2(mult > 1 ? `${display} \xD7 ${mult}` : display);
+        li2.push(`<li>${txt0}${eff0 ? `<span class="cg-gift-effect-inline"> \u2014 ${escapeHtml2(eff0)}</span>` : ""}</li>`);
       }
       $ul.html(li2.join(""));
       if (_giftWaitTries < 10) {
@@ -2124,7 +2159,8 @@
       const needsReplace = !!(dupeWithSpecies && !repeatable);
       if (!needsReplace) {
         const txt = mult > 1 ? `${baseName} \xD7 ${mult}` : baseName;
-        li.push(`<li>${escapeHtml(txt)}</li>`);
+        const eff = getGiftEffect(gid);
+        li.push(`<li>${escapeHtml2(txt)}${eff ? `<span class="cg-gift-effect-inline"> \u2014 ${escapeHtml2(eff)}</span>` : ""}</li>`);
         continue;
       }
       neededSlots.add(String(i));
@@ -2132,19 +2168,19 @@
       const selectId = `cg-career-gift-replace-${i}`;
       let selectHtml = "";
       if (!inc.length) {
-        selectHtml = `<select id="${escapeHtml(selectId)}" class="cg-profile-select cg-career-gift-replace" data-slot="${escapeHtml(i)}" disabled>
+        selectHtml = `<select id="${escapeHtml2(selectId)}" class="cg-profile-select cg-career-gift-replace" data-slot="${escapeHtml2(i)}" disabled>
         <option value="">(No \u201CIncrease Trait\u201D gifts found)</option>
       </select>`;
       } else {
-        const opts = inc.map((g) => `<option value="${escapeHtml(g.id)}"${String(g.id) === String(current) ? " selected" : ""}>${escapeHtml(g.name)}</option>`).join("");
-        selectHtml = `<select id="${escapeHtml(selectId)}" class="cg-profile-select cg-career-gift-replace" data-slot="${escapeHtml(i)}">
+        const opts = inc.map((g) => `<option value="${escapeHtml2(g.id)}"${String(g.id) === String(current) ? " selected" : ""}>${escapeHtml2(g.name)}</option>`).join("");
+        selectHtml = `<select id="${escapeHtml2(selectId)}" class="cg-profile-select cg-career-gift-replace" data-slot="${escapeHtml2(i)}">
         <option value="">\u2014 Choose an Increase Trait gift \u2014</option>
         ${opts}
       </select>`;
       }
       li.push(
         `<li class="cg-career-gift-line cg-career-gift-line--replace" style="display:flex; align-items:center; gap:6px;">
-        <span style="white-space:nowrap;">Duplicate: ${escapeHtml(baseName)} \u2192</span>
+        <span style="white-space:nowrap;">Duplicate: ${escapeHtml2(baseName)} \u2192</span>
         ${selectHtml}
       </li>`
       );
@@ -2300,7 +2336,7 @@
     const s = Math.max(0, parseInt(steps, 10) || 0);
     return order[Math.min(order.length - 1, i + s)];
   }
-  function escapeHtml2(s) {
+  function escapeHtml3(s) {
     return String(s != null ? s : "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
   }
   var ExtraCareers = {
@@ -2993,10 +3029,10 @@
         const note = curId && traitInfo.suffix ? traitInfo.suffix : "";
         rows.push(`
         <div class="cg-extra-career-trait-row">
-          <span class="cg-extra-career-trait-name">${escapeHtml2(name)}</span>
-          <span class="cg-trait-badge cg-trait-badge--sm" aria-label="Career trait die">${escapeHtml2(shownDie)}</span>
+          <span class="cg-extra-career-trait-name">${escapeHtml3(name)}</span>
+          <span class="cg-trait-badge cg-trait-badge--sm" aria-label="Career trait die">${escapeHtml3(shownDie)}</span>
         </div>
-        ${note ? `<div class="trait-adjusted">${escapeHtml2(note)}</div>` : `<div class="trait-adjusted"></div>`}
+        ${note ? `<div class="trait-adjusted">${escapeHtml3(note)}</div>` : `<div class="trait-adjusted"></div>`}
       `);
       }
       traitsWrap.innerHTML = `
@@ -3076,7 +3112,7 @@
           const exclude = otherSelectedIds(i);
           const options = eligible.filter((c) => !exclude.has(String(c.id)) || String(c.id) === cur).map((c) => {
             const sel = String(c.id) === cur ? " selected" : "";
-            return `<option value="${String(c.id)}"${sel}>${escapeHtml2(String(c.name))}</option>`;
+            return `<option value="${String(c.id)}"${sel}>${escapeHtml3(String(c.name))}</option>`;
           }).join("");
           const traitInfo = cur ? this._careerTraitDisplayWithCounts(String(cur), boostCounts) : { suffix: "" };
           const note = cur && traitInfo.suffix ? traitInfo.suffix : "";
@@ -3095,7 +3131,7 @@
             </select>
           </div>
 
-          <div class="trait-adjusted">${note ? escapeHtml2(note) : ""}</div>
+          <div class="trait-adjusted">${note ? escapeHtml3(note) : ""}</div>
         </div>
       `);
         }
@@ -5494,6 +5530,7 @@
   `;
   }
   var _personalityList = null;
+  var _personalityGift = null;
   function fetchPersonalityList() {
     return __async(this, null, function* () {
       if (_personalityList)
@@ -5504,7 +5541,18 @@
       return _personalityList || [];
     });
   }
+  function fetchPersonalityGift() {
+    return __async(this, null, function* () {
+      if (_personalityGift)
+        return _personalityGift;
+      const res = yield postJSON3(ajaxUrl(), { action: "cg_get_personality_gift" });
+      if (res && res.success && res.data)
+        _personalityGift = res.data;
+      return _personalityGift;
+    });
+  }
   function renderPersonality(host) {
+    var _a, _b;
     if (!host)
       return;
     const data = getData();
@@ -5515,11 +5563,15 @@
       const sel2 = safe === safeHtml(cur) ? " selected" : "";
       return `<option value="${safe}"${sel2}>${safe}</option>`;
     }).join("");
+    const gift = _personalityGift;
+    const raw = gift ? String((_a = gift.effect) != null ? _a : "").trim() || String((_b = gift.effect_description) != null ? _b : "").trim() : "";
+    const desc = effectDescHtml(raw);
     host.innerHTML = `
     <select id="cg-personality-select" class="cg-free-select" style="max-width:300px;">
       <option value="">\u2014 Select personality trait \u2014</option>
       ${opts}
     </select>
+    ${desc}
   `;
     const sel = host.querySelector("#cg-personality-select");
     if (sel) {
@@ -5535,7 +5587,7 @@
         return render();
       }
       _inited = true;
-      yield Promise.all([fetchLKGift(), fetchLanguageGift(), fetchCombatSave(), fetchPersonalityList()]);
+      yield Promise.all([fetchLKGift(), fetchLanguageGift(), fetchCombatSave(), fetchPersonalityList(), fetchPersonalityGift()]);
       render();
     });
   }
@@ -5567,6 +5619,9 @@
     },
     get _csGift() {
       return _csGift;
+    },
+    get _personalityGift() {
+      return _personalityGift;
     }
   };
   if (typeof W3 !== "undefined")
@@ -6206,8 +6261,14 @@
             map["236"] = d._langGift;
           if (d._csGift)
             map["159"] = d._csGift;
+          if (d._personalityGift)
+            map[String(d._personalityGift.id || "")] = d._personalityGift;
         }
         return map;
+      })();
+      const _personalityGiftId = (() => {
+        const d = window.CG_GiftsDefaults;
+        return d && d._personalityGift && d._personalityGift.id ? String(d._personalityGift.id) : "";
       })();
       function _findGift(giftId2) {
         if (!giftId2)
@@ -6446,7 +6507,8 @@
         giftItems.push(`<li><strong>Combat Save</strong>${csDesc ? `<span class="summary-gift-desc"> \u2014 ${csDesc}</span>` : ""}</li>`);
         const personality = String(data.personality_trait || "").trim();
         if (personality) {
-          giftItems.push(`<li><strong>Personality:</strong> ${personality}</li>`);
+          const pDesc = _personalityGiftId ? giftDesc(_personalityGiftId) : "";
+          giftItems.push(`<li><strong>Personality:</strong> ${personality}${pDesc ? `<span class="summary-gift-desc"> \u2014 ${pDesc}</span>` : ""}</li>`);
         }
         (freeIds || []).forEach((id) => {
           const sid = String(id || "").trim();

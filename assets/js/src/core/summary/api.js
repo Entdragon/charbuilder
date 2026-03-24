@@ -132,11 +132,18 @@ const SummaryAPI = {
       const d = window.CG_GiftsDefaults;
       const map = {};
       if (d) {
-        if (d._lkGift)   map['242'] = d._lkGift;
-        if (d._langGift) map['236'] = d._langGift;
-        if (d._csGift)   map['159'] = d._csGift;
+        if (d._lkGift)          map['242'] = d._lkGift;
+        if (d._langGift)        map['236'] = d._langGift;
+        if (d._csGift)          map['159'] = d._csGift;
+        if (d._personalityGift) map[String(d._personalityGift.id || '')] = d._personalityGift;
       }
       return map;
+    })();
+
+    // Personality gift ID for summary desc lookup
+    const _personalityGiftId = (() => {
+      const d = window.CG_GiftsDefaults;
+      return (d && d._personalityGift && d._personalityGift.id) ? String(d._personalityGift.id) : '';
     })();
 
     function _findGift(giftId) {
@@ -393,7 +400,8 @@ const SummaryAPI = {
 
             const personality = String(data.personality_trait || '').trim();
             if (personality) {
-              giftItems.push(`<li><strong>Personality:</strong> ${personality}</li>`);
+              const pDesc = _personalityGiftId ? giftDesc(_personalityGiftId) : '';
+              giftItems.push(`<li><strong>Personality:</strong> ${personality}${pDesc ? `<span class="summary-gift-desc"> — ${pDesc}</span>` : ''}</li>`);
             }
 
             // ── Free-choice gifts ─────────────────────────────────

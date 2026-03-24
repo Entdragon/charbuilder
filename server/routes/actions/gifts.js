@@ -178,6 +178,24 @@ async function cg_get_gift_prereqs(req, res) {
   res.json({ success: true, data: { prereqs, requirements } });
 }
 
+async function cg_get_personality_gift(req, res) {
+  const p = prefix();
+  try {
+    const row = await queryOne(
+      `SELECT ct_id AS id, ct_gifts_name AS name, ct_gifts_manifold AS ct_gifts_manifold,
+              ct_gifts_effect AS effect, ct_gifts_effect_description AS effect_description
+       FROM ${p}customtables_table_gifts
+       WHERE LOWER(TRIM(ct_gifts_name)) LIKE '%personality%' AND published = 1
+       ORDER BY ct_id ASC LIMIT 1`
+    );
+    if (!row) return res.json({ success: false, data: null });
+    await _enrichEffect(p, row, row.id);
+    res.json({ success: true, data: row });
+  } catch (err) {
+    res.json({ success: false, data: null });
+  }
+}
+
 async function cg_get_combat_save(req, res) {
   const p = prefix();
   const row = await queryOne(
@@ -271,4 +289,4 @@ async function cg_get_language_list(req, res) {
   }
 }
 
-module.exports = { cg_get_local_knowledge, cg_get_language_gift, cg_get_free_gifts, cg_get_language_list, cg_get_gift_prereqs, cg_get_combat_save, cg_get_personality_list };
+module.exports = { cg_get_local_knowledge, cg_get_language_gift, cg_get_free_gifts, cg_get_language_list, cg_get_gift_prereqs, cg_get_combat_save, cg_get_personality_list, cg_get_personality_gift };
