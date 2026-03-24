@@ -163,12 +163,12 @@ const TrappingsAPI = {
       this._renderAll();
     });
 
-    // Delegated: browse all items button
-    $(document).on('click.trappings', '#cg-equip-browse-btn', () => {
-      this._ensureCatalog().then(() => this._renderCatalog()).catch(() => {});
+    // Delegated: open shop modal
+    $(document).on('click.trappings', '#cg-equip-open-btn', () => {
+      this._showShopModal();
     });
 
-    // Delegated: equipment catalog search
+    // Delegated: equipment catalog search (inside modal)
     $(document).on('input.trappings', '#cg-equip-search', () => {
       this._ensureCatalog().then(() => this._renderCatalog()).catch(() => {});
     });
@@ -482,8 +482,9 @@ const TrappingsAPI = {
     setTrappingsList(list);
     this._syncBattleArray();
     this._renderAll();
-    // Re-render catalog so affordability (disabled state) reflects updated balance
+    // Re-render catalog so affordability reflects updated balance, and refresh balance display
     if (this._catalogCache) this._renderCatalog();
+    this._updateShopBalance();
   },
 
   // ── Battle Array autofill ───────────────────────────────────────────────────
@@ -815,6 +816,63 @@ const TrappingsAPI = {
       if (c.cover_dice) parts.push(`Cover ${c.cover_dice}`);
       return parts.join(', ');
     }
+  },
+
+  _showShopModal() {
+    // Don't open a second one
+    if (document.getElementById('cg-shop-overlay')) return;
+
+    const totalVal = this._totalDenarii();
+
+    const modal = document.createElement('div');
+    modal.id = 'cg-shop-overlay';
+    modal.className = 'cg-exchange-overlay';
+    modal.innerHTML = `
+      <div class="cg-shop-modal">
+        <div class="cg-shop-modal-header">
+          <h4>Equipment Shop</h4>
+          <span class="cg-shop-balance">Balance: <strong>${totalVal.toFixed(2)}D</strong></span>
+          <button type="button" class="cg-shop-close cg-btn" id="cg-shop-close-btn" title="Close">✕ Close</button>
+        </div>
+        <p class="cg-catalog-intro">Career and gift trappings are free. Only purchases here deduct money.</p>
+        <div class="cg-catalog-controls">
+          <input type="text" id="cg-equip-search" class="cg-catalog-search"
+            placeholder="Search items…" autocomplete="off" />
+          <select id="cg-equip-filter-kind" class="cg-free-select cg-catalog-filter">
+            <option value="">All types</option>
+            <option value="equipment">Equipment only</option>
+            <option value="weapon">Weapons only</option>
+          </select>
+        </div>
+        <div id="cg-equip-catalog-panel" class="cg-shop-catalog-panel">
+          <p class="cg-catalog-hint"><em>Loading catalog…</em></p>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Close on ✕ button or overlay click
+    modal.querySelector('#cg-shop-close-btn').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+
+    // Prevent body scroll while modal is open
+    document.body.classList.add('cg-modal-open');
+    const onRemove = new MutationObserver(() => {
+      if (!document.getElementById('cg-shop-overlay')) {
+        document.body.classList.remove('cg-modal-open');
+        onRemove.disconnect();
+      }
+    });
+    onRemove.observe(document.body, { childList: true });
+
+    // Load catalog immediately
+    this._ensureCatalog().then(() => this._renderCatalog()).catch(() => {});
+  },
+
+  _updateShopBalance() {
+    const balEl = document.querySelector('#cg-shop-overlay .cg-shop-balance strong');
+    if (balEl) balEl.textContent = `${this._totalDenarii().toFixed(2)}D`;
   },
 
   _showExchangeModal() {

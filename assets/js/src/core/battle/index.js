@@ -143,28 +143,6 @@ function renderArmorTable(armor) {
   `;
 }
 
-function renderMoneySection(data = {}) {
-  const liras   = escape(data.money_liras   || '');
-  const denarii = escape(data.money_denarii || '');
-  const farthings = escape(data.money_farthings || '');
-  return `
-    <div class="cg-battle-section cg-money-section">
-      <h4 class="cg-battle-subhead">Money</h4>
-      <div class="cg-money-grid">
-        <label class="cg-money-label">Liras
-          <input type="number" min="0" class="cg-battle-input cg-money-input" id="cg-money-liras" value="${liras}" placeholder="0" />
-        </label>
-        <label class="cg-money-label">Denarii
-          <input type="number" min="0" class="cg-battle-input cg-money-input" id="cg-money-denarii" value="${denarii}" placeholder="0" />
-        </label>
-        <label class="cg-money-label">Farthings
-          <input type="number" min="0" class="cg-battle-input cg-money-input" id="cg-money-farthings" value="${farthings}" placeholder="0" />
-        </label>
-      </div>
-    </div>
-  `;
-}
-
 function readWeaponsFromDom() {
   const out = [];
   document.querySelectorAll('#cg-weapons-tbody .cg-weapon-row').forEach(row => {
@@ -192,23 +170,11 @@ function readArmorFromDom() {
   return out;
 }
 
-function readMoneyFromDom() {
-  return {
-    money_liras:    document.getElementById('cg-money-liras')?.value    || '',
-    money_denarii:  document.getElementById('cg-money-denarii')?.value  || '',
-    money_farthings:document.getElementById('cg-money-farthings')?.value|| '',
-  };
-}
-
 function persist() {
   if (!FormBuilderAPI) return;
   FormBuilderAPI._data = FormBuilderAPI._data || {};
   FormBuilderAPI._data.weapons = readWeaponsFromDom();
   FormBuilderAPI._data.armor   = readArmorFromDom();
-  const money = readMoneyFromDom();
-  FormBuilderAPI._data.money_liras     = money.money_liras;
-  FormBuilderAPI._data.money_denarii   = money.money_denarii;
-  FormBuilderAPI._data.money_farthings = money.money_farthings;
 }
 
 function refreshPools() {
@@ -236,8 +202,7 @@ const BattleAPI = {
     container.innerHTML =
       renderPoolsSection(pools) +
       renderWeaponsTable(weapons) +
-      renderArmorTable(armor) +
-      renderMoneySection(data);
+      renderArmorTable(armor);
 
     this._bindEvents(container);
   },

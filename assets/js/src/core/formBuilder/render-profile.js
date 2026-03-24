@@ -64,20 +64,8 @@ export default {
 
         <div class="cg-profile-box cg-catalog-box">
           <h3>Equipment Shop</h3>
-          <p class="cg-catalog-intro">Purchase additional equipment from the catalog below. Career and gift trappings above are free — only shop purchases deduct money.</p>
-          <div class="cg-catalog-controls">
-            <input type="text" id="cg-equip-search" class="cg-catalog-search"
-              placeholder="Search items…" autocomplete="off" />
-            <select id="cg-equip-filter-kind" class="cg-free-select cg-catalog-filter">
-              <option value="">All types</option>
-              <option value="equipment">Equipment only</option>
-              <option value="weapon">Weapons only</option>
-            </select>
-            <button type="button" id="cg-equip-browse-btn" class="cg-btn cg-btn-gold">Browse All Items</button>
-          </div>
-          <div id="cg-equip-catalog-panel">
-            <p class="cg-catalog-hint"><em>Search above or click "Browse All Items" to see the full catalog.</em></p>
-          </div>
+          <p class="cg-catalog-intro">Purchase additional equipment. Career and gift trappings above are free — only shop purchases deduct money.</p>
+          <button type="button" id="cg-equip-open-btn" class="cg-btn cg-btn-gold">Open Equipment Shop</button>
         </div>
       </div>
     `;

@@ -1115,20 +1115,8 @@
 
         <div class="cg-profile-box cg-catalog-box">
           <h3>Equipment Shop</h3>
-          <p class="cg-catalog-intro">Purchase additional equipment from the catalog below. Career and gift trappings above are free \u2014 only shop purchases deduct money.</p>
-          <div class="cg-catalog-controls">
-            <input type="text" id="cg-equip-search" class="cg-catalog-search"
-              placeholder="Search items\u2026" autocomplete="off" />
-            <select id="cg-equip-filter-kind" class="cg-free-select cg-catalog-filter">
-              <option value="">All types</option>
-              <option value="equipment">Equipment only</option>
-              <option value="weapon">Weapons only</option>
-            </select>
-            <button type="button" id="cg-equip-browse-btn" class="cg-btn cg-btn-gold">Browse All Items</button>
-          </div>
-          <div id="cg-equip-catalog-panel">
-            <p class="cg-catalog-hint"><em>Search above or click "Browse All Items" to see the full catalog.</em></p>
-          </div>
+          <p class="cg-catalog-intro">Purchase additional equipment. Career and gift trappings above are free \u2014 only shop purchases deduct money.</p>
+          <button type="button" id="cg-equip-open-btn" class="cg-btn cg-btn-gold">Open Equipment Shop</button>
         </div>
       </div>
     `;
@@ -7110,27 +7098,6 @@
     </div>
   `;
   }
-  function renderMoneySection(data = {}) {
-    const liras = escape2(data.money_liras || "");
-    const denarii = escape2(data.money_denarii || "");
-    const farthings = escape2(data.money_farthings || "");
-    return `
-    <div class="cg-battle-section cg-money-section">
-      <h4 class="cg-battle-subhead">Money</h4>
-      <div class="cg-money-grid">
-        <label class="cg-money-label">Liras
-          <input type="number" min="0" class="cg-battle-input cg-money-input" id="cg-money-liras" value="${liras}" placeholder="0" />
-        </label>
-        <label class="cg-money-label">Denarii
-          <input type="number" min="0" class="cg-battle-input cg-money-input" id="cg-money-denarii" value="${denarii}" placeholder="0" />
-        </label>
-        <label class="cg-money-label">Farthings
-          <input type="number" min="0" class="cg-battle-input cg-money-input" id="cg-money-farthings" value="${farthings}" placeholder="0" />
-        </label>
-      </div>
-    </div>
-  `;
-  }
   function readWeaponsFromDom() {
     const out = [];
     document.querySelectorAll("#cg-weapons-tbody .cg-weapon-row").forEach((row) => {
@@ -7158,24 +7125,12 @@
     });
     return out;
   }
-  function readMoneyFromDom() {
-    var _a, _b, _c;
-    return {
-      money_liras: ((_a = document.getElementById("cg-money-liras")) == null ? void 0 : _a.value) || "",
-      money_denarii: ((_b = document.getElementById("cg-money-denarii")) == null ? void 0 : _b.value) || "",
-      money_farthings: ((_c = document.getElementById("cg-money-farthings")) == null ? void 0 : _c.value) || ""
-    };
-  }
   function persist() {
     if (!formBuilder_default)
       return;
     formBuilder_default._data = formBuilder_default._data || {};
     formBuilder_default._data.weapons = readWeaponsFromDom();
     formBuilder_default._data.armor = readArmorFromDom();
-    const money = readMoneyFromDom();
-    formBuilder_default._data.money_liras = money.money_liras;
-    formBuilder_default._data.money_denarii = money.money_denarii;
-    formBuilder_default._data.money_farthings = money.money_farthings;
   }
   function refreshPools() {
     const pools = buildCombatPools();
@@ -7200,7 +7155,7 @@
       const weapons = Array.isArray(data.weapons) ? data.weapons : [];
       const armor = Array.isArray(data.armor) ? data.armor : [];
       const pools = buildCombatPools();
-      container.innerHTML = renderPoolsSection(pools) + renderWeaponsTable(weapons) + renderArmorTable(armor) + renderMoneySection(data);
+      container.innerHTML = renderPoolsSection(pools) + renderWeaponsTable(weapons) + renderArmorTable(armor);
       this._bindEvents(container);
     },
     _bindEvents(container) {
@@ -7388,9 +7343,8 @@
         setTrappingsList(list);
         this._renderAll();
       });
-      $19(document).on("click.trappings", "#cg-equip-browse-btn", () => {
-        this._ensureCatalog().then(() => this._renderCatalog()).catch(() => {
-        });
+      $19(document).on("click.trappings", "#cg-equip-open-btn", () => {
+        this._showShopModal();
       });
       $19(document).on("input.trappings", "#cg-equip-search", () => {
         this._ensureCatalog().then(() => this._renderCatalog()).catch(() => {
@@ -7685,6 +7639,7 @@
       this._renderAll();
       if (this._catalogCache)
         this._renderCatalog();
+      this._updateShopBalance();
     },
     // ── Battle Array autofill ───────────────────────────────────────────────────
     _syncBattleArray() {
@@ -7986,6 +7941,57 @@
           parts.push(`Cover ${c.cover_dice}`);
         return parts.join(", ");
       }
+    },
+    _showShopModal() {
+      if (document.getElementById("cg-shop-overlay"))
+        return;
+      const totalVal = this._totalDenarii();
+      const modal = document.createElement("div");
+      modal.id = "cg-shop-overlay";
+      modal.className = "cg-exchange-overlay";
+      modal.innerHTML = `
+      <div class="cg-shop-modal">
+        <div class="cg-shop-modal-header">
+          <h4>Equipment Shop</h4>
+          <span class="cg-shop-balance">Balance: <strong>${totalVal.toFixed(2)}D</strong></span>
+          <button type="button" class="cg-shop-close cg-btn" id="cg-shop-close-btn" title="Close">\u2715 Close</button>
+        </div>
+        <p class="cg-catalog-intro">Career and gift trappings are free. Only purchases here deduct money.</p>
+        <div class="cg-catalog-controls">
+          <input type="text" id="cg-equip-search" class="cg-catalog-search"
+            placeholder="Search items\u2026" autocomplete="off" />
+          <select id="cg-equip-filter-kind" class="cg-free-select cg-catalog-filter">
+            <option value="">All types</option>
+            <option value="equipment">Equipment only</option>
+            <option value="weapon">Weapons only</option>
+          </select>
+        </div>
+        <div id="cg-equip-catalog-panel" class="cg-shop-catalog-panel">
+          <p class="cg-catalog-hint"><em>Loading catalog\u2026</em></p>
+        </div>
+      </div>
+    `;
+      document.body.appendChild(modal);
+      modal.querySelector("#cg-shop-close-btn").addEventListener("click", () => modal.remove());
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal)
+          modal.remove();
+      });
+      document.body.classList.add("cg-modal-open");
+      const onRemove = new MutationObserver(() => {
+        if (!document.getElementById("cg-shop-overlay")) {
+          document.body.classList.remove("cg-modal-open");
+          onRemove.disconnect();
+        }
+      });
+      onRemove.observe(document.body, { childList: true });
+      this._ensureCatalog().then(() => this._renderCatalog()).catch(() => {
+      });
+    },
+    _updateShopBalance() {
+      const balEl = document.querySelector("#cg-shop-overlay .cg-shop-balance strong");
+      if (balEl)
+        balEl.textContent = `${this._totalDenarii().toFixed(2)}D`;
     },
     _showExchangeModal() {
       const currencies = this._currencyList.filter((c) => parseFloat(c.value_denarii || 0) > 0);

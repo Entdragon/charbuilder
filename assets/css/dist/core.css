@@ -1671,6 +1671,100 @@
   font-size: 0.75rem;
 }
 
+.cg-shop-modal {
+  background: var(--cg-parchment, #f0e8d0);
+  border: 1px solid rgba(201, 168, 76, 0.4);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  width: min(900px, 96vw);
+  max-height: 88vh;
+  overflow: hidden;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.55);
+}
+
+.cg-shop-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 1em;
+  padding: 0.9em 1.4em;
+  border-bottom: 1px solid rgba(201, 168, 76, 0.25);
+  flex-shrink: 0;
+}
+.cg-shop-modal-header h4 {
+  font-family: var(--cg-heading-font, "Cinzel", serif);
+  font-size: 1.05rem;
+  color: var(--cg-gold, #c9a84c);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0;
+  flex: 1;
+}
+
+.cg-shop-balance {
+  font-size: 0.9rem;
+  color: var(--cg-text, #2c2316);
+  white-space: nowrap;
+}
+.cg-shop-balance strong {
+  color: var(--cg-gold, #c9a84c);
+}
+
+.cg-shop-close {
+  padding: 5px 14px;
+  font-size: 0.82rem;
+  flex-shrink: 0;
+  margin-left: 0.5em;
+}
+
+.cg-catalog-intro {
+  font-size: 0.85rem;
+  color: var(--cg-text-muted, #705a3a);
+  padding: 0.6em 1.4em 0;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.cg-shop-catalog-panel {
+  overflow-y: auto;
+  flex: 1;
+  padding: 0.4em 0.8em 1em;
+}
+.cg-shop-catalog-panel .cg-catalog-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+.cg-shop-catalog-panel .cg-catalog-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--cg-parchment, #f0e8d0);
+  padding: 0.5em 0.4em;
+  text-align: left;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--cg-text-muted, #705a3a);
+  border-bottom: 1px solid rgba(201, 168, 76, 0.25);
+}
+.cg-shop-catalog-panel .cg-catalog-table tbody tr:hover {
+  background: rgba(201, 168, 76, 0.07);
+}
+.cg-shop-catalog-panel .cg-catalog-table td {
+  padding: 0.35em 0.4em;
+  vertical-align: middle;
+}
+.cg-shop-catalog-panel .cg-catalog-empty,
+.cg-shop-catalog-panel .cg-catalog-note {
+  font-size: 0.8rem;
+  color: var(--cg-text-muted, #705a3a);
+  padding: 0.5em;
+}
+
+body.cg-modal-open {
+  overflow: hidden;
+}
+
 .cg-exchange-overlay {
   position: fixed;
   top: 0;
