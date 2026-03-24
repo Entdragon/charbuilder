@@ -1,22 +1,44 @@
 const { query, queryOne, prefix } = require('../../db');
 
+async function _enrichEffect(p, row, id) {
+  if (!row) return;
+  if (row.effect || row.effect_description) return;
+  try {
+    const sect = await queryOne(
+      `SELECT ct_body AS body FROM ${p}customtables_table_gift_sections
+       WHERE ct_gift_id = ? AND ct_section_type = 'rules' ORDER BY ct_sort ASC LIMIT 1`,
+      [id]
+    );
+    if (sect && sect.body) {
+      const body = String(sect.body).trim();
+      const short = body.length > 180 ? body.slice(0, 177) + '…' : body;
+      row.effect = short;
+      row.effect_description = short;
+    }
+  } catch (_) {}
+}
+
 async function cg_get_local_knowledge(req, res) {
   const p = prefix();
   const row = await queryOne(
-    `SELECT ct_id AS id, ct_gifts_name AS name, ct_gifts_manifold AS ct_gifts_manifold
+    `SELECT ct_id AS id, ct_gifts_name AS name, ct_gifts_manifold AS ct_gifts_manifold,
+            ct_gifts_effect AS effect, ct_gifts_effect_description AS effect_description
      FROM ${p}customtables_table_gifts WHERE ct_id = 242 LIMIT 1`
   );
   if (!row) return res.json({ success: false, data: 'Local Knowledge gift not found.' });
+  await _enrichEffect(p, row, 242);
   res.json({ success: true, data: row });
 }
 
 async function cg_get_language_gift(req, res) {
   const p = prefix();
   const row = await queryOne(
-    `SELECT ct_id AS id, ct_gifts_name AS name, ct_gifts_manifold AS ct_gifts_manifold
+    `SELECT ct_id AS id, ct_gifts_name AS name, ct_gifts_manifold AS ct_gifts_manifold,
+            ct_gifts_effect AS effect, ct_gifts_effect_description AS effect_description
      FROM ${p}customtables_table_gifts WHERE ct_id = 236 LIMIT 1`
   );
   if (!row) return res.json({ success: false, data: 'Language gift not found.' });
+  await _enrichEffect(p, row, 236);
   res.json({ success: true, data: row });
 }
 

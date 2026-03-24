@@ -77,7 +77,8 @@ function renderLK(host) {
   const regionVal = safeHtml(String(data.local_knowledge_region || ''));
   const gift = _lkGift;
   const name = gift ? safeHtml(String(gift.name || 'Local Knowledge')) : 'Local Knowledge';
-  const desc = gift ? effectDescHtml(gift.effect_description || '') : '';
+  const raw = gift ? (String(gift.effect ?? '').trim() || String(gift.effect_description ?? '').trim()) : '';
+  const desc = effectDescHtml(raw);
 
   host.innerHTML = `
     <div class="cg-default-gift-row">
@@ -103,6 +104,25 @@ function renderLK(host) {
   }
 }
 
+// ── Language ───────────────────────────────────────────────────────────────────
+
+let _langGift = null;
+
+async function fetchLanguageGift() {
+  if (_langGift) return _langGift;
+  const res = await postJSON(ajaxUrl(), { action: 'cg_get_language_gift' });
+  if (res && res.success && res.data) _langGift = res.data;
+  return _langGift;
+}
+
+function renderLanguageEffect(host) {
+  if (!host) return;
+  const gift = _langGift;
+  if (!gift) { host.innerHTML = ''; return; }
+  const raw = String(gift.effect ?? '').trim() || String(gift.effect_description ?? '').trim();
+  host.innerHTML = effectDescHtml(raw);
+}
+
 // ── Combat Save ────────────────────────────────────────────────────────────────
 
 let _csGift = null;
@@ -118,7 +138,8 @@ function renderCombatSave(host) {
   if (!host) return;
   const gift = _csGift;
   const name = gift ? safeHtml(String(gift.name || 'Combat Save')) : 'Combat Save';
-  const desc = gift ? effectDescHtml(gift.effect_description || '') : '';
+  const raw = gift ? (String(gift.effect ?? '').trim() || String(gift.effect_description ?? '').trim()) : '';
+  const desc = effectDescHtml(raw);
 
   host.innerHTML = `
     <div class="cg-default-gift-row">
@@ -174,7 +195,7 @@ async function init() {
   if (_inited) { return render(); }
   _inited = true;
 
-  await Promise.all([fetchLKGift(), fetchCombatSave(), fetchPersonalityList()]);
+  await Promise.all([fetchLKGift(), fetchLanguageGift(), fetchCombatSave(), fetchPersonalityList()]);
   render();
 }
 
@@ -182,16 +203,24 @@ function render() {
   const modal = document.getElementById('cg-modal');
   if (!modal) return;
 
-  const lkHost = modal.querySelector('#cg-local-knowledge');
-  const csHost = modal.querySelector('#cg-combat-save');
-  const pHost  = modal.querySelector('#cg-personality');
+  const lkHost   = modal.querySelector('#cg-local-knowledge');
+  const langHost = modal.querySelector('#cg-language-effect');
+  const csHost   = modal.querySelector('#cg-combat-save');
+  const pHost    = modal.querySelector('#cg-personality');
 
-  if (lkHost) renderLK(lkHost);
-  if (csHost) renderCombatSave(csHost);
-  if (pHost)  renderPersonality(pHost);
+  if (lkHost)   renderLK(lkHost);
+  if (langHost) renderLanguageEffect(langHost);
+  if (csHost)   renderCombatSave(csHost);
+  if (pHost)    renderPersonality(pHost);
 }
 
-const GiftsDefaults = { init, render };
+const GiftsDefaults = {
+  init,
+  render,
+  get _lkGift()   { return _lkGift;   },
+  get _langGift()  { return _langGift;  },
+  get _csGift()    { return _csGift;    },
+};
 
 if (typeof W !== 'undefined') W.CG_GiftsDefaults = GiftsDefaults;
 export default GiftsDefaults;

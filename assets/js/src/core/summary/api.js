@@ -126,22 +126,38 @@ const SummaryAPI = {
     extraCareers.forEach(ec => { if (ec.name) allCareerNames.push(ec.name); });
     const careerLabel = allCareerNames.length ? allCareerNames.join(' / ') : '—';
 
-    // ── Gift description lookup helper ────────────────────────
-    function giftDesc(giftId) {
-      if (!giftId) return '';
+    // ── Gift lookup helpers ───────────────────────────────────
+    // Defaults module caches: { 242: lkGift, 236: langGift, 159: csGift }
+    const _defaultsCache = (() => {
+      const d = window.CG_GiftsDefaults;
+      const map = {};
+      if (d) {
+        if (d._lkGift)   map['242'] = d._lkGift;
+        if (d._langGift) map['236'] = d._langGift;
+        if (d._csGift)   map['159'] = d._csGift;
+      }
+      return map;
+    })();
+
+    function _findGift(giftId) {
+      if (!giftId) return null;
+      const sid = String(giftId);
+      // check defaults cache first (these may be filtered out of _allGifts)
+      if (_defaultsCache[sid]) return _defaultsCache[sid];
       const fc = window.CG_FreeChoices;
       const allGifts = (fc && Array.isArray(fc._allGifts)) ? fc._allGifts : [];
-      const g = allGifts.find(g => String(g.ct_id || g.id || '') === String(giftId));
+      return allGifts.find(g => String(g.ct_id || g.id || '') === sid) || null;
+    }
+
+    function giftDesc(giftId) {
+      const g = _findGift(giftId);
       if (!g) return '';
       const short = String(g.effect ?? '').trim();
       return short || String(g.effect_description || g.ct_gifts_effect_description || '').trim();
     }
 
     function giftName(giftId) {
-      if (!giftId) return '';
-      const fc = window.CG_FreeChoices;
-      const allGifts = (fc && Array.isArray(fc._allGifts)) ? fc._allGifts : [];
-      const g = allGifts.find(g => String(g.ct_id || g.id || '') === String(giftId));
+      const g = _findGift(giftId);
       return g ? String(g.ct_gift_name || g.name || giftId) : String(giftId);
     }
 
@@ -361,16 +377,19 @@ const SummaryAPI = {
             const giftItems = [];
 
             // ── Always-acquired defaults ──────────────────────────
+            const lkDesc = giftDesc('242');
             const lkRegion = String(data.local_knowledge_region || '').trim();
-            giftItems.push(`<li><strong>Local Knowledge</strong>${lkRegion ? ` <em>(${lkRegion})</em>` : ''}</li>`);
+            giftItems.push(`<li><strong>Local Knowledge</strong>${lkRegion ? ` <em>(${lkRegion})</em>` : ''}${lkDesc ? `<span class="summary-gift-desc"> — ${lkDesc}</span>` : ''}</li>`);
 
             const quals = data.qualifications || data.quals || data.cg_quals || {};
             const rawLang = quals.language ?? data.language ?? '';
             const langList = Array.isArray(rawLang) ? rawLang : (rawLang ? [rawLang] : []);
             const langDisplay = langList.filter(Boolean).join(', ');
-            giftItems.push(`<li><strong>Language</strong>${langDisplay ? ` <em>(${langDisplay})</em>` : ''}</li>`);
+            const langDesc = giftDesc('236');
+            giftItems.push(`<li><strong>Language</strong>${langDisplay ? ` <em>(${langDisplay})</em>` : ''}${langDesc ? `<span class="summary-gift-desc"> — ${langDesc}</span>` : ''}</li>`);
 
-            giftItems.push(`<li><strong>Combat Save</strong></li>`);
+            const csDesc = giftDesc('159');
+            giftItems.push(`<li><strong>Combat Save</strong>${csDesc ? `<span class="summary-gift-desc"> — ${csDesc}</span>` : ''}</li>`);
 
             const personality = String(data.personality_trait || '').trim();
             if (personality) {

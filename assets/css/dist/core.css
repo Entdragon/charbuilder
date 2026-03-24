@@ -566,6 +566,14 @@
   line-height: 1.4;
 }
 
+.cg-gift-effect-inline {
+  font-size: 0.83rem;
+  font-style: italic;
+  color: var(--cg-text-muted, #6a5b3e);
+  font-weight: normal;
+  line-height: 1.45;
+}
+
 .cg-gift-extra-career-hint {
   display: inline;
   font-size: 0.82rem;

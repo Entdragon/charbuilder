@@ -1069,6 +1069,7 @@
             <div class="cg-gift-label" style="margin-top:0;">Language</div>
             <div id="cg-language" class="cg-gift-item" style="margin:0;"></div>
           </div>
+          <div id="cg-language-effect" class="cg-gift-item"></div>
 
           <div class="cg-gift-label" style="margin-top:1em;">Combat Save</div>
           <div id="cg-combat-save" class="cg-gift-item"></div>
@@ -5412,13 +5413,15 @@
     });
   }
   function renderLK(host) {
+    var _a, _b;
     if (!host)
       return;
     const data = getData();
     const regionVal = safeHtml(String(data.local_knowledge_region || ""));
     const gift = _lkGift;
     const name = gift ? safeHtml(String(gift.name || "Local Knowledge")) : "Local Knowledge";
-    const desc = gift ? effectDescHtml(gift.effect_description || "") : "";
+    const raw = gift ? String((_a = gift.effect) != null ? _a : "").trim() || String((_b = gift.effect_description) != null ? _b : "").trim() : "";
+    const desc = effectDescHtml(raw);
     host.innerHTML = `
     <div class="cg-default-gift-row">
       <span class="cg-default-gift-name">${name}</span>
@@ -5441,6 +5444,29 @@
       });
     }
   }
+  var _langGift = null;
+  function fetchLanguageGift() {
+    return __async(this, null, function* () {
+      if (_langGift)
+        return _langGift;
+      const res = yield postJSON3(ajaxUrl(), { action: "cg_get_language_gift" });
+      if (res && res.success && res.data)
+        _langGift = res.data;
+      return _langGift;
+    });
+  }
+  function renderLanguageEffect(host) {
+    var _a, _b;
+    if (!host)
+      return;
+    const gift = _langGift;
+    if (!gift) {
+      host.innerHTML = "";
+      return;
+    }
+    const raw = String((_a = gift.effect) != null ? _a : "").trim() || String((_b = gift.effect_description) != null ? _b : "").trim();
+    host.innerHTML = effectDescHtml(raw);
+  }
   var _csGift = null;
   function fetchCombatSave() {
     return __async(this, null, function* () {
@@ -5453,11 +5479,13 @@
     });
   }
   function renderCombatSave(host) {
+    var _a, _b;
     if (!host)
       return;
     const gift = _csGift;
     const name = gift ? safeHtml(String(gift.name || "Combat Save")) : "Combat Save";
-    const desc = gift ? effectDescHtml(gift.effect_description || "") : "";
+    const raw = gift ? String((_a = gift.effect) != null ? _a : "").trim() || String((_b = gift.effect_description) != null ? _b : "").trim() : "";
+    const desc = effectDescHtml(raw);
     host.innerHTML = `
     <div class="cg-default-gift-row">
       <span class="cg-default-gift-name">${name}</span>
@@ -5507,7 +5535,7 @@
         return render();
       }
       _inited = true;
-      yield Promise.all([fetchLKGift(), fetchCombatSave(), fetchPersonalityList()]);
+      yield Promise.all([fetchLKGift(), fetchLanguageGift(), fetchCombatSave(), fetchPersonalityList()]);
       render();
     });
   }
@@ -5516,16 +5544,31 @@
     if (!modal)
       return;
     const lkHost = modal.querySelector("#cg-local-knowledge");
+    const langHost = modal.querySelector("#cg-language-effect");
     const csHost = modal.querySelector("#cg-combat-save");
     const pHost = modal.querySelector("#cg-personality");
     if (lkHost)
       renderLK(lkHost);
+    if (langHost)
+      renderLanguageEffect(langHost);
     if (csHost)
       renderCombatSave(csHost);
     if (pHost)
       renderPersonality(pHost);
   }
-  var GiftsDefaults = { init, render };
+  var GiftsDefaults = {
+    init,
+    render,
+    get _lkGift() {
+      return _lkGift;
+    },
+    get _langGift() {
+      return _langGift;
+    },
+    get _csGift() {
+      return _csGift;
+    }
+  };
   if (typeof W3 !== "undefined")
     W3.CG_GiftsDefaults = GiftsDefaults;
   var defaults_default = GiftsDefaults;
@@ -6153,24 +6196,39 @@
           allCareerNames.push(ec.name);
       });
       const careerLabel = allCareerNames.length ? allCareerNames.join(" / ") : "\u2014";
-      function giftDesc(giftId2) {
-        var _a;
+      const _defaultsCache = (() => {
+        const d = window.CG_GiftsDefaults;
+        const map = {};
+        if (d) {
+          if (d._lkGift)
+            map["242"] = d._lkGift;
+          if (d._langGift)
+            map["236"] = d._langGift;
+          if (d._csGift)
+            map["159"] = d._csGift;
+        }
+        return map;
+      })();
+      function _findGift(giftId2) {
         if (!giftId2)
-          return "";
+          return null;
+        const sid = String(giftId2);
+        if (_defaultsCache[sid])
+          return _defaultsCache[sid];
         const fc = window.CG_FreeChoices;
         const allGifts = fc && Array.isArray(fc._allGifts) ? fc._allGifts : [];
-        const g = allGifts.find((g2) => String(g2.ct_id || g2.id || "") === String(giftId2));
+        return allGifts.find((g) => String(g.ct_id || g.id || "") === sid) || null;
+      }
+      function giftDesc(giftId2) {
+        var _a;
+        const g = _findGift(giftId2);
         if (!g)
           return "";
         const short = String((_a = g.effect) != null ? _a : "").trim();
         return short || String(g.effect_description || g.ct_gifts_effect_description || "").trim();
       }
       function giftName2(giftId2) {
-        if (!giftId2)
-          return "";
-        const fc = window.CG_FreeChoices;
-        const allGifts = fc && Array.isArray(fc._allGifts) ? fc._allGifts : [];
-        const g = allGifts.find((g2) => String(g2.ct_id || g2.id || "") === String(giftId2));
+        const g = _findGift(giftId2);
         return g ? String(g.ct_gift_name || g.name || giftId2) : String(giftId2);
       }
       let speciesGiftsHtml = "";
@@ -6375,14 +6433,17 @@
         const allG = fc && Array.isArray(fc._allGifts) ? fc._allGifts : [];
         const freeIds = Array.isArray(data.free_gifts) ? data.free_gifts : [data.free_gift_1, data.free_gift_2, data.free_gift_3];
         const giftItems = [];
+        const lkDesc = giftDesc("242");
         const lkRegion = String(data.local_knowledge_region || "").trim();
-        giftItems.push(`<li><strong>Local Knowledge</strong>${lkRegion ? ` <em>(${lkRegion})</em>` : ""}</li>`);
+        giftItems.push(`<li><strong>Local Knowledge</strong>${lkRegion ? ` <em>(${lkRegion})</em>` : ""}${lkDesc ? `<span class="summary-gift-desc"> \u2014 ${lkDesc}</span>` : ""}</li>`);
         const quals = data.qualifications || data.quals || data.cg_quals || {};
         const rawLang = (_b = (_a = quals.language) != null ? _a : data.language) != null ? _b : "";
         const langList = Array.isArray(rawLang) ? rawLang : rawLang ? [rawLang] : [];
         const langDisplay = langList.filter(Boolean).join(", ");
-        giftItems.push(`<li><strong>Language</strong>${langDisplay ? ` <em>(${langDisplay})</em>` : ""}</li>`);
-        giftItems.push(`<li><strong>Combat Save</strong></li>`);
+        const langDesc = giftDesc("236");
+        giftItems.push(`<li><strong>Language</strong>${langDisplay ? ` <em>(${langDisplay})</em>` : ""}${langDesc ? `<span class="summary-gift-desc"> \u2014 ${langDesc}</span>` : ""}</li>`);
+        const csDesc = giftDesc("159");
+        giftItems.push(`<li><strong>Combat Save</strong>${csDesc ? `<span class="summary-gift-desc"> \u2014 ${csDesc}</span>` : ""}</li>`);
         const personality = String(data.personality_trait || "").trim();
         if (personality) {
           giftItems.push(`<li><strong>Personality:</strong> ${personality}</li>`);

@@ -18,6 +18,7 @@ export default {
             <div class="cg-gift-label" style="margin-top:0;">Language</div>
             <div id="cg-language" class="cg-gift-item" style="margin:0;"></div>
           </div>
+          <div id="cg-language-effect" class="cg-gift-item"></div>
 
           <div class="cg-gift-label" style="margin-top:1em;">Combat Save</div>
           <div id="cg-combat-save" class="cg-gift-item"></div>
