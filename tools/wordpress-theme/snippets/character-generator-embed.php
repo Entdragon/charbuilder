@@ -17,13 +17,11 @@
  */
 
 if ( ! defined( 'CG_APP_URL' ) ) {
-    // ── UPDATE THIS URL after deploying ───────────────────────────────────────
-    // Currently pointing to the Replit dev server.
-    // Once the app is deployed, replace this with the stable deployed URL, e.g.:
-    //   define( 'CG_APP_URL', 'https://charbuilder.replit.app' );
-    // OR point characters.libraryofcalbria.com DNS to the deployed app and use:
+    // ── App URL ───────────────────────────────────────────────────────────────
+    // Points to the Express server that serves the character generator.
+    // Override by adding this line to wp-config.php BEFORE WordPress loads:
     //   define( 'CG_APP_URL', 'https://characters.libraryofcalbria.com' );
-    define( 'CG_APP_URL', 'https://5ecd0e5e-b389-4903-83d6-ae996afcb45a-00-3c9iornauuqfo.janeway.replit.dev' );
+    define( 'CG_APP_URL', 'https://characters.libraryofcalbria.com' );
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
