@@ -650,9 +650,29 @@ const TrappingsAPI = {
       bySource[src].push(t);
     });
 
+    // Merge same-item duplicates within a group (e.g. two gift trappings both granting a dagger).
+    // Items are keyed by slug (falling back to name/token). Qty is summed; the first item wins
+    // for stats/display. Purchase/manual items keep individual rows (user may want to remove them).
+    const dedupGroup = (items) => {
+      const keepSeparate = t => t.source === 'purchase' || t.source === 'manual';
+      const merged  = new Map(); // key → merged item
+      const separate = [];
+      items.forEach(t => {
+        if (keepSeparate(t)) { separate.push(t); return; }
+        const key = (t.slug || t.name || t.token || '').toLowerCase();
+        if (!key) { separate.push(t); return; }
+        if (merged.has(key)) {
+          merged.get(key).qty = (parseInt(merged.get(key).qty, 10) || 1) + (parseInt(t.qty, 10) || 1);
+        } else {
+          merged.set(key, { ...t, qty: parseInt(t.qty, 10) || 1 });
+        }
+      });
+      return [...merged.values(), ...separate];
+    };
+
     const renderGroup = (items, label, cls) => {
       if (!items.length) return '';
-      const rows = items.map(t => `
+      const rows = dedupGroup(items).map(t => `
         <tr class="cg-trap-row cg-trap-row--${escape(t.source || 'manual')}">
           <td class="cg-trap-qty">${escape(t.qty || 1)}</td>
           <td class="cg-trap-name">${escape(t.name || t.token || '')}</td>

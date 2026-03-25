@@ -101,11 +101,17 @@ function poolString(...dice) {
 }
 
 
+// Gift IDs whose effects are fully passive and automatically modify combat pools
+const GIFT_SOAK_ADD_WILL    = 21;  // Resolve: "Include Will Dice with Soak Dice"
+const GIFT_SOAK_ADD_SPECIES = 79;  // Natural Armor: "Add Species Die to Soak Dice"
+
 function buildCombatPools() {
-  const speed = traitDie('speed');
-  const will  = traitDie('will');
-  const body  = traitDie('body');
-  const data  = FormBuilderAPI?._data || {};
+  const speed   = traitDie('speed');
+  const will    = traitDie('will');
+  const body    = traitDie('body');
+  const mind    = traitDie('mind');
+  const species = traitDie('trait_species');
+  const data    = FormBuilderAPI?._data || {};
   const armorSoak = (Array.isArray(data.armor) ? data.armor : []).map(a => a.soak).filter(Boolean);
 
   // Dodge = Speed + Dodge skill pool (species die, career die, marks die).
@@ -115,10 +121,16 @@ function buildCombatPools() {
   const diePat         = /^d\d+$/;
   const dodgeDice      = [speed, ...dodgeSkillPool.split('+').map(s => s.trim()).filter(s => diePat.test(s))];
 
+  // Check which passive gift bonuses are active
+  const activeGifts  = collectAllGiftIds();
+  const extraSoak    = [];
+  if (activeGifts.has(String(GIFT_SOAK_ADD_WILL))    && will)    extraSoak.push(will);
+  if (activeGifts.has(String(GIFT_SOAK_ADD_SPECIES)) && species) extraSoak.push(species);
+
   return {
-    initiative: poolString(speed, will),
+    initiative: poolString(speed, mind),
     dodge:      poolString(...dodgeDice),
-    soak:       poolString(body, ...armorSoak),
+    soak:       poolString(body, ...armorSoak, ...extraSoak),
   };
 }
 
@@ -130,7 +142,7 @@ function renderPoolsSection(pools) {
         <div class="cg-pool-block">
           <span class="cg-pool-label">Initiative</span>
           <span class="cg-pool-dice" id="cg-battle-initiative">${escape(pools.initiative)}</span>
-          <span class="cg-pool-note">(Speed + Will)</span>
+          <span class="cg-pool-note">(Speed + Mind)</span>
         </div>
         <div class="cg-pool-block">
           <span class="cg-pool-label">Dodge</span>
@@ -526,14 +538,15 @@ const BattleAPI = {
     document.addEventListener('cg:traits:updated', refreshPools);
     document.addEventListener('change', e => {
       const t = e.target;
-      if (t && t.id && /^cg-(speed|will|body)$/.test(t.id)) refreshPools();
+      if (t && t.id && /^cg-(speed|will|body|mind|trait_species)$/.test(t.id)) refreshPools();
     });
 
-    // Re-fetch spells when gift-related events fire
-    document.addEventListener('cg:career:profile',   () => this._loadSpells(container));
-    document.addEventListener('cg:species:profile',  () => this._loadSpells(container));
-    document.addEventListener('cg:freechoices:changed', () => this._loadSpells(container));
-    document.addEventListener('cg:gifts:changed',    () => this._loadSpells(container));
+    // Re-fetch spells AND refresh pools when gift-related events fire
+    // (Some gifts modify combat pools, e.g. Resolve adds Will to Soak)
+    document.addEventListener('cg:career:profile',      () => { refreshPools(); this._loadSpells(container); });
+    document.addEventListener('cg:species:profile',     () => { refreshPools(); this._loadSpells(container); });
+    document.addEventListener('cg:freechoices:changed', () => { refreshPools(); this._loadSpells(container); });
+    document.addEventListener('cg:gifts:changed',       () => { refreshPools(); this._loadSpells(container); });
   },
 
   // Called by collectFormData — ensures DOM state is flushed
