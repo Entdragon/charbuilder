@@ -71,14 +71,14 @@ function cg_register_user(): void {
     $now      = date('Y-m-d H:i:s');
     $userKey  = bin2hex(random_bytes(12));
 
-    cg_exec(
+    $insertResult = cg_exec(
         "INSERT INTO {$p}users
            (user_login, user_pass, user_email, user_registered, user_activation_key, user_status, display_name)
          VALUES (?, ?, ?, ?, ?, 0, ?)",
         [$username, $hash, $email, $now, $userKey, $username]
     );
 
-    $uid = (int) cg_last_insert_id();
+    $uid = (int) $insertResult['lastInsertId'];
     if (!$uid) {
         cg_json(['success' => false, 'data' => 'Registration failed.']);
         return;

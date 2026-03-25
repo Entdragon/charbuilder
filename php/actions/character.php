@@ -165,10 +165,10 @@ function cg_save_character(): void {
 
         $cols     = implode(', ', array_map(fn($k) => "`{$k}`", array_keys($fields)));
         $holders  = implode(', ', array_fill(0, count($fields), '?'));
-        cg_exec(
+        $insertResult = cg_exec(
             "INSERT INTO {$p}character_records ({$cols}) VALUES ({$holders})",
             array_values($fields)
         );
-        cg_json(['success' => true, 'data' => ['id' => cg_last_insert_id()]]);
+        cg_json(['success' => true, 'data' => ['id' => $insertResult['lastInsertId']]]);
     }
 }
