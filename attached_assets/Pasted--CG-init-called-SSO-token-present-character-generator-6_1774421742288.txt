@@ -1,0 +1,196 @@
+[CG] init() called, SSO token: present
+character-generator/:633 [CG] attempting SSO login…
+injection-topics.js:1 Browsing Topics API removed from https://libraryofcalbria.com/character-generator/ which is main frame
+character-generator/:636 [CG] SSO result: {"success":true,"data":{"username":"admin_25l0dxf3","redirect":"/"}}
+index.js:73 [Core] bundle loaded (#1)
+index.js:73 [Core] init() called
+index.js:73 [MainAPI] init() called
+index.js:73 [BuilderEvents] bindUIEvents() called
+index.js:73 [BuilderLoad] init
+index.js:73 [BuilderLoad] populating #cg-splash-load-select
+index.js:73 [BuilderLoad] fetching characters via AJAX… 
+jquery-3.7.1.min.js:2  POST https://characters.libraryofcalbria.com/api/ajax 500 (Internal Server Error)
+send @ jquery-3.7.1.min.js:2
+ajax @ jquery-3.7.1.min.js:2
+(anonymous) @ free-choices.js:220
+ajaxPost @ free-choices.js:220
+(anonymous) @ ui.js:119
+(anonymous) @ core.bundle.js:38
+__async @ core.bundle.js:22
+_fetchAllGifts @ ui.js:114
+(anonymous) @ ui.js:104
+(anonymous) @ core.bundle.js:38
+__async @ core.bundle.js:22
+refresh @ ui.js:101
+init @ ui.js:54
+init2 @ api.js:264
+bindUIEvents @ index.js:73
+init @ index.js:73
+init @ index.js:73
+bootOnce @ index.js:73
+(anonymous) @ index.js:73
+(anonymous) @ index.js:73
+PendingScript
+loadBundle @ character-generator/:625
+showApp @ character-generator/:612
+(anonymous) @ character-generator/:637
+Promise.then
+init @ character-generator/:635
+jq.onload @ character-generator/:720
+script
+startInit @ character-generator/:718Understand this error
+free-choices.js:123 [FreeChoices] Failed to fetch gifts error
+warn3 @ free-choices.js:123
+(anonymous) @ ui.js:165
+rejected @ core.bundle.js:32
+Promise.then
+step @ core.bundle.js:37
+(anonymous) @ core.bundle.js:38
+__async @ core.bundle.js:22
+_fetchAllGifts @ ui.js:114
+(anonymous) @ ui.js:104
+(anonymous) @ core.bundle.js:38
+__async @ core.bundle.js:22
+refresh @ ui.js:101
+init @ ui.js:54
+init2 @ api.js:264
+bindUIEvents @ index.js:73
+init @ index.js:73
+init @ index.js:73
+bootOnce @ index.js:73
+(anonymous) @ index.js:73
+(anonymous) @ index.js:73
+PendingScript
+loadBundle @ character-generator/:625
+showApp @ character-generator/:612
+(anonymous) @ character-generator/:637
+Promise.then
+init @ character-generator/:635
+jq.onload @ character-generator/:720
+script
+startInit @ character-generator/:718Understand this warning
+index.js:73 [BuilderLoad] fetched 7 records
+events.js:23 [BuilderUI] openBuilder() {isNew: true, payload: {…}}
+form-builder.js:45 🛠️ FormBuilder.buildForm fired: {isNew: true}
+api.js:7 [SpeciesAPI] Fetching species via AJAX…
+api.js:9 [CareerAPI] Fetching careers via AJAX…
+index.js:30 🔽 [buildForm] SELECT VALUES AFTER RENDER: {will: '', speed: '', body: '', mind: '', trait_species: '', …}
+events.js:43 [SpeciesEvents] selected species → 
+extra.js:71 [CareerEvents] selected career → 
+jquery-3.7.1.min.js:2  POST https://characters.libraryofcalbria.com/api/ajax 500 (Internal Server Error)
+send @ jquery-3.7.1.min.js:2
+ajax @ jquery-3.7.1.min.js:2
+ce.<computed> @ jquery-3.7.1.min.js:2
+postJSON2 @ api.js:76
+getList @ api.js:171
+populateSelect @ api.js:202
+init @ builder-ui.js:68
+(anonymous) @ builder-ui.js:135
+(anonymous) @ core.bundle.js:38
+__async @ core.bundle.js:22
+ensureListsThenApply @ builder-ui.js:131
+openBuilder @ events.js:36
+(anonymous) @ index.js:73
+dispatch @ jquery-3.7.1.min.js:2
+v.handle @ jquery-3.7.1.min.js:2Understand this error
+api.js:7 [SpeciesAPI] Species list fetched: 116
+api.js:10 [CareerAPI] AJAX career list failed: error  {"success":false,"data":"Server error. Please try again."}
+warn2 @ api.js:10
+(anonymous) @ api.js:179
+c @ jquery-3.7.1.min.js:2
+fireWith @ jquery-3.7.1.min.js:2
+t @ jquery-3.7.1.min.js:2
+setTimeout
+(anonymous) @ jquery-3.7.1.min.js:2
+c @ jquery-3.7.1.min.js:2
+fireWith @ jquery-3.7.1.min.js:2
+fire @ jquery-3.7.1.min.js:2
+c @ jquery-3.7.1.min.js:2
+fireWith @ jquery-3.7.1.min.js:2
+t @ jquery-3.7.1.min.js:2
+setTimeout
+(anonymous) @ jquery-3.7.1.min.js:2
+c @ jquery-3.7.1.min.js:2
+fireWith @ jquery-3.7.1.min.js:2
+fire @ jquery-3.7.1.min.js:2
+c @ jquery-3.7.1.min.js:2
+fireWith @ jquery-3.7.1.min.js:2
+l @ jquery-3.7.1.min.js:2
+(anonymous) @ jquery-3.7.1.min.js:2
+XMLHttpRequest.send
+send @ jquery-3.7.1.min.js:2
+ajax @ jquery-3.7.1.min.js:2
+ce.<computed> @ jquery-3.7.1.min.js:2
+postJSON2 @ api.js:76
+getList @ api.js:171
+populateSelect @ api.js:202
+init @ builder-ui.js:68
+(anonymous) @ builder-ui.js:135
+(anonymous) @ core.bundle.js:38
+__async @ core.bundle.js:22
+ensureListsThenApply @ builder-ui.js:131
+openBuilder @ events.js:36
+(anonymous) @ index.js:73
+dispatch @ jquery-3.7.1.min.js:2
+v.handle @ jquery-3.7.1.min.js:2Understand this warning
+fetch('https://characters.libraryofcalbria.com/api/ajax', {
+  method:'POST', credentials:'include',
+  headers:{'Content-Type':'application/x-www-form-urlencoded'},
+  body:'action=cg_run_diagnostics'
+}).then(r=>r.json()).then(console.log)
+Promise {<pending>}[[Prototype]]: Promise[[PromiseState]]: "fulfilled"[[PromiseResult]]: undefined
+{success: true, data: {…}}data: {db: 'ok', users: 'ok (39 rows)', character_records: 'ok (23 rows)', careers: 'ok (186 rows)', gifts: 'ok (699 rows)', …}success: true[[Prototype]]: Object
+api.js:9 [CareerAPI] Fetching careers via AJAX…
+jquery-3.7.1.min.js:2  POST https://characters.libraryofcalbria.com/api/ajax 500 (Internal Server Error)
+send @ jquery-3.7.1.min.js:2
+ajax @ jquery-3.7.1.min.js:2
+ce.<computed> @ jquery-3.7.1.min.js:2
+postJSON2 @ api.js:76
+getList @ api.js:171
+populateSelect @ api.js:202
+refresh @ builder-ui.js:82
+hydrateSelect @ index.js:73
+hydrateSpeciesAndCareer @ index.js:73
+(anonymous) @ index.js:73
+setTimeout
+(anonymous) @ index.js:73
+dispatch @ jquery-3.7.1.min.js:2
+v.handle @ jquery-3.7.1.min.js:2Understand this error
+api.js:10 [CareerAPI] AJAX career list failed: error  {"success":false,"data":"Server error. Please try again."}
+warn2 @ api.js:10
+(anonymous) @ api.js:179
+c @ jquery-3.7.1.min.js:2
+fireWith @ jquery-3.7.1.min.js:2
+t @ jquery-3.7.1.min.js:2
+setTimeout
+(anonymous) @ jquery-3.7.1.min.js:2
+c @ jquery-3.7.1.min.js:2
+fireWith @ jquery-3.7.1.min.js:2
+fire @ jquery-3.7.1.min.js:2
+c @ jquery-3.7.1.min.js:2
+fireWith @ jquery-3.7.1.min.js:2
+t @ jquery-3.7.1.min.js:2
+setTimeout
+(anonymous) @ jquery-3.7.1.min.js:2
+c @ jquery-3.7.1.min.js:2
+fireWith @ jquery-3.7.1.min.js:2
+fire @ jquery-3.7.1.min.js:2
+c @ jquery-3.7.1.min.js:2
+fireWith @ jquery-3.7.1.min.js:2
+l @ jquery-3.7.1.min.js:2
+(anonymous) @ jquery-3.7.1.min.js:2
+XMLHttpRequest.send
+send @ jquery-3.7.1.min.js:2
+ajax @ jquery-3.7.1.min.js:2
+ce.<computed> @ jquery-3.7.1.min.js:2
+postJSON2 @ api.js:76
+getList @ api.js:171
+populateSelect @ api.js:202
+refresh @ builder-ui.js:82
+hydrateSelect @ index.js:73
+hydrateSpeciesAndCareer @ index.js:73
+(anonymous) @ index.js:73
+setTimeout
+(anonymous) @ index.js:73
+dispatch @ jquery-3.7.1.min.js:2
+v.handle @ jquery-3.7.1.min.js:2Understand this warning
