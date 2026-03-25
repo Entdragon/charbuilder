@@ -2,19 +2,28 @@
 require_once __DIR__ . '/../includes/db.php';
 
 function cg_get_career_list(): void {
-    $p    = cg_prefix();
+    $p  = cg_prefix();
+    $c  = "{$p}customtables_table_careers";
+    $cg = "{$p}customtables_table_career_gifts";
+    $cs = "{$p}customtables_table_career_skills";
+    $sk = "{$p}customtables_table_skills";
+
     $rows = cg_query("
         SELECT
-          ct_id                 AS id,
-          ct_career_name        AS name,
-          ct_career_gift_one    AS gift_id_1,
-          ct_career_gift_two    AS gift_id_2,
-          ct_career_gift_three  AS gift_id_3,
-          ct_career_skill_one   AS skill_one,
-          ct_career_skill_two   AS skill_two,
-          ct_career_skill_three AS skill_three
-        FROM {$p}customtables_table_careers
-        ORDER BY ct_career_name ASC
+          c.ct_id          AS id,
+          c.ct_career_name AS name,
+          MAX(CASE WHEN cg.sort = 1 THEN cg.gift_id END) AS gift_id_1,
+          MAX(CASE WHEN cg.sort = 2 THEN cg.gift_id END) AS gift_id_2,
+          MAX(CASE WHEN cg.sort = 3 THEN cg.gift_id END) AS gift_id_3,
+          MAX(CASE WHEN cs.sort = 1 THEN sk.ct_skill_name END) AS skill_one,
+          MAX(CASE WHEN cs.sort = 2 THEN sk.ct_skill_name END) AS skill_two,
+          MAX(CASE WHEN cs.sort = 3 THEN sk.ct_skill_name END) AS skill_three
+        FROM {$c} c
+        LEFT JOIN {$cg} cg ON c.ct_id = cg.career_id
+        LEFT JOIN {$cs} cs ON c.ct_id = cs.career_id
+        LEFT JOIN {$sk} sk ON cs.skill_id = sk.id
+        GROUP BY c.ct_id, c.ct_career_name
+        ORDER BY c.ct_career_name ASC
     ");
     cg_json(['success' => true, 'data' => $rows]);
 }
@@ -26,30 +35,35 @@ function cg_get_career_gifts(): void {
         return;
     }
 
-    $p = cg_prefix();
-    $c = "{$p}customtables_table_careers";
-    $g = "{$p}customtables_table_gifts";
+    $p  = cg_prefix();
+    $c  = "{$p}customtables_table_careers";
+    $cg = "{$p}customtables_table_career_gifts";
+    $cs = "{$p}customtables_table_career_skills";
+    $g  = "{$p}customtables_table_gifts";
+    $sk = "{$p}customtables_table_skills";
 
     $row = cg_query_one("
         SELECT
-          c.ct_career_name        AS careerName,
-          c.ct_career_gift_one    AS gift_id_1,
-          g1.ct_gifts_name        AS gift_1,
-          g1.ct_gifts_manifold    AS manifold_1,
-          c.ct_career_gift_two    AS gift_id_2,
-          g2.ct_gifts_name        AS gift_2,
-          g2.ct_gifts_manifold    AS manifold_2,
-          c.ct_career_gift_three  AS gift_id_3,
-          g3.ct_gifts_name        AS gift_3,
-          g3.ct_gifts_manifold    AS manifold_3,
-          c.ct_career_skill_one   AS skill_one,
-          c.ct_career_skill_two   AS skill_two,
-          c.ct_career_skill_three AS skill_three
+          c.ct_career_name AS careerName,
+          MAX(CASE WHEN cg.sort = 1 THEN cg.gift_id          END) AS gift_id_1,
+          MAX(CASE WHEN cg.sort = 1 THEN gf.ct_gifts_name    END) AS gift_1,
+          MAX(CASE WHEN cg.sort = 1 THEN gf.ct_gifts_manifold END) AS manifold_1,
+          MAX(CASE WHEN cg.sort = 2 THEN cg.gift_id          END) AS gift_id_2,
+          MAX(CASE WHEN cg.sort = 2 THEN gf.ct_gifts_name    END) AS gift_2,
+          MAX(CASE WHEN cg.sort = 2 THEN gf.ct_gifts_manifold END) AS manifold_2,
+          MAX(CASE WHEN cg.sort = 3 THEN cg.gift_id          END) AS gift_id_3,
+          MAX(CASE WHEN cg.sort = 3 THEN gf.ct_gifts_name    END) AS gift_3,
+          MAX(CASE WHEN cg.sort = 3 THEN gf.ct_gifts_manifold END) AS manifold_3,
+          MAX(CASE WHEN cs.sort = 1 THEN sk.ct_skill_name    END) AS skill_one,
+          MAX(CASE WHEN cs.sort = 2 THEN sk.ct_skill_name    END) AS skill_two,
+          MAX(CASE WHEN cs.sort = 3 THEN sk.ct_skill_name    END) AS skill_three
         FROM {$c} c
-        LEFT JOIN {$g} g1 ON c.ct_career_gift_one   = g1.ct_id
-        LEFT JOIN {$g} g2 ON c.ct_career_gift_two   = g2.ct_id
-        LEFT JOIN {$g} g3 ON c.ct_career_gift_three = g3.ct_id
+        LEFT JOIN {$cg} cg ON c.ct_id = cg.career_id
+        LEFT JOIN {$g}  gf ON cg.gift_id = gf.ct_id
+        LEFT JOIN {$cs} cs ON c.ct_id = cs.career_id
+        LEFT JOIN {$sk} sk ON cs.skill_id = sk.id
         WHERE c.ct_id = ?
+        GROUP BY c.ct_id, c.ct_career_name
     ", [$careerId]);
 
     if (!$row) {

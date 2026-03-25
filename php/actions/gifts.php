@@ -34,35 +34,77 @@ function cg_get_language_gift(): void {
 
 function cg_get_free_gifts(): void {
     $p = cg_prefix();
+    $g = "{$p}customtables_table_gifts";
+    $r = "{$p}customtables_table_gift_requirements";
 
-    $suffixes = ['','two','three','four','five','six',
-                 'seven','eight','nine','ten','eleven',
-                 'twelve','thirteen','fourteen','fifteen',
-                 'sixteen','seventeen','eighteen','nineteen'];
-    $requireCols = implode(', ', array_map(
-        fn($s) => $s ? "ct_gifts_requires_{$s}" : 'ct_gifts_requires',
-        $suffixes
-    ));
-
-    $specialSuffixes = ['','_two','_three','_four','_five','_six','_seven','_eight'];
-    $requireSpecialCols = implode(', ', array_map(
-        fn($s) => "ct_gifts_requires_special{$s}",
-        $specialSuffixes
-    ));
-
+    // Fetch all gifts (base columns still present after migration)
     $rows = cg_query("
         SELECT
           ct_id                    AS id,
           ct_gifts_name            AS name,
           ct_gifts_allows_multiple AS allows_multiple,
-          ct_gifts_manifold        AS ct_gifts_manifold,
-          ct_gifts_requires_special,
-          {$requireSpecialCols},
-          {$requireCols}
-        FROM {$p}customtables_table_gifts
+          ct_gifts_manifold        AS ct_gifts_manifold
+        FROM {$g}
         ORDER BY ct_gifts_name ASC
     ");
-    cg_json(['success' => true, 'data' => $rows]);
+
+    // Index by id for fast lookup
+    $byId = [];
+    foreach ($rows as $row) {
+        $byId[(int) $row['id']] = $row;
+    }
+
+    // Fetch all requirements in one query
+    $reqs = cg_query("
+        SELECT ct_gift_id, ct_sort, ct_req_kind, ct_req_ref_id, ct_req_text
+        FROM {$r}
+        ORDER BY ct_gift_id ASC, ct_sort ASC
+    ");
+
+    // Column-name suffix arrays matching the old flat schema
+    // Sort 1 → '' (bare column), sort 2 → '_two', etc.
+    $requireSuffixes = [
+        1 => '',        2 => '_two',     3 => '_three',   4 => '_four',
+        5 => '_five',   6 => '_six',     7 => '_seven',   8 => '_eight',
+        9 => '_nine',  10 => '_ten',    11 => '_eleven', 12 => '_twelve',
+       13 => '_thirteen', 14 => '_fourteen', 15 => '_fifteen', 16 => '_sixteen',
+       17 => '_seventeen', 18 => '_eighteen', 19 => '_nineteen',
+    ];
+    $specialSuffixes = [
+        1 => '',      2 => '_two',   3 => '_three', 4 => '_four',
+        5 => '_five', 6 => '_six',   7 => '_seven', 8 => '_eight',
+    ];
+
+    foreach ($reqs as $req) {
+        $gId  = (int) $req['ct_gift_id'];
+        $sort = (int) $req['ct_sort'];
+        $kind = (string) $req['ct_req_kind'];
+
+        if (!isset($byId[$gId])) {
+            continue;
+        }
+
+        if ($kind === 'gift_ref') {
+            // Prerequisite gift reference — maps to ct_gifts_requires[_suffix]
+            if (!isset($requireSuffixes[$sort])) continue;
+            $col = 'ct_gifts_requires' . $requireSuffixes[$sort];
+            $byId[$gId][$col] = (int) $req['ct_req_ref_id'];
+
+        } elseif ($kind === 'legacy_text') {
+            // Old INT value stored as text — treat as gift ID
+            if (!isset($requireSuffixes[$sort])) continue;
+            $col = 'ct_gifts_requires' . $requireSuffixes[$sort];
+            $byId[$gId][$col] = (int) $req['ct_req_text'];
+
+        } elseif ($kind === 'special_text') {
+            // Free-text requirement — maps to ct_gifts_requires_special[_suffix]
+            if (!isset($specialSuffixes[$sort])) continue;
+            $col = 'ct_gifts_requires_special' . $specialSuffixes[$sort];
+            $byId[$gId][$col] = (string) $req['ct_req_text'];
+        }
+    }
+
+    cg_json(['success' => true, 'data' => array_values($byId)]);
 }
 
 function cg_ensure_language_table(): void {
