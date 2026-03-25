@@ -408,16 +408,21 @@ function loc_character_generator_shortcode() {
         }
 
         function init() {
+            console.log('[CG] init() called, SSO token:', window.CG_SSO_TOKEN ? 'present' : 'absent');
             // If WordPress gave us an SSO token, use it first so the WordPress
             // identity always wins over any stale character-generator session.
             if (window.CG_SSO_TOKEN) {
+                console.log('[CG] attempting SSO login…');
                 cgAjax('cg_sso_login', { token: window.CG_SSO_TOKEN })
                     .then(function(sso) {
+                        console.log('[CG] SSO result:', JSON.stringify(sso));
                         if (sso.success) { showApp(sso.data.username); return; }
                         // SSO failed — fall back to existing session check
+                        console.log('[CG] SSO failed, checking existing session…');
                         checkExistingSession();
                     });
             } else {
+                console.log('[CG] no SSO token, checking existing session…');
                 checkExistingSession();
             }
         }
@@ -427,8 +432,11 @@ function loc_character_generator_shortcode() {
             var timer = setTimeout(function() { ctrl.abort(); }, 4000);
             fetch(appUrl + '/api/auth/me', { signal: ctrl.signal, credentials: 'include' })
                 .then(function(r) { clearTimeout(timer); return r.json(); })
-                .then(function(d) { if (d.success) showApp(d.data.username); })
-                .catch(function() {});
+                .then(function(d) {
+                    console.log('[CG] session check result:', JSON.stringify(d));
+                    if (d.success) showApp(d.data.username);
+                })
+                .catch(function(e) { console.log('[CG] session check error:', e); });
         }
 
         // Tab switching
