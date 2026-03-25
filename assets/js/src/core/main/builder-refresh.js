@@ -43,9 +43,28 @@ export default function refreshTab() {
       SkillsAPI.init();
       break;
 
-    case 'tab-trappings':
+    case 'tab-trappings': {
       BattleAPI.init();
       try { TrappingsAPI._renderAll(); } catch (_) {}
+
+      // Recovery: if career/species trappings are missing (e.g. timing race
+      // where events fired before listeners were bound), fill them now.
+      try {
+        const FB   = window.CG_FormBuilderAPI || window.FormBuilderAPI;
+        const data = FB?._data || {};
+        const list = Array.isArray(data.trappings_list) ? data.trappings_list : [];
+
+        const careerId = parseInt(data.career_id || data.career || '0', 10);
+        if (careerId > 0 && !list.some(t => t.source === 'career')) {
+          TrappingsAPI._fillCareerTrappings(careerId);
+        }
+
+        const hasSpeciesWeapons = list.some(t => t.source === 'species');
+        if (!hasSpeciesWeapons) {
+          TrappingsAPI._fillSpeciesWeapons();
+        }
+      } catch (_) {}
+
       try {
         if (TrappingsAPI._catalogCache) {
           TrappingsAPI._renderCatalog();
@@ -54,6 +73,7 @@ export default function refreshTab() {
         }
       } catch (_) {}
       break;
+    }
 
     case 'tab-description':
       // Pure inputs; no module init required.

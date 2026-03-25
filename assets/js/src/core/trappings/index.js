@@ -88,8 +88,11 @@ const TrappingsAPI = {
     if (this._inited) return;
     this._inited = true;
 
+    // Bind events immediately so career/species changes are never missed,
+    // even if the async currency fetch hasn't returned yet.
+    this._bindEvents();
+
     this._fetchCurrency().then(() => {
-      this._bindEvents();
       this._renderAll();
       // Pre-fetch catalog in background so it's ready when the tab opens
       this._ensureCatalog().catch(() => {});
