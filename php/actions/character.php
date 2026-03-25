@@ -9,18 +9,21 @@ function cg_normalize_character(array $row): array {
     if (!empty($row['extra_career_1'])) $row['extra_career_1'] = (string) $row['extra_career_1'];
     if (!empty($row['extra_career_2'])) $row['extra_career_2'] = (string) $row['extra_career_2'];
 
-    foreach (['skill_marks', 'career_gift_replacements', 'xp_skill_marks'] as $field) {
-        if (isset($row[$field])) {
+    // JSON fields that decode to objects (key→value maps)
+    foreach (['skill_marks', 'career_gift_replacements', 'xp_skill_marks',
+              'skill_notes', 'gift_skill_marks', 'free_gift_quals', 'money_holdings'] as $field) {
+        if (isset($row[$field]) && $row[$field] !== '') {
             $decoded = json_decode($row[$field], true);
             $row[$field] = is_array($decoded) ? $decoded : [];
         } else {
             $row[$field] = [];
         }
     }
-    $row['xpSkillMarks'] = $row['xp_skill_marks'];
+    $row['xpSkillMarks']   = $row['xp_skill_marks'];
 
-    foreach (['xp_gifts', 'weapons', 'armor'] as $field) {
-        if (isset($row[$field])) {
+    // JSON fields that decode to arrays
+    foreach (['xp_gifts', 'weapons', 'armor', 'trappings_list'] as $field) {
+        if (isset($row[$field]) && $row[$field] !== '') {
             $decoded = json_decode($row[$field], true);
             $row[$field] = is_array($decoded) ? $decoded : [];
         } else {
@@ -32,6 +35,11 @@ function cg_normalize_character(array $row): array {
     $row['experience_points'] = (int) ($row['experience_points'] ?? 0);
     $row['xpMarksBudget']     = (int) ($row['xp_marks_budget']   ?? 0);
     $row['xpGiftSlots']       = (int) ($row['xp_gift_slots']     ?? 0);
+
+    // Money flat fields
+    $row['money_liras']     = (string) ($row['money_liras']     ?? '');
+    $row['money_denarii']   = (string) ($row['money_denarii']   ?? '');
+    $row['money_farthings'] = (string) ($row['money_farthings'] ?? '');
 
     return $row;
 }
@@ -140,6 +148,21 @@ function cg_save_character(): void {
         'xp_gifts'                      => json_encode(is_array($xpGifts)     ? $xpGifts     : []),
         'weapons'                       => json_encode(is_array($weapons)     ? $weapons      : []),
         'armor'                         => json_encode(is_array($armor)       ? $armor        : []),
+
+        // Trappings & money
+        'trappings_list'                => json_encode(is_array($data['trappings_list'] ?? null) ? $data['trappings_list'] : []),
+        'money_holdings'                => json_encode(is_array($data['money_holdings'] ?? null) ? $data['money_holdings'] : (is_array($data['moneyHoldings'] ?? null) ? $data['moneyHoldings'] : [])),
+        'money_liras'                   => substr((string) ($data['money_liras']     ?? ''), 0, 20),
+        'money_denarii'                 => substr((string) ($data['money_denarii']   ?? ''), 0, 20),
+        'money_farthings'               => substr((string) ($data['money_farthings'] ?? ''), 0, 20),
+
+        // Per-skill notes and gift-granted marks
+        'skill_notes'                   => json_encode(is_array($data['skill_notes']       ?? null) ? $data['skill_notes']       : (is_object($data['skill_notes'] ?? null) ? (array) $data['skill_notes'] : [])),
+        'gift_skill_marks'              => json_encode(is_array($data['gift_skill_marks']   ?? null) ? $data['gift_skill_marks']   : []),
+
+        // Free-gift qualification data (language/mystic/knack per slot)
+        'free_gift_quals'               => json_encode(is_array($data['free_gift_quals']    ?? null) ? $data['free_gift_quals']    : []),
+
         'updated'                       => date('Y-m-d H:i:s'),
     ];
 
