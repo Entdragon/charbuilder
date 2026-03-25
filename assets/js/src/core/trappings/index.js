@@ -183,7 +183,7 @@ const TrappingsAPI = {
       this._ensureCatalog().then(() => this._renderCatalog()).catch(() => {});
     });
 
-    $(document).on('change.trappings', '#cg-equip-filter-kind', () => {
+    $(document).on('change.trappings', '#cg-equip-filter-kind, #cg-equip-filter-cat', () => {
       this._ensureCatalog().then(() => this._renderCatalog()).catch(() => {});
     });
 
@@ -836,14 +836,29 @@ const TrappingsAPI = {
 
     const catalog = await this._ensureCatalog();
 
-    const searchEl  = document.getElementById('cg-equip-search');
-    const filterEl  = document.getElementById('cg-equip-filter-kind');
-    const search    = (searchEl?.value || '').toLowerCase().trim();
-    const filterKind = filterEl?.value || '';
+    const searchEl   = document.getElementById('cg-equip-search');
+    const kindEl     = document.getElementById('cg-equip-filter-kind');
+    const catEl      = document.getElementById('cg-equip-filter-cat');
+    const search     = (searchEl?.value || '').toLowerCase().trim();
+    const filterKind = kindEl?.value  || '';
+    const filterCat  = catEl?.value   || '';
+
+    // Rebuild category dropdown options from catalog (respects current kind filter)
+    if (catEl) {
+      const kindScope = catalog.filter(c => !filterKind || c.kind === filterKind);
+      const cats = [...new Map(kindScope.map(c => [c.category, c.category_label || c.category])).entries()]
+        .sort((a, b) => (a[1] || '').localeCompare(b[1] || ''));
+      const currentCat = catEl.value;
+      catEl.innerHTML = '<option value="">All categories</option>' +
+        cats.map(([raw, label]) =>
+          `<option value="${escape(raw)}"${raw === currentCat ? ' selected' : ''}>${escape(label)}</option>`
+        ).join('');
+    }
 
     let items = catalog;
     if (search)     items = items.filter(c => (c.name || '').toLowerCase().includes(search));
     if (filterKind) items = items.filter(c => c.kind === filterKind);
+    if (filterCat)  items = items.filter(c => c.category === filterCat);
 
     if (!items.length) {
       panel.innerHTML = '<p class="cg-catalog-empty">No items match your search.</p>';
@@ -853,15 +868,16 @@ const TrappingsAPI = {
     const totalVal = this._totalDenarii();
 
     const rows = items.slice(0, 200).map(c => {
-      const cost       = parseFloat(c.cost_d) || 0;
-      const costText   = cost > 0 ? `${cost}D` : (c.cost_text || '—');
-      const canAfford  = cost === 0 || totalVal >= cost - 0.001;
-      const stats      = this._catalogStatSummary(c);
+      const cost      = parseFloat(c.cost_d) || 0;
+      const costText  = cost > 0 ? `${cost}D` : (c.cost_text || '—');
+      const canAfford = cost === 0 || totalVal >= cost - 0.001;
+      const stats     = this._catalogStatSummary(c);
+      const catLabel  = c.category_label || c.category || '';
       return `
         <tr class="cg-catalog-row">
           <td class="cg-catalog-name">${escape(c.name)}</td>
           <td class="cg-catalog-kind">${escape(c.kind === 'weapon' ? 'Weapon' : 'Equipment')}</td>
-          <td class="cg-catalog-cat">${escape(c.category || '')}</td>
+          <td class="cg-catalog-cat">${escape(catLabel)}</td>
           <td class="cg-catalog-cost">${escape(costText)}</td>
           <td class="cg-catalog-stats cg-text-sm">${escape(stats)}</td>
           <td class="cg-catalog-action">
@@ -926,6 +942,9 @@ const TrappingsAPI = {
             <option value="">All types</option>
             <option value="equipment">Equipment only</option>
             <option value="weapon">Weapons only</option>
+          </select>
+          <select id="cg-equip-filter-cat" class="cg-free-select cg-catalog-filter">
+            <option value="">All categories</option>
           </select>
         </div>
         <div id="cg-equip-catalog-panel" class="cg-shop-catalog-panel">

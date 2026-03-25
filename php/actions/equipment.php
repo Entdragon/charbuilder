@@ -292,11 +292,47 @@ function cg_get_equipment_catalog(): void {
         $key = strtolower(trim($r['name'] ?? ''));
         if ($key === '' || !isset($seen[$key])) {
             $seen[$key]  = true;
+            $r['category_label'] = cg_category_label($r['category'] ?? '', $r['kind'] ?? '');
             $deduped[]   = $r;
         }
     }
 
     cg_json(['success' => true, 'data' => $deduped]);
+}
+
+// ── Category label helper ─────────────────────────────────────────────────────
+
+function cg_category_label(string $raw, string $kind = ''): string {
+    static $eq_map = [
+        'ammunition'     => 'Ammunition',
+        'armor'          => 'Armor',
+        'care'           => 'Care & Grooming',
+        'consumables'    => 'Consumables',
+        'containers'     => 'Containers',
+        'food_and_drink' => 'Food & Drink',
+        'garments'       => 'Garments',
+        'illumination'   => 'Illumination',
+        'labor'          => 'Labour',
+        'lodging'        => 'Lodging',
+        'personal_items' => 'Personal Items',
+        'shields'        => 'Shields',
+        'trade_gear'     => 'Trade Gear',
+        'transportation' => 'Transportation',
+        'trappings_misc' => 'Miscellaneous',
+        'valuables'      => 'Valuables',
+    ];
+    static $wp_map = [
+        'brawling' => 'Brawling',
+        'melee'    => 'Melee',
+        'natural'  => 'Natural',
+        'ranged'   => 'Ranged',
+    ];
+
+    $map = ($kind === 'weapon') ? $wp_map : $eq_map;
+    if (isset($map[$raw])) return $map[$raw];
+
+    // Fallback: convert snake_case to Title Case
+    return ucwords(str_replace('_', ' ', $raw));
 }
 
 // ── Money list ────────────────────────────────────────────────────────────────
