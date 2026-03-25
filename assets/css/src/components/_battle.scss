@@ -61,19 +61,19 @@
   margin-top:     0.15em;
 }
 
-// ── Wound Track ─────────────────────────────────────────────────
-.cg-wound-track {
+// ── Wound Track — scoped under #cg-modal to beat WordPress span/flex overrides
+#cg-modal .cg-wound-track {
   margin-bottom:  1.2em;
 }
 
-.cg-wound-levels {
+#cg-modal .cg-wound-levels {
   display:        flex;
   gap:            0.8em;
   flex-wrap:      wrap;
   margin-top:     0.5em;
 }
 
-.cg-wound-level {
+#cg-modal .cg-wound-level {
   display:        flex;
   align-items:    center;
   gap:            0.4em;
@@ -81,7 +81,7 @@
   color:          var(--cg-text, #2c2316);
 }
 
-.cg-wound-box {
+#cg-modal .cg-wound-box {
   display:        inline-block;
   width:          18px;
   height:         18px;
@@ -91,8 +91,9 @@
   flex-shrink:    0;
 }
 
-.cg-wound-name {
+#cg-modal .cg-wound-name {
   font-size:      0.8rem;
+  color:          var(--cg-text, #2c2316);
 }
 
 // ── Weapon / Armor Tables ────────────────────────────────────────

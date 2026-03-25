@@ -813,18 +813,19 @@
   font-size: 0.9em;
 }
 
-/* Skill name cell: stacks name + favourite use input */
-.skill-name-cell {
+/* Skill name cell: stacks name + favourite use input.
+   Scoped under #cg-modal to beat WordPress theme input/flex overrides. */
+#cg-modal .skill-name-cell {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-/* Favourite use text input */
-.skill-fav-input {
+/* Favourite use text input — scoped to prevent WordPress form-input overrides */
+#cg-modal .skill-fav-input {
   font-size: 0.78rem;
   font-style: italic;
-  color: var(--cg-text-muted);
+  color: var(--cg-text-muted, #6a5b3e);
   border: 1px solid transparent;
   background: transparent;
   border-radius: 3px;
@@ -832,15 +833,18 @@
   width: 100%;
   min-width: 100px;
   transition: border-color 0.15s, background 0.15s;
+  box-shadow: none;
+  box-sizing: border-box;
 }
-.skill-fav-input:hover, .skill-fav-input:focus {
-  border-color: var(--cg-parchment-3);
+#cg-modal .skill-fav-input:hover, #cg-modal .skill-fav-input:focus {
+  border-color: var(--cg-parchment-3, #c8b987);
   background: rgba(255, 255, 255, 0.6);
-  color: var(--cg-text);
+  color: var(--cg-text, #2c2316);
   outline: none;
+  box-shadow: none;
 }
-.skill-fav-input::placeholder {
-  color: var(--cg-text-muted);
+#cg-modal .skill-fav-input::placeholder {
+  color: var(--cg-text-muted, #6a5b3e);
   font-style: italic;
   opacity: 0.7;
 }
@@ -1191,18 +1195,18 @@
   margin-top: 0.15em;
 }
 
-.cg-wound-track {
+#cg-modal .cg-wound-track {
   margin-bottom: 1.2em;
 }
 
-.cg-wound-levels {
+#cg-modal .cg-wound-levels {
   display: flex;
   gap: 0.8em;
   flex-wrap: wrap;
   margin-top: 0.5em;
 }
 
-.cg-wound-level {
+#cg-modal .cg-wound-level {
   display: flex;
   align-items: center;
   gap: 0.4em;
@@ -1210,7 +1214,7 @@
   color: var(--cg-text, #2c2316);
 }
 
-.cg-wound-box {
+#cg-modal .cg-wound-box {
   display: inline-block;
   width: 18px;
   height: 18px;
@@ -1220,8 +1224,9 @@
   flex-shrink: 0;
 }
 
-.cg-wound-name {
+#cg-modal .cg-wound-name {
   font-size: 0.8rem;
+  color: var(--cg-text, #2c2316);
 }
 
 .cg-battle-section {
