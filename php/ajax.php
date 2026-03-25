@@ -86,8 +86,13 @@ $actionFiles = [
     'cg_get_character'       => 'actions/character.php',
     'cg_save_character'      => 'actions/character.php',
 
-    'cg_get_career_list'     => 'actions/career.php',
-    'cg_get_career_gifts'    => 'actions/career.php',
+    'cg_get_career_list'      => 'actions/career.php',
+    'cg_get_career_gifts'     => 'actions/career.php',
+
+    'cg_get_career_trappings' => 'actions/equipment.php',
+    'cg_get_gift_trappings'   => 'actions/equipment.php',
+    'cg_get_equipment_catalog'=> 'actions/equipment.php',
+    'cg_get_money_list'       => 'actions/equipment.php',
 
     'cg_get_local_knowledge'  => 'actions/gifts.php',
     'cg_get_language_gift'    => 'actions/gifts.php',
