@@ -205,6 +205,8 @@ function cg_get_equipment_catalog(): void {
     $results = [];
 
     if (!$kind || $kind === 'equipment') {
+        // ORDER BY ct_slug ASC within the same name so the canonical (shorter) slug is
+        // always encountered first when we deduplicate by name below.
         $sql    = "
             SELECT
               'equipment'     AS kind,
@@ -235,7 +237,7 @@ function cg_get_equipment_catalog(): void {
             $sql   .= " AND ct_category = ?";
             $params[] = $category;
         }
-        $sql .= " ORDER BY ct_category ASC, ct_name ASC LIMIT 500";
+        $sql .= " ORDER BY ct_category ASC, ct_name ASC, ct_slug ASC LIMIT 500";
         foreach (cg_query($sql, $params) as $r) $results[] = $r;
     }
 
@@ -266,6 +268,7 @@ function cg_get_equipment_catalog(): void {
             FROM {$wp}
             WHERE published = 1
               AND (ct_is_species_weapon IS NULL OR ct_is_species_weapon = 0)
+              AND NOT (ct_weapon_class = 'brawling' AND ct_slug != 'cestus')
         ";
         $params = [];
         if ($search !== '') {
@@ -280,7 +283,20 @@ function cg_get_equipment_catalog(): void {
         foreach (cg_query($sql, $params) as $r) $results[] = $r;
     }
 
-    cg_json(['success' => true, 'data' => $results]);
+    // Deduplicate by lowercase name — the DB may have multiple rows for the same item
+    // (e.g. canonical slug + a -boj bundle variant with identical display name).
+    // The first occurrence wins; canonical slugs sort before variant suffixes due to ORDER BY above.
+    $seen    = [];
+    $deduped = [];
+    foreach ($results as $r) {
+        $key = strtolower(trim($r['name'] ?? ''));
+        if ($key === '' || !isset($seen[$key])) {
+            $seen[$key]  = true;
+            $deduped[]   = $r;
+        }
+    }
+
+    cg_json(['success' => true, 'data' => $deduped]);
 }
 
 // ── Money list ────────────────────────────────────────────────────────────────

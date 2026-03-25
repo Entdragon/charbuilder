@@ -648,33 +648,29 @@ const TrappingsAPI = {
     const otherItems   = list.filter(t => t.source !== 'species');
 
     // Merge all non-species items across career/gift/purchase/manual by slug (or name).
-    // Each merged entry tracks qty (sum), sources (badge list), and removable uids.
-    const SOURCE_LABEL = { career: 'Career', gift: 'Gift', purchase: 'Purchased', manual: 'Own' };
+    // Each merged entry tracks qty (sum) and removable uids (purchase/manual only).
     const mergedMap = new Map(); // key → merged display entry
     otherItems.forEach(t => {
-      const key = ((t.slug || t.name || t.token) || '').toLowerCase();
-      const src = t.source || 'manual';
+      const key        = ((t.slug || t.name || t.token) || '').toLowerCase();
+      const removable  = (t.source === 'purchase' || t.source === 'manual');
       if (!key) {
         // No slug/name — keep as standalone entry
         mergedMap.set(`__nokey_${t.uid}`, {
           ...t,
-          qty:          parseInt(t.qty, 10) || 1,
-          sources:      [src],
-          removableUids: (src === 'purchase' || src === 'manual') ? [t.uid] : [],
+          qty:           parseInt(t.qty, 10) || 1,
+          removableUids: removable ? [t.uid] : [],
         });
         return;
       }
       if (mergedMap.has(key)) {
         const entry = mergedMap.get(key);
         entry.qty += parseInt(t.qty, 10) || 1;
-        if (!entry.sources.includes(src)) entry.sources.push(src);
-        if (src === 'purchase' || src === 'manual') entry.removableUids.push(t.uid);
+        if (removable) entry.removableUids.push(t.uid);
       } else {
         mergedMap.set(key, {
           ...t,
-          qty:          parseInt(t.qty, 10) || 1,
-          sources:      [src],
-          removableUids: (src === 'purchase' || src === 'manual') ? [t.uid] : [],
+          qty:           parseInt(t.qty, 10) || 1,
+          removableUids: removable ? [t.uid] : [],
         });
       }
     });
@@ -684,9 +680,6 @@ const TrappingsAPI = {
       if (a.kind !== b.kind) return a.kind === 'weapon' ? -1 : 1;
       return (a.name || '').localeCompare(b.name || '');
     });
-
-    const renderSourceBadges = (sources) =>
-      sources.map(s => `<span class="cg-trap-badge cg-trap-badge--${escape(s)}">${escape(SOURCE_LABEL[s] || s)}</span>`).join('');
 
     const renderSpeciesGroup = (items) => {
       if (!items.length) return '';
@@ -718,7 +711,6 @@ const TrappingsAPI = {
           <td class="cg-trap-name">${escape(t.name || t.token || '')}</td>
           <td class="cg-trap-kind">${t.kind === 'weapon' ? '⚔' : '🎒'}</td>
           <td class="cg-trap-stats">${escape(this._statSummary(t))}</td>
-          <td class="cg-trap-sources">${renderSourceBadges(t.sources)}</td>
           <td class="cg-trap-actions">
             ${t.removableUids.map(uid =>
               `<button type="button" class="cg-trap-remove-btn cg-btn-sm" data-uid="${escape(uid)}" title="Remove purchased copy">✕</button>`
@@ -730,7 +722,7 @@ const TrappingsAPI = {
         <div class="cg-trap-group">
           <div class="cg-trap-group-label cg-trap-label--all">Equipment &amp; Trappings</div>
           <table class="cg-trap-table">
-            <thead><tr><th>Qty</th><th>Item</th><th></th><th>Stats</th><th>Source</th><th></th></tr></thead>
+            <thead><tr><th>Qty</th><th>Item</th><th></th><th>Stats</th><th></th></tr></thead>
             <tbody>${rows}</tbody>
           </table>
         </div>
