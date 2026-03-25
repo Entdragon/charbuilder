@@ -110,10 +110,37 @@ export default {
     if (!$table.length) $table = $('#skills-table');
     if (!$table.length) return;
 
+    // Sync mark-button DOM state into _data BEFORE we read getData().
+    // This captures any clicks that updated the DOM but not _data (edge cases),
+    // and ensures we never render stale marks after tab switches.
+    const _syncMarks = FormBuilderAPI._data.skillMarks || {};
+    $table.find('.skill-mark-btn').each((i, el) => {
+      const $b  = $(el);
+      const sid = String($b.data('skill-id') ?? '');
+      const mk  = parseInt($b.data('mark'), 10) || 0;
+      if (!sid) return;
+      const isOn = $b.hasClass('active') || String($b.attr('aria-pressed') || '') === 'true';
+      if (isOn) {
+        const cur = parseInt(_syncMarks[sid], 10) || 0;
+        if (mk > cur) _syncMarks[sid] = mk;
+      }
+    });
+    FormBuilderAPI._data.skillMarks = _syncMarks;
+
     const data    = FormBuilderAPI.getData();
     const skills  = data.skillsList || window.CG_SKILLS_LIST || [];
     const species = SpeciesAPI.currentProfile || {};
     const career  = CareerAPI.currentProfile  || {};
+
+    /* DEBUG — remove after confirming species die works
+    console.log('[SkillsRender] sp profile:', {
+      skill_one: species.skill_one, skill_one_id: species.skill_one_id,
+      skill_two: species.skill_two, skill_two_id: species.skill_two_id,
+      skill_three: species.skill_three, skill_three_id: species.skill_three_id,
+      spTraitDie: traitDie('trait_species'),
+    });
+    console.log('[SkillsRender] skillMarks:', JSON.stringify(data.skillMarks));
+    */
 
     // Extra careers from state (written by career/extra.js)
     const extraCareers = parseExtraCareersFromData(data)
@@ -193,10 +220,13 @@ export default {
     const spTraitDie = traitDie('trait_species');
     const cpTraitDie = traitDie('trait_career');
 
-    // Species skills are stored as TEXT NAMES (from species_traits.text_value)
-    // Career skills are stored as numeric SKILL IDs
+    // Species skills: match by NAME (text_value) OR by ID (ref_id exposed as *_id).
+    // Both paths are checked so it works regardless of how the DB stores the value.
+    // Career skills are stored as numeric SKILL IDs.
     const spNames  = [species.skill_one, species.skill_two, species.skill_three]
       .filter(Boolean).map(s => String(s).toLowerCase());
+    const spIds    = [species.skill_one_id, species.skill_two_id, species.skill_three_id]
+      .filter(s => s != null && s !== '').map(s => String(s));
     const cpSkills = extractSkillTripletFromAny(career).map(String);
 
     const $tbody = $('<tbody>');
@@ -206,8 +236,9 @@ export default {
       const name    = skill.name;
       const nameLow = name.toLowerCase();
 
-      const spDie    = (spTraitDie && spNames.includes(nameLow)) ? spTraitDie : '';
-      const cpDie    = (cpTraitDie && cpSkills.includes(id))     ? cpTraitDie : '';
+      const isSpSkill = spNames.includes(nameLow) || spIds.includes(id);
+      const spDie    = (spTraitDie && isSpSkill) ? spTraitDie : '';
+      const cpDie    = (cpTraitDie && cpSkills.includes(id)) ? cpTraitDie : '';
       const extraDies = extraCareers.map(ec => (ec.skills || []).includes(id) ? 'd4' : '');
 
       // ── Gift-granted marks for this skill ─────────────────────────────────

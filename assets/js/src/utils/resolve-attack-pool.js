@@ -38,6 +38,8 @@ export function resolveAttackPool(raw, { FormBuilderAPI, SpeciesAPI, CareerAPI }
 
   const spNames = [SP.skill_one, SP.skill_two, SP.skill_three]
     .filter(Boolean).map(s => String(s).toLowerCase());
+  const spIds   = [SP.skill_one_id, SP.skill_two_id, SP.skill_three_id]
+    .filter(s => s != null && s !== '').map(s => String(s));
   const spDie   = traitDieFromData('trait_species', data);
 
   const cpIds = [CP.skill_one, CP.skill_two, CP.skill_three]
@@ -54,7 +56,7 @@ export function resolveAttackPool(raw, { FormBuilderAPI, SpeciesAPI, CareerAPI }
     const markDie = marksToDice(my + gift + xp);
 
     const pool = [];
-    if (spNames.includes(key) && spDie) pool.push(spDie);
+    if ((spNames.includes(key) || spIds.includes(id)) && spDie) pool.push(spDie);
     if (cpIds.includes(id)    && cpDie) pool.push(cpDie);
     if (markDie)                        pool.push(markDie);
 

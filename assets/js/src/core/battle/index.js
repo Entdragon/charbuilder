@@ -40,9 +40,17 @@ function buildCombatPools() {
   const body  = traitDie('body');
   const data  = FormBuilderAPI?._data || {};
   const armorSoak = (Array.isArray(data.armor) ? data.armor : []).map(a => a.soak).filter(Boolean);
+
+  // Dodge = Speed + Dodge skill pool (species die, career die, marks die).
+  // resolveAttackPool may return the literal "Dodge" string if the skill has no dice;
+  // filter to only valid dice-notation tokens (d4/d6/d8/…).
+  const dodgeSkillPool = resolveAttackPool('Dodge');
+  const diePat         = /^d\d+$/;
+  const dodgeDice      = [speed, ...dodgeSkillPool.split('+').map(s => s.trim()).filter(s => diePat.test(s))];
+
   return {
     initiative: poolString(speed, will),
-    dodge:      poolString(speed, will),
+    dodge:      poolString(...dodgeDice),
     soak:       poolString(body, ...armorSoak),
   };
 }
@@ -60,7 +68,7 @@ function renderPoolsSection(pools) {
         <div class="cg-pool-block">
           <span class="cg-pool-label">Dodge</span>
           <span class="cg-pool-dice" id="cg-battle-dodge">${escape(pools.dodge)}</span>
-          <span class="cg-pool-note">(Speed + Will)</span>
+          <span class="cg-pool-note">(Speed + Dodge skill)</span>
         </div>
         <div class="cg-pool-block">
           <span class="cg-pool-label">Soak</span>

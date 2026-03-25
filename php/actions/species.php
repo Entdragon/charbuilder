@@ -135,9 +135,12 @@ function cg_get_species_profile(): void {
         'gift_3'     => $giftField($g3, $gifts),
         'manifold_3' => $giftField($g3, $giftsM),
 
-        'skill_one'   => $byKey['skill_1']['text_value'] ?? null,
-        'skill_two'   => $byKey['skill_2']['text_value'] ?? null,
-        'skill_three' => $byKey['skill_3']['text_value'] ?? null,
+        'skill_one'      => $byKey['skill_1']['text_value'] ?? null,
+        'skill_one_id'   => $byKey['skill_1']['ref_id']     ?? null,
+        'skill_two'      => $byKey['skill_2']['text_value'] ?? null,
+        'skill_two_id'   => $byKey['skill_2']['ref_id']     ?? null,
+        'skill_three'    => $byKey['skill_3']['text_value'] ?? null,
+        'skill_three_id' => $byKey['skill_3']['ref_id']     ?? null,
 
         'habitat' => ($habitatId && isset($habitats[$habitatId])) ? $habitats[$habitatId] : null,
         'diet'    => ($dietId    && isset($diets[$dietId]))        ? $diets[$dietId]       : null,
