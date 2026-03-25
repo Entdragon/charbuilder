@@ -229,8 +229,14 @@ const SummaryAPI = {
 
     // ── Skills block ───────────────────────────────────────────
     // Species skills are stored as TEXT NAMES; career skills are stored as numeric IDs.
-    const spTraitDie = data['trait_species'] || '';
-    const cpTraitDie = data['trait_career']  || '';
+    // Read trait die from DOM first (same as BattleAPI.traitDie) so live values are used.
+    const _traitDie = (key) => {
+      const dom = document.getElementById(`cg-${key}`);
+      if (dom && dom.value) return dom.value;
+      return data[key] || '';
+    };
+    const spTraitDie = _traitDie('trait_species');
+    const cpTraitDie = _traitDie('trait_career');
     const spNames    = [species.skill_one, species.skill_two, species.skill_three]
       .filter(Boolean).map(s => String(s).toLowerCase());
     const cpIds      = [career.skill_one, career.skill_two, career.skill_three].map(String);

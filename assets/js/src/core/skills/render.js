@@ -11,6 +11,16 @@ import { marksToDice } from '../../utils/marks-dice.js';
 
 const $ = window.jQuery;
 
+// Read trait die from DOM first (same pattern as BattleAPI.traitDie),
+// then fall back to _data, then to getData().
+function traitDie(key) {
+  const dom = document.getElementById(`cg-${key}`);
+  if (dom && dom.value) return dom.value;
+  const FB = window.CG_FormBuilderAPI || window.FormBuilderAPI;
+  const d  = (FB && FB._data) || {};
+  return d[key] || '';
+}
+
 function isSkillsTabActive() {
   try {
     const li  = document.querySelector('#cg-modal .cg-tabs li.active');
@@ -178,9 +188,10 @@ export default {
       .append('<th>Dice Pool</th>')
       .appendTo($thead);
 
-    // Actual trait die values (read from live FormBuilderAPI data)
-    const spTraitDie = data['trait_species'] || '';
-    const cpTraitDie = data['trait_career']  || '';
+    // Actual trait die values — read DOM first so live select values are used
+    // even if _data hasn't been synced yet (same pattern as BattleAPI)
+    const spTraitDie = traitDie('trait_species');
+    const cpTraitDie = traitDie('trait_career');
 
     // Species skills are stored as TEXT NAMES (from species_traits.text_value)
     // Career skills are stored as numeric SKILL IDs
