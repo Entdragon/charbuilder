@@ -1,0 +1,91 @@
+[libraryo@silberhorn ~]$ npm install -g pm2                        # one-time, if not already installed
+
+added 134 packages in 11s
+
+13 packages are looking for funding
+  run `npm fund` for details
+npm notice
+npm notice New minor version of npm available! 11.6.0 -> 11.12.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.12.0
+npm notice To update run: npm install -g npm@11.12.0
+npm notice
+[libraryo@silberhorn ~]$ # edit tools/pm2.config.js — update the 'cwd' path to match where your project lives
+[libraryo@silberhorn ~]$ pm2 start tools/pm2.config.js
+
+                        -------------
+
+__/\\\\\\\\\\\\\____/\\\\____________/\\\\____/\\\\\\\\\_____
+ _\/\\\/////////\\\_\/\\\\\\________/\\\\\\__/\\\///////\\\___
+  _\/\\\_______\/\\\_\/\\\//\\\____/\\\//\\\_\///______\//\\\__
+   _\/\\\\\\\\\\\\\/__\/\\\\///\\\/\\\/_\/\\\___________/\\\/___
+    _\/\\\/////////____\/\\\__\///\\\/___\/\\\________/\\\//_____
+     _\/\\\_____________\/\\\____\///_____\/\\\_____/\\\//________
+      _\/\\\_____________\/\\\_____________\/\\\___/\\\/___________
+       _\/\\\_____________\/\\\_____________\/\\\__/\\\\\\\\\\\\\\\_
+        _\///______________\///______________\///__\///////////////__
+
+
+                          Runtime Edition
+
+        PM2 is a Production Process Manager for Node.js applications
+                     with a built-in Load Balancer.
+
+                Start and Daemonize any application:
+                $ pm2 start app.js
+
+                Load Balance 4 instances of api.js:
+                $ pm2 start api.js -i 4
+
+                Monitor in production:
+                $ pm2 monitor
+
+                Make pm2 auto-boot at server restart:
+                $ pm2 startup
+
+                To go further checkout:
+                http://pm2.io/
+
+
+                        -------------
+
+[PM2] Spawning PM2 daemon with pm2_home=/home/libraryo/.pm2
+[PM2] PM2 Successfully daemonized
+[PM2][ERROR] File tools/pm2.config.js not found
+[libraryo@silberhorn ~]$ pm2 save
+[PM2] Saving current process list...
+[PM2][WARN] PM2 is not managing any process, skipping save...
+[PM2][WARN] To force saving use: pm2 save --force
+[libraryo@silberhorn ~]$ pm2 startup                               # follow the printed sudo command
+[PM2][ERROR] Init system not found
+/home/libraryo/.nvm/versions/node/v22.17.0/lib/node_modules/pm2/lib/API/Startup.js:216
+      throw new Error('Init system not found');
+      ^
+
+Error: Init system not found
+    at CLI.startup (/home/libraryo/.nvm/versions/node/v22.17.0/lib/node_modules/pm2/lib/API/Startup.js:216:13)
+    at Command.<anonymous> (/home/libraryo/.nvm/versions/node/v22.17.0/lib/node_modules/pm2/lib/binaries/CLI.js:716:9)
+    at Command.listener (/home/libraryo/.nvm/versions/node/v22.17.0/lib/node_modules/pm2/node_modules/commander/index.js:315:8)
+    at Command.emit (node:events:518:28)
+    at Command.parseArgs (/home/libraryo/.nvm/versions/node/v22.17.0/lib/node_modules/pm2/node_modules/commander/index.js:651:12)
+    at Command.parse (/home/libraryo/.nvm/versions/node/v22.17.0/lib/node_modules/pm2/node_modules/commander/index.js:474:21)
+    at Timeout._onTimeout (/home/libraryo/.nvm/versions/node/v22.17.0/lib/node_modules/pm2/lib/binaries/CLI.js:213:15)
+    at listOnTimeout (node:internal/timers:588:17)
+    at process.processTimers (node:internal/timers:523:7)
+
+Node.js v22.17.0
+[libraryo@silberhorn ~]$ sudo cp tools/apache-vhost-characters.conf.example \
+>      /etc/apache2/sites-available/characters.libraryofcalbria.com.conf
+bash: sudo: command not found
+[libraryo@silberhorn ~]$
+[libraryo@silberhorn ~]$ sudo a2enmod proxy proxy_http headers rewrite
+bash: sudo: command not found
+[libraryo@silberhorn ~]$ sudo a2ensite characters.libraryofcalbria.com.conf
+bash: sudo: command not found
+[libraryo@silberhorn ~]$
+[libraryo@silberhorn ~]$ # Get an SSL cert (if you don't have one already):
+[libraryo@silberhorn ~]$ sudo certbot --apache -d characters.libraryofcalbria.com
+bash: sudo: command not found
+[libraryo@silberhorn ~]$
+[libraryo@silberhorn ~]$ sudo systemctl reload apache2
+bash: sudo: command not found
+[libraryo@silberhorn ~]$
