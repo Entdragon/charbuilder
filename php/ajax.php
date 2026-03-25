@@ -26,12 +26,12 @@ function cg_json(array $data): void {
     echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 }
 
-// ── CORS (allow same-origin + the Replit preview during development) ───────────
+// ── CORS ─────────────────────────────────────────────────────────────────────
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 if ($origin) {
     header("Access-Control-Allow-Origin: {$origin}");
     header('Access-Control-Allow-Credentials: true');
-    header('Access-Control-Allow-Methods: POST, OPTIONS');
+    header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
     header('Access-Control-Allow-Headers: Content-Type, X-Requested-With');
 }
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -39,8 +39,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-// ── Only accept POST ──────────────────────────────────────────────────────────
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+// ── Accept POST; also GET for the /api/auth/me → cg_get_current_user rewrite ─
+$method = $_SERVER['REQUEST_METHOD'];
+if ($method === 'GET') {
+    // Only allow GET for the session-check endpoint
+    $_POST['action'] = $_GET['action'] ?? '';
+    if ($_POST['action'] !== 'cg_get_current_user') {
+        http_response_code(405);
+        cg_json(['success' => false, 'data' => 'Method not allowed.']);
+        exit;
+    }
+} elseif ($method !== 'POST') {
     http_response_code(405);
     cg_json(['success' => false, 'data' => 'Method not allowed.']);
     exit;
@@ -48,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 // ── Parse body (JSON or form-encoded) ────────────────────────────────────────
 $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
-if (str_contains($contentType, 'application/json')) {
+if ($method === 'POST' && str_contains($contentType, 'application/json')) {
     $body = json_decode(file_get_contents('php://input'), true) ?? [];
     foreach ($body as $k => $v) {
         $_POST[$k] = $v;
@@ -63,7 +72,7 @@ if (!$action) {
 }
 
 // ── Public actions (no auth required) ────────────────────────────────────────
-$publicActions = ['cg_login_user', 'cg_logout_user', 'cg_register_user', 'cg_get_current_user', 'cg_ping'];
+$publicActions = ['cg_login_user', 'cg_logout_user', 'cg_register_user', 'cg_get_current_user', 'cg_sso_login', 'cg_ping'];
 
 // ── Action map ────────────────────────────────────────────────────────────────
 $actionFiles = [
@@ -71,6 +80,7 @@ $actionFiles = [
     'cg_logout_user'         => 'actions/auth.php',
     'cg_register_user'       => 'actions/auth.php',
     'cg_get_current_user'    => 'actions/auth.php',
+    'cg_sso_login'           => 'actions/auth.php',
 
     'cg_load_characters'     => 'actions/character.php',
     'cg_get_character'       => 'actions/character.php',

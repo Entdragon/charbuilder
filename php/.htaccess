@@ -13,6 +13,9 @@
 
   # Route /api/ajax to ajax.php
   RewriteRule ^api/ajax/?$ ajax.php [L,QSA]
+
+  # Route GET /api/auth/me to ajax.php with cg_get_current_user action
+  RewriteRule ^api/auth/me/?$ ajax.php?action=cg_get_current_user [L,QSA]
 </IfModule>
 
 # Hide PHP extension

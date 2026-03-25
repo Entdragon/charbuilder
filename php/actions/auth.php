@@ -116,3 +116,64 @@ function cg_get_current_user(): void {
         'isAdmin'  => $_SESSION['cg_is_admin'] ?? false,
     ]]);
 }
+
+function cg_sso_login(): void {
+    $token = trim($_POST['token'] ?? '');
+
+    if (!$token || !preg_match('/^[a-f0-9]{32}$/', $token)) {
+        cg_json(['success' => false, 'data' => 'Invalid SSO token.']);
+        return;
+    }
+
+    $p           = cg_prefix();
+    $transientKey = "_transient_cg_sso_{$token}";
+
+    $row = cg_query_one(
+        "SELECT option_value FROM {$p}options WHERE option_name = ? LIMIT 1",
+        [$transientKey]
+    );
+
+    if (!$row) {
+        cg_json(['success' => false, 'data' => 'SSO token not found or expired.']);
+        return;
+    }
+
+    $userId = (int) $row['option_value'];
+    if ($userId <= 0) {
+        cg_json(['success' => false, 'data' => 'SSO token invalid.']);
+        return;
+    }
+
+    // Delete transient (one-time use)
+    cg_exec(
+        "DELETE FROM {$p}options WHERE option_name = ? OR option_name = ?",
+        [$transientKey, "_transient_timeout_cg_sso_{$token}"]
+    );
+
+    $user = cg_query_one(
+        "SELECT ID, user_login, user_email FROM {$p}users WHERE ID = ? LIMIT 1",
+        [$userId]
+    );
+
+    if (!$user) {
+        cg_json(['success' => false, 'data' => 'User not found.']);
+        return;
+    }
+
+    $meta   = cg_query_one(
+        "SELECT meta_value FROM {$p}usermeta
+         WHERE user_id = ? AND meta_key = '{$p}capabilities' LIMIT 1",
+        [(int) $user['ID']]
+    );
+    $capStr = $meta['meta_value'] ?? '';
+
+    $_SESSION['cg_user_id']  = (int) $user['ID'];
+    $_SESSION['cg_username'] = $user['user_login'];
+    $_SESSION['cg_email']    = $user['user_email'];
+    $_SESSION['cg_is_admin'] = str_contains($capStr, 'administrator');
+
+    cg_json(['success' => true, 'data' => [
+        'username' => $user['user_login'],
+        'redirect' => '/',
+    ]]);
+}
