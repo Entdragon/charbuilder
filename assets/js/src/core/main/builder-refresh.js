@@ -1,5 +1,6 @@
 import TraitsAPI      from '../traits';
 import SpeciesIndex   from '../species';
+import SpeciesAPI     from '../species/api.js';
 import CareerIndex    from '../career';
 import GiftsAPI       from '../gifts';
 import SkillsAPI      from '../skills';
@@ -54,14 +55,27 @@ export default function refreshTab() {
         const data = FB?._data || {};
         const list = Array.isArray(data.trappings_list) ? data.trappings_list : [];
 
-        const careerId = parseInt(data.career_id || data.career || '0', 10);
+        const careerId  = parseInt(data.career_id || data.career || '0', 10);
+        const speciesId = parseInt(data.species || '0', 10);
+
         if (careerId > 0 && !list.some(t => t.source === 'career')) {
+          // _fillCareerTrappings shows its own loading state and calls _renderAll() on completion
           TrappingsAPI._fillCareerTrappings(careerId);
         }
 
         const hasSpeciesWeapons = list.some(t => t.source === 'species');
-        if (!hasSpeciesWeapons) {
-          TrappingsAPI._fillSpeciesWeapons();
+        if (!hasSpeciesWeapons && speciesId > 0) {
+          if (SpeciesAPI.currentProfile) {
+            // Profile already loaded — fill immediately
+            TrappingsAPI._fillSpeciesWeapons();
+            TrappingsAPI._renderAll();
+          } else {
+            // Profile not loaded yet — fetch it then fill
+            SpeciesAPI.fetchProfile(speciesId).then(() => {
+              TrappingsAPI._fillSpeciesWeapons();
+              TrappingsAPI._renderAll();
+            }).catch(() => {});
+          }
         }
       } catch (_) {}
 

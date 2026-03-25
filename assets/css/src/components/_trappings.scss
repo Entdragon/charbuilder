@@ -85,6 +85,31 @@
   margin:     0.5em 0;
 }
 
+.cg-trap-loading {
+  color:      var(--cg-text-muted, #a09070);
+  font-style: italic;
+  font-size:  0.88rem;
+  margin:     0.5em 0;
+  padding:    0.5em 0;
+
+  &::before {
+    content: '';
+    display: inline-block;
+    width:  0.8em;
+    height: 0.8em;
+    border: 2px solid var(--cg-gold, #c9a84c);
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: cg-spin 0.7s linear infinite;
+    margin-right: 0.4em;
+    vertical-align: middle;
+  }
+}
+
+@keyframes cg-spin {
+  to { transform: rotate(360deg); }
+}
+
 // ── Money panel ───────────────────────────────────────────────────────────────
 .cg-money-subhead {
   font-family:    var(--cg-heading-font, 'Cinzel', serif);

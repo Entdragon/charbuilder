@@ -220,6 +220,12 @@ const TrappingsAPI = {
     if (this._pendingCareer === careerId) return;
     this._pendingCareer = careerId;
 
+    // Show a loading state immediately so the user knows something is happening
+    const trappingsPanel = document.getElementById('cg-trappings-panel');
+    if (trappingsPanel) {
+      trappingsPanel.innerHTML = '<div class="cg-trap-loading"><em>Loading career trappings…</em></div>';
+    }
+
     const { ajax_url, nonce } = ajaxEnv();
     if (!ajax_url) return;
 
