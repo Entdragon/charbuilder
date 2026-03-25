@@ -110,23 +110,6 @@ export default {
     if (!$table.length) $table = $('#skills-table');
     if (!$table.length) return;
 
-    // Sync mark-button DOM state into _data BEFORE we read getData().
-    // This captures any clicks that updated the DOM but not _data (edge cases),
-    // and ensures we never render stale marks after tab switches.
-    const _syncMarks = FormBuilderAPI._data.skillMarks || {};
-    $table.find('.skill-mark-btn').each((i, el) => {
-      const $b  = $(el);
-      const sid = String($b.data('skill-id') ?? '');
-      const mk  = parseInt($b.data('mark'), 10) || 0;
-      if (!sid) return;
-      const isOn = $b.hasClass('active') || String($b.attr('aria-pressed') || '') === 'true';
-      if (isOn) {
-        const cur = parseInt(_syncMarks[sid], 10) || 0;
-        if (mk > cur) _syncMarks[sid] = mk;
-      }
-    });
-    FormBuilderAPI._data.skillMarks = _syncMarks;
-
     const data    = FormBuilderAPI.getData();
     const skills  = data.skillsList || window.CG_SKILLS_LIST || [];
     const species = SpeciesAPI.currentProfile || {};
