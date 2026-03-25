@@ -527,42 +527,14 @@ const TrappingsAPI = {
       ? FormBuilderAPI._data.weapons.filter(w => !w._from_trappings)
       : [];
 
-    // Resolve a raw attack_dice string like "Body, Species, Brawling vs. defense"
-    // into a dice pool like "d8 + d6 + Brawling" using current trait values.
-    const resolvePool = (raw) => {
-      if (!raw) return '';
-      const traitMap = {
-        'body':    FormBuilderAPI._data?.body          || document.getElementById('cg-body')?.value          || '',
-        'speed':   FormBuilderAPI._data?.speed         || document.getElementById('cg-speed')?.value         || '',
-        'will':    FormBuilderAPI._data?.will          || document.getElementById('cg-will')?.value          || '',
-        'mind':    FormBuilderAPI._data?.mind          || document.getElementById('cg-mind')?.value          || '',
-        'species': FormBuilderAPI._data?.trait_species || document.getElementById('cg-trait_species')?.value || '',
-        'career':  FormBuilderAPI._data?.trait_career  || document.getElementById('cg-trait_career')?.value  || '',
-      };
-      const vsIdx   = raw.toLowerCase().indexOf(' vs.');
-      const poolPart = vsIdx > -1 ? raw.slice(0, vsIdx) : raw;
-      const parts   = poolPart.split(',').map(s => s.trim()).filter(Boolean);
-      const dice    = parts.map(p => traitMap[p.toLowerCase()] || p).filter(Boolean);
-      return dice.join(' + ');
-    };
-
     const trappingWeapons = weaponTrappings.map(t => {
-      let attack = '';
-      if (t.attack_dice) {
-        attack = resolvePool(t.attack_dice);
-        if (!attack) attack = t.attack_dice;
-      }
-      if (!attack && t.damage_mod) {
-        attack = `+${t.damage_mod}`;
-      }
       const range = t.range_band || 'Close';
-
       return {
         _from_trappings:  true,
         _trapping_uid:    t.uid,
         _attack_dice_raw: t.attack_dice || '',
         name:   t.name,
-        attack: attack,
+        attack: '',
         damage: t.damage_mod != null ? `+${t.damage_mod}` : '',
         range:  range,
         notes:  t.effect || '',

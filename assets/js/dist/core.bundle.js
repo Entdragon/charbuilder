@@ -6990,6 +6990,23 @@
   function poolString(...dice) {
     return dice.filter(Boolean).join(" + ") || "\u2014";
   }
+  function resolveAttackPool(raw) {
+    if (!raw)
+      return "";
+    const traitMap = {
+      "body": traitDie("body"),
+      "speed": traitDie("speed"),
+      "will": traitDie("will"),
+      "mind": traitDie("mind"),
+      "species": traitDie("trait_species"),
+      "career": traitDie("trait_career")
+    };
+    const vsIdx = raw.toLowerCase().indexOf(" vs.");
+    const poolPart = vsIdx > -1 ? raw.slice(0, vsIdx) : raw;
+    const parts = poolPart.split(",").map((s) => s.trim()).filter(Boolean);
+    const dice = parts.map((p) => traitMap[p.toLowerCase()] || p).filter(Boolean);
+    return dice.join(" + ");
+  }
   function buildCombatPools() {
     const speed = traitDie("speed");
     const will = traitDie("will");
@@ -7036,10 +7053,11 @@
   `;
   }
   function weaponRowHtml(w = {}, idx) {
+    const attackVal = w._attack_dice_raw ? resolveAttackPool(w._attack_dice_raw) : w.attack || "";
     return `
     <tr class="cg-weapon-row" data-idx="${idx}">
       <td><input class="cg-battle-input cg-weapon-name"   value="${escape2(w.name || "")}" placeholder="e.g. Short Sword" /></td>
-      <td><input class="cg-battle-input cg-weapon-attack" value="${escape2(w.attack || "")}" placeholder="e.g. d6+d8" /></td>
+      <td><input class="cg-battle-input cg-weapon-attack" value="${escape2(attackVal)}"       placeholder="e.g. d6+d8" /></td>
       <td><input class="cg-battle-input cg-weapon-damage" value="${escape2(w.damage || "")}" placeholder="e.g. +1" /></td>
       <td><input class="cg-battle-input cg-weapon-range"  value="${escape2(w.range || "")}" placeholder="e.g. Close" /></td>
       <td><input class="cg-battle-input cg-weapon-notes"  value="${escape2(w.notes || "")}" placeholder="optional" /></td>
@@ -7659,41 +7677,14 @@
       const weaponTrappings = list.filter((t) => t.kind === "weapon");
       const armorTrappings = list.filter((t) => t.kind === "equipment" && t.armor_dice);
       const existingWeapons = Array.isArray((_a = formBuilder_default._data) == null ? void 0 : _a.weapons) ? formBuilder_default._data.weapons.filter((w) => !w._from_trappings) : [];
-      const resolvePool = (raw) => {
-        var _a2, _b2, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l;
-        if (!raw)
-          return "";
-        const traitMap = {
-          "body": ((_a2 = formBuilder_default._data) == null ? void 0 : _a2.body) || ((_b2 = document.getElementById("cg-body")) == null ? void 0 : _b2.value) || "",
-          "speed": ((_c = formBuilder_default._data) == null ? void 0 : _c.speed) || ((_d = document.getElementById("cg-speed")) == null ? void 0 : _d.value) || "",
-          "will": ((_e = formBuilder_default._data) == null ? void 0 : _e.will) || ((_f = document.getElementById("cg-will")) == null ? void 0 : _f.value) || "",
-          "mind": ((_g = formBuilder_default._data) == null ? void 0 : _g.mind) || ((_h = document.getElementById("cg-mind")) == null ? void 0 : _h.value) || "",
-          "species": ((_i = formBuilder_default._data) == null ? void 0 : _i.trait_species) || ((_j = document.getElementById("cg-trait_species")) == null ? void 0 : _j.value) || "",
-          "career": ((_k = formBuilder_default._data) == null ? void 0 : _k.trait_career) || ((_l = document.getElementById("cg-trait_career")) == null ? void 0 : _l.value) || ""
-        };
-        const vsIdx = raw.toLowerCase().indexOf(" vs.");
-        const poolPart = vsIdx > -1 ? raw.slice(0, vsIdx) : raw;
-        const parts = poolPart.split(",").map((s) => s.trim()).filter(Boolean);
-        const dice = parts.map((p) => traitMap[p.toLowerCase()] || p).filter(Boolean);
-        return dice.join(" + ");
-      };
       const trappingWeapons = weaponTrappings.map((t) => {
-        let attack = "";
-        if (t.attack_dice) {
-          attack = resolvePool(t.attack_dice);
-          if (!attack)
-            attack = t.attack_dice;
-        }
-        if (!attack && t.damage_mod) {
-          attack = `+${t.damage_mod}`;
-        }
         const range = t.range_band || "Close";
         return {
           _from_trappings: true,
           _trapping_uid: t.uid,
           _attack_dice_raw: t.attack_dice || "",
           name: t.name,
-          attack,
+          attack: "",
           damage: t.damage_mod != null ? `+${t.damage_mod}` : "",
           range,
           notes: t.effect || ""

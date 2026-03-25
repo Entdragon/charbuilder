@@ -29,6 +29,25 @@ function poolString(...dice) {
   return dice.filter(Boolean).join(' + ') || '—';
 }
 
+// Parse a raw attack_dice string like "Body, Species, Brawling vs. defense"
+// and replace known trait keywords with actual die values from the current form.
+function resolveAttackPool(raw) {
+  if (!raw) return '';
+  const traitMap = {
+    'body':    traitDie('body'),
+    'speed':   traitDie('speed'),
+    'will':    traitDie('will'),
+    'mind':    traitDie('mind'),
+    'species': traitDie('trait_species'),
+    'career':  traitDie('trait_career'),
+  };
+  const vsIdx    = raw.toLowerCase().indexOf(' vs.');
+  const poolPart = vsIdx > -1 ? raw.slice(0, vsIdx) : raw;
+  const parts    = poolPart.split(',').map(s => s.trim()).filter(Boolean);
+  const dice     = parts.map(p => traitMap[p.toLowerCase()] || p).filter(Boolean);
+  return dice.join(' + ');
+}
+
 function buildCombatPools() {
   const speed = traitDie('speed');
   const will  = traitDie('will');
@@ -77,13 +96,18 @@ function renderPoolsSection(pools) {
 }
 
 function weaponRowHtml(w = {}, idx) {
+  // For trapping-sourced weapons, compute the attack pool from trait dice at render time
+  // (the DOM is fully ready when the battle tab opens, so traitDie() returns live values).
+  const attackVal = w._attack_dice_raw
+    ? resolveAttackPool(w._attack_dice_raw)
+    : (w.attack || '');
   return `
     <tr class="cg-weapon-row" data-idx="${idx}">
       <td><input class="cg-battle-input cg-weapon-name"   value="${escape(w.name   || '')}" placeholder="e.g. Short Sword" /></td>
-      <td><input class="cg-battle-input cg-weapon-attack" value="${escape(w.attack || '')}" placeholder="e.g. d6+d8" /></td>
-      <td><input class="cg-battle-input cg-weapon-damage" value="${escape(w.damage || '')}" placeholder="e.g. +1" /></td>
-      <td><input class="cg-battle-input cg-weapon-range"  value="${escape(w.range  || '')}" placeholder="e.g. Close" /></td>
-      <td><input class="cg-battle-input cg-weapon-notes"  value="${escape(w.notes  || '')}" placeholder="optional" /></td>
+      <td><input class="cg-battle-input cg-weapon-attack" value="${escape(attackVal)}"       placeholder="e.g. d6+d8" /></td>
+      <td><input class="cg-battle-input cg-weapon-damage" value="${escape(w.damage  || '')}" placeholder="e.g. +1" /></td>
+      <td><input class="cg-battle-input cg-weapon-range"  value="${escape(w.range   || '')}" placeholder="e.g. Close" /></td>
+      <td><input class="cg-battle-input cg-weapon-notes"  value="${escape(w.notes   || '')}" placeholder="optional" /></td>
       <td><button type="button" class="cg-battle-remove-btn" data-target="weapon" data-idx="${idx}" title="Remove">✕</button></td>
     </tr>
   `;
