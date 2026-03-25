@@ -7302,6 +7302,10 @@
         this._initStartingMoney();
         this._renderMoneyPanel();
       });
+      $19(document).on("change.trappings", ".cg-trait-select", () => {
+        this._initStartingMoney();
+        this._renderMoneyPanel();
+      });
       $19(document).on("cg:free-gift:changed.trappings", () => {
         this._syncGiftTrappings();
       });

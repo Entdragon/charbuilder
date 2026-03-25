@@ -117,6 +117,13 @@ const TrappingsAPI = {
       this._renderMoneyPanel();
     });
 
+    // Direct trait select change (cg:traits:changed is NOT fired by dropdown changes,
+    // only by gift/extra-career changes — so we must also listen here directly)
+    $(document).on('change.trappings', '.cg-trait-select', () => {
+      this._initStartingMoney();
+      this._renderMoneyPanel();
+    });
+
     // Gift selected/changed → sync gift trappings (Trappings Gifts like "Cleric's Trappings")
     $(document).on('cg:free-gift:changed.trappings', () => {
       this._syncGiftTrappings();
