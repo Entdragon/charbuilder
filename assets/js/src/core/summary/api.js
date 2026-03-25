@@ -247,9 +247,8 @@ const SummaryAPI = {
     );
     let skillsHtml = '';
     skills.forEach(skill => {
-      const id      = String(skill.id);
-      const nameLow = skill.name.toLowerCase();
-      const spDie   = (spTraitDie && spSkillIds.includes(id)) ? spTraitDie : '';
+      const id    = String(skill.id);
+      const spDie = (spTraitDie && spSkillIds.includes(id)) ? spTraitDie : '';
       const cpDie   = (cpTraitDie && cpIds.includes(id))        ? cpTraitDie : '';
       const ecDies = ecSkillSets.map(set => set.includes(id) ? 'd4' : '').filter(Boolean);
       const totalMk = (parseInt(marks[id], 10) || 0) + (parseInt(xpMarks[id], 10) || 0);

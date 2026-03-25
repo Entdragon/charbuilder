@@ -220,9 +220,8 @@ export default {
     const $tbody = $('<tbody>');
 
     skills.forEach(skill => {
-      const id      = String(skill.id);
-      const name    = skill.name;
-      const nameLow = name.toLowerCase();
+      const id   = String(skill.id);
+      const name = skill.name;
 
       const spDie    = (spTraitDie && spSkillIds.includes(id)) ? spTraitDie : '';
       const cpDie    = (cpTraitDie && cpSkills.includes(id)) ? cpTraitDie : '';

@@ -13,6 +13,71 @@ import { resolveAttackPool } from '../../utils/resolve-attack-pool.js';
 
 const $ = window.jQuery;
 
+// ---------------------------------------------------------------------------
+// Ensure skillsList is loaded before resolveAttackPool can work correctly.
+// The Skills tab fetches it on first visit; if Battle tab opens first we
+// fetch it ourselves so weapon/dodge pools resolve properly.
+// ---------------------------------------------------------------------------
+let _skillsEnsured = false;
+
+function ajaxEnv() {
+  const env  = window.CG_AJAX || window.CG_Ajax || window.cgAjax || {};
+  const base = (typeof window.CG_API_BASE === 'string' && window.CG_API_BASE)
+    ? window.CG_API_BASE.replace(/\/+$/, '') : '';
+  const ajax_url =
+    (base ? base + '/api/ajax' : '') ||
+    env.ajax_url || window.ajaxurl ||
+    document.body?.dataset?.ajaxUrl || '/wp-admin/admin-ajax.php';
+  const nonce = env.nonce || env.security || window.CG_NONCE || null;
+  return { ajax_url, nonce };
+}
+
+function normaliseSkillsList(raw) {
+  return raw.map(s => ({
+    id:   String(s.id ?? s.skill_id ?? ''),
+    name: String(s.name ?? s.ct_skill_name ?? s.skill_name ?? '')
+  })).filter(s => s.id && s.name);
+}
+
+function ensureSkillsList() {
+  // Already done this session
+  if (_skillsEnsured) return $.Deferred().resolve().promise();
+
+  const data = FormBuilderAPI._data || {};
+
+  // Already in _data
+  if (Array.isArray(data.skillsList) && data.skillsList.length) {
+    _skillsEnsured = true;
+    return $.Deferred().resolve().promise();
+  }
+
+  // Available on window (Skills tab may have already fetched it)
+  if (Array.isArray(window.CG_SKILLS_LIST) && window.CG_SKILLS_LIST.length) {
+    FormBuilderAPI._data = data;
+    FormBuilderAPI._data.skillsList = window.CG_SKILLS_LIST;
+    _skillsEnsured = true;
+    return $.Deferred().resolve().promise();
+  }
+
+  // Fetch from server
+  const { ajax_url, nonce } = ajaxEnv();
+  const dfd = $.Deferred();
+  $.post(ajax_url, { action: 'cg_get_skills_list', security: nonce, nonce, _ajax_nonce: nonce })
+    .then(res => {
+      let list = [];
+      if (res && res.success && Array.isArray(res.data)) list = res.data;
+      else if (Array.isArray(res)) list = res;
+      list = normaliseSkillsList(list);
+      window.CG_SKILLS_LIST = list;
+      FormBuilderAPI._data = FormBuilderAPI._data || {};
+      FormBuilderAPI._data.skillsList = list;
+      _skillsEnsured = true;
+      dfd.resolve();
+    })
+    .catch(() => dfd.resolve()); // resolve even on failure; pools will degrade gracefully
+  return dfd.promise();
+}
+
 const WOUND_LEVELS = ['Hurt', 'Injured', 'Mauled', 'Crippled', 'Dead'];
 
 
@@ -208,6 +273,21 @@ const BattleAPI = {
     const container = document.getElementById('cg-battle-panel');
     if (!container) return;
 
+    const hadSkills = !!(
+      Array.isArray((FormBuilderAPI?._data || {}).skillsList) &&
+      (FormBuilderAPI._data.skillsList || []).length
+    ) || !!(Array.isArray(window.CG_SKILLS_LIST) && window.CG_SKILLS_LIST.length);
+
+    this._render(container);
+
+    // If skills weren't loaded yet, fetch them and re-render once ready so
+    // resolveAttackPool can substitute skill dice into weapon / dodge pools.
+    if (!hadSkills) {
+      ensureSkillsList().then(() => { this._render(container); });
+    }
+  },
+
+  _render(container) {
     const data    = FormBuilderAPI?._data || {};
     const weapons = Array.isArray(data.weapons) ? data.weapons : [];
     const armor   = Array.isArray(data.armor)   ? data.armor   : [];
@@ -218,7 +298,7 @@ const BattleAPI = {
       renderWeaponsTable(weapons) +
       renderArmorTable(armor);
 
-    // Immediately persist so that computed attack pools (from _attack_dice_raw)
+    // Persist so that computed attack pools (from _attack_dice_raw)
     // are available to the summary tab even if the user never edits the battle tab.
     persist();
 
