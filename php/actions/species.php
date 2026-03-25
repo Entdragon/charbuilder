@@ -89,7 +89,21 @@ function cg_get_species_profile(): void {
     $diets    = $fetchById("{$p}customtables_table_diet",    'ct_id', 'ct_diet_name',    $dietId    ? [$dietId]    : []);
     $cycles   = $fetchById("{$p}customtables_table_cycle",   'ct_id', 'ct_cycle_name',   $cycleId   ? [$cycleId]   : []);
     $senses   = $fetchById("{$p}customtables_table_senses",  'ct_id', 'ct_senses_name',  array_values($senseIds));
-    $weapons  = $fetchById("{$p}customtables_table_weapons", 'ct_id', 'ct_weapons_name', array_values($weaponIds));
+
+    // Fetch full weapon data (not just names) so the battle array can show attack dice, range, damage, effect.
+    $weapons = [];
+    if ($weaponIds) {
+        $wIds = array_values(array_unique(array_map('intval', $weaponIds)));
+        $ph   = implode(',', array_fill(0, count($wIds), '?'));
+        $wRows = cg_query(
+            "SELECT ct_id, ct_weapons_name, ct_attack_dice, ct_range_band, ct_damage_mod, ct_effect
+               FROM {$p}customtables_table_weapons WHERE ct_id IN ({$ph})",
+            $wIds
+        );
+        foreach ($wRows as $r) {
+            $weapons[(int)$r['ct_id']] = $r;
+        }
+    }
 
     // Helper to look up a gift field
     $giftField = function(?int $id, array $map): ?string {
@@ -133,9 +147,27 @@ function cg_get_species_profile(): void {
         'sense_2' => $giftField($s2, $senses),
         'sense_3' => $giftField($s3, $senses),
 
-        'weapon_1' => $giftField($w1, $weapons),
-        'weapon_2' => $giftField($w2, $weapons),
-        'weapon_3' => $giftField($w3, $weapons),
+        'weapon_1' => ($w1 && isset($weapons[$w1])) ? [
+            'name'        => $weapons[$w1]['ct_weapons_name'] ?? '',
+            'attack_dice' => $weapons[$w1]['ct_attack_dice']  ?? '',
+            'range_band'  => $weapons[$w1]['ct_range_band']   ?? 'Close',
+            'damage_mod'  => $weapons[$w1]['ct_damage_mod']   ?? null,
+            'effect'      => $weapons[$w1]['ct_effect']       ?? '',
+        ] : null,
+        'weapon_2' => ($w2 && isset($weapons[$w2])) ? [
+            'name'        => $weapons[$w2]['ct_weapons_name'] ?? '',
+            'attack_dice' => $weapons[$w2]['ct_attack_dice']  ?? '',
+            'range_band'  => $weapons[$w2]['ct_range_band']   ?? 'Close',
+            'damage_mod'  => $weapons[$w2]['ct_damage_mod']   ?? null,
+            'effect'      => $weapons[$w2]['ct_effect']       ?? '',
+        ] : null,
+        'weapon_3' => ($w3 && isset($weapons[$w3])) ? [
+            'name'        => $weapons[$w3]['ct_weapons_name'] ?? '',
+            'attack_dice' => $weapons[$w3]['ct_attack_dice']  ?? '',
+            'range_band'  => $weapons[$w3]['ct_range_band']   ?? 'Close',
+            'damage_mod'  => $weapons[$w3]['ct_damage_mod']   ?? null,
+            'effect'      => $weapons[$w3]['ct_effect']       ?? '',
+        ] : null,
     ];
 
     cg_json(['success' => true, 'data' => $result]);

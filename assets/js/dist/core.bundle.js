@@ -6977,7 +6977,6 @@
   // assets/js/src/core/battle/index.js
   var $18 = window.jQuery;
   var WOUND_LEVELS = ["Hurt", "Injured", "Mauled", "Crippled", "Dead"];
-  var RANGE_OPTIONS = ["Melee", "Thrown", "Short", "Medium", "Long"];
   function escape2(val) {
     return String(val == null ? "" : val).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
@@ -7037,18 +7036,13 @@
   `;
   }
   function weaponRowHtml(w = {}, idx) {
-    const rangeOpts = RANGE_OPTIONS.map(
-      (r) => `<option value="${r}"${(w.range || "Melee") === r ? " selected" : ""}>${r}</option>`
-    ).join("");
     return `
     <tr class="cg-weapon-row" data-idx="${idx}">
       <td><input class="cg-battle-input cg-weapon-name"   value="${escape2(w.name || "")}" placeholder="e.g. Short Sword" /></td>
       <td><input class="cg-battle-input cg-weapon-attack" value="${escape2(w.attack || "")}" placeholder="e.g. d6+d8" /></td>
-      <td><input class="cg-battle-input cg-weapon-damage" value="${escape2(w.damage || "")}" placeholder="e.g. d6" /></td>
-      <td>
-        <select class="cg-free-select cg-weapon-range">${rangeOpts}</select>
-      </td>
-      <td><input class="cg-battle-input cg-weapon-notes" value="${escape2(w.notes || "")}" placeholder="optional" /></td>
+      <td><input class="cg-battle-input cg-weapon-damage" value="${escape2(w.damage || "")}" placeholder="e.g. +1" /></td>
+      <td><input class="cg-battle-input cg-weapon-range"  value="${escape2(w.range || "")}" placeholder="e.g. Close" /></td>
+      <td><input class="cg-battle-input cg-weapon-notes"  value="${escape2(w.notes || "")}" placeholder="optional" /></td>
       <td><button type="button" class="cg-battle-remove-btn" data-target="weapon" data-idx="${idx}" title="Remove">\u2715</button></td>
     </tr>
   `;
@@ -7106,7 +7100,7 @@
         name: ((_a = row.querySelector(".cg-weapon-name")) == null ? void 0 : _a.value) || "",
         attack: ((_b = row.querySelector(".cg-weapon-attack")) == null ? void 0 : _b.value) || "",
         damage: ((_c = row.querySelector(".cg-weapon-damage")) == null ? void 0 : _c.value) || "",
-        range: ((_d = row.querySelector(".cg-weapon-range")) == null ? void 0 : _d.value) || "Melee",
+        range: ((_d = row.querySelector(".cg-weapon-range")) == null ? void 0 : _d.value) || "",
         notes: ((_e = row.querySelector(".cg-weapon-notes")) == null ? void 0 : _e.value) || ""
       });
     });
@@ -7169,7 +7163,7 @@
         persist();
         const data = ((_a2 = formBuilder_default) == null ? void 0 : _a2._data) || {};
         const weapons = Array.isArray(data.weapons) ? data.weapons : [];
-        weapons.push({ name: "", attack: "", damage: "", range: "Melee", notes: "" });
+        weapons.push({ name: "", attack: "", damage: "", range: "", notes: "" });
         formBuilder_default._data.weapons = weapons;
         const tbody = document.getElementById("cg-weapons-tbody");
         if (tbody) {
@@ -7533,22 +7527,30 @@
         this._syncBattleArray();
         return;
       }
-      const weapons = [sp.weapon_1, sp.weapon_2, sp.weapon_3].filter(Boolean).map((name, i) => ({
-        uid: `species-weapon-${i}`,
-        source: "species",
-        kind: "weapon",
-        name,
-        qty: 1,
-        slug: "",
-        token: name,
-        attack_dice: "",
-        damage_mod: 0,
-        range_band: "Melee",
-        parry_die: "",
-        cover_die: "",
-        effect: "",
-        cost_d: null
-      }));
+      const weapons = [sp.weapon_1, sp.weapon_2, sp.weapon_3].filter(Boolean).map((w, i) => {
+        const isObj = w && typeof w === "object";
+        const name = isObj ? w.name || "" : String(w);
+        const attack_dice = isObj ? w.attack_dice || "" : "";
+        const range_band = isObj ? w.range_band || "Close" : "Close";
+        const damage_mod = isObj ? w.damage_mod != null ? Number(w.damage_mod) : 0 : 0;
+        const effect = isObj ? w.effect || "" : "";
+        return {
+          uid: `species-weapon-${i}`,
+          source: "species",
+          kind: "weapon",
+          name,
+          qty: 1,
+          slug: "",
+          token: name,
+          attack_dice,
+          damage_mod,
+          range_band,
+          parry_die: "",
+          cover_die: "",
+          effect,
+          cost_d: null
+        };
+      });
       const nonSpecies = getTrappingsList().filter((t) => t.source !== "species");
       setTrappingsList([...nonSpecies, ...weapons]);
       this._syncBattleArray();
@@ -7657,24 +7659,39 @@
       const weaponTrappings = list.filter((t) => t.kind === "weapon");
       const armorTrappings = list.filter((t) => t.kind === "equipment" && t.armor_dice);
       const existingWeapons = Array.isArray((_a = formBuilder_default._data) == null ? void 0 : _a.weapons) ? formBuilder_default._data.weapons.filter((w) => !w._from_trappings) : [];
-      const trappingWeapons = weaponTrappings.map((t) => {
-        let attack = t.attack_dice || "";
-        if (!attack && t.damage_mod) {
-          attack = `Damage +${t.damage_mod}`;
-        }
-        let range = t.range_band || "Melee";
-        const rmap = {
-          "Close": "Melee",
-          "Short": "Short",
-          "Medium": "Medium",
-          "Long": "Long",
-          "Thrown": "Thrown",
-          "Melee": "Melee"
+      const resolvePool = (raw) => {
+        var _a2, _b2, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l;
+        if (!raw)
+          return "";
+        const traitMap = {
+          "body": ((_a2 = formBuilder_default._data) == null ? void 0 : _a2.body) || ((_b2 = document.getElementById("cg-body")) == null ? void 0 : _b2.value) || "",
+          "speed": ((_c = formBuilder_default._data) == null ? void 0 : _c.speed) || ((_d = document.getElementById("cg-speed")) == null ? void 0 : _d.value) || "",
+          "will": ((_e = formBuilder_default._data) == null ? void 0 : _e.will) || ((_f = document.getElementById("cg-will")) == null ? void 0 : _f.value) || "",
+          "mind": ((_g = formBuilder_default._data) == null ? void 0 : _g.mind) || ((_h = document.getElementById("cg-mind")) == null ? void 0 : _h.value) || "",
+          "species": ((_i = formBuilder_default._data) == null ? void 0 : _i.trait_species) || ((_j = document.getElementById("cg-trait_species")) == null ? void 0 : _j.value) || "",
+          "career": ((_k = formBuilder_default._data) == null ? void 0 : _k.trait_career) || ((_l = document.getElementById("cg-trait_career")) == null ? void 0 : _l.value) || ""
         };
-        range = rmap[range] || "Melee";
+        const vsIdx = raw.toLowerCase().indexOf(" vs.");
+        const poolPart = vsIdx > -1 ? raw.slice(0, vsIdx) : raw;
+        const parts = poolPart.split(",").map((s) => s.trim()).filter(Boolean);
+        const dice = parts.map((p) => traitMap[p.toLowerCase()] || p).filter(Boolean);
+        return dice.join(" + ");
+      };
+      const trappingWeapons = weaponTrappings.map((t) => {
+        let attack = "";
+        if (t.attack_dice) {
+          attack = resolvePool(t.attack_dice);
+          if (!attack)
+            attack = t.attack_dice;
+        }
+        if (!attack && t.damage_mod) {
+          attack = `+${t.damage_mod}`;
+        }
+        const range = t.range_band || "Close";
         return {
           _from_trappings: true,
           _trapping_uid: t.uid,
+          _attack_dice_raw: t.attack_dice || "",
           name: t.name,
           attack,
           damage: t.damage_mod != null ? `+${t.damage_mod}` : "",

@@ -380,22 +380,31 @@ const TrappingsAPI = {
 
     const weapons = [sp.weapon_1, sp.weapon_2, sp.weapon_3]
       .filter(Boolean)
-      .map((name, i) => ({
-        uid:        `species-weapon-${i}`,
-        source:     'species',
-        kind:       'weapon',
-        name:       name,
-        qty:        1,
-        slug:       '',
-        token:      name,
-        attack_dice: '',
-        damage_mod:  0,
-        range_band:  'Melee',
-        parry_die:   '',
-        cover_die:   '',
-        effect:      '',
-        cost_d:      null,
-      }));
+      .map((w, i) => {
+        // Support both new format (object with full data) and old format (plain string name)
+        const isObj = w && typeof w === 'object';
+        const name        = isObj ? (w.name        || '') : String(w);
+        const attack_dice = isObj ? (w.attack_dice || '') : '';
+        const range_band  = isObj ? (w.range_band  || 'Close') : 'Close';
+        const damage_mod  = isObj ? (w.damage_mod  != null ? Number(w.damage_mod) : 0) : 0;
+        const effect      = isObj ? (w.effect      || '') : '';
+        return {
+          uid:        `species-weapon-${i}`,
+          source:     'species',
+          kind:       'weapon',
+          name,
+          qty:        1,
+          slug:       '',
+          token:      name,
+          attack_dice,
+          damage_mod,
+          range_band,
+          parry_die:  '',
+          cover_die:  '',
+          effect,
+          cost_d:     null,
+        };
+      });
 
     const nonSpecies = getTrappingsList().filter(t => t.source !== 'species');
     setTrappingsList([...nonSpecies, ...weapons]);
@@ -518,21 +527,40 @@ const TrappingsAPI = {
       ? FormBuilderAPI._data.weapons.filter(w => !w._from_trappings)
       : [];
 
-    const trappingWeapons = weaponTrappings.map(t => {
-      let attack = t.attack_dice || '';
-      if (!attack && t.damage_mod) {
-        attack = `Damage +${t.damage_mod}`;
-      }
-      let range = t.range_band || 'Melee';
-      const rmap = {
-        'Close': 'Melee', 'Short': 'Short', 'Medium': 'Medium', 'Long': 'Long',
-        'Thrown': 'Thrown', 'Melee': 'Melee'
+    // Resolve a raw attack_dice string like "Body, Species, Brawling vs. defense"
+    // into a dice pool like "d8 + d6 + Brawling" using current trait values.
+    const resolvePool = (raw) => {
+      if (!raw) return '';
+      const traitMap = {
+        'body':    FormBuilderAPI._data?.body          || document.getElementById('cg-body')?.value          || '',
+        'speed':   FormBuilderAPI._data?.speed         || document.getElementById('cg-speed')?.value         || '',
+        'will':    FormBuilderAPI._data?.will          || document.getElementById('cg-will')?.value          || '',
+        'mind':    FormBuilderAPI._data?.mind          || document.getElementById('cg-mind')?.value          || '',
+        'species': FormBuilderAPI._data?.trait_species || document.getElementById('cg-trait_species')?.value || '',
+        'career':  FormBuilderAPI._data?.trait_career  || document.getElementById('cg-trait_career')?.value  || '',
       };
-      range = rmap[range] || 'Melee';
+      const vsIdx   = raw.toLowerCase().indexOf(' vs.');
+      const poolPart = vsIdx > -1 ? raw.slice(0, vsIdx) : raw;
+      const parts   = poolPart.split(',').map(s => s.trim()).filter(Boolean);
+      const dice    = parts.map(p => traitMap[p.toLowerCase()] || p).filter(Boolean);
+      return dice.join(' + ');
+    };
+
+    const trappingWeapons = weaponTrappings.map(t => {
+      let attack = '';
+      if (t.attack_dice) {
+        attack = resolvePool(t.attack_dice);
+        if (!attack) attack = t.attack_dice;
+      }
+      if (!attack && t.damage_mod) {
+        attack = `+${t.damage_mod}`;
+      }
+      const range = t.range_band || 'Close';
 
       return {
-        _from_trappings: true,
-        _trapping_uid:   t.uid,
+        _from_trappings:  true,
+        _trapping_uid:    t.uid,
+        _attack_dice_raw: t.attack_dice || '',
         name:   t.name,
         attack: attack,
         damage: t.damage_mod != null ? `+${t.damage_mod}` : '',

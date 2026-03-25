@@ -11,7 +11,6 @@ const $ = window.jQuery;
 
 const WOUND_LEVELS = ['Hurt', 'Injured', 'Mauled', 'Crippled', 'Dead'];
 
-const RANGE_OPTIONS = ['Melee', 'Thrown', 'Short', 'Medium', 'Long'];
 
 function escape(val) {
   return String(val == null ? '' : val)
@@ -78,18 +77,13 @@ function renderPoolsSection(pools) {
 }
 
 function weaponRowHtml(w = {}, idx) {
-  const rangeOpts = RANGE_OPTIONS.map(r =>
-    `<option value="${r}"${(w.range || 'Melee') === r ? ' selected' : ''}>${r}</option>`
-  ).join('');
   return `
     <tr class="cg-weapon-row" data-idx="${idx}">
       <td><input class="cg-battle-input cg-weapon-name"   value="${escape(w.name   || '')}" placeholder="e.g. Short Sword" /></td>
       <td><input class="cg-battle-input cg-weapon-attack" value="${escape(w.attack || '')}" placeholder="e.g. d6+d8" /></td>
-      <td><input class="cg-battle-input cg-weapon-damage" value="${escape(w.damage || '')}" placeholder="e.g. d6" /></td>
-      <td>
-        <select class="cg-free-select cg-weapon-range">${rangeOpts}</select>
-      </td>
-      <td><input class="cg-battle-input cg-weapon-notes" value="${escape(w.notes || '')}" placeholder="optional" /></td>
+      <td><input class="cg-battle-input cg-weapon-damage" value="${escape(w.damage || '')}" placeholder="e.g. +1" /></td>
+      <td><input class="cg-battle-input cg-weapon-range"  value="${escape(w.range  || '')}" placeholder="e.g. Close" /></td>
+      <td><input class="cg-battle-input cg-weapon-notes"  value="${escape(w.notes  || '')}" placeholder="optional" /></td>
       <td><button type="button" class="cg-battle-remove-btn" data-target="weapon" data-idx="${idx}" title="Remove">✕</button></td>
     </tr>
   `;
@@ -150,7 +144,7 @@ function readWeaponsFromDom() {
       name:   row.querySelector('.cg-weapon-name')?.value   || '',
       attack: row.querySelector('.cg-weapon-attack')?.value || '',
       damage: row.querySelector('.cg-weapon-damage')?.value || '',
-      range:  row.querySelector('.cg-weapon-range')?.value  || 'Melee',
+      range:  row.querySelector('.cg-weapon-range')?.value  || '',
       notes:  row.querySelector('.cg-weapon-notes')?.value  || '',
     });
   });
@@ -219,7 +213,7 @@ const BattleAPI = {
       persist();
       const data    = FormBuilderAPI?._data || {};
       const weapons = Array.isArray(data.weapons) ? data.weapons : [];
-      weapons.push({ name: '', attack: '', damage: '', range: 'Melee', notes: '' });
+      weapons.push({ name: '', attack: '', damage: '', range: '', notes: '' });
       FormBuilderAPI._data.weapons = weapons;
       const tbody = document.getElementById('cg-weapons-tbody');
       if (tbody) {
