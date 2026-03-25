@@ -89,10 +89,13 @@ $actionFiles = [
     'cg_get_career_list'     => 'actions/career.php',
     'cg_get_career_gifts'    => 'actions/career.php',
 
-    'cg_get_local_knowledge' => 'actions/gifts.php',
-    'cg_get_language_gift'   => 'actions/gifts.php',
-    'cg_get_free_gifts'      => 'actions/gifts.php',
-    'cg_get_language_list'   => 'actions/gifts.php',
+    'cg_get_local_knowledge'  => 'actions/gifts.php',
+    'cg_get_language_gift'    => 'actions/gifts.php',
+    'cg_get_combat_save'      => 'actions/gifts.php',
+    'cg_get_free_gifts'       => 'actions/gifts.php',
+    'cg_get_language_list'    => 'actions/gifts.php',
+    'cg_get_personality_list' => 'actions/gifts.php',
+    'cg_get_personality_gift' => 'actions/gifts.php',
 
     'cg_get_skills_list'     => 'actions/skills.php',
     'cg_get_skill_detail'    => 'actions/skills.php',

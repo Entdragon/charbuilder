@@ -6,47 +6,152 @@ const CG_DEFAULT_LANGUAGES = [
     'Kawtaw','Mordic','Old Calabrian','Orcish','Sylvan','Urathi',
 ];
 
+const CG_DEFAULT_PERSONALITIES = [
+    'Altruistic','Bold','Charitable','Chaste','Cheerful','Courageous',
+    'Determined','Devoted','Diplomatic','Energetic','Faithful','Generous',
+    'Honest','Humble','Industrious','Just','Kind','Loyal','Merciful',
+    'Modest','Patient','Pious','Prudent','Reckless','Selfless','Tenacious',
+    'Valiant','Wise',
+];
+
+/**
+ * Enrich a gift row with effect text from gift_sections if effect columns are empty.
+ * Mutates $row by reference.
+ */
+function cg_enrich_gift_effect(array &$row, int $giftId): void {
+    $effect = trim((string)($row['effect'] ?? ''));
+    $effDesc = trim((string)($row['effect_description'] ?? ''));
+    if ($effect !== '' || $effDesc !== '') return;
+
+    $p = cg_prefix();
+    try {
+        $sect = cg_query_one(
+            "SELECT ct_body AS body
+             FROM {$p}customtables_table_gift_sections
+             WHERE ct_gift_id = ? AND ct_section_type = 'rules'
+             ORDER BY ct_sort ASC LIMIT 1",
+            [$giftId]
+        );
+        if ($sect && !empty($sect['body'])) {
+            $body = trim((string)$sect['body']);
+            $short = mb_strlen($body) > 180 ? mb_substr($body, 0, 177) . '…' : $body;
+            $row['effect']             = $short;
+            $row['effect_description'] = $short;
+        }
+    } catch (Throwable $e) {
+        // non-fatal – gift_sections may not exist on all installs
+    }
+}
+
 function cg_get_local_knowledge(): void {
     $p   = cg_prefix();
     $row = cg_query_one(
-        "SELECT ct_id AS id, ct_gifts_name AS name, ct_gifts_manifold AS ct_gifts_manifold
+        "SELECT ct_id AS id, ct_gifts_name AS name, ct_gifts_manifold AS ct_gifts_manifold,
+                ct_gifts_effect AS effect, ct_gifts_effect_description AS effect_description
          FROM {$p}customtables_table_gifts WHERE ct_id = 242 LIMIT 1"
     );
     if (!$row) {
         cg_json(['success' => false, 'data' => 'Local Knowledge gift not found.']);
         return;
     }
+    $id = (int)($row['id'] ?? 242);
+    cg_enrich_gift_effect($row, $id);
     cg_json(['success' => true, 'data' => $row]);
 }
 
 function cg_get_language_gift(): void {
     $p   = cg_prefix();
     $row = cg_query_one(
-        "SELECT ct_id AS id, ct_gifts_name AS name, ct_gifts_manifold AS ct_gifts_manifold
+        "SELECT ct_id AS id, ct_gifts_name AS name, ct_gifts_manifold AS ct_gifts_manifold,
+                ct_gifts_effect AS effect, ct_gifts_effect_description AS effect_description
          FROM {$p}customtables_table_gifts WHERE ct_id = 236 LIMIT 1"
     );
     if (!$row) {
         cg_json(['success' => false, 'data' => 'Language gift not found.']);
         return;
     }
+    $id = (int)($row['id'] ?? 236);
+    cg_enrich_gift_effect($row, $id);
     cg_json(['success' => true, 'data' => $row]);
+}
+
+function cg_get_combat_save(): void {
+    $p   = cg_prefix();
+    $row = cg_query_one(
+        "SELECT ct_id AS id, ct_gifts_name AS name, ct_gifts_manifold AS ct_gifts_manifold,
+                ct_gifts_effect AS effect, ct_gifts_effect_description AS effect_description
+         FROM {$p}customtables_table_gifts WHERE ct_id = 159 LIMIT 1"
+    );
+    if (!$row) {
+        cg_json(['success' => false, 'data' => 'Combat Save gift not found.']);
+        return;
+    }
+    $id = (int)($row['id'] ?? 159);
+    cg_enrich_gift_effect($row, $id);
+    cg_json(['success' => true, 'data' => $row]);
+}
+
+function cg_get_personality_gift(): void {
+    $p = cg_prefix();
+    try {
+        $row = cg_query_one(
+            "SELECT ct_id AS id, ct_gifts_name AS name, ct_gifts_manifold AS ct_gifts_manifold,
+                    ct_gifts_effect AS effect, ct_gifts_effect_description AS effect_description
+             FROM {$p}customtables_table_gifts
+             WHERE LOWER(TRIM(ct_gifts_name)) LIKE '%personality%' AND published = 1
+             ORDER BY ct_id ASC LIMIT 1"
+        );
+        if (!$row) {
+            cg_json(['success' => false, 'data' => null]);
+            return;
+        }
+        $id = (int)($row['id'] ?? 0);
+        if ($id) cg_enrich_gift_effect($row, $id);
+        cg_json(['success' => true, 'data' => $row]);
+    } catch (Throwable $e) {
+        cg_json(['success' => false, 'data' => null]);
+    }
 }
 
 function cg_get_free_gifts(): void {
     $p = cg_prefix();
     $g = "{$p}customtables_table_gifts";
     $r = "{$p}customtables_table_gift_requirements";
+    $gc = "{$p}customtables_table_giftclass";
 
-    // Fetch all gifts (base columns still present after migration)
-    $rows = cg_query("
-        SELECT
-          ct_id                    AS id,
-          ct_gifts_name            AS name,
-          ct_gifts_allows_multiple AS allows_multiple,
-          ct_gifts_manifold        AS ct_gifts_manifold
-        FROM {$g}
-        ORDER BY ct_gifts_name ASC
-    ");
+    // Try with giftclass join to exclude "natural" class gifts; fall back if table absent
+    try {
+        $rows = cg_query("
+            SELECT
+              g.ct_id                              AS id,
+              g.ct_gifts_name                      AS name,
+              g.ct_gifts_allows_multiple           AS allows_multiple,
+              g.ct_gifts_manifold                  AS ct_gifts_manifold,
+              gc.ct_class_name                     AS giftclass,
+              g.ct_gifts_effect                    AS effect,
+              g.ct_gifts_effect_description        AS effect_description
+            FROM {$g} AS g
+            LEFT JOIN {$gc} AS gc ON gc.ct_id = g.ct_gift_class
+            WHERE LOWER(TRIM(COALESCE(gc.ct_class_name, ''))) != 'natural'
+              AND g.published = 1
+            ORDER BY g.ct_gifts_name ASC
+        ");
+    } catch (Throwable $e) {
+        // giftclass table may not exist — fall back to simple query
+        $rows = cg_query("
+            SELECT
+              ct_id                    AS id,
+              ct_gifts_name            AS name,
+              ct_gifts_allows_multiple AS allows_multiple,
+              ct_gifts_manifold        AS ct_gifts_manifold,
+              NULL                     AS giftclass,
+              ct_gifts_effect          AS effect,
+              ct_gifts_effect_description AS effect_description
+            FROM {$g}
+            WHERE published = 1
+            ORDER BY ct_gifts_name ASC
+        ");
+    }
 
     // Index by id for fast lookup
     $byId = [];
@@ -54,7 +159,32 @@ function cg_get_free_gifts(): void {
         $byId[(int) $row['id']] = $row;
     }
 
-    // Fetch all requirements in one query
+    // Enrich effect text from gift_sections where the gift_sections table exists
+    try {
+        $sects = cg_query(
+            "SELECT ct_gift_id AS gift_id, MIN(ct_sort) AS min_sort, ct_body AS body
+             FROM {$p}customtables_table_gift_sections
+             WHERE ct_section_type = 'rules'
+             GROUP BY ct_gift_id"
+        );
+        foreach ($sects as $s) {
+            $gId = (int)$s['gift_id'];
+            if (!isset($byId[$gId])) continue;
+            $body = trim((string)($s['body'] ?? ''));
+            if ($body === '') continue;
+            $short = mb_strlen($body) > 180 ? mb_substr($body, 0, 177) . '…' : $body;
+            if (trim((string)($byId[$gId]['effect'] ?? '')) === '') {
+                $byId[$gId]['effect'] = $short;
+            }
+            if (trim((string)($byId[$gId]['effect_description'] ?? '')) === '') {
+                $byId[$gId]['effect_description'] = $short;
+            }
+        }
+    } catch (Throwable $e) {
+        // gift_sections may not exist — skip enrichment
+    }
+
+    // Fetch all requirements in one query and reconstruct flat ct_gifts_requires* columns
     $reqs = cg_query("
         SELECT ct_gift_id, ct_sort, ct_req_kind, ct_req_ref_id, ct_req_text
         FROM {$r}
@@ -62,7 +192,6 @@ function cg_get_free_gifts(): void {
     ");
 
     // Column-name suffix arrays matching the old flat schema
-    // Sort 1 → '' (bare column), sort 2 → '_two', etc.
     $requireSuffixes = [
         1 => '',        2 => '_two',     3 => '_three',   4 => '_four',
         5 => '_five',   6 => '_six',     7 => '_seven',   8 => '_eight',
@@ -85,19 +214,16 @@ function cg_get_free_gifts(): void {
         }
 
         if ($kind === 'gift_ref') {
-            // Prerequisite gift reference — maps to ct_gifts_requires[_suffix]
             if (!isset($requireSuffixes[$sort])) continue;
             $col = 'ct_gifts_requires' . $requireSuffixes[$sort];
             $byId[$gId][$col] = (int) $req['ct_req_ref_id'];
 
         } elseif ($kind === 'legacy_text') {
-            // Old INT value stored as text — treat as gift ID
             if (!isset($requireSuffixes[$sort])) continue;
             $col = 'ct_gifts_requires' . $requireSuffixes[$sort];
             $byId[$gId][$col] = (int) $req['ct_req_text'];
 
         } elseif ($kind === 'special_text') {
-            // Free-text requirement — maps to ct_gifts_requires_special[_suffix]
             if (!isset($specialSuffixes[$sort])) continue;
             $col = 'ct_gifts_requires_special' . $specialSuffixes[$sort];
             $byId[$gId][$col] = (string) $req['ct_req_text'];
@@ -141,6 +267,48 @@ function cg_get_language_list(): void {
     } catch (Throwable $e) {
         error_log('[CG] cg_get_language_list DB error: ' . $e->getMessage());
         $fallback = CG_DEFAULT_LANGUAGES;
+        sort($fallback);
+        cg_json(['success' => true, 'data' => $fallback]);
+    }
+}
+
+function cg_ensure_personality_table(): void {
+    $p     = cg_prefix();
+    $table = "`{$p}cg_personality`";
+
+    cg_exec("
+        CREATE TABLE IF NOT EXISTS {$table} (
+          id         INT AUTO_INCREMENT PRIMARY KEY,
+          name       VARCHAR(100) NOT NULL,
+          sort_order INT NOT NULL DEFAULT 0,
+          UNIQUE KEY uq_cg_pers_name (name)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ");
+
+    $count = (int) (cg_query_one("SELECT COUNT(*) AS cnt FROM {$table}")['cnt'] ?? 0);
+    if ($count === 0) {
+        $list = CG_DEFAULT_PERSONALITIES;
+        $placeholders = implode(', ', array_map(fn($i) => "(?, {$i})", range(0, count($list) - 1)));
+        cg_exec(
+            "INSERT IGNORE INTO {$table} (name, sort_order) VALUES {$placeholders}",
+            $list
+        );
+    }
+}
+
+function cg_get_personality_list(): void {
+    $p = cg_prefix();
+    try {
+        cg_ensure_personality_table();
+        $rows = cg_query("SELECT name FROM `{$p}cg_personality` ORDER BY sort_order ASC, name ASC");
+        $list = array_values(array_filter(array_map(fn($r) => trim($r['name'] ?? ''), $rows)));
+        if (empty($list)) {
+            $list = CG_DEFAULT_PERSONALITIES;
+            sort($list);
+        }
+        cg_json(['success' => true, 'data' => $list]);
+    } catch (Throwable $e) {
+        $fallback = CG_DEFAULT_PERSONALITIES;
         sort($fallback);
         cg_json(['success' => true, 'data' => $fallback]);
     }
