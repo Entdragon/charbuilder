@@ -220,16 +220,19 @@ export default {
     const cpSkills = extractSkillTripletFromAny(career).map(String);
 
     // TEMP DEBUG — open browser console then open the Skills tab to see this
-    console.log('[CG:SkillsRender] species profile skills:', {
-      skill_one:   species.skill_one,   skill_one_id:   species.skill_one_id,
-      skill_two:   species.skill_two,   skill_two_id:   species.skill_two_id,
-      skill_three: species.skill_three, skill_three_id: species.skill_three_id,
-      spTraitDie:  spTraitDie, spNames, spIds,
-    });
-    console.log('[CG:SkillsRender] career profile skills:', {
-      skill_one: career.skill_one, skill_two: career.skill_two, skill_three: career.skill_three,
-      cpSkills,
-    });
+    console.log('[CG:SkillsRender] SPECIES | skill_one=' + JSON.stringify(species.skill_one)
+      + ' id=' + JSON.stringify(species.skill_one_id)
+      + ' | skill_two=' + JSON.stringify(species.skill_two)
+      + ' id=' + JSON.stringify(species.skill_two_id)
+      + ' | skill_three=' + JSON.stringify(species.skill_three)
+      + ' id=' + JSON.stringify(species.skill_three_id)
+      + ' | spTraitDie=' + spTraitDie
+      + ' | spNames=' + JSON.stringify(spNames)
+      + ' | spIds=' + JSON.stringify(spIds));
+    console.log('[CG:SkillsRender] CAREER | skill_one=' + JSON.stringify(career.skill_one)
+      + ' skill_two=' + JSON.stringify(career.skill_two)
+      + ' skill_three=' + JSON.stringify(career.skill_three)
+      + ' | cpSkills=' + JSON.stringify(cpSkills));
     // END TEMP DEBUG
 
     const $tbody = $('<tbody>');
