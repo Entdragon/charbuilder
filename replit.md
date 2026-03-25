@@ -1,126 +1,109 @@
-# Character Generator – Standalone Node.js App
+# Character Generator – Library of Calabria
 
 ## Project Overview
-A standalone Express.js web application converted from a WordPress plugin. Provides a character creation system for the Library of Calabria tabletop RPG. Connects to the existing WordPress MySQL database via a PHP proxy (shared hosting firewall blocks direct MySQL access from outside).
+A PHP web application serving a character creation system for the Library of Calabria tabletop RPG (Ironclaw). Connects to the existing WordPress MySQL database via a PHP proxy (shared hosting firewall blocks direct MySQL access from Replit). Live site is hosted on cPanel/Apache at `characters.libraryofcalbria.com`; Replit is dev-only.
 
-- **Production URL**: https://libraryofcalbria.com/character-generator/
+- **Production URL**: https://characters.libraryofcalbria.com/
 
 ## Technology Stack
-- **Node.js / Express** – Web server and REST API (port 5000)
-- **mysql2** – MySQL client (direct mode, fallback if proxy not set)
-- **express-session** – Session-based authentication
-- **bcryptjs** – WordPress 6+ bcrypt password verification
-- **phpass** – Legacy WordPress phpass (`$P$`) password verification
-- **JavaScript (ES6)** – Frontend UI modules (esbuild bundle)
+- **PHP 8.2** – Web server (`php -S` in dev, Apache on live) and all API logic
+- **JavaScript (ES6 + esbuild)** – Frontend UI modules (built bundle)
 - **SCSS (Dart Sass)** – Compiled to CSS
-- **jQuery** – Required by the frontend bundle (served from node_modules)
+- **jQuery** – Required by the frontend bundle (CDN in PHP template)
 
 ## Project Structure
 ```
-server/
-  index.js                  # Express app entry point, port 5000
-  db.js                     # Database layer: proxy mode or direct MySQL
-  auth/
-    wordpress.js            # WP password verification (bcrypt + phpass) + hashing
-  routes/
-    ajax.js                 # POST /api/ajax dispatcher
-    actions/
-      auth.js               # Login, logout, register
-      character.js          # Load, get, save characters
-      career.js             # Career list and profiles
-      gifts.js              # Gifts (free, local knowledge, language)
-      skills.js             # Skills list and detail
-      species.js            # Species list and profiles
-      diagnostics.js        # Ping and diagnostics
-public/
-  index.html                # App shell: login UI + character builder
+php/
+  router.php                # Dev-only: routes requests for `php -S` built-in server
+  index.php                 # Main HTML template (auth screen + app shell)
+  ajax.php                  # POST /ajax.php dispatcher (mirrors WP admin-ajax.php)
+  includes/
+    config.php              # DB constants from env vars
+    db.php                  # DB layer: proxy mode (Replit) or direct PDO (live)
+    auth.php                # Session helpers + WordPress SSO cookie verification
+    password.php            # WP password verification (bcrypt + phpass) + hashing
+  actions/
+    auth.php                # cg_login_user, cg_logout_user, cg_register_user
+    character.php           # cg_load_characters, cg_get_character, cg_save_character
+    career.php              # cg_get_career_list, cg_get_career_profile, cg_get_career_gifts
+    gifts.php               # cg_get_free_gifts, cg_get_local_knowledge, cg_get_language_gift
+    skills.php              # cg_get_skills_list, cg_get_skill_detail
+    species.php             # cg_get_species_list, cg_get_species_profile
+    equipment.php           # cg_get_money_list, cg_get_equipment_catalog, cg_get_career_trappings, cg_get_gift_trappings
+    diagnostics.php         # cg_ping, cg_run_diagnostics
 assets/
-  js/src/                   # ES6 source (unchanged from plugin)
-  js/dist/core.bundle.js    # Bundled JS (esbuild)
+  js/src/                   # ES6 source modules
+  js/dist/core.bundle.js    # Bundled JS (esbuild output)
   css/src/                  # SCSS source
   css/dist/core.css         # Compiled CSS
+server/                     # Legacy Node.js server (kept as reference; no longer the dev server)
 tools/
-  cg-db-proxy.php           # PHP proxy deployed to WordPress server
-includes/                   # Original PHP plugin (reference only)
-character-generator.php     # Original plugin entry (reference only)
+  cg-db-proxy.php           # PHP proxy deployed to WordPress server for DB access
 ```
 
 ## Environment Secrets
 Set in Replit Secrets:
 - `CG_PROXY_URL` — Full URL to `cg-db-proxy.php` on the WordPress server
 - `CG_PROXY_SECRET` — Shared secret for authenticating proxy requests
-- `SESSION_SECRET` — Session signing secret
-- `DB_PREFIX` — WordPress table prefix (defaults to `wp_` if not set)
+- `DB_PREFIX` — WordPress table prefix (`DcVnchxg4_`)
 
-Direct MySQL fallback (only if proxy not used):
-- `DB_HOST` — MySQL host (supports `host:port`)
+Direct MySQL (used automatically on the live server where firewall is not an issue):
+- `DB_HOST` — MySQL host
 - `DB_NAME` — WordPress database name
 - `DB_USER` — MySQL username
 - `DB_PASS` — MySQL password
 
-## API Routes
-- `GET /` → Serves `public/index.html` (login + app shell)
-- `GET /setup` → Password reset form (protected by `CG_PROXY_SECRET`)
-- `GET /api/auth/me` → Returns current logged-in user info
-- `POST /api/ajax` → Main action dispatcher (mirrors WordPress admin-ajax.php)
-  - Auth: `cg_login_user`, `cg_logout_user`, `cg_register_user`
-  - Characters: `cg_load_characters`, `cg_get_character`, `cg_save_character`
-  - Reference data: `cg_get_career_list`, `cg_get_career_gifts`, `cg_get_species_list`, `cg_get_species_profile`, `cg_get_skills_list`, `cg_get_skill_detail`, `cg_get_free_gifts`, `cg_get_local_knowledge`, `cg_get_language_gift`
-  - Diagnostics: `cg_ping`, `cg_run_diagnostics`
-- `POST /api/admin/reset-password` → Resets a WP user's password (requires `CG_PROXY_SECRET` in body)
-
-## Password Handling
-WordPress 6+ stores passwords as `$wp$2y$10$...` (bcrypt with a `$wp$` prefix). The server handles:
-- `$wp$...` → strip prefix, convert `$2y$` → `$2b$`, verify with bcryptjs
-- `$P$` / `$H$` → legacy phpass, verify with phpass library
-- `$2y$` / `$2b$` → plain bcrypt
-
-New passwords are stored in `$wp$` format for WordPress compatibility.
-
-## PHP Proxy
-`tools/cg-db-proxy.php` must be deployed to the production WordPress server (e.g. `libraryofcalbria.com/cg-db-proxy.php`). It:
-- Reads `X-CG-Secret` header and validates against a hard-coded secret
-- Accepts `{ sql, params }` POST body
-- Runs the query against the WordPress database and returns JSON
-
-## Character Data – XP Fields (added Feb 2026)
-Three new columns added automatically to `character_records` on server startup via migration:
-- `experience_points` INT – Total XP earned through play
-- `xp_skill_marks` TEXT (JSON) – Extra marks bought with XP `{skillId: count}` (on top of 13-mark creation budget)
-- `xp_gifts` TEXT (JSON) – Gifts bought with XP `[{id, name}]`
-
-Costs: 4 XP per skill mark, 10 XP per gift. Total marks per skill capped at 3 (d4→d6→d8).
-The Experience tab (`tab-experience`) lives between Skills and Trappings in the builder.
-
-## Character Data – Skills: Favourite Use & Gift Mark Propagation (added Mar 2026)
-Three new columns added automatically to `character_records` on server startup via migration:
-- `skill_notes` TEXT (JSON) – Freeform "favourite use" text per skill `{skillId: "text"}`
-- `gift_skill_marks` TEXT (JSON) – Gift-granted bonus marks per skill `{skillId: count}` (from "Knack For" gifts)
-- `free_gift_quals` TEXT (JSON) – Per-slot qualification map for free gift choices `{slotIndex: {type: value}}` — now also stores `knack_skill` entries for gift 232
-
-Features:
-- Each skill row in the Skills tab has a small "Favourite use" text input (debounced auto-save).
-- Gift 232 ("Knack For: [Choice]") shows a skill-select dropdown in the Gifts tab when selected. The chosen skill gains +1 mark automatically; displayed as a badge in the Skills tab.
-- The manual creation-mark budget (3 per skill, 13 total) is independent of gift marks — players can still place up to 3 creation marks on a skill that already has a gift mark.
-- Removing a Knack For gift or changing its skill choice cleans up the bonus mark automatically.
-
-## Gift Requirements Logic (added Mar 2026)
-- Gift eligibility (`getTraitDieValue` in `free-choices.js`) now reads the **boosted** trait die value — i.e. base die + any "Increase Trait" gift improvements — so gifts with trait prerequisites (e.g. Giant requires Body d12) correctly unlock when the character qualifies via gifts rather than just the raw base die.
-- `TraitsService` is imported into `free-choices.js` and consulted after the raw trait value; the higher of the two is used.
-
-## Career Gift Replacement Logic (verified Mar 2026)
-- When a career gift is the same non-repeatable gift already granted by the chosen species, the career gift slot is replaced with a dropdown to select an "Increase Trait" gift instead.
-- Works regardless of whether species or career is selected first — re-renders whenever either selection changes.
-- Confirmed working combinations include: Hedgehog + Clown (Coward), Gorilla + Brute (Strength), Wolf + Hunter (Tracking and Hiking — two replacements), Fox + Bodyguard (Danger Sense), Giraffe + Jailer (Counter-Tactics), Yak + Worker (Team Player).
-- 6 "Increase Trait" replacement options available: Body, Mind, Speed, Will, Career, Species.
+## Dev vs Live
+| | Replit Dev | Live (cPanel) |
+|---|---|---|
+| Server | `php -S 0.0.0.0:5000 php/router.php` | Apache + mod_php |
+| DB access | HTTP proxy → `libraryofcalbria.com/cg-db-proxy.php` | Direct PDO (localhost MySQL) |
+| Ajax URL | `/ajax.php` | `/ajax.php` |
+| Session | PHP file-based sessions | PHP file-based sessions |
 
 ## Build System
-- `npm run build` – Rebuild JS bundle and CSS (after source changes)
-- `npm run watch:core` / `npm run watch:css` – Watch modes for development
+- `npm run build` – Rebuild JS bundle + CSS
+- `npm run watch:core` / `npm run watch:css` – Watch modes
+
+## Deploy to Live
+```bash
+cd ~/charbuilder && git pull
+
+# PHP backend
+cp php/ajax.php              ~/public_html/characters/ajax.php
+cp php/includes/db.php       ~/public_html/characters/includes/db.php
+cp php/includes/auth.php     ~/public_html/characters/includes/auth.php
+cp php/includes/config.php   ~/public_html/characters/includes/config.php
+cp php/includes/password.php ~/public_html/characters/includes/password.php
+cp php/actions/*.php         ~/public_html/characters/actions/
+
+# Frontend assets (only if JS/CSS changed)
+cp assets/js/dist/core.bundle.js ~/public_html/characters/assets/js/dist/
+cp assets/css/dist/core.css      ~/public_html/characters/assets/css/dist/
+
+# php/router.php is Replit-only — do NOT copy to live
+```
 
 ## Replit Workflow
-- Command: `node server/index.js`
+- Command: `php -S 0.0.0.0:5000 php/router.php`
 - Port: 5000 (webview)
 
-## Hosting Notes
-The staging site has been retired. `CG_PROXY_URL` and `CG_PROXY_SECRET` point to the production server (`libraryofcalbria.com`). The `DB_PREFIX` secret is confirmed set. No staging environment is in use.
+## CSS Scoping Rule
+Any CSS affecting generic HTML elements MUST be scoped under `#cg-modal` to avoid WordPress theme interference (the generator is embedded in a WP page).
+
+## Gift Requirements Schema
+- `gift_requirements` table: `ct_req_kind` is either `gift_ref` or `special_text`; `ct_sort` values are multiples of 10 (not sequential 1,2,3…).
+- PHP uses **position counters** (not raw sort values) to map `gift_ref` rows to flat columns `ct_gifts_requires`, `ct_gifts_requires_two`, etc.
+- All `special_text` rows are concatenated with `\n` into `ct_gifts_requires_special`.
+- `gift_prereq` table holds structured prerequisites (trait_min, species_anyof, pair, etc.).
+
+## Character Data – XP Fields
+Three columns on `character_records`:
+- `experience_points` INT – Total XP
+- `xp_skill_marks` TEXT (JSON) – Extra marks bought with XP `{skillId: count}`
+- `xp_gifts` TEXT (JSON) – Gifts bought with XP `[{id, name}]`
+
+Costs: 4 XP per skill mark, 10 XP per gift. Marks capped at 3 (d4→d6→d8).
+
+## Password Handling
+WordPress 6+ format: `$wp$2y$10$…` (bcrypt with `$wp$` prefix). Also handles legacy `$P$` / `$H$` (phpass) and plain `$2y$`/`$2b$` bcrypt. New passwords stored in `$wp$` format.
