@@ -1,17 +1,22 @@
 /**
  * PM2 Process Config — Character Generator (Node/Express)
  *
- * HOW TO USE
+ * HOW TO USE (cPanel / no-sudo shared hosting)
  * ──────────────────────────────────────────────────────────────────────────────
- * 1. Install PM2 globally on your server (run once as your deploy user):
+ * 1. Install PM2 globally (run once):
  *      npm install -g pm2
  *
- * 2. From the project root on your server, start the app:
- *      pm2 start tools/pm2.config.js
+ * 2. Start the app — run this script from ANYWHERE using its full path:
+ *      pm2 start ~/charbuilder/tools/pm2.config.js
+ *    (replace ~/charbuilder with your actual project path)
  *
- * 3. Save the process list so it restarts after a server reboot:
+ * 3. Save the process list:
  *      pm2 save
- *      pm2 startup        ← follow the printed command (run it as root/sudo)
+ *
+ * 4. Auto-start on reboot via cron (no sudo needed):
+ *      crontab -e
+ *    Add this line (adjust the path to match your nvm node version):
+ *      @reboot /home/libraryo/.nvm/versions/node/v22.17.0/bin/pm2 resurrect
  *
  * Common PM2 commands
  * ──────────────────────────────────────────────────────────────────────────────
@@ -20,42 +25,35 @@
  *   pm2 restart char-generator
  *   pm2 stop char-generator
  *   pm2 delete char-generator
- *
- * The app listens on port 5000. Apache proxies
- * characters.libraryofcalbria.com → localhost:5000
- * (see tools/apache-vhost-characters.conf.example).
  */
+
+const path = require('path');
+
+// __dirname is tools/ — one level up is the project root
+const PROJECT_ROOT = path.resolve(__dirname, '..');
 
 module.exports = {
   apps: [
     {
       name: 'char-generator',
 
-      // Path to the Express entry point — adjust if your project root differs
-      script: 'server/index.js',
+      // Absolute path derived automatically — no manual editing needed
+      script: path.join(PROJECT_ROOT, 'server', 'index.js'),
+      cwd:    PROJECT_ROOT,
 
-      // Run from the project root so relative paths in the app resolve correctly
-      cwd: '/home/libraryo/charbuilder',   // ← UPDATE to your actual project path
-
-      // Restart the app if it crashes, with exponential backoff
-      autorestart: true,
-      watch:       false,
+      autorestart:  true,
+      watch:        false,
       max_restarts: 10,
       restart_delay: 2000,
 
-      // Environment variables
       env: {
         NODE_ENV: 'production',
         PORT:     5000,
-        // SESSION_SECRET is read from the real environment — set it with:
-        //   pm2 set char-generator:SESSION_SECRET "your-secret-here"
-        // OR export SESSION_SECRET before running pm2 start.
       },
 
-      // Log files
-      out_file:  '/home/libraryo/logs/char-generator-out.log',
-      error_file: '/home/libraryo/logs/char-generator-error.log',
-      merge_logs: true,
+      out_file:       path.join(process.env.HOME || '/home/libraryo', 'logs', 'char-generator-out.log'),
+      error_file:     path.join(process.env.HOME || '/home/libraryo', 'logs', 'char-generator-error.log'),
+      merge_logs:     true,
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
     },
   ],

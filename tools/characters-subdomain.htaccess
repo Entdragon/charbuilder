@@ -1,0 +1,36 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# Apache proxy .htaccess for characters.libraryofcalbria.com
+#
+# WHAT THIS DOES
+# Proxies all requests on this subdomain to the Node/Express app on port 5000.
+#
+# HOW TO DEPLOY (cPanel — no sudo needed)
+# ──────────────────────────────────────────────────────────────────────────────
+# 1. In cPanel → Subdomains, make sure characters.libraryofcalbria.com exists.
+#    Note the "Document Root" cPanel assigned — something like:
+#      /home/libraryo/characters.libraryofcalbria.com/
+#
+# 2. Upload this file to that document root as ".htaccess" (the dot matters).
+#    Via cPanel File Manager: navigate to the document root, click Upload,
+#    then rename the file to .htaccess — OR use SFTP/SCP.
+#
+# 3. In cPanel → Subdomains (or Proxy Subdomains), if there is a
+#    "Proxy Subdomains" toggle for this subdomain, DISABLE it — we're
+#    managing the proxy ourselves here.
+#
+# 4. If you see a 500 error, mod_proxy may be disabled on your host. Contact
+#    support and ask them to enable mod_proxy and mod_proxy_http for your account,
+#    or see tools/apache-vhost-characters.conf.example for the root-level config.
+# ──────────────────────────────────────────────────────────────────────────────
+
+Options -Indexes -MultiViews
+RewriteEngine On
+
+# Pass requests to the Node app on localhost:5000
+<IfModule mod_proxy.c>
+    ProxyPreserveHost On
+    RequestHeader set X-Forwarded-Proto "https"
+
+    ProxyPass        / http://127.0.0.1:5000/
+    ProxyPassReverse / http://127.0.0.1:5000/
+</IfModule>
