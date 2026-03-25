@@ -132,16 +132,6 @@ export default {
     const species = SpeciesAPI.currentProfile || {};
     const career  = CareerAPI.currentProfile  || {};
 
-    /* DEBUG — remove after confirming species die works
-    console.log('[SkillsRender] sp profile:', {
-      skill_one: species.skill_one, skill_one_id: species.skill_one_id,
-      skill_two: species.skill_two, skill_two_id: species.skill_two_id,
-      skill_three: species.skill_three, skill_three_id: species.skill_three_id,
-      spTraitDie: traitDie('trait_species'),
-    });
-    console.log('[SkillsRender] skillMarks:', JSON.stringify(data.skillMarks));
-    */
-
     // Extra careers from state (written by career/extra.js)
     const extraCareers = parseExtraCareersFromData(data)
       .filter(x => x && x.id)
@@ -228,6 +218,19 @@ export default {
     const spIds    = [species.skill_one_id, species.skill_two_id, species.skill_three_id]
       .filter(s => s != null && s !== '').map(s => String(s));
     const cpSkills = extractSkillTripletFromAny(career).map(String);
+
+    // TEMP DEBUG — open browser console then open the Skills tab to see this
+    console.log('[CG:SkillsRender] species profile skills:', {
+      skill_one:   species.skill_one,   skill_one_id:   species.skill_one_id,
+      skill_two:   species.skill_two,   skill_two_id:   species.skill_two_id,
+      skill_three: species.skill_three, skill_three_id: species.skill_three_id,
+      spTraitDie:  spTraitDie, spNames, spIds,
+    });
+    console.log('[CG:SkillsRender] career profile skills:', {
+      skill_one: career.skill_one, skill_two: career.skill_two, skill_three: career.skill_three,
+      cpSkills,
+    });
+    // END TEMP DEBUG
 
     const $tbody = $('<tbody>');
 
