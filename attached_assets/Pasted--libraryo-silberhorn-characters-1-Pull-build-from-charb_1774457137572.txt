@@ -1,0 +1,44 @@
+[libraryo@silberhorn characters]$ # 1. Pull & build (from ~/charbuilder on the server)
+[libraryo@silberhorn characters]$ cd ~/charbuilder && git pull && npm run build
+Already up to date.
+
+> character-generator@1.0.0 build
+> npm run build:core && npm run build:css
+
+
+> character-generator@1.0.0 build:core
+> esbuild assets/js/src/core/index.js --bundle --outfile=assets/js/dist/core.bundle.js --platform=browser --target=es2015 --format=iife --sourcemap
+
+
+  assets/js/dist/core.bundle.js      337.4kb
+  assets/js/dist/core.bundle.js.map  587.1kb
+
+⚡ Done in 150ms
+
+> character-generator@1.0.0 postbuild:core
+> chmod 0755 assets assets/js assets/js/dist 2>/dev/null || true; chmod 0644 assets/js/dist/core.bundle.js assets/js/dist/core.bundle.js.map 2>/dev/null || true
+
+
+> character-generator@1.0.0 build:css
+> sass assets/css/src/main.scss assets/css/dist/core.css --no-source-map
+
+
+> character-generator@1.0.0 postbuild:css
+> chmod 0755 assets assets/css assets/css/dist 2>/dev/null || true; chmod 0644 assets/css/dist/core.css 2>/dev/null || true
+
+[libraryo@silberhorn charbuilder]$
+[libraryo@silberhorn charbuilder]$ # 2. Copy assets
+[libraryo@silberhorn charbuilder]$ cp assets/js/dist/core.bundle.js ~/public_html/characters/assets/js/dist/core.bundle.js
+[libraryo@silberhorn charbuilder]$ cp assets/css/dist/core.css ~/public_html/characters/assets/css/dist/core.css
+[libraryo@silberhorn charbuilder]$
+[libraryo@silberhorn charbuilder]$ # 3. Copy the new and updated PHP files
+[libraryo@silberhorn charbuilder]$ cp php/ajax.php            ~/public_html/characters/ajax.php
+[libraryo@silberhorn charbuilder]$ cp php/actions/spells.php  ~/public_html/characters/actions/spells.php
+cp: cannot stat 'php/actions/spells.php': No such file or directory
+[libraryo@silberhorn charbuilder]$ cp php/cli-install-spells.php ~/public_html/characters/cli-install-spells.php
+cp: cannot stat 'php/cli-install-spells.php': No such file or directory
+[libraryo@silberhorn charbuilder]$
+[libraryo@silberhorn charbuilder]$ # 4. Seed the spells table (run once from public_html/characters/)
+[libraryo@silberhorn charbuilder]$ cd ~/public_html/characters && php cli-install-spells.php
+Could not open input file: cli-install-spells.php
+[libraryo@silberhorn characters]$
