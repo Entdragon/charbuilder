@@ -152,9 +152,12 @@ function cg_install_spells(): void {
 //   gift_ids[]  — array of gift IDs (ints) from the character's full gift set
 //                 (free choices + career + species + xp gifts).
 //
-// Returns spells whose ct_gift_name either:
-//   a) equals 'Common Magic' AND at least one gift has 'Magic' in its name, OR
-//   b) exactly matches a name from the given gift IDs in the gifts table.
+// Matching strategy (OR of all conditions):
+//   1. ct_name matches a gift name exactly — each spell is its own gift
+//      (e.g. gift "Fire Ball" → returns the "Fire Ball" spell row).
+//   2. ct_gift_name matches a gift name — school-level gift grants all spells
+//      in that school (e.g. a gift literally named "Journeyman Fire Magic").
+//   3. ct_gift_name = 'Common Magic' when any gift contains the word "Magic".
 // ---------------------------------------------------------------------------
 
 function cg_get_spells_for_gifts(): void {
@@ -167,7 +170,6 @@ function cg_get_spells_for_gifts(): void {
     // Parse gift IDs from POST
     $raw = $_POST['gift_ids'] ?? $_POST['gift_ids[]'] ?? [];
     if (is_string($raw)) {
-        // JSON array fallback
         $decoded = json_decode($raw, true);
         $raw = is_array($decoded) ? $decoded : [];
     }
@@ -180,7 +182,7 @@ function cg_get_spells_for_gifts(): void {
         return;
     }
 
-    // Fetch gift names for these IDs
+    // Fetch gift names for all provided IDs
     $inPlaceholders = implode(',', array_fill(0, count($giftIds), '?'));
     $giftRows = cg_query(
         "SELECT ct_id AS id, ct_gifts_name AS name
@@ -189,28 +191,29 @@ function cg_get_spells_for_gifts(): void {
         $giftIds
     );
 
-    $giftNames  = array_column($giftRows, 'name');
-    $hasMagic   = (bool) array_filter($giftNames, fn($n) => stripos((string)$n, 'magic') !== false);
+    $giftNames = array_values(array_filter(array_column($giftRows, 'name')));
+    $hasMagic  = (bool) array_filter($giftNames, fn($n) => stripos((string)$n, 'magic') !== false);
 
-    if (empty($giftNames) && !$hasMagic) {
+    if (empty($giftNames)) {
         cg_json(['success' => true, 'data' => []]);
         return;
     }
 
-    // Build WHERE clause
     $conditions = [];
     $params     = [];
+    $nPh        = implode(',', array_fill(0, count($giftNames), '?'));
 
-    // Common Magic spells for any magic-user
+    // 1. Spell name matches a gift name (each spell is its own gift in the DB)
+    $conditions[] = "ct_name IN ({$nPh})";
+    $params       = array_merge($params, $giftNames);
+
+    // 2. School-level gift: ct_gift_name matches a gift name
+    $conditions[] = "ct_gift_name IN ({$nPh})";
+    $params       = array_merge($params, $giftNames);
+
+    // 3. Common Magic spells whenever the character has any Magic gift
     if ($hasMagic) {
         $conditions[] = "ct_gift_name = 'Common Magic'";
-    }
-
-    // Named gift spells
-    if (!empty($giftNames)) {
-        $nPlaceholders = implode(',', array_fill(0, count($giftNames), '?'));
-        $conditions[]  = "ct_gift_name IN ({$nPlaceholders})";
-        $params        = array_merge($params, $giftNames);
     }
 
     $where  = implode(' OR ', $conditions);
