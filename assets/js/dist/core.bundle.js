@@ -7373,6 +7373,7 @@
         const h = getMoneyHoldings();
         h[slug] = val;
         setMoneyHoldings(h);
+        this._updateMoneyTotal();
       });
       $19(document).on("click.trappings", "#cg-money-exchange-btn", () => {
         this._showExchangeModal();
@@ -7818,6 +7819,20 @@
           parts.push(`Cover ${t.cover_dice}`);
         return parts.join(", ");
       }
+    },
+    // Update only the total line — called on every keystroke so inputs keep focus
+    _updateMoneyTotal() {
+      const totalEl = document.querySelector("#cg-money-panel .cg-money-total strong");
+      if (!totalEl)
+        return;
+      const holdings = getMoneyHoldings();
+      const currencies = this._currencyList;
+      const totalDenarii = currencies.reduce((sum, c) => {
+        const count = parseFloat(holdings[c.slug] || 0);
+        const rate = parseFloat(c.value_denarii || 0);
+        return sum + count * rate;
+      }, 0);
+      totalEl.textContent = `${totalDenarii.toFixed(2)}D`;
     },
     _renderMoneyPanel() {
       const panel = document.getElementById("cg-money-panel");
