@@ -488,17 +488,28 @@ function loc_character_generator_shortcode() {
             cgAjax('cg_logout_user', {}).then(function() { showAuth(); });
         });
 
-        // Load jQuery if WordPress hasn't provided it, then run init
-        if (typeof window.jQuery === 'undefined' && typeof jQuery !== 'undefined') {
-            window.jQuery = jQuery;
+        // Run init once jQuery is confirmed available.
+        // TT4 / modern WP themes load jQuery with defer, so it may not be present
+        // when the inline script runs — wait for DOMContentLoaded first, then
+        // fall back to a CDN copy if WordPress still hasn't provided it.
+        function startInit() {
+            if (typeof window.jQuery === 'undefined' && typeof jQuery !== 'undefined') {
+                window.jQuery = jQuery;
+            }
+            if (typeof window.jQuery === 'undefined') {
+                var jq = document.createElement('script');
+                jq.src = 'https://code.jquery.com/jquery-3.7.1.min.js';
+                jq.onload = function() { init(); };
+                document.head.appendChild(jq);
+            } else {
+                init();
+            }
         }
-        if (typeof window.jQuery === 'undefined') {
-            var jq = document.createElement('script');
-            jq.src = appUrl + '/vendor/jquery/dist/jquery.js';
-            jq.onload = function() { init(); };
-            document.head.appendChild(jq);
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', startInit);
         } else {
-            init();
+            startInit();
         }
     })();
     </script>
