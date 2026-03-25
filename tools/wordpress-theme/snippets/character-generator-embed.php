@@ -25,6 +25,21 @@ if ( ! defined( 'CG_APP_URL' ) ) {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
+// Cache prevention — the SSO token is one-time; cached pages would replay an
+// expired token and break auto-login for every visitor.
+// ──────────────────────────────────────────────────────────────────────────────
+add_action( 'template_redirect', function () {
+    if ( ! is_singular() ) return;
+    global $post;
+    if ( ! $post || ! has_shortcode( $post->post_content, 'character_generator' ) ) return;
+    // Tell every major WordPress caching plugin to skip this page.
+    if ( ! defined( 'DONOTCACHEPAGE' ) ) define( 'DONOTCACHEPAGE', true );
+    if ( ! defined( 'DONOTCACHEDB' )   ) define( 'DONOTCACHEDB',   true );
+    // Send HTTP headers so CDNs and browsers also don't cache it.
+    nocache_headers();
+}, 1 );
+
+// ──────────────────────────────────────────────────────────────────────────────
 // Shortcode: [character_generator]
 // Also callable directly as loc_character_generator_shortcode()
 // ──────────────────────────────────────────────────────────────────────────────
