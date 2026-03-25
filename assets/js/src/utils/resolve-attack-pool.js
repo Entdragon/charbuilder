@@ -66,15 +66,28 @@ export function resolveAttackPool(raw, { FormBuilderAPI, SpeciesAPI, CareerAPI }
   const poolPart = vsIdx > -1 ? raw.slice(0, vsIdx) : raw;
   const parts    = poolPart.split(',').map(s => s.trim()).filter(Boolean);
 
+  // Pattern: NdX literal (e.g. "3d6", "2d8") — expand into N individual dice.
+  const ndxPat = /^(\d+)(d\d+)$/i;
+
   const allDice = [];
   for (const p of parts) {
     const key = p.toLowerCase();
+
     if (traitMap[key]) {
       allDice.push(traitMap[key]);
     } else if (skillPoolMap[key]) {
       allDice.push(...skillPoolMap[key].split(' + ').map(d => d.trim()).filter(Boolean));
     } else {
-      allDice.push(p);
+      // NdX literal (e.g. "3d6") — push N copies of the die
+      const ndx = key.match(ndxPat);
+      if (ndx) {
+        const n   = parseInt(ndx[1], 10);
+        const die = ndx[2].toLowerCase();
+        for (let i = 0; i < n; i++) allDice.push(die);
+      } else {
+        // Unknown token — pass through as-is so caller can decide
+        allDice.push(p);
+      }
     }
   }
   return allDice.filter(Boolean).join(' + ');

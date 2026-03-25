@@ -186,3 +186,33 @@
   font-style: italic;
   font-size:  0.9rem;
 }
+
+// ── Spells section ──────────────────────────────────────────────────────────
+.cg-spells-section {
+  margin-top: 1.5rem;
+}
+
+.cg-spell-group {
+  margin-bottom: 1rem;
+}
+
+.cg-spell-group-head {
+  font-size:   0.9rem;
+  font-weight: 700;
+  color:       var(--cg-accent, #5a3e1b);
+  border-bottom: 1px solid var(--cg-border, #c4a97a);
+  margin:      0.5rem 0 0.25rem;
+  padding-bottom: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cg-spells-table {
+  td, th { font-size: 0.78rem; }
+  .cg-spell-name   { font-weight: 600; white-space: nowrap; }
+  .cg-spell-pool   { font-family: monospace; white-space: nowrap; }
+  .cg-spell-equip,
+  .cg-spell-range  { white-space: nowrap; }
+  .cg-spell-effect { max-width: 200px; }
+  .cg-spell-desc   { color: var(--cg-text-muted, #6a5b3e); font-size: 0.72rem; }
+}

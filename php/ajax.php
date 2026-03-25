@@ -110,6 +110,9 @@ $actionFiles = [
 
     'cg_ping'                => 'actions/diagnostics.php',
     'cg_run_diagnostics'     => 'actions/diagnostics.php',
+
+    'cg_get_spells_for_gifts' => 'actions/spells.php',
+    'cg_install_spells'       => 'actions/spells.php',
 ];
 
 if (!isset($actionFiles[$action])) {

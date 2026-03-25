@@ -4,12 +4,14 @@
 // Computes Initiative/Dodge/Soak pools from trait values.
 // Manages structured weapon and armor rows.
 // Saves/restores via FormBuilderAPI._data.weapons / ._data.armor.
+// Shows spells granted by the character's gifts (read-only, fetched via AJAX).
 
 import FormBuilderAPI        from '../formBuilder/index.js';
 import CareerAPI             from '../career/api.js';
 import SpeciesAPI            from '../species/api.js';
 import { marksToDice }       from '../../utils/marks-dice.js';
 import { resolveAttackPool } from '../../utils/resolve-attack-pool.js';
+import { compactPool }       from '../../utils/compact-pool.js';
 
 const $ = window.jQuery;
 
@@ -222,6 +224,144 @@ function renderArmorTable(armor) {
   `;
 }
 
+// ---------------------------------------------------------------------------
+// Spells — read-only section rendered below weapons
+// ---------------------------------------------------------------------------
+
+/**
+ * Collect every gift ID the character currently has:
+ *   free choices + career gifts + species gifts + XP gifts.
+ */
+function collectAllGiftIds() {
+  const data = FormBuilderAPI._data || {};
+  const ids  = new Set();
+
+  // Free-choice gifts (array or individual slots)
+  (Array.isArray(data.free_gifts) ? data.free_gifts : []).forEach(id => { if (id) ids.add(String(id)); });
+  if (data.free_gift_1) ids.add(String(data.free_gift_1));
+  if (data.free_gift_2) ids.add(String(data.free_gift_2));
+  if (data.free_gift_3) ids.add(String(data.free_gift_3));
+
+  // XP gifts
+  (Array.isArray(data.xpGifts) ? data.xpGifts : []).forEach(id => { if (id) ids.add(String(id)); });
+
+  // Career gifts from current profile
+  const cp = (CareerAPI && CareerAPI.currentProfile) || {};
+  ['gift_id_1','gift_id_2','gift_id_3','gift1_id','gift2_id','gift3_id'].forEach(k => {
+    if (cp[k]) ids.add(String(cp[k]));
+  });
+  // Career gift replacements (slot overrides)
+  const repl = data.career_gift_replacements || {};
+  Object.values(repl).forEach(id => { if (id) ids.add(String(id)); });
+
+  // Species gifts from current profile
+  const sp = (SpeciesAPI && SpeciesAPI.currentProfile) || {};
+  ['gift_id_1','gift_id_2','gift_id_3','gift1_id','gift2_id','gift3_id'].forEach(k => {
+    if (sp[k]) ids.add(String(sp[k]));
+  });
+
+  return [...ids].filter(id => id && id !== '0');
+}
+
+let _lastSpellGiftKey = '';
+
+/**
+ * Fetch spells from the server for the character's current gift set.
+ * Returns a jQuery Deferred that resolves with the spells array.
+ * Results are cached on _data.spells and only re-fetched when the gift set changes.
+ */
+function fetchSpells() {
+  const giftIds = collectAllGiftIds();
+  const key     = giftIds.slice().sort().join(',');
+
+  // Cache hit — same gift set
+  const data = FormBuilderAPI._data || {};
+  if (key === _lastSpellGiftKey && Array.isArray(data.spells)) {
+    return $.Deferred().resolve(data.spells).promise();
+  }
+
+  if (!giftIds.length) {
+    FormBuilderAPI._data = data;
+    FormBuilderAPI._data.spells = [];
+    _lastSpellGiftKey = key;
+    return $.Deferred().resolve([]).promise();
+  }
+
+  const { ajax_url, nonce } = ajaxEnv();
+  const dfd = $.Deferred();
+
+  const postData = { action: 'cg_get_spells_for_gifts', security: nonce, nonce, _ajax_nonce: nonce };
+  giftIds.forEach((id, i) => { postData[`gift_ids[${i}]`] = id; });
+
+  $.post(ajax_url, postData)
+    .then(res => {
+      let spells = [];
+      if (res && res.success && Array.isArray(res.data)) spells = res.data;
+      FormBuilderAPI._data = FormBuilderAPI._data || {};
+      FormBuilderAPI._data.spells = spells;
+      _lastSpellGiftKey = key;
+      dfd.resolve(spells);
+    })
+    .catch(() => {
+      dfd.resolve([]); // non-fatal — spells section just stays empty
+    });
+
+  return dfd.promise();
+}
+
+function spellAttackPool(spell) {
+  const raw = spell.attack_dice || '';
+  if (!raw) return '—';
+  const resolved = resolveAttackPool(raw);
+  return compactPool(resolved) || raw;
+}
+
+function renderSpellsTable(spells) {
+  if (!Array.isArray(spells) || !spells.length) return '';
+
+  // Group by gift_name for display
+  const groups = {};
+  const order  = [];
+  spells.forEach(s => {
+    const g = s.gift_name || 'Spells';
+    if (!groups[g]) { groups[g] = []; order.push(g); }
+    groups[g].push(s);
+  });
+
+  let html = `<div class="cg-battle-section cg-spells-section">
+    <h4 class="cg-battle-subhead">Spells</h4>`;
+
+  order.forEach(giftName => {
+    const label = giftName === 'Common Magic' ? 'Common Magic Spells' : giftName;
+    html += `
+    <div class="cg-spell-group">
+      <h5 class="cg-spell-group-head">${escape(label)}</h5>
+      <table class="cg-battle-table cg-spells-table">
+        <thead>
+          <tr>
+            <th>Name</th><th>Attack Pool</th><th>Equip</th><th>Range</th><th>Effect</th><th>Descriptors</th>
+          </tr>
+        </thead>
+        <tbody>`;
+
+    groups[giftName].forEach(s => {
+      html += `<tr class="cg-spell-row">
+        <td class="cg-spell-name">${escape(s.name)}</td>
+        <td class="cg-spell-pool">${escape(spellAttackPool(s))}</td>
+        <td class="cg-spell-equip">${escape(s.equip)}</td>
+        <td class="cg-spell-range">${escape(s.range)}</td>
+        <td class="cg-spell-effect">${escape(s.effect)}</td>
+        <td class="cg-spell-desc">${escape(s.descriptors)}</td>
+      </tr>`;
+    });
+
+    html += `</tbody></table></div>`;
+  });
+
+  html += `</div>`;
+  return html;
+}
+
 function readWeaponsFromDom() {
   const out = [];
   document.querySelectorAll('#cg-weapons-tbody .cg-weapon-row').forEach(row => {
@@ -285,24 +425,51 @@ const BattleAPI = {
     if (!hadSkills) {
       ensureSkillsList().then(() => { this._render(container); });
     }
+
+    // Fetch spells for current gifts and render/update the spells section.
+    this._loadSpells(container);
   },
 
   _render(container) {
     const data    = FormBuilderAPI?._data || {};
     const weapons = Array.isArray(data.weapons) ? data.weapons : [];
     const armor   = Array.isArray(data.armor)   ? data.armor   : [];
+    const spells  = Array.isArray(data.spells)  ? data.spells  : [];
     const pools   = buildCombatPools();
 
     container.innerHTML =
       renderPoolsSection(pools) +
       renderWeaponsTable(weapons) +
-      renderArmorTable(armor);
+      renderArmorTable(armor) +
+      renderSpellsTable(spells);
 
     // Persist so that computed attack pools (from _attack_dice_raw)
     // are available to the summary tab even if the user never edits the battle tab.
     persist();
 
     this._bindEvents(container);
+  },
+
+  /**
+   * Fetch spells for the current gift set, then inject/replace the spells section.
+   * Re-uses the _data.spells cache if the gift set hasn't changed.
+   */
+  _loadSpells(container) {
+    fetchSpells().then(spells => {
+      // If the container was re-rendered in the meantime, find the spells slot
+      const existing = container.querySelector('.cg-spells-section');
+      const newHtml  = renderSpellsTable(spells);
+
+      if (existing) {
+        if (newHtml) {
+          existing.outerHTML = newHtml;
+        } else {
+          existing.remove();
+        }
+      } else if (newHtml) {
+        container.insertAdjacentHTML('beforeend', newHtml);
+      }
+    });
   },
 
   _bindEvents(container) {
@@ -359,6 +526,12 @@ const BattleAPI = {
       const t = e.target;
       if (t && t.id && /^cg-(speed|will|body)$/.test(t.id)) refreshPools();
     });
+
+    // Re-fetch spells when gift-related events fire
+    document.addEventListener('cg:career:profile',   () => this._loadSpells(container));
+    document.addEventListener('cg:species:profile',  () => this._loadSpells(container));
+    document.addEventListener('cg:freechoices:changed', () => this._loadSpells(container));
+    document.addEventListener('cg:gifts:changed',    () => this._loadSpells(container));
   },
 
   // Called by collectFormData — ensures DOM state is flushed

@@ -31,6 +31,7 @@ php/
     species.php             # cg_get_species_list, cg_get_species_profile
     equipment.php           # cg_get_money_list, cg_get_equipment_catalog, cg_get_career_trappings, cg_get_gift_trappings
     diagnostics.php         # cg_ping, cg_run_diagnostics
+    spells.php              # cg_install_spells (seed table), cg_get_spells_for_gifts
 assets/
   js/src/                   # ES6 source modules
   js/dist/core.bundle.js    # Bundled JS (esbuild output)

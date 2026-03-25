@@ -8,6 +8,7 @@ import CareerAPI             from '../career/api.js';
 
 import { marksToDice }       from '../../utils/marks-dice.js';
 import { resolveAttackPool } from '../../utils/resolve-attack-pool.js';
+import { compactPool }       from '../../utils/compact-pool.js';
 
 const $ = window.jQuery;
 const TRAITS = TraitsService.TRAITS;
@@ -110,6 +111,9 @@ const SummaryAPI = {
 
     const weapons = Array.isArray(data.weapons) ? data.weapons : [];
     const armor   = Array.isArray(data.armor)   ? data.armor   : [];
+    const spells  = Array.isArray(FormBuilderAPI._data?.spells)
+      ? FormBuilderAPI._data.spells
+      : (Array.isArray(data.spells) ? data.spells : []);
 
     // Full trappings list (from TrappingsAPI — stored directly on FormBuilderAPI._data)
     const trappingsList = Array.isArray(FormBuilderAPI._data?.trappings_list)
@@ -278,6 +282,45 @@ const SummaryAPI = {
             </tr>`;
           }).join('')}</tbody>
         </table>`;
+    }
+
+    // ── Spells block ───────────────────────────────────────────
+    let spellsHtml = '';
+    if (spells.length) {
+      // Group by gift_name
+      const spellGroups = {};
+      const spellOrder  = [];
+      spells.forEach(s => {
+        const g = s.gift_name || 'Spells';
+        if (!spellGroups[g]) { spellGroups[g] = []; spellOrder.push(g); }
+        spellGroups[g].push(s);
+      });
+
+      let spellTables = '';
+      spellOrder.forEach(gName => {
+        const label = gName === 'Common Magic' ? 'Common Magic Spells' : gName;
+        const rows = spellGroups[gName].map(s => {
+          const pool = compactPool(resolveAttackPool(s.attack_dice || '')) || (s.attack_dice || '—');
+          return `<tr>
+            <td>${s.name || '—'}</td>
+            <td>${pool || '—'}</td>
+            <td>${s.equip || '—'}</td>
+            <td>${s.range || '—'}</td>
+            <td>${s.effect || ''}</td>
+            <td>${s.descriptors || ''}</td>
+          </tr>`;
+        }).join('');
+        spellTables += `
+          <h5 class="summary-spell-group-head">${label}</h5>
+          <table class="cg-battle-summary-table cg-spells-summary-table">
+            <thead><tr><th>Name</th><th>Attack Pool</th><th>Equip</th><th>Range</th><th>Effect</th><th>Descriptors</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>`;
+      });
+
+      spellsHtml = `
+        <h4 class="summary-sub-heading">Spells</h4>
+        ${spellTables}`;
     }
 
     // ── Armor block ────────────────────────────────────────────
@@ -503,6 +546,7 @@ const SummaryAPI = {
             </div>
             ${weaponsHtml}
             ${armorHtml}
+            ${spellsHtml}
           </div>
 
         </div><!-- /col-right -->

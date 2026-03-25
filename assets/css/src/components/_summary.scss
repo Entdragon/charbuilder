@@ -287,3 +287,19 @@
   background:    rgba(201,168,76,0.05);
   border-radius: 0 var(--cg-radius, 4px) var(--cg-radius, 4px) 0;
 }
+
+// ── Summary spells ────────────────────────────────────────────────
+.summary-spell-group-head {
+  font-size:     0.78rem;
+  font-weight:   700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color:         var(--cg-accent, #5a3e1b);
+  margin:        0.6em 0 0.2em;
+  border-bottom: 1px solid var(--cg-border, #c4a97a);
+  padding-bottom: 1px;
+}
+
+.cg-spells-summary-table {
+  td, th { font-size: 0.75rem; }
+}
