@@ -7385,6 +7385,10 @@
         if (this._pendingCareer === careerId)
           return;
         this._pendingCareer = careerId;
+        const trappingsPanel = document.getElementById("cg-trappings-panel");
+        if (trappingsPanel) {
+          trappingsPanel.innerHTML = '<div class="cg-trap-loading"><em>Loading career trappings\u2026</em></div>';
+        }
         const { ajax_url, nonce } = ajaxEnv6();
         if (!ajax_url)
           return;
@@ -8158,12 +8162,22 @@
           const data = (FB == null ? void 0 : FB._data) || {};
           const list = Array.isArray(data.trappings_list) ? data.trappings_list : [];
           const careerId = parseInt(data.career_id || data.career || "0", 10);
+          const speciesId = parseInt(data.species || "0", 10);
           if (careerId > 0 && !list.some((t) => t.source === "career")) {
             trappings_default._fillCareerTrappings(careerId);
           }
           const hasSpeciesWeapons = list.some((t) => t.source === "species");
-          if (!hasSpeciesWeapons) {
-            trappings_default._fillSpeciesWeapons();
+          if (!hasSpeciesWeapons && speciesId > 0) {
+            if (api_default.currentProfile) {
+              trappings_default._fillSpeciesWeapons();
+              trappings_default._renderAll();
+            } else {
+              api_default.fetchProfile(speciesId).then(() => {
+                trappings_default._fillSpeciesWeapons();
+                trappings_default._renderAll();
+              }).catch(() => {
+              });
+            }
           }
         } catch (_) {
         }
