@@ -1,0 +1,53 @@
+[Core] bundle loaded (#1)
+index.js:73 [Core] init() called
+index.js:73 [MainAPI] init() called
+index.js:73 [BuilderEvents] bindUIEvents() called
+index.js:73 [BuilderLoad] init
+index.js:73 [BuilderLoad] populating #cg-splash-load-select
+index.js:73 [BuilderLoad] fetching characters via AJAX… 
+characters.libraryofcalbria.com/api/ajax:1  Failed to load resource: the server responded with a status of 500 ()Understand this error
+free-choices.js:123 [FreeChoices] Failed to fetch gifts error
+warn3 @ free-choices.js:123
+(anonymous) @ ui.js:165
+rejected @ core.bundle.js:32Understand this warning
+index.js:73 [BuilderLoad] fetched 7 records
+events.js:23 [BuilderUI] openBuilder() Object
+form-builder.js:45 🛠️ FormBuilder.buildForm fired: Object
+api.js:7 [SpeciesAPI] Fetching species via AJAX…
+api.js:9 [CareerAPI] Fetching careers via AJAX…
+index.js:30 🔽 [buildForm] SELECT VALUES AFTER RENDER: Object
+events.js:43 [SpeciesEvents] selected species → 
+extra.js:71 [CareerEvents] selected career → 
+characters.libraryofcalbria.com/api/ajax:1  Failed to load resource: the server responded with a status of 500 ()Understand this error
+api.js:10 [CareerAPI] AJAX career list failed: error  {"success":false,"data":"Server error. Please try again."}
+warn2 @ api.js:10Understand this warning
+api.js:7 [SpeciesAPI] Species list fetched: 116
+api.js:9 [CareerAPI] Fetching careers via AJAX…
+characters.libraryofcalbria.com/api/ajax:1  Failed to load resource: the server responded with a status of 500 ()Understand this error
+api.js:10 [CareerAPI] AJAX career list failed: error  {"success":false,"data":"Server error. Please try again."}
+warn2 @ api.js:10Understand this warning
+events.js:43 [SpeciesEvents] selected species → 3
+api.js:7 [SpeciesAPI] Fetching species profile 3
+characters.libraryofcalbria.com/api/ajax:1  Failed to load resource: the server responded with a status of 500 ()Understand this error
+api.js:8 [SpeciesAPI] AJAX species profile failed: error  {"success":false,"data":"Server error. Please try again."}
+warn @ api.js:8Understand this warning
+api.js:9 [CareerAPI] Fetching careers via AJAX…
+characters.libraryofcalbria.com/api/ajax:1  Failed to load resource: the server responded with a status of 500 ()Understand this error
+api.js:10 [CareerAPI] AJAX career list failed: error  {"success":false,"data":"Server error. Please try again."}
+warn2 @ api.js:10Understand this warning
+api.js:9 [CareerAPI] Fetching careers via AJAX…
+characters.libraryofcalbria.com/api/ajax:1  Failed to load resource: the server responded with a status of 500 ()Understand this error
+api.js:10 [CareerAPI] AJAX career list failed: error  {"success":false,"data":"Server error. Please try again."}
+warn2 @ api.js:10Understand this warning
+api.js:9 [CareerAPI] Fetching careers via AJAX…
+characters.libraryofcalbria.com/api/ajax:1  Failed to load resource: the server responded with a status of 500 ()Understand this error
+api.js:10 [CareerAPI] AJAX career list failed: error  {"success":false,"data":"Server error. Please try again."}
+warn2 @ api.js:10Understand this warning
+api.js:9 [CareerAPI] Fetching careers via AJAX…
+characters.libraryofcalbria.com/api/ajax:1  Failed to load resource: the server responded with a status of 500 ()Understand this error
+api.js:10 [CareerAPI] AJAX career list failed: error  {"success":false,"data":"Server error. Please try again."}
+warn2 @ api.js:10Understand this warning
+api.js:9 [CareerAPI] Fetching careers via AJAX…
+characters.libraryofcalbria.com/api/ajax:1  Failed to load resource: the server responded with a status of 500 ()Understand this error
+api.js:10 [CareerAPI] AJAX career list failed: error  {"success":false,"data":"Server error. Please try again."}
+warn2 @ api.js:10Understand this warning
