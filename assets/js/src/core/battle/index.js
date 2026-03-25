@@ -122,10 +122,10 @@ function buildCombatPools() {
   const dodgeDice      = [speed, ...dodgeSkillPool.split('+').map(s => s.trim()).filter(s => diePat.test(s))];
 
   // Check which passive gift bonuses are active
-  const activeGifts  = collectAllGiftIds();
+  const activeGifts  = collectAllGiftIds(); // array of string IDs
   const extraSoak    = [];
-  if (activeGifts.has(String(GIFT_SOAK_ADD_WILL))    && will)    extraSoak.push(will);
-  if (activeGifts.has(String(GIFT_SOAK_ADD_SPECIES)) && species) extraSoak.push(species);
+  if (activeGifts.includes(String(GIFT_SOAK_ADD_WILL))    && will)    extraSoak.push(will);
+  if (activeGifts.includes(String(GIFT_SOAK_ADD_SPECIES)) && species) extraSoak.push(species);
 
   return {
     initiative: poolString(speed, mind),

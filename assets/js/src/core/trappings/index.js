@@ -843,9 +843,9 @@ const TrappingsAPI = {
     const filterKind = kindEl?.value  || '';
     const filterCat  = catEl?.value   || '';
 
-    // Rebuild category dropdown options from catalog (respects current kind filter)
+    // Rebuild category dropdown options from catalog (respects cost + kind filter)
     if (catEl) {
-      const kindScope = catalog.filter(c => !filterKind || c.kind === filterKind);
+      const kindScope = catalog.filter(c => parseFloat(c.cost_d) > 0 && (!filterKind || c.kind === filterKind));
       const cats = [...new Map(kindScope.map(c => [c.category, c.category_label || c.category])).entries()]
         .sort((a, b) => (a[1] || '').localeCompare(b[1] || ''));
       const currentCat = catEl.value;
@@ -855,7 +855,7 @@ const TrappingsAPI = {
         ).join('');
     }
 
-    let items = catalog;
+    let items = catalog.filter(c => parseFloat(c.cost_d) > 0);
     if (search)     items = items.filter(c => (c.name || '').toLowerCase().includes(search));
     if (filterKind) items = items.filter(c => c.kind === filterKind);
     if (filterCat)  items = items.filter(c => c.category === filterCat);
