@@ -184,14 +184,7 @@ function cg_get_free_gifts(): void {
         // gift_sections may not exist — skip enrichment
     }
 
-    // Fetch all requirements in one query and reconstruct flat ct_gifts_requires* columns
-    $reqs = cg_query("
-        SELECT ct_gift_id, ct_sort, ct_req_kind, ct_req_ref_id, ct_req_text
-        FROM {$r}
-        ORDER BY ct_gift_id ASC, ct_sort ASC
-    ");
-
-    // Column-name suffix arrays matching the old flat schema
+    // Suffix maps for rebuilding flat ct_gifts_requires* columns (legacy JS path)
     $requireSuffixes = [
         1 => '',        2 => '_two',     3 => '_three',   4 => '_four',
         5 => '_five',   6 => '_six',     7 => '_seven',   8 => '_eight',
@@ -204,15 +197,35 @@ function cg_get_free_gifts(): void {
         5 => '_five', 6 => '_six',   7 => '_seven', 8 => '_eight',
     ];
 
+    // Fetch gift_requirements and attach as:
+    //   (a) structured `requirements` array  (used by evaluateStructuredPrereqs)
+    //   (b) flat ct_gifts_requires* columns  (used by extractRequiredGiftIds)
+    $reqs = cg_query("
+        SELECT ct_gift_id, ct_sort, ct_req_kind, ct_req_ref_id, ct_req_text
+        FROM {$r}
+        ORDER BY ct_gift_id ASC, ct_sort ASC
+    ");
+
     foreach ($reqs as $req) {
         $gId  = (int) $req['ct_gift_id'];
         $sort = (int) $req['ct_sort'];
         $kind = (string) $req['ct_req_kind'];
 
-        if (!isset($byId[$gId])) {
-            continue;
-        }
+        if (!isset($byId[$gId])) continue;
 
+        // (a) structured requirements array
+        if (!isset($byId[$gId]['requirements'])) {
+            $byId[$gId]['requirements'] = [];
+        }
+        $byId[$gId]['requirements'][] = [
+            'gift_id' => $gId,
+            'sort'    => $sort,
+            'kind'    => $kind,
+            'ref_id'  => $req['ct_req_ref_id'] !== null ? (int) $req['ct_req_ref_id'] : null,
+            'text'    => $req['ct_req_text'] ?? '',
+        ];
+
+        // (b) flat columns (legacy)
         if ($kind === 'gift_ref') {
             if (!isset($requireSuffixes[$sort])) continue;
             $col = 'ct_gifts_requires' . $requireSuffixes[$sort];
@@ -228,6 +241,25 @@ function cg_get_free_gifts(): void {
             $col = 'ct_gifts_requires_special' . $specialSuffixes[$sort];
             $byId[$gId][$col] = (string) $req['ct_req_text'];
         }
+    }
+
+    // Fetch gift_prereq (structured species/trait/GM prereqs) and attach as `prereqs` array.
+    // This table may not exist on all installs — gracefully skip if absent.
+    try {
+        $prereqRows = cg_query("
+            SELECT id, gift_id, slot, kind, raw_text, req_key, req_value,
+                   trait_key, die_min, comparator, qty_required
+            FROM {$p}customtables_table_gift_prereq
+            ORDER BY gift_id ASC, slot ASC
+        ");
+        foreach ($prereqRows as $pr) {
+            $gId = (int) $pr['gift_id'];
+            if (!isset($byId[$gId])) continue;
+            if (!isset($byId[$gId]['prereqs'])) $byId[$gId]['prereqs'] = [];
+            $byId[$gId]['prereqs'][] = $pr;
+        }
+    } catch (Throwable $e) {
+        // gift_prereq table absent — filtering falls back to flat columns and requires_special text
     }
 
     cg_json(['success' => true, 'data' => array_values($byId)]);
