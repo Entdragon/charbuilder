@@ -290,6 +290,18 @@ export default function bindUIEvents() {
   bindLoadEvents();
   bindSaveEvents();
 
+  // 5b) Global activity indicator — shown whenever any jQuery AJAX request is in flight
+  $(document)
+    .off('ajaxStart.cg ajaxStop.cg')
+    .on('ajaxStart.cg', () => {
+      const el = document.getElementById('cg-busy-indicator');
+      if (el) { el.classList.remove('cg-busy-hidden'); }
+    })
+    .on('ajaxStop.cg', () => {
+      const el = document.getElementById('cg-busy-indicator');
+      if (el) { el.classList.add('cg-busy-hidden'); }
+    });
+
   // 6) Tab navigation → highlight panel + run refreshTab() and gently rehydrate lists
   $(document)
     .off('click.cg', '#cg-modal .cg-tabs li')

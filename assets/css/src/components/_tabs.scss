@@ -1,12 +1,59 @@
+/* ── Tab bar wrapper (holds tabs + busy indicator side-by-side) ── */
+.cg-tabs-bar {
+  display:         flex;
+  align-items:     stretch;
+  background:      var(--cg-parchment-2);
+  border-bottom:   2px solid var(--cg-parchment-3);
+}
+
 .cg-tabs {
-  list-style:     none;
-  display:        flex;
+  list-style:      none;
+  display:         flex;
   justify-content: flex-start;
-  gap:            0;
-  padding:        0;
-  margin:         0;
-  background:     var(--cg-parchment-2);
-  border-bottom:  2px solid var(--cg-parchment-3);
+  flex:            1 1 auto;
+  gap:             0;
+  padding:         0;
+  margin:          0;
+  background:      transparent;
+  border-bottom:   none;
+}
+
+/* ── Activity indicator ─────────────────────────────────────────── */
+.cg-busy-indicator {
+  display:         flex;
+  align-items:     center;
+  gap:             0.4em;
+  padding:         0 0.9em;
+  flex-shrink:     0;
+  opacity:         1;
+  transition:      opacity 0.2s ease;
+}
+
+.cg-busy-hidden {
+  opacity:         0;
+  pointer-events:  none;
+}
+
+.cg-busy-dot {
+  width:           8px;
+  height:          8px;
+  border-radius:   50%;
+  background:      var(--cg-gold, #b8860b);
+  display:         inline-block;
+  animation:       cg-pulse 1.1s ease-in-out infinite;
+}
+
+.cg-busy-label {
+  font-size:       0.72em;
+  font-family:     'Cinzel', Georgia, serif;
+  letter-spacing:  0.04em;
+  color:           var(--cg-gold, #b8860b);
+  white-space:     nowrap;
+}
+
+@keyframes cg-pulse {
+  0%, 100% { opacity: 0.3; transform: scale(0.85); }
+  50%       { opacity: 1;   transform: scale(1.15); }
 }
 
 .cg-tabs li {

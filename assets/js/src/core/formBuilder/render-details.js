@@ -22,15 +22,21 @@ function capitalize(str = '') {
 export default {
   renderTabs() {
     return `
-      <ul class="cg-tabs">
-        <li data-tab="tab-details" class="active">Details</li>
-        <li data-tab="tab-traits">Traits, Species, Careers</li>
-        <li data-tab="tab-gifts">Gifts</li>
-        <li data-tab="tab-skills">Skills</li>
-        <li data-tab="tab-trappings">Battle &amp; Equipment</li>
-        <li data-tab="tab-description">Description</li>
-        <li data-tab="tab-summary">Character Sheet</li>
-      </ul>
+      <div class="cg-tabs-bar">
+        <ul class="cg-tabs">
+          <li data-tab="tab-details" class="active">Details</li>
+          <li data-tab="tab-traits">Traits, Species, Careers</li>
+          <li data-tab="tab-gifts">Gifts</li>
+          <li data-tab="tab-skills">Skills</li>
+          <li data-tab="tab-trappings">Battle &amp; Equipment</li>
+          <li data-tab="tab-description">Description</li>
+          <li data-tab="tab-summary">Character Sheet</li>
+        </ul>
+        <div id="cg-busy-indicator" class="cg-busy-indicator cg-busy-hidden" aria-live="polite" aria-label="Loading">
+          <span class="cg-busy-dot"></span>
+          <span class="cg-busy-label">Loading…</span>
+        </div>
+      </div>
     `;
   },
 
