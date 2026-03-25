@@ -2,6 +2,37 @@
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/password.php';
 
+/**
+ * Fallback: delegate authentication to WordPress's wp_authenticate() via the
+ * proxy (mirrors the Node.js verifyViaProxy fallback).  Used when the local
+ * password check fails for $wp$ hashes — handles auth plugins and any bcrypt
+ * compatibility edge cases.
+ */
+function cg_wp_auth_check(string $username, string $password): bool {
+    $proxyUrl    = CG_PROXY_URL;
+    $proxySecret = CG_PROXY_SECRET;
+    if (!$proxyUrl || !$proxySecret) return false;
+
+    $payload = json_encode(['action' => 'wp_auth_check', 'username' => $username, 'password' => $password]);
+    $opts = [
+        'http' => [
+            'method'        => 'POST',
+            'header'        => implode("\r\n", [
+                'Content-Type: application/json',
+                'X-CG-Secret: ' . $proxySecret,
+                'Content-Length: ' . strlen($payload),
+            ]),
+            'content'       => $payload,
+            'timeout'       => 10,
+            'ignore_errors' => true,
+        ],
+    ];
+    $raw  = @file_get_contents($proxyUrl, false, stream_context_create($opts));
+    if (!$raw) return false;
+    $data = json_decode($raw, true);
+    return !empty($data['success']);
+}
+
 function cg_login_user(): void {
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
@@ -18,7 +49,15 @@ function cg_login_user(): void {
         [$username, $username]
     );
 
-    if (!$row || !cg_check_password($password, $row['user_pass'])) {
+    $authenticated = $row && cg_check_password($password, $row['user_pass']);
+
+    // Fallback: if local check fails for a $wp$ hash, ask WordPress directly.
+    // Mirrors the Node.js verifyViaProxy() behaviour.
+    if (!$authenticated && $row && str_starts_with($row['user_pass'] ?? '', '$wp$')) {
+        $authenticated = cg_wp_auth_check($username, $password);
+    }
+
+    if (!$authenticated) {
         cg_json(['success' => false, 'data' => 'Invalid username or password.']);
         return;
     }
