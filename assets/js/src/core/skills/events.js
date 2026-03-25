@@ -10,6 +10,8 @@ import SkillsRender   from './render.js';
 const $ = window.jQuery;
 
 let _pendingRender = false;
+let _onSpeciesProfile = null;
+let _onCareerProfile  = null;
 
 function isSkillsTabActive() {
   try {
@@ -58,6 +60,16 @@ export default {
       .on('change.cgskills', '#cg-species, #cg-career', () => {
         requestRender('species/career change');
       });
+
+    // 3b) Re-render when species or career profiles finish loading
+    //     (profile arrives asynchronously; the first render may have had null profiles)
+    if (_onSpeciesProfile) document.removeEventListener('cg:species:profile', _onSpeciesProfile, true);
+    _onSpeciesProfile = () => requestRender('species profile loaded');
+    document.addEventListener('cg:species:profile', _onSpeciesProfile, true);
+
+    if (_onCareerProfile) document.removeEventListener('cg:career:profile', _onCareerProfile, true);
+    _onCareerProfile = () => requestRender('career profile loaded');
+    document.addEventListener('cg:career:profile', _onCareerProfile, true);
 
     // 4) Extra careers changed
     $(document)

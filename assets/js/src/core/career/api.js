@@ -261,6 +261,10 @@ const CareerAPI = {
 
         const normalized = normalizeCareerProfileShape(profRaw);
         this.currentProfile = normalized;
+        document.dispatchEvent(new CustomEvent('cg:career:profile', {
+          bubbles: true,
+          detail: { id: String(wantedId), profile: normalized }
+        }));
         return normalized;
       })
       .fail((xhr, status, err) => {
