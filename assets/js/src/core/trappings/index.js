@@ -201,6 +201,8 @@ const TrappingsAPI = {
       const h   = getMoneyHoldings();
       h[slug]   = val;
       setMoneyHoldings(h);
+      // Update the total display without re-rendering the whole panel
+      this._updateMoneyTotal();
     });
 
     // Delegated: exchange Zhongguo ↔ Calabrese
@@ -692,6 +694,22 @@ const TrappingsAPI = {
       if (t.cover_dice) parts.push(`Cover ${t.cover_dice}`);
       return parts.join(', ');
     }
+  },
+
+  // Update only the total line — called on every keystroke so inputs keep focus
+  _updateMoneyTotal() {
+    const totalEl = document.querySelector('#cg-money-panel .cg-money-total strong');
+    if (!totalEl) return;
+
+    const holdings   = getMoneyHoldings();
+    const currencies = this._currencyList;
+    const totalDenarii = currencies.reduce((sum, c) => {
+      const count = parseFloat(holdings[c.slug] || 0);
+      const rate  = parseFloat(c.value_denarii  || 0);
+      return sum + (count * rate);
+    }, 0);
+
+    totalEl.textContent = `${totalDenarii.toFixed(2)}D`;
   },
 
   _renderMoneyPanel() {
