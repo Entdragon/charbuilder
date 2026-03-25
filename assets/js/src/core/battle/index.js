@@ -9,6 +9,7 @@ import FormBuilderAPI        from '../formBuilder/index.js';
 import CareerAPI             from '../career/api.js';
 import SpeciesAPI            from '../species/api.js';
 import { marksToDice }       from '../../utils/marks-dice.js';
+import { resolveAttackPool } from '../../utils/resolve-attack-pool.js';
 
 const $ = window.jQuery;
 
@@ -32,89 +33,17 @@ function poolString(...dice) {
   return dice.filter(Boolean).join(' + ') || '—';
 }
 
-// Parse a raw attack_dice string like "Body, Species, Brawling vs. defense"
-// and replace known trait and skill keywords with actual die values.
-// Traits are read live from the DOM; skills use the full pool:
-//   species trait die (if species skill) + career trait die (if career skill) + marksToDice(totalMarks)
-function resolveAttackPool(raw) {
-  if (!raw) return '';
-
-  // ── Trait keyword → current die ────────────────────────────────────────────
-  const traitMap = {
-    'body':    traitDie('body'),
-    'speed':   traitDie('speed'),
-    'will':    traitDie('will'),
-    'mind':    traitDie('mind'),
-    'species': traitDie('trait_species'),
-    'career':  traitDie('trait_career'),
-  };
-
-  // ── Skill data ──────────────────────────────────────────────────────────────
-  const data       = FormBuilderAPI._data || {};
-  const skillsList = data.skillsList  || [];
-  const skillMarks = data.skillMarks  || {};
-  const giftMarks  = data.gift_skill_marks || {};
-  const xpMarks    = data.xpSkillMarks     || {};
-
-  // Species skills: currentProfile.skill_one/two/three hold TEXT NAMES (from species_traits.text_value)
-  const sp        = SpeciesAPI?.currentProfile || {};
-  const spNames   = [sp.skill_one, sp.skill_two, sp.skill_three]
-    .filter(Boolean).map(s => String(s).toLowerCase());
-  const spDie     = traitDie('trait_species');
-
-  // Career skills: currentProfile.skill_one/two/three hold SKILL IDs
-  const cp       = CareerAPI?.currentProfile || {};
-  const cpIds    = [cp.skill_one, cp.skill_two, cp.skill_three]
-    .filter(Boolean).map(s => String(s));
-  const cpDie    = traitDie('trait_career');
-
-  // Build a map: skill name (lowercase) → full dice pool string
-  const skillPoolMap = {};
-  for (const skill of skillsList) {
-    const id     = String(skill.id);
-    const key    = skill.name.toLowerCase();
-    const my     = parseInt(skillMarks[id], 10) || 0;
-    const gift   = parseInt(giftMarks[id],  10) || 0;
-    const xp     = parseInt(xpMarks[id],    10) || 0;
-    const total  = my + gift + xp;
-    const markDie = marksToDice(total);
-
-    const pool = [];
-    if (spNames.includes(key)   && spDie) pool.push(spDie);
-    if (cpIds.includes(id)      && cpDie) pool.push(cpDie);
-    if (markDie)                          pool.push(markDie);
-
-    if (pool.length) skillPoolMap[key] = pool.join(' + ');
-  }
-
-  // ── Parse the formula ───────────────────────────────────────────────────────
-  const vsIdx    = raw.toLowerCase().indexOf(' vs.');
-  const poolPart = vsIdx > -1 ? raw.slice(0, vsIdx) : raw;
-  const parts    = poolPart.split(',').map(s => s.trim()).filter(Boolean);
-
-  const allDice = [];
-  for (const p of parts) {
-    const key = p.toLowerCase();
-    if (traitMap[key]) {
-      allDice.push(traitMap[key]);
-    } else if (skillPoolMap[key]) {
-      // Expand full skill pool — may be multiple dice (e.g. "d8 + d8")
-      allDice.push(...skillPoolMap[key].split(' + ').map(d => d.trim()).filter(Boolean));
-    } else {
-      allDice.push(p); // Unknown keyword — keep as text
-    }
-  }
-  return allDice.filter(Boolean).join(' + ');
-}
 
 function buildCombatPools() {
   const speed = traitDie('speed');
   const will  = traitDie('will');
   const body  = traitDie('body');
+  const data  = FormBuilderAPI?._data || {};
+  const armorSoak = (Array.isArray(data.armor) ? data.armor : []).map(a => a.soak).filter(Boolean);
   return {
     initiative: poolString(speed, will),
     dodge:      poolString(speed, will),
-    soak:       poolString(body),
+    soak:       poolString(body, ...armorSoak),
   };
 }
 
@@ -136,7 +65,7 @@ function renderPoolsSection(pools) {
         <div class="cg-pool-block">
           <span class="cg-pool-label">Soak</span>
           <span class="cg-pool-dice" id="cg-battle-soak">${escape(pools.soak)}</span>
-          <span class="cg-pool-note">(Body)</span>
+          <span class="cg-pool-note">(Body + Armour)</span>
         </div>
       </div>
       <div class="cg-wound-track">
@@ -280,6 +209,10 @@ const BattleAPI = {
       renderPoolsSection(pools) +
       renderWeaponsTable(weapons) +
       renderArmorTable(armor);
+
+    // Immediately persist so that computed attack pools (from _attack_dice_raw)
+    // are available to the summary tab even if the user never edits the battle tab.
+    persist();
 
     this._bindEvents(container);
   },

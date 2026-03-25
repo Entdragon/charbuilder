@@ -1,12 +1,13 @@
 // assets/js/src/core/summary/api.js
 
-import FormBuilderAPI from '../formBuilder';
-import * as Utils     from './utils.js';
-import TraitsService  from '../traits/service.js';
-import SpeciesAPI     from '../species/api.js';
-import CareerAPI      from '../career/api.js';
+import FormBuilderAPI        from '../formBuilder';
+import * as Utils            from './utils.js';
+import TraitsService         from '../traits/service.js';
+import SpeciesAPI            from '../species/api.js';
+import CareerAPI             from '../career/api.js';
 
-import { marksToDice } from '../../utils/marks-dice.js';
+import { marksToDice }       from '../../utils/marks-dice.js';
+import { resolveAttackPool } from '../../utils/resolve-attack-pool.js';
 
 const $ = window.jQuery;
 const TRAITS = TraitsService.TRAITS;
@@ -131,7 +132,8 @@ const SummaryAPI = {
     function dicePools(...dice) { return dice.filter(Boolean).join(' + ') || '—'; }
     const initiative = dicePools(data.speed, data.will);
     const dodge      = dicePools(data.speed, data.will);
-    const soak       = dicePools(data.body);
+    const armorSoakDice = armor.map(a => a.soak).filter(Boolean);
+    const soak       = dicePools(data.body, ...armorSoakDice);
 
     const allCareerNames = [career.careerName].filter(Boolean);
     extraCareers.forEach(ec => { if (ec.name) allCareerNames.push(ec.name); });
@@ -226,16 +228,21 @@ const SummaryAPI = {
     }
 
     // ── Skills block ───────────────────────────────────────────
-    const spIds = [species.skill_one, species.skill_two, species.skill_three].map(String);
-    const cpIds = [career.skill_one,  career.skill_two,  career.skill_three].map(String);
+    // Species skills are stored as TEXT NAMES; career skills are stored as numeric IDs.
+    const spTraitDie = data['trait_species'] || '';
+    const cpTraitDie = data['trait_career']  || '';
+    const spNames    = [species.skill_one, species.skill_two, species.skill_three]
+      .filter(Boolean).map(s => String(s).toLowerCase());
+    const cpIds      = [career.skill_one, career.skill_two, career.skill_three].map(String);
     const ecSkillSets = extraCareers.map(ec =>
       (Array.isArray(ec.skills) ? ec.skills : []).map(String)
     );
     let skillsHtml = '';
     skills.forEach(skill => {
-      const id    = String(skill.id);
-      const spDie = spIds.includes(id) ? 'd4' : '';
-      const cpDie = cpIds.includes(id) ? 'd6' : '';
+      const id      = String(skill.id);
+      const nameLow = skill.name.toLowerCase();
+      const spDie   = (spTraitDie && spNames.includes(nameLow)) ? spTraitDie : '';
+      const cpDie   = (cpTraitDie && cpIds.includes(id))        ? cpTraitDie : '';
       const ecDies = ecSkillSets.map(set => set.includes(id) ? 'd4' : '').filter(Boolean);
       const totalMk = (parseInt(marks[id], 10) || 0) + (parseInt(xpMarks[id], 10) || 0);
       const mkDie   = marksToDice(totalMk);
@@ -255,11 +262,14 @@ const SummaryAPI = {
         <h4 class="summary-sub-heading">Weapons</h4>
         <table class="cg-battle-summary-table">
           <thead><tr><th>Name</th><th>Attack Pool</th><th>Damage</th><th>Range</th><th>Notes</th></tr></thead>
-          <tbody>${weapons.map(w => `<tr>
-            <td>${w.name   || '—'}</td><td>${w.attack || '—'}</td>
-            <td>${w.damage || '—'}</td><td>${w.range  || 'Melee'}</td>
-            <td>${w.notes  || ''}</td>
-          </tr>`).join('')}</tbody>
+          <tbody>${weapons.map(w => {
+            const atk = w.attack || (w._attack_dice_raw ? resolveAttackPool(w._attack_dice_raw) : '');
+            return `<tr>
+              <td>${w.name   || '—'}</td><td>${atk || '—'}</td>
+              <td>${w.damage || '—'}</td><td>${w.range  || 'Melee'}</td>
+              <td>${w.notes  || ''}</td>
+            </tr>`;
+          }).join('')}</tbody>
         </table>`;
     }
 
@@ -284,7 +294,8 @@ const SummaryAPI = {
       // Weapons (from synced battle array)
       weapons.forEach(w => {
         if (w.name) {
-          const details = [w.attack, w.damage, w.range !== 'Melee' ? w.range : ''].filter(Boolean).join(', ');
+          const wAtk = w.attack || (w._attack_dice_raw ? resolveAttackPool(w._attack_dice_raw) : '');
+          const details = [wAtk, w.damage, w.range !== 'Melee' ? w.range : ''].filter(Boolean).join(', ');
           equipList += `<li><strong>${w.name}</strong>${details ? ` — ${details}` : ''}${w.notes ? ` (${w.notes})` : ''}</li>`;
         }
       });
@@ -471,7 +482,7 @@ const SummaryAPI = {
                 <tbody>
                   <tr><td>Initiative</td><td>${initiative}</td></tr>
                   <tr><td>Dodge</td><td>${dodge}</td></tr>
-                  <tr><td>Soak (Body)</td><td>${soak}</td></tr>
+                  <tr><td>Soak (Body + Armour)</td><td>${soak}</td></tr>
                 </tbody>
               </table>
             </div>

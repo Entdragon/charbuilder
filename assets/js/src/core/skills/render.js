@@ -178,18 +178,25 @@ export default {
       .append('<th>Dice Pool</th>')
       .appendTo($thead);
 
-    // Species & Career skill IDs (tolerant)
-    const spSkills = extractSkillTripletFromAny(species).map(String);
+    // Actual trait die values (read from live FormBuilderAPI data)
+    const spTraitDie = data['trait_species'] || '';
+    const cpTraitDie = data['trait_career']  || '';
+
+    // Species skills are stored as TEXT NAMES (from species_traits.text_value)
+    // Career skills are stored as numeric SKILL IDs
+    const spNames  = [species.skill_one, species.skill_two, species.skill_three]
+      .filter(Boolean).map(s => String(s).toLowerCase());
     const cpSkills = extractSkillTripletFromAny(career).map(String);
 
     const $tbody = $('<tbody>');
 
     skills.forEach(skill => {
-      const id   = String(skill.id);
-      const name = skill.name;
+      const id      = String(skill.id);
+      const name    = skill.name;
+      const nameLow = name.toLowerCase();
 
-      const spDie    = spSkills.includes(id) ? 'd4' : '';
-      const cpDie    = cpSkills.includes(id) ? 'd6' : '';
+      const spDie    = (spTraitDie && spNames.includes(nameLow)) ? spTraitDie : '';
+      const cpDie    = (cpTraitDie && cpSkills.includes(id))     ? cpTraitDie : '';
       const extraDies = extraCareers.map(ec => (ec.skills || []).includes(id) ? 'd4' : '');
 
       // ── Gift-granted marks for this skill ─────────────────────────────────
