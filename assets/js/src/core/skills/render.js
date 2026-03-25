@@ -210,30 +210,12 @@ export default {
     const spTraitDie = traitDie('trait_species');
     const cpTraitDie = traitDie('trait_career');
 
-    // Species skills: match by NAME (text_value) OR by ID (ref_id exposed as *_id).
-    // Both paths are checked so it works regardless of how the DB stores the value.
-    // Career skills are stored as numeric SKILL IDs.
-    const spNames  = [species.skill_one, species.skill_two, species.skill_three]
-      .filter(Boolean).map(s => String(s).toLowerCase());
-    const spIds    = [species.skill_one_id, species.skill_two_id, species.skill_three_id]
+    // Species skills: text_value stores numeric skill IDs (same format as career).
+    // Career skills: skill_one/two/three are also numeric skill IDs.
+    // Both are matched against String(skill.id).
+    const spSkillIds = [species.skill_one, species.skill_two, species.skill_three]
       .filter(s => s != null && s !== '').map(s => String(s));
-    const cpSkills = extractSkillTripletFromAny(career).map(String);
-
-    // TEMP DEBUG — open browser console then open the Skills tab to see this
-    console.log('[CG:SkillsRender] SPECIES | skill_one=' + JSON.stringify(species.skill_one)
-      + ' id=' + JSON.stringify(species.skill_one_id)
-      + ' | skill_two=' + JSON.stringify(species.skill_two)
-      + ' id=' + JSON.stringify(species.skill_two_id)
-      + ' | skill_three=' + JSON.stringify(species.skill_three)
-      + ' id=' + JSON.stringify(species.skill_three_id)
-      + ' | spTraitDie=' + spTraitDie
-      + ' | spNames=' + JSON.stringify(spNames)
-      + ' | spIds=' + JSON.stringify(spIds));
-    console.log('[CG:SkillsRender] CAREER | skill_one=' + JSON.stringify(career.skill_one)
-      + ' skill_two=' + JSON.stringify(career.skill_two)
-      + ' skill_three=' + JSON.stringify(career.skill_three)
-      + ' | cpSkills=' + JSON.stringify(cpSkills));
-    // END TEMP DEBUG
+    const cpSkills   = extractSkillTripletFromAny(career).map(String);
 
     const $tbody = $('<tbody>');
 
@@ -242,8 +224,7 @@ export default {
       const name    = skill.name;
       const nameLow = name.toLowerCase();
 
-      const isSpSkill = spNames.includes(nameLow) || spIds.includes(id);
-      const spDie    = (spTraitDie && isSpSkill) ? spTraitDie : '';
+      const spDie    = (spTraitDie && spSkillIds.includes(id)) ? spTraitDie : '';
       const cpDie    = (cpTraitDie && cpSkills.includes(id)) ? cpTraitDie : '';
       const extraDies = extraCareers.map(ec => (ec.skills || []).includes(id) ? 'd4' : '');
 

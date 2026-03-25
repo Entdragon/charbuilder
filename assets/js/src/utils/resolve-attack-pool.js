@@ -36,11 +36,10 @@ export function resolveAttackPool(raw, { FormBuilderAPI, SpeciesAPI, CareerAPI }
   const SP  = (SpeciesAPI && SpeciesAPI.currentProfile) || (window.CG_SpeciesAPI && window.CG_SpeciesAPI.currentProfile) || {};
   const CP  = (CareerAPI  && CareerAPI.currentProfile)  || (window.CG_CareerAPI  && window.CG_CareerAPI.currentProfile)  || {};
 
-  const spNames = [SP.skill_one, SP.skill_two, SP.skill_three]
-    .filter(Boolean).map(s => String(s).toLowerCase());
-  const spIds   = [SP.skill_one_id, SP.skill_two_id, SP.skill_three_id]
+  // Species skill_one/two/three store numeric skill IDs in text_value (same format as career).
+  const spSkillIds = [SP.skill_one, SP.skill_two, SP.skill_three]
     .filter(s => s != null && s !== '').map(s => String(s));
-  const spDie   = traitDieFromData('trait_species', data);
+  const spDie      = traitDieFromData('trait_species', data);
 
   const cpIds = [CP.skill_one, CP.skill_two, CP.skill_three]
     .filter(Boolean).map(s => String(s));
@@ -56,7 +55,7 @@ export function resolveAttackPool(raw, { FormBuilderAPI, SpeciesAPI, CareerAPI }
     const markDie = marksToDice(my + gift + xp);
 
     const pool = [];
-    if ((spNames.includes(key) || spIds.includes(id)) && spDie) pool.push(spDie);
+    if (spSkillIds.includes(id) && spDie) pool.push(spDie);
     if (cpIds.includes(id)    && cpDie) pool.push(cpDie);
     if (markDie)                        pool.push(markDie);
 

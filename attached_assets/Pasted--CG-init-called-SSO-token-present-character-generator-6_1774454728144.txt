@@ -1,0 +1,39 @@
+[CG] init() called, SSO token: present
+character-generator/:633 [CG] attempting SSO login…
+injection-topics.js:1 Browsing Topics API removed from https://libraryofcalbria.com/character-generator/ which is main frame
+character-generator/:636 [CG] SSO result: {"success":true,"data":{"username":"admin_25l0dxf3","redirect":"/"}}
+index.js:73 [Core] bundle loaded (#1)
+index.js:73 [Core] init() called
+index.js:73 [MainAPI] init() called
+index.js:73 [BuilderEvents] bindUIEvents() called
+index.js:73 [BuilderLoad] init
+index.js:73 [BuilderLoad] populating #cg-splash-load-select
+index.js:73 [BuilderLoad] fetching characters via AJAX… 
+free-choices.js:128 [FreeChoices] Fetched gifts {count: 679}
+index.js:73 [BuilderLoad] fetched 7 records
+events.js:36 [BuilderUI] openBuilder() {isNew: true, payload: {…}}
+index.js:22 🛠️ FormBuilder.buildForm fired: {isNew: true}
+api.js:7 [SpeciesAPI] Fetching species via AJAX…
+api.js:9 [CareerAPI] Fetching careers via AJAX…
+index.js:47 🔽 [buildForm] SELECT VALUES AFTER RENDER: {will: '', speed: '', body: '', mind: '', trait_species: '', …}
+events.js:60 [SpeciesEvents] selected species → 
+extra.js:85 [CareerEvents] selected career → 
+api.js:9 [CareerAPI] Career list fetched: 186
+api.js:7 [SpeciesAPI] Species list fetched: 116
+events.js:60 [SpeciesEvents] selected species → 3
+api.js:7 [SpeciesAPI] Fetching species profile 3
+extra.js:85 [CareerEvents] selected career → 4
+api.js:9 [CareerAPI] Fetching career profile 4
+index.js:73 [Trappings] Starting money initialised: 8 denar from career die d8
+index.js:44 [CG:SkillsRender] species profile skills: {skill_one: '6', skill_one_id: undefined, skill_two: '20', skill_two_id: undefined, skill_three: '22', …}
+index.js:59 [CG:SkillsRender] career profile skills: {skill_one: '13', skill_two: '20', skill_three: '23', cpSkills: Array(3)}
+index.js:44 [CG:SkillsRender] species profile skills: {skill_one: '6', skill_one_id: undefined, skill_two: '20', skill_two_id: undefined, skill_three: '22', …}
+index.js:59 [CG:SkillsRender] career profile skills: {skill_one: '13', skill_two: '20', skill_three: '23', cpSkills: Array(3)}
+index.js:44 [CG:SkillsRender] species profile skills: {skill_one: '6', skill_one_id: undefined, skill_two: '20', skill_two_id: undefined, skill_three: '22', …}
+index.js:59 [CG:SkillsRender] career profile skills: {skill_one: '13', skill_two: '20', skill_three: '23', cpSkills: Array(3)}
+index.js:44 [CG:SkillsRender] species profile skills: {skill_one: '6', skill_one_id: undefined, skill_two: '20', skill_two_id: undefined, skill_three: '22', …}
+index.js:59 [CG:SkillsRender] career profile skills: {skill_one: '13', skill_two: '20', skill_three: '23', cpSkills: Array(3)}
+index.js:44 [CG:SkillsRender] species profile skills: {skill_one: '6', skill_one_id: undefined, skill_two: '20', skill_two_id: undefined, skill_three: '22', …}skill_one: "6"skill_one_id: undefinedskill_three: "22"skill_three_id: undefinedskill_two: "20"skill_two_id: undefinedspIds: []spNames: (3) ['6', '20', '22']spTraitDie: "d8"[[Prototype]]: Object
+index.js:59 [CG:SkillsRender] career profile skills: {skill_one: '13', skill_two: '20', skill_three: '23', cpSkills: Array(3)}cpSkills: (3) ['13', '20', '23']skill_one: "13"skill_three: "23"skill_two: "20"[[Prototype]]: Object
+index.js:44 [CG:SkillsRender] species profile skills: {skill_one: '6', skill_one_id: undefined, skill_two: '20', skill_two_id: undefined, skill_three: '22', …}skill_one: "6"skill_one_id: undefinedskill_three: "22"skill_three_id: undefinedskill_two: "20"skill_two_id: undefinedspIds: []spNames: (3) ['6', '20', '22']spTraitDie: "d8"[[Prototype]]: Object
+index.js:59 [CG:SkillsRender] career profile skills: {skill_one: '13', skill_two: '20', skill_three: '23', cpSkills: Array(3)}cpSkills: (3) ['13', '20', '23']skill_one: "13"skill_three: "23"skill_two: "20"[[Prototype]]: Object
