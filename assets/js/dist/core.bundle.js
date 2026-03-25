@@ -7278,8 +7278,8 @@
       if (this._inited)
         return;
       this._inited = true;
+      this._bindEvents();
       this._fetchCurrency().then(() => {
-        this._bindEvents();
         this._renderAll();
         this._ensureCatalog().catch(() => {
         });
@@ -8147,10 +8147,24 @@
       case "tab-skills":
         skills_default.init();
         break;
-      case "tab-trappings":
+      case "tab-trappings": {
         battle_default.init();
         try {
           trappings_default._renderAll();
+        } catch (_) {
+        }
+        try {
+          const FB = window.CG_FormBuilderAPI || window.FormBuilderAPI;
+          const data = (FB == null ? void 0 : FB._data) || {};
+          const list = Array.isArray(data.trappings_list) ? data.trappings_list : [];
+          const careerId = parseInt(data.career_id || data.career || "0", 10);
+          if (careerId > 0 && !list.some((t) => t.source === "career")) {
+            trappings_default._fillCareerTrappings(careerId);
+          }
+          const hasSpeciesWeapons = list.some((t) => t.source === "species");
+          if (!hasSpeciesWeapons) {
+            trappings_default._fillSpeciesWeapons();
+          }
         } catch (_) {
         }
         try {
@@ -8162,6 +8176,7 @@
         } catch (_) {
         }
         break;
+      }
       case "tab-description":
         break;
       case "tab-summary":
