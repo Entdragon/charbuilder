@@ -41,6 +41,13 @@ function cg_normalize_character(array $row): array {
     $row['money_denarii']   = (string) ($row['money_denarii']   ?? '');
     $row['money_farthings'] = (string) ($row['money_farthings'] ?? '');
 
+    // Synthesize free_gifts array from flat DB columns so JS can read it directly
+    $g1 = (int) ($row['free_gift_1'] ?? 0);
+    $g2 = (int) ($row['free_gift_2'] ?? 0);
+    $g3 = (int) ($row['free_gift_3'] ?? 0);
+    $row['free_gifts']  = [$g1 ?: '', $g2 ?: '', $g3 ?: ''];
+    $row['freeGifts']   = $row['free_gifts'];
+
     return $row;
 }
 

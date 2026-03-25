@@ -735,6 +735,8 @@ const FormBuilderAPI = {
     try {
       const weapons = [];
       document.querySelectorAll('#cg-weapons-tbody .cg-weapon-row').forEach(row => {
+        // Skip rows that came from trappings — _syncBattleArray() rebuilds them from trappings_list on load
+        if (row.dataset.fromTrappings === '1') return;
         weapons.push({
           name:   row.querySelector('.cg-weapon-name')?.value   || '',
           attack: row.querySelector('.cg-weapon-attack')?.value || '',
@@ -743,14 +745,15 @@ const FormBuilderAPI = {
           notes:  row.querySelector('.cg-weapon-notes')?.value  || '',
         });
       });
-      if (weapons.length) {
-        this._data.weapons = weapons;
-        d.weapons = weapons;
-      }
+      // Always update — even if empty (clearing all manual weapons is intentional)
+      this._data.weapons = weapons;
+      d.weapons = weapons;
     } catch (_) {}
     try {
       const armor = [];
       document.querySelectorAll('#cg-armor-tbody .cg-armor-row').forEach(row => {
+        // Skip rows that came from trappings — _syncBattleArray() rebuilds them from trappings_list on load
+        if (row.dataset.fromTrappings === '1') return;
         armor.push({
           name:    row.querySelector('.cg-armor-name')?.value    || '',
           soak:    row.querySelector('.cg-armor-soak')?.value    || '',
@@ -758,10 +761,9 @@ const FormBuilderAPI = {
           notes:   row.querySelector('.cg-armor-notes')?.value   || '',
         });
       });
-      if (armor.length) {
-        this._data.armor = armor;
-        d.armor = armor;
-      }
+      // Always update — even if empty
+      this._data.armor = armor;
+      d.armor = armor;
     } catch (_) {}
 
     d.weapons = Array.isArray(this._data.weapons) ? this._data.weapons : [];

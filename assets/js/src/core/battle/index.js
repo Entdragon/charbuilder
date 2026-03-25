@@ -164,8 +164,9 @@ function weaponRowHtml(w = {}, idx) {
   const attackVal = w._attack_dice_raw
     ? resolveAttackPool(w._attack_dice_raw)
     : (w.attack || '');
+  const trappingAttr = w._from_trappings ? ' data-from-trappings="1"' : '';
   return `
-    <tr class="cg-weapon-row" data-idx="${idx}">
+    <tr class="cg-weapon-row" data-idx="${idx}"${trappingAttr}>
       <td><input class="cg-battle-input cg-weapon-name"   value="${escape(w.name   || '')}" placeholder="e.g. Short Sword" /></td>
       <td><input class="cg-battle-input cg-weapon-attack" value="${escape(attackVal)}"       placeholder="e.g. d6+d8" /></td>
       <td><input class="cg-battle-input cg-weapon-damage" value="${escape(w.damage  || '')}" placeholder="e.g. +1" /></td>
@@ -177,8 +178,9 @@ function weaponRowHtml(w = {}, idx) {
 }
 
 function armorRowHtml(a = {}, idx) {
+  const trappingAttr = a._from_trappings ? ' data-from-trappings="1"' : '';
   return `
-    <tr class="cg-armor-row" data-idx="${idx}">
+    <tr class="cg-armor-row" data-idx="${idx}"${trappingAttr}>
       <td><input class="cg-battle-input cg-armor-name"    value="${escape(a.name    || '')}" placeholder="e.g. Leather Cuirass" /></td>
       <td><input class="cg-battle-input cg-armor-soak"    value="${escape(a.soak    || '')}" placeholder="e.g. d4" /></td>
       <td><input class="cg-battle-input cg-armor-penalty" value="${escape(a.penalty || '')}" placeholder="e.g. −1 Speed" /></td>
