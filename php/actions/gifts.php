@@ -184,7 +184,8 @@ function cg_get_free_gifts(): void {
         // gift_sections may not exist — skip enrichment
     }
 
-    // Suffix maps for rebuilding flat ct_gifts_requires* columns (legacy JS path)
+    // Suffix maps for flat ct_gifts_requires* columns (JS legacy path: extractRequiredGiftIds).
+    // Indexed by 1-based position within each gift+kind group (NOT by raw ct_sort value).
     $requireSuffixes = [
         1 => '',        2 => '_two',     3 => '_three',   4 => '_four',
         5 => '_five',   6 => '_six',     7 => '_seven',   8 => '_eight',
@@ -192,19 +193,18 @@ function cg_get_free_gifts(): void {
        13 => '_thirteen', 14 => '_fourteen', 15 => '_fifteen', 16 => '_sixteen',
        17 => '_seventeen', 18 => '_eighteen', 19 => '_nineteen',
     ];
-    $specialSuffixes = [
-        1 => '',      2 => '_two',   3 => '_three', 4 => '_four',
-        5 => '_five', 6 => '_six',   7 => '_seven', 8 => '_eight',
-    ];
 
-    // Fetch gift_requirements and attach as:
-    //   (a) structured `requirements` array  (used by evaluateStructuredPrereqs)
-    //   (b) flat ct_gifts_requires* columns  (used by extractRequiredGiftIds)
+    // Fetch gift_requirements ordered by gift then sort position.
     $reqs = cg_query("
         SELECT ct_gift_id, ct_sort, ct_req_kind, ct_req_ref_id, ct_req_text
         FROM {$r}
         ORDER BY ct_gift_id ASC, ct_sort ASC
     ");
+
+    // Per-gift, per-kind position counters for flat column indexing.
+    $posCounters    = [];   // "{$gId}_{$kind}" => int
+    // Accumulate special_text lines per gift to join into a single string.
+    $specialTexts   = [];   // $gId => string[]
 
     foreach ($reqs as $req) {
         $gId  = (int) $req['ct_gift_id'];
@@ -213,7 +213,7 @@ function cg_get_free_gifts(): void {
 
         if (!isset($byId[$gId])) continue;
 
-        // (a) structured requirements array
+        // (a) Structured requirements array — used by evaluateStructuredPrereqs in JS
         if (!isset($byId[$gId]['requirements'])) {
             $byId[$gId]['requirements'] = [];
         }
@@ -225,22 +225,32 @@ function cg_get_free_gifts(): void {
             'text'    => $req['ct_req_text'] ?? '',
         ];
 
-        // (b) flat columns (legacy)
-        if ($kind === 'gift_ref') {
-            if (!isset($requireSuffixes[$sort])) continue;
-            $col = 'ct_gifts_requires' . $requireSuffixes[$sort];
-            $byId[$gId][$col] = (int) $req['ct_req_ref_id'];
+        // (b) Flat columns — legacy JS path (extractRequiredGiftIds / requiresSpecialText)
+        $posKey = "{$gId}_{$kind}";
+        $posCounters[$posKey] = ($posCounters[$posKey] ?? 0) + 1;
+        $pos = $posCounters[$posKey];
 
-        } elseif ($kind === 'legacy_text') {
-            if (!isset($requireSuffixes[$sort])) continue;
-            $col = 'ct_gifts_requires' . $requireSuffixes[$sort];
-            $byId[$gId][$col] = (int) $req['ct_req_text'];
+        if ($kind === 'gift_ref' || $kind === 'legacy_text') {
+            // Each gift_ref becomes ct_gifts_requires, ct_gifts_requires_two, ...
+            if (isset($requireSuffixes[$pos])) {
+                $col = 'ct_gifts_requires' . $requireSuffixes[$pos];
+                $val = ($kind === 'gift_ref')
+                    ? (int) $req['ct_req_ref_id']
+                    : (int) $req['ct_req_text'];
+                $byId[$gId][$col] = $val;
+            }
 
         } elseif ($kind === 'special_text') {
-            if (!isset($specialSuffixes[$sort])) continue;
-            $col = 'ct_gifts_requires_special' . $specialSuffixes[$sort];
-            $byId[$gId][$col] = (string) $req['ct_req_text'];
+            // Accumulate; will be joined into a single ct_gifts_requires_special string below.
+            $specialTexts[$gId][] = (string) $req['ct_req_text'];
         }
+    }
+
+    // Build ct_gifts_requires_special as a newline-joined string of all special_text values.
+    // JS reads this as one block and splits by \n to find "Mystic: X", "Mind of d8+", etc.
+    foreach ($specialTexts as $gId => $lines) {
+        if (!isset($byId[$gId])) continue;
+        $byId[$gId]['ct_gifts_requires_special'] = implode("\n", array_filter($lines));
     }
 
     // Fetch gift_prereq (structured species/trait/GM prereqs) and attach as `prereqs` array.
