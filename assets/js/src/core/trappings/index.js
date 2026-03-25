@@ -643,51 +643,65 @@ const TrappingsAPI = {
 
     const list = getTrappingsList();
 
-    const bySource = { career: [], species: [], gift: [], purchase: [], manual: [] };
-    list.forEach(t => {
+    // Split species (natural weapons) from everything else
+    const speciesItems = list.filter(t => t.source === 'species');
+    const otherItems   = list.filter(t => t.source !== 'species');
+
+    // Merge all non-species items across career/gift/purchase/manual by slug (or name).
+    // Each merged entry tracks qty (sum), sources (badge list), and removable uids.
+    const SOURCE_LABEL = { career: 'Career', gift: 'Gift', purchase: 'Purchased', manual: 'Own' };
+    const mergedMap = new Map(); // key → merged display entry
+    otherItems.forEach(t => {
+      const key = ((t.slug || t.name || t.token) || '').toLowerCase();
       const src = t.source || 'manual';
-      if (!bySource[src]) bySource[src] = [];
-      bySource[src].push(t);
+      if (!key) {
+        // No slug/name — keep as standalone entry
+        mergedMap.set(`__nokey_${t.uid}`, {
+          ...t,
+          qty:          parseInt(t.qty, 10) || 1,
+          sources:      [src],
+          removableUids: (src === 'purchase' || src === 'manual') ? [t.uid] : [],
+        });
+        return;
+      }
+      if (mergedMap.has(key)) {
+        const entry = mergedMap.get(key);
+        entry.qty += parseInt(t.qty, 10) || 1;
+        if (!entry.sources.includes(src)) entry.sources.push(src);
+        if (src === 'purchase' || src === 'manual') entry.removableUids.push(t.uid);
+      } else {
+        mergedMap.set(key, {
+          ...t,
+          qty:          parseInt(t.qty, 10) || 1,
+          sources:      [src],
+          removableUids: (src === 'purchase' || src === 'manual') ? [t.uid] : [],
+        });
+      }
     });
 
-    // Merge same-item duplicates within a group (e.g. two gift trappings both granting a dagger).
-    // Items are keyed by slug (falling back to name/token). Qty is summed; the first item wins
-    // for stats/display. Purchase/manual items keep individual rows (user may want to remove them).
-    const dedupGroup = (items) => {
-      const keepSeparate = t => t.source === 'purchase' || t.source === 'manual';
-      const merged  = new Map(); // key → merged item
-      const separate = [];
-      items.forEach(t => {
-        if (keepSeparate(t)) { separate.push(t); return; }
-        const key = (t.slug || t.name || t.token || '').toLowerCase();
-        if (!key) { separate.push(t); return; }
-        if (merged.has(key)) {
-          merged.get(key).qty = (parseInt(merged.get(key).qty, 10) || 1) + (parseInt(t.qty, 10) || 1);
-        } else {
-          merged.set(key, { ...t, qty: parseInt(t.qty, 10) || 1 });
-        }
-      });
-      return [...merged.values(), ...separate];
-    };
+    // Sort merged list: weapons first, then equipment, both alphabetically
+    const merged = [...mergedMap.values()].sort((a, b) => {
+      if (a.kind !== b.kind) return a.kind === 'weapon' ? -1 : 1;
+      return (a.name || '').localeCompare(b.name || '');
+    });
 
-    const renderGroup = (items, label, cls) => {
+    const renderSourceBadges = (sources) =>
+      sources.map(s => `<span class="cg-trap-badge cg-trap-badge--${escape(s)}">${escape(SOURCE_LABEL[s] || s)}</span>`).join('');
+
+    const renderSpeciesGroup = (items) => {
       if (!items.length) return '';
-      const rows = dedupGroup(items).map(t => `
-        <tr class="cg-trap-row cg-trap-row--${escape(t.source || 'manual')}">
+      const rows = items.map(t => `
+        <tr class="cg-trap-row cg-trap-row--species">
           <td class="cg-trap-qty">${escape(t.qty || 1)}</td>
           <td class="cg-trap-name">${escape(t.name || t.token || '')}</td>
-          <td class="cg-trap-kind">${escape(t.kind === 'weapon' ? '⚔' : '🎒')}</td>
+          <td class="cg-trap-kind">⚔</td>
           <td class="cg-trap-stats">${escape(this._statSummary(t))}</td>
-          <td class="cg-trap-actions">
-            ${(t.source === 'purchase' || t.source === 'manual')
-              ? `<button type="button" class="cg-trap-remove-btn cg-btn-sm" data-uid="${escape(t.uid)}" title="Remove">✕</button>`
-              : ''}
-          </td>
+          <td class="cg-trap-actions"></td>
         </tr>
       `).join('');
       return `
         <div class="cg-trap-group">
-          <div class="cg-trap-group-label ${cls}">${label}</div>
+          <div class="cg-trap-group-label cg-trap-label--species">Natural Weapons (Species)</div>
           <table class="cg-trap-table">
             <thead><tr><th>Qty</th><th>Item</th><th></th><th>Stats</th><th></th></tr></thead>
             <tbody>${rows}</tbody>
@@ -696,13 +710,37 @@ const TrappingsAPI = {
       `;
     };
 
+    const renderMergedGroup = (items) => {
+      if (!items.length) return '';
+      const rows = items.map(t => `
+        <tr class="cg-trap-row">
+          <td class="cg-trap-qty">${escape(t.qty || 1)}</td>
+          <td class="cg-trap-name">${escape(t.name || t.token || '')}</td>
+          <td class="cg-trap-kind">${t.kind === 'weapon' ? '⚔' : '🎒'}</td>
+          <td class="cg-trap-stats">${escape(this._statSummary(t))}</td>
+          <td class="cg-trap-sources">${renderSourceBadges(t.sources)}</td>
+          <td class="cg-trap-actions">
+            ${t.removableUids.map(uid =>
+              `<button type="button" class="cg-trap-remove-btn cg-btn-sm" data-uid="${escape(uid)}" title="Remove purchased copy">✕</button>`
+            ).join('')}
+          </td>
+        </tr>
+      `).join('');
+      return `
+        <div class="cg-trap-group">
+          <div class="cg-trap-group-label cg-trap-label--all">Equipment &amp; Trappings</div>
+          <table class="cg-trap-table">
+            <thead><tr><th>Qty</th><th>Item</th><th></th><th>Stats</th><th>Source</th><th></th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+    };
+
     const html = `
       <div class="cg-trappings-inner">
-        ${renderGroup(bySource.species,  'Natural Weapons (Species)',        'cg-trap-label--species')}
-        ${renderGroup(bySource.career,   'Career Starting Trappings',        'cg-trap-label--career')}
-        ${renderGroup(bySource.gift,     'Gift Trappings (free)',            'cg-trap-label--gift')}
-        ${renderGroup(bySource.purchase, 'Purchased Equipment',              'cg-trap-label--purchase')}
-        ${renderGroup(bySource.manual,   'Other Trappings',                  'cg-trap-label--manual')}
+        ${renderSpeciesGroup(speciesItems)}
+        ${renderMergedGroup(merged)}
         ${list.length === 0 ? '<p class="cg-trap-empty">No trappings yet. Select a career to get your starting gear, or use the shop below to purchase equipment.</p>' : ''}
       </div>
     `;
