@@ -1,0 +1,27 @@
+[libraryo@silberhorn ~]$ dir
+abjure-monster-table-fix.20260316T051041Z        equipment-filter-layout-tidy.20260318T161512Z           library-search-step14.20260318T084122Z
+access-logs                                      equipment-label-prettify.20260318T085152Z               library-search-step3.20260318T073036Z
+aegir-flavour-fix.20260316T064942Z               equipment-prefilters.20260318T164515Z                   library-search-step5.20260318T073919Z
+_backups                                         etc                                                     library-search-step6.20260318T074440Z
+bin                                              gift-flavour-rollout.20260316T065614Z                   library-search-step7.20260318T075102Z
+cg-auth-compat.20260319T072616Z                  gift-flavour-rollout-safe.20260316T070008Z              library-search-step9.20260318T080151Z
+cg-cutover-apply.20260319T071025Z                gift-flavour-rollout-typeonly.20260316T070224Z          logs
+cg-cutover-capture.20260319T065719Z              gifts-prod-import-20260314T220157Z                      mail
+cg-full-index-capture.20260319T075730Z           header-search-step4.20260318T073346Z                    michaeljparry.com
+cg-live-fix-bundle.20260319T073419Z              library-search-audit.20260318T072033Z                   public_ftp
+cg-live-fix-bundle.20260319T073419Z.tar.gz       library-search-backup.20260318T072259Z                  public_html
+cg-path-login-audit.20260319T063945Z             library-search-header-dim.20260318T162056Z              schema_tables.txt
+cg-path-login-audit-narrow.20260319T064752Z      library-search-hide-header-search.20260318T162713Z      ssl
+cg-repo-audit.20260319T073249Z                   library-search-hide-header-search-fix.20260318T163211Z  tmp
+cg-routing-auth-inspect.20260319T064936Z         library-search-live-inspect.20260318T163000Z.html       wordpress-backups
+cg-template-audit.20260319T075418Z               library-search-step10.20260318T080543Z                  www
+characters-index-current.php                     library-search-step11.20260318T080907Z
+equipment-category-multifilter.20260318T081543Z  library-search-step13.20260318T082449Z
+[libraryo@silberhorn ~]$ cd public_html/
+[libraryo@silberhorn public_html]$ cd characters/
+[libraryo@silberhorn characters]$ git pull
+fatal: not a git repository (or any parent up to mount point /home)
+Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+[libraryo@silberhorn characters]$ bash ~/charbuilder/tools/start-app.sh
+bash: /home/libraryo/charbuilder/tools/start-app.sh: No such file or directory
+[libraryo@silberhorn characters]$
