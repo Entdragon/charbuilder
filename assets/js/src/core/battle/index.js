@@ -5,7 +5,8 @@
 // Manages structured weapon and armor rows.
 // Saves/restores via FormBuilderAPI._data.weapons / ._data.armor.
 
-import FormBuilderAPI from '../formBuilder/index.js';
+import FormBuilderAPI        from '../formBuilder/index.js';
+import { marksToDice }       from '../../utils/marks-dice.js';
 
 const $ = window.jQuery;
 
@@ -30,9 +31,12 @@ function poolString(...dice) {
 }
 
 // Parse a raw attack_dice string like "Body, Species, Brawling vs. defense"
-// and replace known trait keywords with actual die values from the current form.
+// and replace known trait and skill keywords with actual die values.
+// Traits are read live from the DOM; skills use skillMarks + marksToDice().
 function resolveAttackPool(raw) {
   if (!raw) return '';
+
+  // Trait keyword → current die value
   const traitMap = {
     'body':    traitDie('body'),
     'speed':   traitDie('speed'),
@@ -41,10 +45,22 @@ function resolveAttackPool(raw) {
     'species': traitDie('trait_species'),
     'career':  traitDie('trait_career'),
   };
+
+  // Skill name → die value derived from character's skill marks
+  const skillsList = FormBuilderAPI._data?.skillsList || [];
+  const skillMarks = FormBuilderAPI._data?.skillMarks || {};
+  const skillDieMap = {};
+  for (const skill of skillsList) {
+    const marks = parseInt(skillMarks[skill.id], 10) || 0;
+    if (marks > 0) {
+      skillDieMap[skill.name.toLowerCase()] = marksToDice(marks);
+    }
+  }
+
   const vsIdx    = raw.toLowerCase().indexOf(' vs.');
   const poolPart = vsIdx > -1 ? raw.slice(0, vsIdx) : raw;
   const parts    = poolPart.split(',').map(s => s.trim()).filter(Boolean);
-  const dice     = parts.map(p => traitMap[p.toLowerCase()] || p).filter(Boolean);
+  const dice     = parts.map(p => traitMap[p.toLowerCase()] || skillDieMap[p.toLowerCase()] || p).filter(Boolean);
   return dice.join(' + ');
 }
 
