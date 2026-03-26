@@ -11,7 +11,7 @@ function cg_normalize_character(array $row): array {
 
     // JSON fields that decode to objects (key→value maps)
     foreach (['skill_marks', 'career_gift_replacements', 'xp_skill_marks',
-              'skill_notes', 'gift_skill_marks', 'free_gift_quals', 'money_holdings'] as $field) {
+              'skill_notes', 'gift_skill_marks', 'free_gift_quals', 'xp_gift_quals', 'money_holdings'] as $field) {
         if (isset($row[$field]) && $row[$field] !== '') {
             $decoded = json_decode($row[$field], true);
             $row[$field] = is_array($decoded) ? $decoded : [];
@@ -32,7 +32,8 @@ function cg_normalize_character(array $row): array {
             $row[$field] = [];
         }
     }
-    $row['xpGifts'] = $row['xp_gifts'];
+    $row['xpGifts']     = $row['xp_gifts'];
+    $row['xpGiftQuals'] = $row['xp_gift_quals'];
 
     $row['experience_points'] = (int) ($row['experience_points'] ?? 0);
     $row['xpMarksBudget']     = (int) ($row['xp_marks_budget']   ?? 0);
@@ -180,6 +181,9 @@ function cg_save_character(): void {
 
         // Free-gift qualification data (language/mystic/knack per slot)
         'free_gift_quals'               => json_encode(is_array($data['free_gift_quals']    ?? null) ? $data['free_gift_quals']    : []),
+
+        // XP-gift qualification data (language/literacy chosen for each XP gift slot)
+        'xp_gift_quals'                 => json_encode(is_array($data['xp_gift_quals']      ?? null) ? $data['xp_gift_quals']      : []),
 
         'updated'                       => date('Y-m-d H:i:s'),
     ];

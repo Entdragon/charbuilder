@@ -234,6 +234,10 @@ function normalizeCore(raw = {}) {
     xpSkillMarks: (raw.xpSkillMarks && typeof raw.xpSkillMarks === 'object' && !Array.isArray(raw.xpSkillMarks))
       ? raw.xpSkillMarks : {},
     xpGifts: Array.isArray(raw.xpGifts) ? raw.xpGifts.filter(Boolean) : [],
+    xp_gift_quals: (() => {
+      const v = raw.xp_gift_quals || raw.xpGiftQuals;
+      return (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
+    })(),
   };
 }
 
@@ -399,6 +403,8 @@ function buildPayload(raw) {
   character.xp_gift_slots     = parseInt(core.xpGiftSlots,   10) || 0;
   character.xp_skill_marks    = core.xpSkillMarks || {};
   character.xp_gifts          = Array.isArray(core.xpGifts) ? core.xpGifts : [];
+  character.xp_gift_quals     = (core.xp_gift_quals && typeof core.xp_gift_quals === 'object' && !Array.isArray(core.xp_gift_quals))
+    ? core.xp_gift_quals : {};
 
   // Battle array — weapons and armor rows
   character.weapons = Array.isArray(raw.weapons) ? raw.weapons : [];
@@ -741,6 +747,8 @@ const FormBuilderAPI = {
     d.xpGiftSlots   = parseInt(this._data.xpGiftSlots,   10) || 0;
     d.xpSkillMarks  = this._data.xpSkillMarks || {};
     d.xpGifts       = Array.isArray(this._data.xpGifts) ? this._data.xpGifts : [];
+    d.xp_gift_quals = (this._data.xp_gift_quals && typeof this._data.xp_gift_quals === 'object' && !Array.isArray(this._data.xp_gift_quals))
+      ? this._data.xp_gift_quals : {};
     this._data.experience_points = d.experience_points;
 
     // Battle data — BattleAPI.persist() keeps this._data.weapons/armor in sync whenever DOM changes.

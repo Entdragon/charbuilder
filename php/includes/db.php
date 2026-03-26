@@ -144,6 +144,7 @@ function cg_ensure_xp_columns(): void {
         'xp_gift_slots'     => 'INT DEFAULT 0',
         'xp_skill_marks'    => 'TEXT DEFAULT NULL',
         'xp_gifts'          => 'TEXT DEFAULT NULL',
+        'xp_gift_quals'     => 'TEXT DEFAULT NULL',
     ];
 
     try {

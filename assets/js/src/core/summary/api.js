@@ -445,11 +445,21 @@ const SummaryAPI = {
       if (xpGifts.length > 0) {
         const fc = window.CG_FreeChoices;
         const allGifts = (fc && Array.isArray(fc._allGifts)) ? fc._allGifts : [];
-        xpGiftsListHtml = `<ul>${xpGifts.map(gId => {
+        const xpQualMap = (data.xp_gift_quals && typeof data.xp_gift_quals === 'object')
+          ? data.xp_gift_quals
+          : ((data.xpGiftQuals && typeof data.xpGiftQuals === 'object') ? data.xpGiftQuals : {});
+        xpGiftsListHtml = `<ul>${xpGifts.map((gId, idx) => {
           const gObj = allGifts.find(g => String(g.ct_id || g.id || '') === String(gId));
           const name = gObj ? String(gObj.ct_gift_name || gObj.name || gId) : String(gId);
           const desc = gObj ? (String(gObj.effect ?? '').trim() || String(gObj.effect_description || gObj.ct_gifts_effect_description || '').trim()) : '';
-          return `<li><strong>${name}</strong>${desc ? `<span class="summary-gift-desc"> — ${desc}</span>` : ''}</li>`;
+          // Append any qual sub-selection (e.g. "Language: Magniloquentia")
+          const slotQuals = xpQualMap[String(idx)] || {};
+          const qualParts = Object.entries(slotQuals)
+            .filter(([, v]) => v && typeof v === 'string' && v.trim())
+            .map(([k, v]) => `${k.charAt(0).toUpperCase() + k.slice(1)}: ${v.trim()}`);
+          const qualSuffix = qualParts.length
+            ? `<span class="summary-qual-tag"> (${qualParts.join(', ')})</span>` : '';
+          return `<li><strong>${name}</strong>${qualSuffix}${desc ? `<span class="summary-gift-desc"> — ${desc}</span>` : ''}</li>`;
         }).join('')}</ul>`;
       }
       xpHtml = `

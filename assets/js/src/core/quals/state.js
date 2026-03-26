@@ -70,6 +70,23 @@ const QualState = {
       next.language = normalizeList(src.language);
     }
 
+    // Merge any qual values stored in XP gift qual slots (xp_gift_quals).
+    // These are language/literacy/etc. chosen when buying a Language or
+    // Literacy gift with XP.  We fold them into the canonical qual lists so
+    // deduplication across all sources works correctly.
+    const xpGQ = src.xp_gift_quals || src.xpGiftQuals || {};
+    if (xpGQ && typeof xpGQ === 'object') {
+      Object.values(xpGQ).forEach(slotObj => {
+        if (!slotObj || typeof slotObj !== 'object') return;
+        TYPES.forEach(t => {
+          const v = String(slotObj[t] || '').trim();
+          if (!v) return;
+          const k = canon(v);
+          if (!next[t].some(x => canon(x) === k)) next[t].push(v);
+        });
+      });
+    }
+
     this.data = next;
 
     // Persist normalized version back (so save/load is consistent)

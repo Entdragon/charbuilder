@@ -22,6 +22,15 @@ function getXpGiftSlots()    { return parseInt(getData().xpGiftSlots,        10)
 function getXpGifts()        { return Array.isArray(getData().xpGifts) ? getData().xpGifts : []; }
 function getXpSkillMarks()   { return getData().xpSkillMarks || {}; }
 
+function getXpGiftQuals() {
+  const v = getData().xp_gift_quals;
+  return (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
+}
+
+function setXpGiftQuals(map) {
+  setData({ xp_gift_quals: map });
+}
+
 function calcSpent() {
   return getXpMarksBudget() * XP_MARK_COST + getXpGiftSlots() * XP_GIFT_COST;
 }
@@ -122,9 +131,16 @@ function bindWidgetEvents() {
     const slots = getXpGiftSlots();
     if (slots <= 0) return;
     const newSlots = slots - 1;
-    // Remove the last gift from the array
+    // Remove the last gift from the array and its qual data
     const gifts = getXpGifts().slice(0, newSlots);
-    setData({ xpGiftSlots: newSlots, xpGifts: gifts });
+    const quals = { ...getXpGiftQuals() };
+    const removedQuals = quals[String(newSlots)] || {};
+    delete quals[String(newSlots)];
+    // Remove any qual values that were only used by the removed slot
+    Object.entries(removedQuals).forEach(([type, value]) => {
+      if (value) FreeChoices.qualRemoveIfSafe(type, value, quals);
+    });
+    setData({ xpGiftSlots: newSlots, xpGifts: gifts, xp_gift_quals: quals });
     updateWidgetDisplay();
   });
 
@@ -180,6 +196,61 @@ function xpGiftEffectHtml(giftId) {
   return `<div class="cg-default-gift-effect xp-gift-effect">${short.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`;
 }
 
+/**
+ * Build the HTML for qual sub-selectors needed by a given XP gift slot.
+ * Excludes values already chosen in other sources (base language, free-gift
+ * qual selectors, and other XP gift slots).
+ */
+function xpGiftQualHtml(slotIndex, giftObj, xpQualMap) {
+  if (!giftObj) return '';
+  const types = FreeChoices.detectQualTypes(giftObj);
+  if (!types.length) return '';
+
+  const slotKey = String(slotIndex);
+  const curQuals = (xpQualMap[slotKey] && typeof xpQualMap[slotKey] === 'object')
+    ? xpQualMap[slotKey] : {};
+
+  return types.map(type => {
+    const curVal = String(curQuals[type] || '').trim();
+
+    // --- Build exclusion list ---
+    const excludeValues = [];
+
+    // 1) Base language from QualState index[0]
+    if (type === 'language') {
+      const base = FreeChoices.getBaseLanguage();
+      if (base) excludeValues.push(base);
+    }
+
+    // 2) Same type already chosen in free-gift qual slots
+    const freeQuals = FreeChoices.getFreeGiftQuals();
+    [0, 1, 2].forEach(j => {
+      const v = String((freeQuals[String(j)] || {})[type] || '').trim();
+      if (v) excludeValues.push(v);
+    });
+
+    // 3) Same type already chosen in OTHER XP gift slots
+    Object.entries(xpQualMap).forEach(([k, slotObj]) => {
+      if (k === slotKey) return;
+      const v = String((slotObj || {})[type] || '').trim();
+      if (v) excludeValues.push(v);
+    });
+
+    // Use class name prefixed with 'xp-' so we don't conflict with free-gift handlers
+    const html = FreeChoices.buildQualHtml({
+      slot: slotIndex,
+      type,
+      value: curVal,
+      excludeValues,
+    });
+
+    // Replace the class names so our event handlers target xp-qual selects
+    return html
+      .replace(/cg-free-qual-select/g, 'cg-xp-qual-select')
+      .replace(/cg-qual-custom-input cg-free-select/g, 'cg-xp-qual-custom-input');
+  }).join('\n');
+}
+
 function emitXpGiftChanged() {
   // Notify all systems that listen for gift changes so follow-on effects
   // (soak pools, trait boosts, trappings, battle pools) recompute.
@@ -213,7 +284,8 @@ async function renderXpGifts() {
     await fetchGiftList(); // warm the cache
   }
 
-  const selected = getXpGifts(); // array of gift ID strings
+  const selected  = getXpGifts();     // array of gift ID strings
+  const xpQualMap = getXpGiftQuals(); // { "0": { language: "Calabrian" }, ... }
 
   let html = `<div class="xp-gift-label">Experience Gifts (${slots} slot${slots > 1 ? 's' : ''})</div>`;
 
@@ -259,6 +331,9 @@ async function renderXpGifts() {
     // Show effect description for the currently selected gift
     const effectHtml = xpGiftEffectHtml(curId);
 
+    // Qual sub-selectors (language, literacy, etc.)
+    const qualHtml = xpGiftQualHtml(i, curGift, xpQualMap);
+
     html += `
       <div class="cg-free-slot xp-gift-slot" data-xp-slot="${i}">
         <div style="display:flex; align-items:center; gap:6px;">
@@ -269,26 +344,127 @@ async function renderXpGifts() {
           </select>
         </div>
         ${effectHtml}
+        <div class="xp-gift-qual-wrap" data-xp-slot="${i}">${qualHtml}</div>
       </div>
     `;
   }
 
   $container.html(html);
 
-  // Bind change events for XP gift selects
+  // ── Bind change events for XP gift selects ───────────────────────────────
   $container.off('change.cgxpgifts').on('change.cgxpgifts', '.xp-gift-select', function() {
-    const slot = parseInt($(this).data('xp-slot'), 10);
-    const val  = String($(this).val() || '');
-    const arr  = getXpGifts().slice();
+    const slot    = parseInt($(this).data('xp-slot'), 10);
+    const val     = String($(this).val() || '');
+    const arr     = getXpGifts().slice();
     while (arr.length <= slot) arr.push('');
     arr[slot] = val;
     while (arr.length && !arr[arr.length - 1]) arr.pop();
-    setData({ xpGifts: arr });
-    // Notify all systems that care about gift selection (soak, traits, trappings, battle)
+
+    // Clear qual for this slot (gift changed — old qual irrelevant)
+    const quals   = { ...getXpGiftQuals() };
+    const oldQuals = quals[String(slot)] || {};
+    Object.entries(oldQuals).forEach(([type, value]) => {
+      if (value) {
+        const remaining = { ...quals };
+        delete remaining[String(slot)];
+        FreeChoices.qualRemoveIfSafe(type, value, remaining);
+      }
+    });
+    delete quals[String(slot)];
+
+    setData({ xpGifts: arr, xp_gift_quals: quals });
     emitXpGiftChanged();
-    // Re-render so other slots' eligibility lists and effect texts update
     renderXpGifts();
   });
+
+  // ── Bind qual SELECT change ───────────────────────────────────────────────
+  $container.off('change.cgxpqual').on('change.cgxpqual', '.cg-xp-qual-select', function() {
+    const slot  = parseInt($(this).data('slot'), 10);
+    const type  = String($(this).data('qtype') || '');
+    const val   = String($(this).val() || '');
+    const slotKey = String(slot);
+
+    const quals = { ...getXpGiftQuals() };
+    if (!quals[slotKey] || typeof quals[slotKey] !== 'object') quals[slotKey] = {};
+
+    const oldVal = String(quals[slotKey][type] || '').trim();
+
+    if (val === '__other__') {
+      // Show the custom input, don't persist yet
+      const $wrap = $container.find(`.xp-gift-qual-wrap[data-xp-slot="${slot}"]`);
+      $wrap.find(`input.cg-xp-qual-custom-input[data-slot="${slot}"][data-qtype="${type}"]`).css('display', '');
+      return;
+    }
+
+    // Remove old qual from QualState if changed
+    if (oldVal && oldVal !== val) {
+      const remaining = { ...quals };
+      const remainingSlot = { ...(remaining[slotKey] || {}) };
+      delete remainingSlot[type];
+      remaining[slotKey] = remainingSlot;
+      FreeChoices.qualRemoveIfSafe(type, oldVal, remaining);
+    }
+
+    quals[slotKey][type] = val;
+    setXpGiftQuals(quals);
+
+    if (val) FreeChoices.qualAdd(type, val);
+
+    // Update qual wrappers in other slots without full re-render
+    _updateOtherQualWraps(slot);
+    // Trigger free-choice re-render so those exclusions also update
+    try { FreeChoices._scheduleRender?.('xp-qual-changed'); } catch (_) {}
+  });
+
+  // ── Bind qual custom INPUT ────────────────────────────────────────────────
+  $container.off('input.cgxpqualcustom').on('input.cgxpqualcustom', '.cg-xp-qual-custom-input', function() {
+    const slot    = parseInt($(this).data('slot'), 10);
+    const type    = String($(this).data('qtype') || '');
+    const val     = String($(this).val() || '').trim();
+    const slotKey = String(slot);
+
+    const quals   = { ...getXpGiftQuals() };
+    if (!quals[slotKey] || typeof quals[slotKey] !== 'object') quals[slotKey] = {};
+
+    const oldVal  = String(quals[slotKey][type] || '').trim();
+    if (oldVal && oldVal !== val) {
+      const remaining = { ...quals };
+      const rs = { ...(remaining[slotKey] || {}) };
+      delete rs[type];
+      remaining[slotKey] = rs;
+      FreeChoices.qualRemoveIfSafe(type, oldVal, remaining);
+    }
+
+    quals[slotKey][type] = val;
+    setXpGiftQuals(quals);
+
+    if (val) FreeChoices.qualAdd(type, val);
+    _updateOtherQualWraps(slot);
+  });
+}
+
+/**
+ * Re-render qual wrappers for all XP slots EXCEPT the one that just changed,
+ * so their exclusion lists reflect the new selection without disturbing the
+ * gift select dropdown that the user may currently have open.
+ */
+function _updateOtherQualWraps(changedSlot) {
+  try {
+    const slots     = getXpGiftSlots();
+    const selected  = getXpGifts();
+    const xpQualMap = getXpGiftQuals();
+    const $container = $('#cg-xp-gifts');
+
+    for (let i = 0; i < slots; i++) {
+      if (i === changedSlot) continue;
+      const curId  = String(selected[i] || '').trim();
+      const curGift = curId
+        ? (FreeChoices._allGifts || []).find(g => String(g.ct_id || g.id || '') === curId) || null
+        : null;
+      const qualHtml = xpGiftQualHtml(i, curGift, xpQualMap);
+      $container.find(`.xp-gift-qual-wrap[data-xp-slot="${i}"]`).html(qualHtml);
+    }
+  } catch (_) {}
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
@@ -304,6 +480,9 @@ const ExperienceAPI = {
   getXpMarksBudget,
   getXpSkillMarks,
   calcAvailable,
+
+  // Exposed for save/load
+  getXpGiftQuals,
 };
 
 export default ExperienceAPI;

@@ -752,6 +752,11 @@ function giftEligible(g, ownedSet, otherSelectedIds = new Set()) {
 
   if (otherSelectedIds.has(id) && !allowsMultiple(g)) return false;
 
+  // Block gifts already owned by career/species/always-acquired when they
+  // cannot be taken multiple times.  This prevents, e.g., a career gift of
+  // Resolve (#21) from showing in the free-gift dropdown.
+  if (!allowsMultiple(g) && ownedSet.has(id)) return false;
+
   return true;
 }
 
@@ -1763,7 +1768,33 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
       qualCatalogSizes: sizes,
       qualState: QualState?.getAll?.() || null
     };
-  }
+  },
+
+  // ── Public helpers for XP gift qual selectors ────────────────────────────
+  /** Returns array of qual types ('language','literacy', etc.) needed by gift */
+  detectQualTypes(g) { return detectQualTypesNeeded(g); },
+
+  /** Renders a qual <select>+<input> HTML block for a gift slot */
+  buildQualHtml({ slot, type, value, excludeValues }) {
+    return renderQualSelectHtml({ slot, type, value, allGifts: this._allGifts, excludeValues });
+  },
+
+  /** Returns current qual catalog items for a type */
+  getQualItems(type) { return getQualItemsForType(type, this._allGifts); },
+
+  /** Returns the base-language value from QualState (first language selected) */
+  getBaseLanguage() {
+    try { return (QualState.get('language') || [])[0] || ''; } catch (_) { return ''; }
+  },
+
+  /** Returns the free-gift slot qual map */
+  getFreeGiftQuals() { return getSlotQualMap(); },
+
+  /** Add a qual value to QualState (safe, deduplication handled) */
+  qualAdd(type, value) { qualStateAdd(type, value); },
+
+  /** Remove a qual value from QualState only if not still used in slotMap */
+  qualRemoveIfSafe(type, value, slotMap) { qualStateRemoveIfSafe(type, value, slotMap); },
 };
 
 W.CG_FreeChoices = FreeChoices;
