@@ -114,12 +114,17 @@ $actionFiles = [
     'cg_get_spells_for_gifts' => 'actions/spells.php',
     'cg_install_spells'       => 'actions/spells.php',
 
-    'cg_admin_list_gifts'    => 'actions/admin.php',
-    'cg_admin_get_gift'      => 'actions/admin.php',
-    'cg_admin_save_gift'     => 'actions/admin.php',
-    'cg_admin_list_weapons'  => 'actions/admin.php',
-    'cg_admin_get_weapon'    => 'actions/admin.php',
-    'cg_admin_save_weapon'   => 'actions/admin.php',
+    'cg_admin_list_gifts'         => 'actions/admin.php',
+    'cg_admin_get_gift'           => 'actions/admin.php',
+    'cg_admin_save_gift'          => 'actions/admin.php',
+    'cg_admin_get_gift_children'  => 'actions/admin.php',
+    'cg_admin_save_gift_rule'     => 'actions/admin.php',
+    'cg_admin_delete_gift_rule'   => 'actions/admin.php',
+    'cg_admin_save_gift_section'  => 'actions/admin.php',
+    'cg_admin_delete_gift_section'=> 'actions/admin.php',
+    'cg_admin_list_weapons'       => 'actions/admin.php',
+    'cg_admin_get_weapon'         => 'actions/admin.php',
+    'cg_admin_save_weapon'        => 'actions/admin.php',
 ];
 
 if (!isset($actionFiles[$action])) {

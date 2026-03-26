@@ -95,6 +95,108 @@ function cg_admin_save_gift(): void {
     cg_json(['success' => true, 'data' => 'Saved.']);
 }
 
+// ── Gift child tables ─────────────────────────────────────────────────────────
+
+function cg_admin_get_gift_children(): void {
+    cg_admin_require();
+    $gift_id = (int) ($_POST['gift_id'] ?? 0);
+    if (!$gift_id) { cg_json(['success' => false, 'data' => 'Missing gift_id.']); return; }
+    $p = cg_prefix();
+
+    $rules = cg_query(
+        "SELECT ct_id, ct_sort, ct_rule_type, ct_rule_title, ct_cost_text, ct_limit_text, ct_summary, ct_details
+         FROM {$p}customtables_table_gift_rules
+         WHERE ct_gift_id = ? ORDER BY ct_sort, ct_id",
+        [$gift_id]
+    );
+    $sections = cg_query(
+        "SELECT ct_id, ct_sort, ct_section_type, ct_heading, ct_body
+         FROM {$p}customtables_table_gift_sections
+         WHERE ct_gift_id = ? ORDER BY ct_sort, ct_id",
+        [$gift_id]
+    );
+    cg_json(['success' => true, 'data' => ['rules' => $rules, 'sections' => $sections]]);
+}
+
+function cg_admin_save_gift_rule(): void {
+    cg_admin_require();
+    $ct_id   = (int) ($_POST['ct_id']   ?? 0);
+    $gift_id = (int) ($_POST['gift_id'] ?? 0);
+    if (!$gift_id) { cg_json(['success' => false, 'data' => 'Missing gift_id.']); return; }
+    $p = cg_prefix();
+    $t = $p . 'customtables_table_gift_rules';
+
+    $fields = [
+        'ct_sort'       => (int)    ($_POST['ct_sort']       ?? 10),
+        'ct_rule_type'  => (string) ($_POST['ct_rule_type']  ?? 'passive'),
+        'ct_rule_title' => (string) ($_POST['ct_rule_title'] ?? ''),
+        'ct_cost_text'  => (string) ($_POST['ct_cost_text']  ?? ''),
+        'ct_limit_text' => (string) ($_POST['ct_limit_text'] ?? ''),
+        'ct_summary'    => (string) ($_POST['ct_summary']    ?? ''),
+        'ct_details'    => (string) ($_POST['ct_details']    ?? ''),
+    ];
+
+    if ($ct_id > 0) {
+        $sets   = array_map(fn($k) => "$k = ?", array_keys($fields));
+        $params = array_merge(array_values($fields), [$ct_id]);
+        cg_exec("UPDATE $t SET " . implode(', ', $sets) . ", updated_at = NOW() WHERE ct_id = ?", $params);
+        cg_json(['success' => true, 'data' => ['ct_id' => $ct_id]]);
+    } else {
+        $cols   = implode(', ', array_merge(['ct_gift_id'], array_keys($fields)));
+        $phs    = implode(', ', array_fill(0, count($fields) + 1, '?'));
+        $params = array_merge([$gift_id], array_values($fields));
+        $res    = cg_exec("INSERT INTO $t ($cols, created_at, updated_at) VALUES ($phs, NOW(), NOW())", $params);
+        cg_json(['success' => true, 'data' => ['ct_id' => (int)($res['lastInsertId'] ?? 0)]]);
+    }
+}
+
+function cg_admin_delete_gift_rule(): void {
+    cg_admin_require();
+    $ct_id = (int) ($_POST['ct_id'] ?? 0);
+    if (!$ct_id) { cg_json(['success' => false, 'data' => 'Missing ct_id.']); return; }
+    $p = cg_prefix();
+    cg_exec("DELETE FROM {$p}customtables_table_gift_rules WHERE ct_id = ?", [$ct_id]);
+    cg_json(['success' => true, 'data' => 'Deleted.']);
+}
+
+function cg_admin_save_gift_section(): void {
+    cg_admin_require();
+    $ct_id   = (int) ($_POST['ct_id']   ?? 0);
+    $gift_id = (int) ($_POST['gift_id'] ?? 0);
+    if (!$gift_id) { cg_json(['success' => false, 'data' => 'Missing gift_id.']); return; }
+    $p = cg_prefix();
+    $t = $p . 'customtables_table_gift_sections';
+
+    $fields = [
+        'ct_sort'         => (int)    ($_POST['ct_sort']         ?? 10),
+        'ct_section_type' => (string) ($_POST['ct_section_type'] ?? 'rules'),
+        'ct_heading'      => (string) ($_POST['ct_heading']      ?? ''),
+        'ct_body'         => (string) ($_POST['ct_body']         ?? ''),
+    ];
+
+    if ($ct_id > 0) {
+        $sets   = array_map(fn($k) => "$k = ?", array_keys($fields));
+        $params = array_merge(array_values($fields), [$ct_id]);
+        cg_exec("UPDATE $t SET " . implode(', ', $sets) . ", updated_at = NOW() WHERE ct_id = ?", $params);
+        cg_json(['success' => true, 'data' => ['ct_id' => $ct_id]]);
+    } else {
+        $cols   = implode(', ', array_merge(['ct_gift_id'], array_keys($fields)));
+        $phs    = implode(', ', array_fill(0, count($fields) + 1, '?'));
+        $params = array_merge([$gift_id], array_values($fields));
+        $res    = cg_exec("INSERT INTO $t ($cols, created_at, updated_at) VALUES ($phs, NOW(), NOW())", $params);
+        cg_json(['success' => true, 'data' => ['ct_id' => (int)($res['lastInsertId'] ?? 0)]]);
+    }
+}
+
+function cg_admin_delete_gift_section(): void {
+    cg_admin_require();
+    $ct_id = (int) ($_POST['ct_id'] ?? 0);
+    if (!$ct_id) { cg_json(['success' => false, 'data' => 'Missing ct_id.']); return; }
+    $p = cg_prefix();
+    cg_exec("DELETE FROM {$p}customtables_table_gift_sections WHERE ct_id = ?", [$ct_id]);
+    cg_json(['success' => true, 'data' => 'Deleted.']);
+}
+
 // ── Weapons ───────────────────────────────────────────────────────────────────
 
 function cg_admin_list_weapons(): void {
