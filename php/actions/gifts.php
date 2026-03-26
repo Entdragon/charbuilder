@@ -130,7 +130,7 @@ function cg_get_free_gifts(): void {
               gc.ct_class_name                     AS giftclass,
               g.ct_gifts_effect                    AS effect,
               g.ct_gifts_effect_description        AS effect_description,
-              g.ct_gift_trigger                    AS trigger
+              g.ct_gift_trigger                    AS gift_trigger
             FROM {$g} AS g
             LEFT JOIN {$gc} AS gc ON gc.ct_id = g.ct_gift_class
             WHERE LOWER(TRIM(COALESCE(gc.ct_class_name, ''))) != 'natural'
@@ -148,7 +148,7 @@ function cg_get_free_gifts(): void {
               NULL                     AS giftclass,
               ct_gifts_effect          AS effect,
               ct_gifts_effect_description AS effect_description,
-              ct_gift_trigger          AS trigger
+              ct_gift_trigger          AS gift_trigger
             FROM {$g}
             WHERE published = 1
             ORDER BY ct_gifts_name ASC
@@ -414,11 +414,17 @@ function cg_get_free_gifts(): void {
         // gift_type_map table absent or schema differs — tags will be empty on all gifts
     }
 
-    // Deduplicate and sort descriptor tags per gift for clean chip rendering
+    // Deduplicate and sort descriptor tags per gift for clean chip rendering.
+    // Also remap gift_trigger → trigger (TRIGGER is a reserved word in MariaDB/MySQL,
+    // so the SQL alias must differ; we normalise back to 'trigger' here for JS consumers).
     foreach ($byId as &$gift) {
         if (!empty($gift['tags'])) {
             $gift['tags'] = array_values(array_unique($gift['tags']));
             sort($gift['tags']);
+        }
+        if (array_key_exists('gift_trigger', $gift)) {
+            $gift['trigger'] = $gift['gift_trigger'];
+            unset($gift['gift_trigger']);
         }
     }
     unset($gift);
