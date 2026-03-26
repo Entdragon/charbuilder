@@ -182,7 +182,9 @@ function normalizeCore(raw = {}) {
 
     // Optional fields PHP also supports
     local_area:  raw.local_knowledge_region || raw.local_area || '',
-    language:    raw.language ?? '',
+    // Prefer QualState-managed array (qualifications.language[0]) over the
+    // stale flat DB string (raw.language) which is never updated after load.
+    language: (raw.qualifications?.language?.[0] || raw.quals?.language?.[0] || raw.language) ?? '',
     personality_trait: raw.personality_trait ?? '',
 
     will:        raw.will ?? '',

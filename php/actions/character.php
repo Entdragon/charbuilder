@@ -110,7 +110,11 @@ function cg_save_character(): void {
     cg_ensure_battle_columns();
     cg_ensure_profile_columns();
 
-    $skillMarks       = $data['skill_marks'] ?? [];
+    // skill_marks may arrive as a JSON string (character[skill_marks]) or a proper nested
+    // PHP array (character[skillMarks]).  Prefer the array form; decode string as fallback.
+    $rawMarks   = $data['skillMarks'] ?? $data['skill_marks'] ?? [];
+    if (is_string($rawMarks)) { $rawMarks = json_decode($rawMarks, true) ?? []; }
+    $skillMarks = is_array($rawMarks) ? $rawMarks : [];
     $giftReplacements = $data['career_gift_replacements'] ?? [];
     $freeGifts        = $data['free_gifts'] ?? [$data['free_gift_1'] ?? 0, $data['free_gift_2'] ?? 0, $data['free_gift_3'] ?? 0];
 

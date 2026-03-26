@@ -63,6 +63,13 @@ const QualState = {
       next[t] = normalizeList(q[t]);
     });
 
+    // Bootstrap base language from the flat DB string (src.language) when
+    // the qualifications object doesn't carry it yet (character loaded from DB
+    // before the qualifications column existed, or before QualState persisted).
+    if (!next.language.length && src.language) {
+      next.language = normalizeList(src.language);
+    }
+
     this.data = next;
 
     // Persist normalized version back (so save/load is consistent)
