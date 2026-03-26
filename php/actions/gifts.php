@@ -294,36 +294,117 @@ function cg_get_free_gifts(): void {
     }
 
     // Fetch descriptor tags per gift from gift_type_map (flat string array).
-    // Dynamically discovers the tag column name to survive schema differences.
+    // Schema-tolerant: discovers both the gift FK column and the tag/label column
+    // via INFORMATION_SCHEMA, and handles the case where the tag column stores
+    // integer FK IDs (resolved via JOIN to referenced table) vs. text labels (direct).
     // This table may not exist on all installs — gracefully skip if absent.
     try {
         $tmTable = "{$p}customtables_table_gift_type_map";
-        // Discover the tag column (any column that isn't a known system/FK column).
-        // Excluded list covers both ct_* and non-ct_* naming conventions so we
-        // survive schema differences between installs.
-        $schemaCols = cg_query("
-            SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+        $sys     = "('ct_id','ct_sort','published','created_at','updated_at','id','sort','gift_order','ordering')";
+
+        // Discover all non-system columns with their data types
+        $allCols = cg_query("
+            SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS
             WHERE TABLE_NAME   = '{$tmTable}'
               AND TABLE_SCHEMA = DATABASE()
-              AND COLUMN_NAME NOT IN (
-                'ct_id','ct_gift_id','ct_sort','published','created_at','updated_at',
-                'id','gift_id','sort','gift_order','ordering'
-              )
+              AND COLUMN_NAME NOT IN {$sys}
             ORDER BY ORDINAL_POSITION ASC
-            LIMIT 1
         ");
-        if (!empty($schemaCols)) {
-            $tagCol  = $schemaCols[0]['COLUMN_NAME'];
-            // ORDER BY only the FK column (always present); ct_sort/ct_id are omitted here
-            // because they may not exist under all naming conventions and tag display order
-            // is not meaningful to the user (chips render as a flat set per gift).
-            $tagRows = cg_query("SELECT ct_gift_id AS gift_id, `{$tagCol}` AS tag FROM {$tmTable} ORDER BY ct_gift_id ASC");
-            foreach ($tagRows as $tr) {
-                $gId = (int) $tr['gift_id'];
-                if (!isset($byId[$gId])) continue;
-                if (!isset($byId[$gId]['tags'])) $byId[$gId]['tags'] = [];
-                $tag = trim((string) ($tr['tag'] ?? ''));
-                if ($tag !== '') $byId[$gId]['tags'][] = $tag;
+
+        if (!empty($allCols)) {
+            $numericTypes  = ['int','tinyint','smallint','mediumint','bigint','integer'];
+            $giftFkCol     = null; // column pointing at gifts table (FK)
+            $tagCandidates = []; // columns for the actual tag/label
+
+            foreach ($allCols as $col) {
+                $cName  = $col['COLUMN_NAME'];
+                $cType  = strtolower($col['DATA_TYPE']);
+                $isInt  = in_array($cType, $numericTypes, true);
+
+                // Heuristic: column named *gift_id* is the FK to the gifts table
+                if (preg_match('/\bgift_id\b/i', $cName)) {
+                    $giftFkCol = $cName;
+                } else {
+                    $tagCandidates[] = ['name' => $cName, 'isInt' => $isInt];
+                }
+            }
+
+            // Default gift FK column if heuristic didn't find one
+            if ($giftFkCol === null) {
+                $giftFkCol = 'ct_gift_id'; // CT plugin convention
+            }
+
+            // Pick first tag candidate; prefer text columns over integer ones
+            $tagColInfo = null;
+            foreach ($tagCandidates as $tc) {
+                if (!$tc['isInt']) { $tagColInfo = $tc; break; }
+            }
+            if ($tagColInfo === null && !empty($tagCandidates)) {
+                $tagColInfo = $tagCandidates[0]; // integer column — may be a FK
+            }
+
+            if ($tagColInfo !== null) {
+                $tagCol = $tagColInfo['name'];
+
+                if ($tagColInfo['isInt']) {
+                    // Numeric column: try to resolve via FK constraint to a lookup table
+                    $fkInfo = cg_query("
+                        SELECT kcu.REFERENCED_TABLE_NAME, kcu.REFERENCED_COLUMN_NAME
+                        FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
+                        WHERE kcu.TABLE_NAME        = '{$tmTable}'
+                          AND kcu.TABLE_SCHEMA      = DATABASE()
+                          AND kcu.COLUMN_NAME       = '{$tagCol}'
+                          AND kcu.REFERENCED_TABLE_NAME IS NOT NULL
+                        LIMIT 1
+                    ");
+
+                    if (!empty($fkInfo)) {
+                        // Find the first text column in the referenced lookup table
+                        $refTable  = $fkInfo[0]['REFERENCED_TABLE_NAME'];
+                        $refIdCol  = $fkInfo[0]['REFERENCED_COLUMN_NAME'];
+                        $labelCols = cg_query("
+                            SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+                            WHERE TABLE_NAME   = '{$refTable}'
+                              AND TABLE_SCHEMA = DATABASE()
+                              AND DATA_TYPE    IN ('varchar','char','text','tinytext','mediumtext','longtext')
+                              AND COLUMN_NAME  NOT IN {$sys}
+                            ORDER BY ORDINAL_POSITION ASC
+                            LIMIT 1
+                        ");
+                        if (!empty($labelCols)) {
+                            $labelCol = $labelCols[0]['COLUMN_NAME'];
+                            $tagRows  = cg_query("
+                                SELECT m.`{$giftFkCol}` AS gift_id, l.`{$labelCol}` AS tag
+                                FROM `{$tmTable}` m
+                                INNER JOIN `{$refTable}` l ON l.`{$refIdCol}` = m.`{$tagCol}`
+                                ORDER BY m.`{$giftFkCol}` ASC
+                            ");
+                            foreach ($tagRows as $tr) {
+                                $gId = (int) $tr['gift_id'];
+                                if (!isset($byId[$gId])) continue;
+                                if (!isset($byId[$gId]['tags'])) $byId[$gId]['tags'] = [];
+                                $tag = trim((string) ($tr['tag'] ?? ''));
+                                if ($tag !== '') $byId[$gId]['tags'][] = $tag;
+                            }
+                        }
+                        // If no FK info or label column found, skip tags (prefer no chips over ID chips)
+                    }
+                } else {
+                    // Text column — values are already human-readable descriptor labels
+                    // (e.g. "Air", "Fire", "Magic"). Use directly.
+                    $tagRows = cg_query("
+                        SELECT `{$giftFkCol}` AS gift_id, `{$tagCol}` AS tag
+                        FROM `{$tmTable}`
+                        ORDER BY `{$giftFkCol}` ASC
+                    ");
+                    foreach ($tagRows as $tr) {
+                        $gId = (int) $tr['gift_id'];
+                        if (!isset($byId[$gId])) continue;
+                        if (!isset($byId[$gId]['tags'])) $byId[$gId]['tags'] = [];
+                        $tag = trim((string) ($tr['tag'] ?? ''));
+                        if ($tag !== '') $byId[$gId]['tags'][] = $tag;
+                    }
+                }
             }
         }
     } catch (Throwable $e) {
