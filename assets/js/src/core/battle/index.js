@@ -490,13 +490,15 @@ function renderSpellsTable(spells) {
 function readWeaponsFromDom() {
   const out = [];
   document.querySelectorAll('#cg-weapons-tbody .cg-weapon-row').forEach(row => {
-    out.push({
+    const w = {
       name:   row.querySelector('.cg-weapon-name')?.value   || '',
       attack: row.querySelector('.cg-weapon-attack')?.value || '',
       damage: row.querySelector('.cg-weapon-damage')?.value || '',
       range:  row.querySelector('.cg-weapon-range')?.value  || '',
       notes:  row.querySelector('.cg-weapon-notes')?.value  || '',
-    });
+    };
+    if (row.dataset.fromTrappings === '1') w._from_trappings = true;
+    out.push(w);
   });
   return out;
 }
@@ -504,12 +506,14 @@ function readWeaponsFromDom() {
 function readArmorFromDom() {
   const out = [];
   document.querySelectorAll('#cg-armor-tbody .cg-armor-row').forEach(row => {
-    out.push({
+    const a = {
       name:    row.querySelector('.cg-armor-name')?.value    || '',
       soak:    row.querySelector('.cg-armor-soak')?.value    || '',
       penalty: row.querySelector('.cg-armor-penalty')?.value || '',
       notes:   row.querySelector('.cg-armor-notes')?.value   || '',
-    });
+    };
+    if (row.dataset.fromTrappings === '1') a._from_trappings = true;
+    out.push(a);
   });
   return out;
 }

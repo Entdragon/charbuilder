@@ -522,11 +522,6 @@ const TrappingsAPI = {
     const weaponTrappings = list.filter(t => t.kind === 'weapon');
     const armorTrappings  = list.filter(t => t.kind === 'equipment' && t.armor_dice);
 
-    // Sync weapons
-    const existingWeapons = Array.isArray(FormBuilderAPI._data?.weapons)
-      ? FormBuilderAPI._data.weapons.filter(w => !w._from_trappings)
-      : [];
-
     const trappingWeapons = weaponTrappings.map(t => {
       const range = t.range_band || 'Close';
       return {
@@ -541,13 +536,16 @@ const TrappingsAPI = {
       };
     });
 
+    // Exclude any existing weapon that has the _from_trappings flag OR shares a name
+    // with a trapping weapon (handles old saved data where the flag was not persisted).
+    const trappingWeaponNames = new Set(trappingWeapons.map(w => w.name).filter(Boolean));
+    const existingWeapons = Array.isArray(FormBuilderAPI._data?.weapons)
+      ? FormBuilderAPI._data.weapons.filter(w => !w._from_trappings && !trappingWeaponNames.has(w.name))
+      : [];
+
     FormBuilderAPI._data.weapons = [...existingWeapons, ...trappingWeapons];
 
     // Sync armor
-    const existingArmor = Array.isArray(FormBuilderAPI._data?.armor)
-      ? FormBuilderAPI._data.armor.filter(a => !a._from_trappings)
-      : [];
-
     const trappingArmor = armorTrappings.map(t => ({
       _from_trappings: true,
       _trapping_uid:   t.uid,
@@ -556,6 +554,12 @@ const TrappingsAPI = {
       penalty:'',
       notes:  '',
     }));
+
+    // Same deduplication for armor.
+    const trappingArmorNames = new Set(trappingArmor.map(a => a.name).filter(Boolean));
+    const existingArmor = Array.isArray(FormBuilderAPI._data?.armor)
+      ? FormBuilderAPI._data.armor.filter(a => !a._from_trappings && !trappingArmorNames.has(a.name))
+      : [];
 
     FormBuilderAPI._data.armor = [...existingArmor, ...trappingArmor];
 

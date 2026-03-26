@@ -139,7 +139,28 @@ const SummaryAPI = {
     const _diePat = /^d\d+$/;
     const dodge = compactPool(dicePools(data.speed, ...dodgeSkillPool.split('+').map(s => s.trim()).filter(s => _diePat.test(s))));
     const armorSoakDice = armor.map(a => a.soak).filter(Boolean);
-    const soak       = compactPool(dicePools(data.body, ...armorSoakDice));
+
+    // Collect all active gift IDs (mirrors collectAllGiftIds in battle/index.js)
+    const _activeGiftIds = (() => {
+      const ids = new Set();
+      (Array.isArray(data.free_gifts) ? data.free_gifts : []).forEach(id => { if (id) ids.add(String(id)); });
+      if (data.free_gift_1) ids.add(String(data.free_gift_1));
+      if (data.free_gift_2) ids.add(String(data.free_gift_2));
+      if (data.free_gift_3) ids.add(String(data.free_gift_3));
+      (Array.isArray(data.xpGifts) ? data.xpGifts : []).forEach(id => { if (id) ids.add(String(id)); });
+      const cp = (CareerAPI && CareerAPI.currentProfile) || {};
+      ['gift_id_1','gift_id_2','gift_id_3','gift1_id','gift2_id','gift3_id'].forEach(k => { if (cp[k]) ids.add(String(cp[k])); });
+      const repl = data.career_gift_replacements || {};
+      Object.values(repl).forEach(id => { if (id) ids.add(String(id)); });
+      const sp = (SpeciesAPI && SpeciesAPI.currentProfile) || {};
+      ['gift_id_1','gift_id_2','gift_id_3','gift1_id','gift2_id','gift3_id'].forEach(k => { if (sp[k]) ids.add(String(sp[k])); });
+      return [...ids].filter(id => id && id !== '0');
+    })();
+    const _extraSoak = [];
+    if (_activeGiftIds.includes('21') && data.will)          _extraSoak.push(data.will);          // Resolve
+    if (_activeGiftIds.includes('79') && data.trait_species) _extraSoak.push(data.trait_species); // Natural Armor
+
+    const soak = compactPool(dicePools(data.body, ...armorSoakDice, ..._extraSoak));
 
     const allCareerNames = [career.careerName].filter(Boolean);
     extraCareers.forEach(ec => { if (ec.name) allCareerNames.push(ec.name); });
