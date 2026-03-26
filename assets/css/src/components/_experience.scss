@@ -294,3 +294,200 @@
     li { margin-bottom: .2rem; font-size: .9rem; }
   }
 }
+
+.summary-retrain-log {
+  margin-top: .75rem;
+  padding: .55rem .75rem;
+  background: rgba(201, 168, 76, 0.05);
+  border-left: 3px solid rgba(201, 168, 76, 0.4);
+  border-radius: 0 5px 5px 0;
+
+  strong { font-size: .88rem; color: var(--cg-gold-dark, #a8822a); }
+
+  ul {
+    margin: .3rem 0 0 1rem;
+    padding: 0;
+    list-style: disc;
+    li {
+      margin-bottom: .15rem;
+      font-size: .85rem;
+      color: var(--cg-text, #2c2316);
+      em { color: var(--cg-text-muted, #6a5b3e); font-style: normal; }
+    }
+  }
+}
+
+// ── Retraining panel (Details tab) ───────────────────────────────────────────
+
+.cg-retrain-panel {
+  margin-top: 1.75rem;
+  background: rgba(201, 168, 76, 0.04);
+  border: 1px solid rgba(201, 168, 76, 0.2);
+  border-radius: 8px;
+  padding: 1.1rem 1.25rem 1.25rem;
+
+  h3 {
+    margin: 0 0 .9rem;
+    font-family: 'Cinzel', serif;
+    font-size: 1rem;
+    color: var(--cg-gold-dark, #a8822a);
+    font-weight: 600;
+    letter-spacing: .04em;
+  }
+
+  .retrain-section-label {
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--cg-text-muted, #6a5b3e);
+    font-weight: 700;
+    margin: .75rem 0 .4rem;
+
+    &:first-of-type { margin-top: 0; }
+  }
+
+  .retrain-section {
+    margin-bottom: .75rem;
+
+    h4 {
+      font-family: 'Cinzel', serif;
+      font-size: .85rem;
+      color: var(--cg-gold-dark, #a8822a);
+      margin: .5rem 0 .4rem;
+      font-weight: 600;
+    }
+
+    .retrain-note {
+      font-size: .77rem;
+      color: var(--cg-text-muted, #6a5b3e);
+      font-style: italic;
+      margin-bottom: .35rem;
+    }
+
+    .retrain-none {
+      font-size: .83rem;
+      color: var(--cg-text-muted, #6a5b3e);
+      font-style: italic;
+    }
+
+    .retrain-xp-tag {
+      font-size: .7rem;
+      font-family: inherit;
+      font-weight: 400;
+      color: var(--cg-text-muted, #6a5b3e);
+      margin-left: .4rem;
+    }
+  }
+
+  .retrain-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .45rem .65rem;
+    margin-bottom: .3rem;
+    background: rgba(0,0,0,0.18);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 5px;
+    gap: .5rem;
+    flex-wrap: wrap;
+
+    .retrain-item-name {
+      font-size: .88rem;
+      font-weight: 600;
+      color: var(--cg-text, #2c2316);
+      flex: 1 1 140px;
+    }
+
+    .retrain-item-detail {
+      font-size: .75rem;
+      color: var(--cg-text-muted, #6a5b3e);
+      font-style: italic;
+      flex-shrink: 0;
+    }
+
+    .retrain-btn {
+      flex-shrink: 0;
+      padding: .3rem .75rem;
+      font-size: .8rem;
+      font-family: 'Cinzel', serif;
+      border: 1px solid rgba(201,168,76,0.6);
+      background: transparent;
+      color: var(--cg-gold-dark, #a8822a);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background .15s, color .15s;
+      white-space: nowrap;
+
+      em { font-style: normal; font-size: .72rem; color: var(--cg-text-muted, #6a5b3e); }
+
+      &:hover {
+        background: rgba(201,168,76,0.15);
+        color: var(--cg-gold, #c9a84c);
+        border-color: #c9a84c;
+      }
+    }
+  }
+
+  .retrain-empty {
+    font-size: .85rem;
+    color: var(--cg-text-muted, #6a5b3e);
+    font-style: italic;
+    margin: .25rem 0;
+  }
+
+  .retrain-history {
+    margin-top: 1rem;
+    padding-top: .9rem;
+    border-top: 1px solid rgba(201,168,76,0.15);
+
+    h4 {
+      font-family: 'Cinzel', serif;
+      font-size: .83rem;
+      color: var(--cg-gold-dark, #a8822a);
+      margin: 0 0 .4rem;
+      font-weight: 600;
+    }
+
+    .retrain-log-list {
+      list-style: disc;
+      margin: 0 0 0 1.1rem;
+      padding: 0;
+
+      li {
+        font-size: .8rem;
+        color: var(--cg-text, #2c2316);
+        margin-bottom: .18rem;
+      }
+
+      .retrain-log-xp {
+        display: inline-block;
+        background: rgba(201,168,76,0.15);
+        color: var(--cg-gold-dark, #a8822a);
+        border-radius: 3px;
+        padding: 0 .35rem;
+        font-size: .72rem;
+        margin-left: .35rem;
+        font-weight: 600;
+      }
+    }
+  }
+
+  .retrain-intro {
+    font-size: .82rem;
+    color: var(--cg-text-muted, #6a5b3e);
+    margin: -.2rem 0 .9rem;
+    line-height: 1.5;
+  }
+
+  .retrain-gh-note {
+    display: inline-block;
+    font-size: .65rem;
+    font-family: 'Crimson Pro', Georgia, serif;
+    font-weight: 400;
+    color: var(--cg-text-muted, #6a5b3e);
+    margin-left: .6rem;
+    letter-spacing: .02em;
+    vertical-align: middle;
+    font-style: italic;
+  }
+}

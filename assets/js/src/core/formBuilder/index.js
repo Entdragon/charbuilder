@@ -238,6 +238,9 @@ function normalizeCore(raw = {}) {
       const v = raw.xp_gift_quals || raw.xpGiftQuals;
       return (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
     })(),
+    retrainPenalty: parseInt(raw.retrainPenalty ?? raw.retrain_penalty, 10) || 0,
+    retrainLog: Array.isArray(raw.retrainLog ?? raw.retrain_log)
+      ? (raw.retrainLog ?? raw.retrain_log) : [],
   };
 }
 
@@ -405,6 +408,8 @@ function buildPayload(raw) {
   character.xp_gifts          = Array.isArray(core.xpGifts) ? core.xpGifts : [];
   character.xp_gift_quals     = (core.xp_gift_quals && typeof core.xp_gift_quals === 'object' && !Array.isArray(core.xp_gift_quals))
     ? core.xp_gift_quals : {};
+  character.retrain_penalty   = parseInt(core.retrainPenalty, 10) || 0;
+  character.retrain_log       = Array.isArray(core.retrainLog) ? core.retrainLog : [];
 
   // Battle array — weapons and armor rows
   character.weapons = Array.isArray(raw.weapons) ? raw.weapons : [];
@@ -749,6 +754,8 @@ const FormBuilderAPI = {
     d.xpGifts       = Array.isArray(this._data.xpGifts) ? this._data.xpGifts : [];
     d.xp_gift_quals = (this._data.xp_gift_quals && typeof this._data.xp_gift_quals === 'object' && !Array.isArray(this._data.xp_gift_quals))
       ? this._data.xp_gift_quals : {};
+    d.retrainPenalty = parseInt(this._data.retrainPenalty, 10) || 0;
+    d.retrainLog     = Array.isArray(this._data.retrainLog) ? this._data.retrainLog : [];
     this._data.experience_points = d.experience_points;
 
     // Battle data — BattleAPI.persist() keeps this._data.weapons/armor in sync whenever DOM changes.

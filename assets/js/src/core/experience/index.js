@@ -7,6 +7,7 @@
 import FormBuilderAPI from '../formBuilder';
 import { marksToDice } from '../../utils/marks-dice.js';
 import FreeChoices from '../gifts/free-choices.js';
+import RetrainAPI from './retrain.js';
 
 const $ = window.jQuery;
 
@@ -31,8 +32,10 @@ function setXpGiftQuals(map) {
   setData({ xp_gift_quals: map });
 }
 
+function getRetrainPenalty() { return parseInt(getData().retrainPenalty, 10) || 0; }
+
 function calcSpent() {
-  return getXpMarksBudget() * XP_MARK_COST + getXpGiftSlots() * XP_GIFT_COST;
+  return getXpMarksBudget() * XP_MARK_COST + getXpGiftSlots() * XP_GIFT_COST + getRetrainPenalty();
 }
 
 function calcAvailable() {
@@ -472,6 +475,16 @@ function _updateOtherQualWraps(changedSlot) {
 const ExperienceAPI = {
   initWidget() {
     bindWidgetEvents();
+    // Bind retrain events once; re-render panel each time the widget is initialised
+    // (which happens on each Details tab visit, so the panel stays fresh).
+    RetrainAPI.bindEvents(() => {
+      updateWidgetDisplay();
+      // Trigger a skills re-render so retrained marks are reflected immediately.
+      try { $(document).trigger('cg:skill:marks:changed'); } catch (_) {}
+      // Trigger free-choices re-render so retrained gift slots clear.
+      try { $(document).trigger('cg:gifts:changed'); } catch (_) {}
+    });
+    RetrainAPI.render();
   },
 
   renderXpGifts,
@@ -483,6 +496,9 @@ const ExperienceAPI = {
 
   // Exposed for save/load
   getXpGiftQuals,
+
+  // Retrain sub-system
+  RetrainAPI,
 };
 
 export default ExperienceAPI;

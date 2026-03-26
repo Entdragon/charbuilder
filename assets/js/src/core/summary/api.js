@@ -462,6 +462,24 @@ const SummaryAPI = {
           return `<li><strong>${name}</strong>${qualSuffix}${desc ? `<span class="summary-gift-desc"> — ${desc}</span>` : ''}</li>`;
         }).join('')}</ul>`;
       }
+      // Retrain log
+      const retrainLog = Array.isArray(data.retrainLog ?? data.retrain_log)
+        ? (data.retrainLog ?? data.retrain_log) : [];
+      let retrainHtml = '';
+      if (retrainLog.length > 0) {
+        const totalXp = retrainLog.reduce((s, e) => s + (parseInt(e.xpGained, 10) || 0), 0);
+        retrainHtml = `
+          <div class="summary-retrain-log">
+            <strong>Retrained (${retrainLog.length} item${retrainLog.length > 1 ? 's' : ''}, +${totalXp} XP):</strong>
+            <ul>${retrainLog.map(e => {
+              const label = e.type === 'mark'
+                ? `${e.skillName || e.skillId} mark`
+                : `${e.giftName || e.giftId} gift`;
+              return `<li>${label} <em>(+${e.xpGained} XP)</em></li>`;
+            }).join('')}</ul>
+          </div>`;
+      }
+
       xpHtml = `
         <div class="summary-section summary-xp">
           <h3>Experience Points</h3>
@@ -469,6 +487,7 @@ const SummaryAPI = {
              <strong>Spent:</strong> ${xpSpent} &nbsp;|&nbsp;
              <strong>Available:</strong> ${xpEarned - xpSpent}</p>
           ${xpGiftsListHtml}
+          ${retrainHtml}
         </div>`;
     }
 

@@ -9,6 +9,16 @@ function cg_normalize_character(array $row): array {
     if (!empty($row['extra_career_1'])) $row['extra_career_1'] = (string) $row['extra_career_1'];
     if (!empty($row['extra_career_2'])) $row['extra_career_2'] = (string) $row['extra_career_2'];
 
+    // retrain_log decodes to an array
+    if (isset($row['retrain_log']) && $row['retrain_log'] !== '') {
+        $decoded = json_decode($row['retrain_log'], true);
+        $row['retrain_log'] = is_array($decoded) ? $decoded : [];
+    } else {
+        $row['retrain_log'] = [];
+    }
+    $row['retrainLog']     = $row['retrain_log'];
+    $row['retrainPenalty'] = (int) ($row['retrain_penalty'] ?? 0);
+
     // JSON fields that decode to objects (key→value maps)
     foreach (['skill_marks', 'career_gift_replacements', 'xp_skill_marks',
               'skill_notes', 'gift_skill_marks', 'free_gift_quals', 'xp_gift_quals', 'money_holdings'] as $field) {
@@ -184,6 +194,10 @@ function cg_save_character(): void {
 
         // XP-gift qualification data (language/literacy chosen for each XP gift slot)
         'xp_gift_quals'                 => json_encode(is_array($data['xp_gift_quals']      ?? null) ? $data['xp_gift_quals']      : []),
+
+        // Retraining
+        'retrain_penalty'               => (int) ($data['retrain_penalty'] ?? $data['retrainPenalty'] ?? 0),
+        'retrain_log'                   => json_encode(is_array($data['retrain_log'] ?? null) ? $data['retrain_log'] : (is_array($data['retrainLog'] ?? null) ? $data['retrainLog'] : [])),
 
         'updated'                       => date('Y-m-d H:i:s'),
     ];

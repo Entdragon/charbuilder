@@ -178,6 +178,11 @@ export default {
             </div>
           </div>
 
+          <!-- ── Retraining panel ─────────────────────────────────────── -->
+          <div class="cg-retrain-panel" id="cg-retrain-panel">
+            <!-- Populated dynamically by RetrainAPI.render() -->
+          </div>
+
         </div>
       </div>
 

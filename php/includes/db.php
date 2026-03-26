@@ -145,6 +145,8 @@ function cg_ensure_xp_columns(): void {
         'xp_skill_marks'    => 'TEXT DEFAULT NULL',
         'xp_gifts'          => 'TEXT DEFAULT NULL',
         'xp_gift_quals'     => 'TEXT DEFAULT NULL',
+        'retrain_penalty'   => 'INT DEFAULT 0',
+        'retrain_log'       => 'TEXT DEFAULT NULL',
     ];
 
     try {
