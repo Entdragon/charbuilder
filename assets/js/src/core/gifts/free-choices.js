@@ -31,6 +31,10 @@ const $ = (W && W.jQuery) ? W.jQuery : null;
 const log = (...a) => { try { console.log('[FreeChoices]', ...a); } catch (_) {} };
 const warn = (...a) => { try { console.warn('[FreeChoices]', ...a); } catch (_) {} };
 
+function safeHtml(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 const ALWAYS_ACQUIRED_GIFT_IDS = ['242', '236']; // Local Knowledge, Language (always acquired in your model)
 
 const KNACK_FOR_GIFT_ID = '232'; // "Knack For: [Choice]" — grants +1 mark in a chosen skill
@@ -324,6 +328,49 @@ function traitMinimaSatisfied(g) {
     if (have < m.need) return false;
   }
   return true;
+}
+
+/**
+ * Returns a human-readable reason string if trait minima from requires_special text are the
+ * ONLY reason this gift is ineligible (all other checks pass). Returns null if the gift is
+ * eligible, or if some other check also blocks it (in which case it should remain hidden).
+ *
+ * Used so the UI can show trait-gated gifts as greyed-out (disabled) options rather than
+ * hiding them completely, consistent with the task spec: "not hidden, only visually dimmed."
+ */
+function traitMinimumBlockOnly(g, ownedSet, otherSelectedIds) {
+  if (!g) return null;
+  const id = giftId(g);
+  const name = giftName(g);
+  if (!id || !name) return null;
+
+  // These blocks always hide the gift completely — never dim
+  if (isNaturalGift(g)) return null;
+  if (evaluateStructuredPrereqs(g, ownedSet)) return null;
+  const reqIds = extractRequiredGiftIds(g);
+  for (const rid of reqIds) {
+    if (!ownedSet.has(String(rid))) return null;
+  }
+  if (!comparativeTraitsSatisfied(g)) return null;
+  if (!qualPrereqsSatisfied(g)) return null;
+  if (otherSelectedIds.has(id) && !allowsMultiple(g)) return null;
+
+  // At this point the only possible remaining block is requires_special trait minimums
+  if (!traitMinimaSatisfied(g)) {
+    const rs = requiresSpecialText(g);
+    const mins = extractTraitMinimaFromRequiresSpecial(rs);
+    const parts = mins.map(m => {
+      const have = getTraitDieValue(m.traitKey);
+      if (have == null || have < m.need) {
+        const label = m.traitKey.charAt(0).toUpperCase() + m.traitKey.slice(1);
+        return `${label} d${m.need}+`;
+      }
+      return null;
+    }).filter(Boolean);
+    return 'Requires: ' + (parts.join(', ') || 'higher trait');
+  }
+
+  return null; // gift is eligible — not applicable
 }
 
 /**
@@ -1275,7 +1322,14 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
         seen.add(id);
 
         const reason = giftIneligibleReason(g, owned, others);
-        if (reason) return;
+        if (reason) {
+          // Show trait-minimum-gated gifts as dimmed (disabled) options instead of hiding them
+          const traitReason = traitMinimumBlockOnly(g, owned, others);
+          if (traitReason) {
+            optionItems.push({ id, name, gift: g, _traitGated: true, _traitReason: traitReason });
+          }
+          return;
+        }
         const isGmOnly = gmApprovalRequired(g);
         const unknownNotes = !isGmOnly ? getUnknownPrereqNotes(g) : [];
         optionItems.push({ id, name, gift: g, isGmOnly, unknownNotes });
@@ -1284,11 +1338,13 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
       // ── Build select options ───────────────────────────────────────────────
       const options = optionItems.map(o => {
         const sel = (String(selectedId) === String(o.id)) ? ' selected' : '';
+        const dis = o._traitGated ? ' disabled' : '';
         let label = String(o.name);
-        if (o._forced)                             label += ' (saved)';
-        else if (o.isGmOnly)                       label += ` — [GM: ${getGmApprovalReason(o.gift)}]`;
+        if (o._forced)                                label += ' (saved)';
+        else if (o._traitGated)                       label += ` — ${o._traitReason}`;
+        else if (o.isGmOnly)                          label += ` — [GM: ${getGmApprovalReason(o.gift)}]`;
         else if (o.unknownNotes && o.unknownNotes.length) label += ` — [${o.unknownNotes[0]}]`;
-        return `<option value="${String(o.id)}"${sel}>${String(label).replace(/"/g, '&quot;')}</option>`;
+        return `<option value="${String(o.id)}"${sel}${dis}>${String(label).replace(/"/g, '&quot;')}</option>`;
       }).join('\n');
 
       // ── Effect description & GM badge ─────────────────────────────────────
@@ -1300,6 +1356,43 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
       const gmHtml = curGift && gmApprovalRequired(curGift)
         ? `<div class="cg-gift-gm-badge">⚠ GM approval required</div>`
         : '';
+
+      // ── Rule type badge + allows-multiple badge ────────────────────────────
+      let badgeRowHtml = '';
+      if (curGift) {
+        const ruleType = String(curGift.rule_type ?? '').trim();
+        const ruleTypeBadgeHtml = ruleType
+          ? `<span class="cg-gift-rule-badge cg-gift-rule-badge--${safeHtml(ruleType.toLowerCase().replace(/\s+/g, '-'))}">${safeHtml(ruleType.charAt(0).toUpperCase() + ruleType.slice(1))}</span>`
+          : '';
+
+        // ×2 badge: show when the gift is genuinely manifold (exclude gift 223 which has its own hint)
+        const isManifold = allowsMultiple(curGift) && selectedId !== '223' && detectQualTypesNeeded(curGift).length === 0;
+        const manifoldHtml = isManifold
+          ? `<span class="cg-gift-manifold-badge" title="This gift can be taken more than once">×2</span>`
+          : '';
+
+        if (ruleTypeBadgeHtml || manifoldHtml) {
+          badgeRowHtml = `<div class="cg-gift-badge-row">${ruleTypeBadgeHtml}${manifoldHtml}</div>`;
+        }
+      }
+
+      // ── Trigger line ───────────────────────────────────────────────────────
+      let triggerHtml = '';
+      if (curGift) {
+        const triggerText = String(curGift.trigger ?? curGift.ct_gift_trigger ?? '').trim();
+        if (triggerText) {
+          triggerHtml = `<div class="cg-gift-trigger-line"><span class="cg-gift-trigger-label">Trigger:</span> ${safeHtml(triggerText)}</div>`;
+        }
+      }
+
+      // ── Descriptor tag chips ───────────────────────────────────────────────
+      let tagsHtml = '';
+      if (curGift) {
+        const tags = Array.isArray(curGift.tags) ? curGift.tags : [];
+        if (tags.length) {
+          tagsHtml = `<div class="cg-gift-tag-chips">${tags.map(t => `<span class="cg-gift-tag-chip">${safeHtml(String(t))}</span>`).join('')}</div>`;
+        }
+      }
 
       const extraCareerHint = selectedId === '184'
         ? `<span class="cg-gift-extra-career-hint">
@@ -1315,7 +1408,10 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
             <option value="">— Select a gift —</option>
             ${options}
           </select>
+          ${badgeRowHtml}
           ${descHtml}
+          ${triggerHtml}
+          ${tagsHtml}
           ${gmHtml}
           ${extraCareerHint}
           <div class="cg-free-slot-quals" data-slot="${i}"></div>

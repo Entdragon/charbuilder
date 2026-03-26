@@ -129,7 +129,8 @@ function cg_get_free_gifts(): void {
               g.ct_gifts_manifold                  AS ct_gifts_manifold,
               gc.ct_class_name                     AS giftclass,
               g.ct_gifts_effect                    AS effect,
-              g.ct_gifts_effect_description        AS effect_description
+              g.ct_gifts_effect_description        AS effect_description,
+              g.ct_gift_trigger                    AS trigger
             FROM {$g} AS g
             LEFT JOIN {$gc} AS gc ON gc.ct_id = g.ct_gift_class
             WHERE LOWER(TRIM(COALESCE(gc.ct_class_name, ''))) != 'natural'
@@ -146,7 +147,8 @@ function cg_get_free_gifts(): void {
               ct_gifts_manifold        AS ct_gifts_manifold,
               NULL                     AS giftclass,
               ct_gifts_effect          AS effect,
-              ct_gifts_effect_description AS effect_description
+              ct_gifts_effect_description AS effect_description,
+              ct_gift_trigger          AS trigger
             FROM {$g}
             WHERE published = 1
             ORDER BY ct_gifts_name ASC
@@ -270,6 +272,54 @@ function cg_get_free_gifts(): void {
         }
     } catch (Throwable $e) {
         // gift_prereq table absent — filtering falls back to flat columns and requires_special text
+    }
+
+    // Fetch primary rule type per gift from gift_rules (first row by sort order).
+    // This table may not exist on all installs — gracefully skip if absent.
+    try {
+        $ruleRows = cg_query("
+            SELECT ct_gift_id AS gift_id, ct_rule_type AS rule_type
+            FROM {$p}customtables_table_gift_rules
+            ORDER BY ct_gift_id ASC, ct_sort ASC, ct_id ASC
+        ");
+        foreach ($ruleRows as $rr) {
+            $gId = (int) $rr['gift_id'];
+            if (!isset($byId[$gId])) continue;
+            if (isset($byId[$gId]['rule_type'])) continue; // keep first by sort
+            $rt = trim((string) ($rr['rule_type'] ?? ''));
+            if ($rt !== '') $byId[$gId]['rule_type'] = $rt;
+        }
+    } catch (Throwable $e) {
+        // gift_rules table absent — rule_type will be null on all gifts
+    }
+
+    // Fetch descriptor tags per gift from gift_type_map (flat string array).
+    // Dynamically discovers the tag column name to survive schema differences.
+    // This table may not exist on all installs — gracefully skip if absent.
+    try {
+        $tmTable = "{$p}customtables_table_gift_type_map";
+        // Discover the tag column (any column that isn't a system column)
+        $schemaCols = cg_query("
+            SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_NAME   = '{$tmTable}'
+              AND TABLE_SCHEMA = DATABASE()
+              AND COLUMN_NAME NOT IN ('ct_id','ct_gift_id','ct_sort','published','created_at','updated_at')
+            ORDER BY ORDINAL_POSITION ASC
+            LIMIT 1
+        ");
+        if (!empty($schemaCols)) {
+            $tagCol  = $schemaCols[0]['COLUMN_NAME'];
+            $tagRows = cg_query("SELECT ct_gift_id AS gift_id, `{$tagCol}` AS tag FROM {$tmTable} ORDER BY ct_gift_id ASC, ct_sort ASC, ct_id ASC");
+            foreach ($tagRows as $tr) {
+                $gId = (int) $tr['gift_id'];
+                if (!isset($byId[$gId])) continue;
+                if (!isset($byId[$gId]['tags'])) $byId[$gId]['tags'] = [];
+                $tag = trim((string) ($tr['tag'] ?? ''));
+                if ($tag !== '') $byId[$gId]['tags'][] = $tag;
+            }
+        }
+    } catch (Throwable $e) {
+        // gift_type_map table absent or schema differs — tags will be empty on all gifts
     }
 
     cg_json(['success' => true, 'data' => array_values($byId)]);

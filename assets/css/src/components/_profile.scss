@@ -173,3 +173,82 @@
   strong { font-weight: 700; }
   em     { font-style: italic; }
 }
+
+// ── Gift pattern builder: badges, trigger, tags ───────────────────────────────
+
+.cg-gift-badge-row {
+  display:     flex;
+  flex-wrap:   wrap;
+  gap:         0.35em;
+  margin-top:  0.4em;
+  align-items: center;
+}
+
+.cg-gift-rule-badge {
+  display:       inline-flex;
+  align-items:   center;
+  font-size:     0.7rem;
+  font-weight:   700;
+  letter-spacing:0.04em;
+  text-transform:uppercase;
+  padding:       2px 7px;
+  border-radius: 3px;
+  border:        1px solid;
+  color:         var(--cg-text, #2c2316);
+  background:    rgba(201,168,76,0.12);
+  border-color:  rgba(201,168,76,0.45);
+
+  &--passive    { background: rgba(100,120,160,0.10); border-color: rgba(100,120,160,0.4); color: #334466; }
+  &--action     { background: rgba(180,60,30,0.10);  border-color: rgba(180,60,30,0.38); color: #7a2010; }
+  &--reaction   { background: rgba(60,130,90,0.10);  border-color: rgba(60,130,90,0.38); color: #1a5c34; }
+  &--stunt      { background: rgba(130,60,180,0.10); border-color: rgba(130,60,180,0.38); color: #4a1a70; }
+}
+
+.cg-gift-manifold-badge {
+  display:       inline-flex;
+  align-items:   center;
+  font-size:     0.7rem;
+  font-weight:   700;
+  color:         #5a3e00;
+  background:    rgba(201,168,76,0.18);
+  border:        1px solid rgba(201,168,76,0.5);
+  border-radius: 3px;
+  padding:       2px 6px;
+  cursor:        default;
+}
+
+.cg-gift-trigger-line {
+  margin-top:  0.35em;
+  font-size:   0.81rem;
+  color:       var(--cg-text, #2c2316);
+  line-height: 1.45;
+}
+
+.cg-gift-trigger-label {
+  font-weight:    700;
+  font-size:      0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color:          var(--cg-text-muted, #6a5b3e);
+  margin-right:   0.25em;
+}
+
+.cg-gift-tag-chips {
+  display:    flex;
+  flex-wrap:  wrap;
+  gap:        0.3em;
+  margin-top: 0.4em;
+}
+
+.cg-gift-tag-chip {
+  display:       inline-block;
+  font-size:     0.68rem;
+  font-weight:   600;
+  letter-spacing:0.03em;
+  text-transform:uppercase;
+  color:         var(--cg-text-muted, #6a5b3e);
+  background:    rgba(0,0,0,0.05);
+  border:        1px solid rgba(0,0,0,0.12);
+  border-radius: 3px;
+  padding:       1px 6px;
+}
