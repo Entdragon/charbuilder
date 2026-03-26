@@ -314,7 +314,10 @@ function cg_get_free_gifts(): void {
         ");
         if (!empty($schemaCols)) {
             $tagCol  = $schemaCols[0]['COLUMN_NAME'];
-            $tagRows = cg_query("SELECT ct_gift_id AS gift_id, `{$tagCol}` AS tag FROM {$tmTable} ORDER BY ct_gift_id ASC, ct_sort ASC, ct_id ASC");
+            // ORDER BY only the FK column (always present); ct_sort/ct_id are omitted here
+            // because they may not exist under all naming conventions and tag display order
+            // is not meaningful to the user (chips render as a flat set per gift).
+            $tagRows = cg_query("SELECT ct_gift_id AS gift_id, `{$tagCol}` AS tag FROM {$tmTable} ORDER BY ct_gift_id ASC");
             foreach ($tagRows as $tr) {
                 $gId = (int) $tr['gift_id'];
                 if (!isset($byId[$gId])) continue;
