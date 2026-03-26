@@ -1365,8 +1365,12 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
           ? `<span class="cg-gift-rule-badge cg-gift-rule-badge--${safeHtml(ruleType.toLowerCase().replace(/\s+/g, '-'))}">${safeHtml(ruleType.charAt(0).toUpperCase() + ruleType.slice(1))}</span>`
           : '';
 
-        // ×2 badge: show when the gift is genuinely manifold (exclude gift 223 which has its own hint)
-        const isManifold = allowsMultiple(curGift) && selectedId !== '223' && detectQualTypesNeeded(curGift).length === 0;
+        // ×2 badge: show when ct_gifts_manifold > 0 per spec ("where ct_gifts_manifold is true").
+        // Uses the raw DB field directly, not the broader allowsMultiple() helper which also
+        // returns true for qual-type gifts whose repeatability is implicit rather than manifold.
+        // Gift 223 (Increased Trait: Career) has its own dedicated hint text, so excluded.
+        const rawManifold = Number(curGift.ct_gifts_manifold ?? curGift.allows_multiple ?? 0);
+        const isManifold = Number.isFinite(rawManifold) && rawManifold > 0 && selectedId !== '223';
         const manifoldHtml = isManifold
           ? `<span class="cg-gift-manifold-badge" title="This gift can be taken more than once">×2</span>`
           : '';

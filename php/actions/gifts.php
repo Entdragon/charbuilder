@@ -298,12 +298,17 @@ function cg_get_free_gifts(): void {
     // This table may not exist on all installs — gracefully skip if absent.
     try {
         $tmTable = "{$p}customtables_table_gift_type_map";
-        // Discover the tag column (any column that isn't a system column)
+        // Discover the tag column (any column that isn't a known system/FK column).
+        // Excluded list covers both ct_* and non-ct_* naming conventions so we
+        // survive schema differences between installs.
         $schemaCols = cg_query("
             SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
             WHERE TABLE_NAME   = '{$tmTable}'
               AND TABLE_SCHEMA = DATABASE()
-              AND COLUMN_NAME NOT IN ('ct_id','ct_gift_id','ct_sort','published','created_at','updated_at')
+              AND COLUMN_NAME NOT IN (
+                'ct_id','ct_gift_id','ct_sort','published','created_at','updated_at',
+                'id','gift_id','sort','gift_order','ordering'
+              )
             ORDER BY ORDINAL_POSITION ASC
             LIMIT 1
         ");
