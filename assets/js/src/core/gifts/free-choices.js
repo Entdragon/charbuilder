@@ -1390,10 +1390,12 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
       delete slotObj.knack_skill;
     }
 
-    // Clean up choice_text if the previous gift needed a text choice and the next does not
+    // Clean up choice_text if the previous gift needed a text choice and either:
+    //   (a) the next gift does not need a text choice, or
+    //   (b) the next gift is a different [Choice] gift (stale text would be meaningless)
     const prevWasChoice = prevG ? isUnhandledChoiceGift(prevG) : false;
     const nextIsChoice  = nextG ? isUnhandledChoiceGift(nextG) : false;
-    if (prevWasChoice && !nextIsChoice && slotObj) {
+    if (prevWasChoice && (!nextIsChoice || prevGiftId !== nextGiftId) && slotObj) {
       delete slotObj.choice_text;
     }
 
