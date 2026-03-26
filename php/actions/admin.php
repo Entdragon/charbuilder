@@ -212,7 +212,7 @@ function cg_admin_gift_quality_report(): void {
     ");
 
     if (empty($gifts)) {
-        cg_json(['success' => true, 'data' => []]);
+        cg_json(['success' => true, 'data' => ['total_gifts' => 0, 'total_issues' => 0, 'items' => []]]);
         return;
     }
 
