@@ -473,6 +473,7 @@ function computeOwnedGiftIdSet(selectedFreeGiftIds = []) {
     'gift_ids','giftIds','gifts',
       'career_gift_replacements',
       'cg_career_gift_replacements',
+    'xpGifts','xp_gifts','xp_gift_ids',
   ];
 
   candidateKeys.forEach(k => {

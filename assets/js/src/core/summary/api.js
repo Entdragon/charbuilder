@@ -440,7 +440,7 @@ const SummaryAPI = {
 
     // ── XP block ───────────────────────────────────────────────
     let xpHtml = '';
-    if (xpGifts.length > 0 || xpEarned > 0 || xpMarksBudget > 0) {
+    if (xpGifts.length > 0 || xpEarned > 0 || xpMarksBudget > 0 || xpGiftSlots > 0) {
       let xpGiftsListHtml = '';
       if (xpGifts.length > 0) {
         const fc = window.CG_FreeChoices;
@@ -545,6 +545,18 @@ const SummaryAPI = {
               const desc = giftDesc(sid);
               if (name && name !== sid) {
                 giftItems.push(`<li><strong>${name}</strong>${desc ? `<span class="summary-gift-desc"> — ${desc}</span>` : ''}</li>`);
+              }
+            });
+
+            // ── XP gifts ─────────────────────────────────────────
+            const xpGiftIds = Array.isArray(data.xpGifts) ? data.xpGifts : [];
+            xpGiftIds.forEach(id => {
+              const sid = String(id || '').trim();
+              if (!sid) return;
+              const name = giftName(sid);
+              const desc = giftDesc(sid);
+              if (name && name !== sid) {
+                giftItems.push(`<li><strong>${name}</strong> <em>(XP)</em>${desc ? `<span class="summary-gift-desc"> — ${desc}</span>` : ''}</li>`);
               }
             });
 

@@ -223,7 +223,15 @@ async function renderXpGifts() {
     // Use FreeChoices eligibility filtering when its catalogue is ready
     let eligible;
     if (Array.isArray(FreeChoices._allGifts) && FreeChoices._allGifts.length > 0) {
-      eligible = FreeChoices.getEligibleGiftsForSlot(selected, i);
+      // Merge free-choice selections so non-repeatable gifts already picked there are excluded
+      const builderData = getData();
+      const freeChoiceIds = [
+        ...(Array.isArray(builderData.free_gifts) ? builderData.free_gifts : []),
+        builderData.free_gift_1, builderData.free_gift_2, builderData.free_gift_3,
+      ];
+      const mergedSelected = [...selected, ...freeChoiceIds.filter(Boolean)];
+      // Adjust slotIndex to still refer to the XP slot within mergedSelected
+      eligible = FreeChoices.getEligibleGiftsForSlot(mergedSelected, i);
     } else {
       // Fallback: unfiltered list from cache
       const raw = await fetchGiftList();
