@@ -85,6 +85,25 @@ cp assets/css/dist/core.css      ~/public_html/characters/assets/css/dist/
 # php/router.php is Replit-only — do NOT copy to live
 ```
 
+## Spells Table
+`customtables_table_spells` — 124 rows across these gift groups:
+- Common Magic (15 apprentice spells, all magic users)
+- Element schools: Journeyman/Master Air, Earth, Fire, Water (12 each tier)
+- Journeyman White Magic, Journeyman Cognoscente Magic
+- Secret Star Magic of the Dunwasser Academy
+- Necromancy
+- Druids Apprentice (3), Secrets of Druid Magic (6)
+- Blessed Way (13 tree-based magic weapon spells)
+- Interdictions × 7 (each spell = its own gift; matched by ct_name)
+- Antiñgero Apprentice (2), Pawang Apprentice (2), Dukun Apprentice (2)
+- Budjaduya spells × 4 (matched by ct_name), Tazekar's Path (1)
+- The Way of Changes (5), Secrets of Changes Magic (10 hexagram spells)
+- Taoist Apprentice (5 base element spells)
+- Secrets of Fire/Earth/Water/Metal/Wood Taoist Magic (hexagram combos)
+- Purity Apprentice (2)
+
+Seed with `action=cg_install_spells` (idempotent truncate + re-insert).
+
 ## Replit Workflow
 - Command: `php -S 0.0.0.0:5000 php/router.php`
 - Port: 5000 (webview)
