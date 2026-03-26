@@ -1,0 +1,47 @@
+[libraryo@silberhorn ~]$ cd ~/charbuilder && git pull && npm run build && cp assets/js/dist/core.bundle.js ~/public_html/characters/assets/js/dist/core.bundle.js && cp assets/css/dist/core.css ~/public_html/characters/assets/css/dist/core.css && cp php/ajax.php ~/public_html/characters/ajax.php && cp php/includes/auth.php ~/public_html/characters/includes/auth.php && cp php/actions/character.php ~/public_html/characters/actions/character.php && cp php/actions/equipment.php ~/public_html/characters/actions/equipment.php && cp php/actions/admin.php ~/public_html/characters/actions/admin.php && cp php/admin.php ~/public_html/characters/admin.php
+remote: Enumerating objects: 17, done.
+remote: Counting objects: 100% (17/17), done.
+remote: Compressing objects: 100% (5/5), done.
+remote: Total 10 (delta 5), reused 10 (delta 5), pack-reused 0 (from 0)
+Unpacking objects: 100% (10/10), 7.14 KiB | 1.43 MiB/s, done.
+From https://github.com/Entdragon/charbuilder
+   f20c0438..b2126858  master     -> origin/master
+Updating f20c0438..b2126858
+Fast-forward
+ php/actions/admin.php | 182 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ php/admin.php         | 402 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ php/ajax.php          |   7 ++
+ php/includes/auth.php |   4 ++
+ php/router.php        |   6 ++
+ 5 files changed, 601 insertions(+)
+ create mode 100644 php/actions/admin.php
+ create mode 100644 php/admin.php
+
+> character-generator@1.0.0 build
+> npm run build:core && npm run build:css
+
+
+> character-generator@1.0.0 build:core
+> esbuild assets/js/src/core/index.js --bundle --outfile=assets/js/dist/core.bundle.js --platform=browser --target=es2015 --format=iife --sourcemap
+
+
+  assets/js/dist/core.bundle.js      352.2kb
+  assets/js/dist/core.bundle.js.map  615.1kb
+
+⚡ Done in 133ms
+
+> character-generator@1.0.0 postbuild:core
+> chmod 0755 assets assets/js assets/js/dist 2>/dev/null || true; chmod 0644 assets/js/dist/core.bundle.js assets/js/dist/core.bundle.js.map 2>/dev/null || true
+
+
+> character-generator@1.0.0 build:css
+> sass assets/css/src/main.scss assets/css/dist/core.css --no-source-map
+
+
+> character-generator@1.0.0 postbuild:css
+> chmod 0755 assets assets/css assets/css/dist 2>/dev/null || true; chmod 0644 assets/css/dist/core.css 2>/dev/null || true
+
+[libraryo@silberhorn charbuilder]$ cp php/admin.php ~/public_html/characters/admin.php
+[libraryo@silberhorn charbuilder]$ cp php/actions/admin.php ~/public_html/characters/actions/admin.php
+[libraryo@silberhorn charbuilder]$ cp php/includes/auth.php ~/public_html/characters/includes/auth.php
+[libraryo@silberhorn charbuilder]$ cp php/ajax.php ~/public_html/characters/ajax.php
