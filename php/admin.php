@@ -53,6 +53,10 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
 .cga-logout  { font-size: 0.8rem; color: var(--muted); text-decoration: none; padding: 0.25rem 0.6rem;
                border: 1px solid var(--border); border-radius: var(--radius); }
 .cga-logout:hover { color: var(--text); border-color: var(--gold); }
+.cga-tool-btn { font-size: 0.8rem; color: var(--muted); background: none; cursor: pointer;
+                padding: 0.25rem 0.6rem; border: 1px solid var(--border); border-radius: var(--radius);
+                font-family: inherit; }
+.cga-tool-btn:hover { color: var(--gold); border-color: var(--gold); }
 
 /* ── Tabs ── */
 .cga-tabs    { display: flex; border-bottom: 1px solid var(--border); }
@@ -161,6 +165,7 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
   <div class="cga-topbar">
     <span class="cga-logo">Library of Calabria — Content Editor</span>
     <span class="cga-user">Logged in as <?= $username ?></span>
+    <button class="cga-tool-btn" onclick="runInstallSpells(this)">Install Spells</button>
     <a class="cga-logout" href="/ajax.php?action=cg_logout_user" onclick="return doLogout(event)">Log out</a>
   </div>
 
@@ -651,6 +656,20 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
     e.preventDefault();
     await post('cg_logout_user');
     location.href = '/';
+  };
+
+  // ── Install Spells ────────────────────────────────────────────────────────
+  window.runInstallSpells = async function (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Installing…';
+    try {
+      const r = await post('cg_install_spells');
+      status(r.data || (r.success ? 'Spells installed.' : 'Failed.'), r.success ? 'ok' : 'err');
+    } catch (err) {
+      status('Request failed: ' + err.message, 'err');
+    }
+    btn.disabled = false;
+    btn.textContent = 'Install Spells';
   };
 
   // ── Escape helper ─────────────────────────────────────────────────────────
