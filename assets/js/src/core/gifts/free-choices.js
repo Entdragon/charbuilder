@@ -969,12 +969,27 @@ function extractGiftSuggestions(g) {
     const trimmed = line.trim();
     if (!trimmed) { inSuggestions = false; continue; }
 
+    // Handle inline "Suggestions: a, b, c" on same line
+    const inlineMatch = trimmed.match(/\b(?:suggestion|specialt|example|choice)[s]?\s*[:]\s*(.+)/i);
+    if (inlineMatch) {
+      const items = inlineMatch[1].split(/[,;]+/).map(s => s.split('(')[0].trim()).filter(s => s && s.length <= 50);
+      items.forEach(s => suggestions.push(s));
+      inSuggestions = true;
+      continue;
+    }
+
     if (/\b(suggestion|specialt|example|choice)/i.test(trimmed) && trimmed.length < 60) {
       inSuggestions = true;
       continue;
     }
 
     if (inSuggestions) {
+      // Also handle comma-separated continuation lines
+      if (!trimmed.match(/^[-•*\u2013\u2014]/) && trimmed.includes(',') && trimmed.length < 80) {
+        const items = trimmed.split(/[,;]+/).map(s => s.split('(')[0].trim()).filter(s => s && s.length <= 50 && !/\b(you|when|if|the|this|can|may|will)\b/i.test(s));
+        items.forEach(s => suggestions.push(s));
+        continue;
+      }
       const cleaned = trimmed.replace(/^[-•*\u2013\u2014]+\s*/, '').split('(')[0].trim();
       if (!cleaned || cleaned.length > 50) { inSuggestions = false; continue; }
       if (/\b(you|when|if|the|this|can|may|will|your|and\s+|or\s+|a\s+bonus|roll)\b/i.test(cleaned) && cleaned.split(/\s+/).length > 4) {
@@ -997,21 +1012,33 @@ function extractGiftSuggestions(g) {
 
 /**
  * Render a text input (with optional datalist suggestions) for a [Choice] gift.
+ * @param {number} slot - slot index
+ * @param {string} currentValue - currently saved text value
+ * @param {string[]} suggestions - datalist options
+ * @param {string} [giftLabel] - gift name used to derive a specific prompt label
  */
-function renderChoiceTextInputHtml(slot, currentValue, suggestions) {
+function renderChoiceTextInputHtml(slot, currentValue, suggestions, giftLabel) {
   const listId = `cg-gift-choice-list-${slot}`;
   const esc = s => String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  // Derive a context-specific label from the gift name, e.g. "Artist: [Choice]" → "Artist"
+  const baseName = giftLabel
+    ? String(giftLabel).replace(/\s*[:\-–]\s*\[Choice\]/i, '').replace(/\[Choice\]/i, '').trim()
+    : '';
+  const labelText = baseName ? `Choice: ${baseName}` : 'Your Choice';
+  const placeholder = baseName ? `Enter your ${baseName.toLowerCase()}…` : 'Enter your choice…';
+
   const datalist = suggestions.length
     ? `<datalist id="${listId}">${suggestions.map(s => `<option value="${esc(s)}">`).join('')}</datalist>`
     : '';
   return `
     <label style="display:flex; flex-direction:column; gap:4px; margin-top:8px; min-width:180px;">
-      <span style="font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:var(--cg-text-muted);">Your Choice</span>
+      <span style="font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:var(--cg-text-muted);">${esc(labelText)}</span>
       <input type="text"
         class="cg-gift-choice-input cg-free-select"
         data-slot="${slot}"
         value="${esc(currentValue)}"
-        placeholder="Enter your choice…"
+        placeholder="${esc(placeholder)}"
         autocomplete="off"
         ${suggestions.length ? `list="${listId}"` : ''} />
       ${datalist}
@@ -1453,7 +1480,7 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
         if (!map[slotId] || typeof map[slotId] !== 'object') map[slotId] = {};
         const curChoiceText = String(map[slotId].choice_text || '').trim();
         const suggestions   = extractGiftSuggestions(g);
-        wrap.innerHTML      = renderChoiceTextInputHtml(i, curChoiceText, suggestions);
+        wrap.innerHTML      = renderChoiceTextInputHtml(i, curChoiceText, suggestions, giftName(g));
         setSlotQualMap(map);
         return;
       }
