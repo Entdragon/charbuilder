@@ -224,7 +224,16 @@ function normalizeCore(raw = {}) {
     free_gift_3: freeArr[2] || '',
     'free-choice-0': freeArr[0] || '',
     'free-choice-1': freeArr[1] || '',
-    'free-choice-2': freeArr[2] || ''
+    'free-choice-2': freeArr[2] || '',
+
+    // XP fields — ExperienceAPI writes directly into _data; pass them through
+    // so buildPayload can read them off `core` rather than falling back to undefined.
+    experience_points: parseInt(raw.experience_points, 10) || 0,
+    xpMarksBudget:     parseInt(raw.xpMarksBudget,     10) || 0,
+    xpGiftSlots:       parseInt(raw.xpGiftSlots,       10) || 0,
+    xpSkillMarks: (raw.xpSkillMarks && typeof raw.xpSkillMarks === 'object' && !Array.isArray(raw.xpSkillMarks))
+      ? raw.xpSkillMarks : {},
+    xpGifts: Array.isArray(raw.xpGifts) ? raw.xpGifts.filter(Boolean) : [],
   };
 }
 

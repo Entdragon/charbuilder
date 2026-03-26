@@ -83,6 +83,7 @@ function cg_get_character(): void {
     $uid = cg_current_user_id();
     cg_ensure_battle_columns();
     cg_ensure_profile_columns();
+    cg_ensure_xp_columns();
 
     $row = cg_query_one(
         "SELECT * FROM {$p}character_records WHERE id = ? AND user_id = ? LIMIT 1",
@@ -109,6 +110,7 @@ function cg_save_character(): void {
 
     cg_ensure_battle_columns();
     cg_ensure_profile_columns();
+    cg_ensure_xp_columns();
 
     // skill_marks may arrive as a JSON string (character[skill_marks]) or a proper nested
     // PHP array (character[skillMarks]).  Prefer the array form; decode string as fallback.

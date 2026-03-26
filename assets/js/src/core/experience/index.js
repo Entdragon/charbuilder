@@ -169,6 +169,34 @@ async function fetchGiftList() {
   }
 }
 
+function xpGiftEffectHtml(giftId) {
+  if (!giftId) return '';
+  const g = (FreeChoices._allGifts || []).find(x => String(x.ct_id || x.id || '') === String(giftId));
+  if (!g) return '';
+  const desc = String(g.effect ?? g.effect_description ?? g.ct_gifts_effect_description ?? '').trim();
+  if (!desc) return '';
+  const clean = desc.replace(/@@\w+[:\s]*/g, ' ').replace(/\s+/g, ' ').trim();
+  const short = clean.length > 240 ? clean.slice(0, 237) + '…' : clean;
+  return `<div class="cg-default-gift-effect xp-gift-effect">${short.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`;
+}
+
+function emitXpGiftChanged() {
+  // Notify all systems that listen for gift changes so follow-on effects
+  // (soak pools, trait boosts, trappings, battle pools) recompute.
+  try {
+    const all = getXpGifts();
+    const detail = { xpGifts: all, free_gifts: all, source: 'xp-gifts' };
+    document.dispatchEvent(new CustomEvent('cg:free-gift:changed',    { detail }));
+    document.dispatchEvent(new CustomEvent('cg:freechoices:changed',  { detail }));
+    document.dispatchEvent(new CustomEvent('cg:gifts:changed',        { detail }));
+    if ($) {
+      $(document).trigger('cg:free-gift:changed',   [detail]);
+      $(document).trigger('cg:freechoices:changed', [detail]);
+      $(document).trigger('cg:gifts:changed',       [detail]);
+    }
+  } catch (_) {}
+}
+
 async function renderXpGifts() {
   const $container = $('#cg-xp-gifts');
   if (!$container.length) return;
@@ -220,6 +248,9 @@ async function renderXpGifts() {
       })
       .join('\n');
 
+    // Show effect description for the currently selected gift
+    const effectHtml = xpGiftEffectHtml(curId);
+
     html += `
       <div class="cg-free-slot xp-gift-slot" data-xp-slot="${i}">
         <div style="display:flex; align-items:center; gap:6px;">
@@ -229,6 +260,7 @@ async function renderXpGifts() {
             ${options}
           </select>
         </div>
+        ${effectHtml}
       </div>
     `;
   }
@@ -244,7 +276,9 @@ async function renderXpGifts() {
     arr[slot] = val;
     while (arr.length && !arr[arr.length - 1]) arr.pop();
     setData({ xpGifts: arr });
-    // Re-render so other slots' eligibility lists update
+    // Notify all systems that care about gift selection (soak, traits, trappings, battle)
+    emitXpGiftChanged();
+    // Re-render so other slots' eligibility lists and effect texts update
     renderXpGifts();
   });
 }

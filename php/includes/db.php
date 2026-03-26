@@ -130,6 +130,41 @@ function cg_last_insert_id(): int {
  * Ensure the character_records table has the weapons and armor columns.
  * Safe to call on every request — uses IF NOT EXISTS-style check.
  */
+function cg_ensure_xp_columns(): void {
+    static $done = false;
+    if ($done) return;
+    $done = true;
+
+    $p     = cg_prefix();
+    $table = $p . 'character_records';
+
+    $needed = [
+        'experience_points' => 'INT DEFAULT 0',
+        'xp_marks_budget'   => 'INT DEFAULT 0',
+        'xp_gift_slots'     => 'INT DEFAULT 0',
+        'xp_skill_marks'    => 'TEXT DEFAULT NULL',
+        'xp_gifts'          => 'TEXT DEFAULT NULL',
+    ];
+
+    try {
+        $cols = cg_query(
+            "SELECT COLUMN_NAME FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?
+               AND COLUMN_NAME IN ('" . implode("','", array_keys($needed)) . "')",
+            [$table]
+        );
+        $existing = array_column($cols, 'COLUMN_NAME');
+
+        foreach ($needed as $col => $def) {
+            if (!in_array($col, $existing)) {
+                cg_exec("ALTER TABLE `{$table}` ADD COLUMN `{$col}` {$def}");
+            }
+        }
+    } catch (Throwable $e) {
+        error_log('[CG] ensureXpColumns: ' . $e->getMessage());
+    }
+}
+
 function cg_ensure_profile_columns(): void {
     static $done = false;
     if ($done) return;
