@@ -933,6 +933,92 @@ function renderQualSelectHtml({ slot, type, value, allGifts, excludeValues = [] 
   `;
 }
 
+// ── [Choice] gift helpers ───────────────────────────────────────────────────
+
+/**
+ * Returns true if this gift has "[Choice]" in its name but is NOT already
+ * handled by a qual sub-selector (language, literacy, insider, mystic, piety)
+ * or the Knack For skill picker.
+ */
+function isUnhandledChoiceGift(g) {
+  if (!g) return false;
+  if (!giftName(g).includes('[Choice]')) return false;
+  if (giftId(g) === KNACK_FOR_GIFT_ID) return false;
+  if (detectQualTypesNeeded(g).length > 0) return false;
+  return true;
+}
+
+/**
+ * Parse suggestion items from a gift's effect description.
+ * Looks for lines after a "Suggestions" / "Specialties" / "Examples" header,
+ * or standalone bullet-prefixed lines that are short enough to be list items.
+ */
+function extractGiftSuggestions(g) {
+  const parts = [
+    String(g.ct_gifts_effect_description ?? ''),
+    String(g.ct_gifts_effect ?? ''),
+    String(g.effect_description ?? ''),
+    String(g.description ?? ''),
+  ];
+  const fullText = parts.filter(Boolean).join('\n');
+  const lines = fullText.split(/\r?\n/);
+  const suggestions = [];
+  let inSuggestions = false;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) { inSuggestions = false; continue; }
+
+    if (/\b(suggestion|specialt|example|choice)/i.test(trimmed) && trimmed.length < 60) {
+      inSuggestions = true;
+      continue;
+    }
+
+    if (inSuggestions) {
+      const cleaned = trimmed.replace(/^[-•*\u2013\u2014]+\s*/, '').split('(')[0].trim();
+      if (!cleaned || cleaned.length > 50) { inSuggestions = false; continue; }
+      if (/\b(you|when|if|the|this|can|may|will|your|and\s+|or\s+|a\s+bonus|roll)\b/i.test(cleaned) && cleaned.split(/\s+/).length > 4) {
+        inSuggestions = false; continue;
+      }
+      suggestions.push(cleaned);
+    } else {
+      const bulletMatch = trimmed.match(/^[-•*\u2013\u2014]\s+(.+)$/);
+      if (bulletMatch) {
+        const content = bulletMatch[1].split('(')[0].trim();
+        if (content.length <= 50 && !/\b(you|when|if|the|this|can|may|will)\b/i.test(content)) {
+          suggestions.push(content);
+        }
+      }
+    }
+  }
+
+  return [...new Set(suggestions)].slice(0, 24);
+}
+
+/**
+ * Render a text input (with optional datalist suggestions) for a [Choice] gift.
+ */
+function renderChoiceTextInputHtml(slot, currentValue, suggestions) {
+  const listId = `cg-gift-choice-list-${slot}`;
+  const esc = s => String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const datalist = suggestions.length
+    ? `<datalist id="${listId}">${suggestions.map(s => `<option value="${esc(s)}">`).join('')}</datalist>`
+    : '';
+  return `
+    <label style="display:flex; flex-direction:column; gap:4px; margin-top:8px; min-width:180px;">
+      <span style="font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:var(--cg-text-muted);">Your Choice</span>
+      <input type="text"
+        class="cg-gift-choice-input cg-free-select"
+        data-slot="${slot}"
+        value="${esc(currentValue)}"
+        placeholder="Enter your choice…"
+        autocomplete="off"
+        ${suggestions.length ? `list="${listId}"` : ''} />
+      ${datalist}
+    </label>
+  `;
+}
+
 // Reuse singleton if module is evaluated twice
 const Existing = W.CG_FreeChoices;
 
@@ -945,10 +1031,6 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
   _allGifts: [],
   _byId: null,
   _loading: false,
-
-  _slotEligible: [[], [], []],   // eligible gift items per slot (refreshed on each render)
-  _slotSearch:   ['', '', ''],   // search filter text per slot
-
 
     _renderQueued: false,
     _renderRunning: false,
@@ -1141,20 +1223,7 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
         optionItems.push({ id, name, gift: g, isGmOnly, unknownNotes });
       });
 
-      // ── Navigation state ──────────────────────────────────────────────────
-      const eligible = optionItems.filter(o => !o._forced);
-      this._slotEligible[i] = eligible;
-
-      const search   = this._slotSearch[i] || '';
-      const filtered = search
-        ? eligible.filter(o => o.name.toLowerCase().includes(search.toLowerCase()))
-        : eligible;
-      const curIdx   = selectedId ? filtered.findIndex(o => o.id === selectedId) : -1;
-      const posBadge = filtered.length
-        ? (curIdx >= 0 ? `${curIdx + 1} of ${filtered.length}` : `— of ${filtered.length}`)
-        : 'no eligible gifts';
-
-      // ── Hidden select (data/event compat) ─────────────────────────────────
+      // ── Build select options ───────────────────────────────────────────────
       const options = optionItems.map(o => {
         const sel = (String(selectedId) === String(o.id)) ? ' selected' : '';
         let label = String(o.name);
@@ -1164,22 +1233,15 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
         return `<option value="${String(o.id)}"${sel}>${String(label).replace(/"/g, '&quot;')}</option>`;
       }).join('\n');
 
-      // ── Card display ──────────────────────────────────────────────────────
-      const curName  = curGift ? giftName(curGift) : '';
-      const nameHtml = curName
-        ? `<div class="cg-gift-card-name">${String(curName).replace(/</g, '&lt;')}</div>`
-        : `<div class="cg-gift-card-name cg-gift-card-name--empty">— Select a gift —</div>`;
-
+      // ── Effect description & GM badge ─────────────────────────────────────
       const selectedDesc = curGift ? giftEffectDescription(curGift) : '';
       const descHtml = selectedDesc
-        ? `<div class="cg-gift-card-desc">${String(selectedDesc).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`
+        ? `<div class="cg-gift-effect-inline">${String(selectedDesc).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`
         : '';
 
       const gmHtml = curGift && gmApprovalRequired(curGift)
         ? `<div class="cg-gift-gm-badge">⚠ GM approval required</div>`
         : '';
-
-      const navDisabled = filtered.length <= 1 ? ' disabled' : '';
 
       const extraCareerHint = selectedId === '184'
         ? `<span class="cg-gift-extra-career-hint">
@@ -1190,28 +1252,13 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
 
       return `
         <div class="cg-free-slot" data-slot="${i}">
-          <div class="cg-gift-card">
-            <div class="cg-gift-card-header">
-              <span class="cg-gift-slot-label">Gift ${i + 1}</span>
-              <span class="cg-gift-pos">${posBadge}</span>
-            </div>
-            ${nameHtml}
-            ${descHtml}
-            ${gmHtml}
-            <div class="cg-gift-nav-bar">
-              <button type="button" class="cg-gift-nav-btn cg-gift-prev" data-slot="${i}"
-                title="Previous eligible gift"${navDisabled}>&#8249;</button>
-              <input type="search" class="cg-gift-search" data-slot="${i}"
-                placeholder="Filter gifts…" value="${escape(search)}" autocomplete="off" />
-              <button type="button" class="cg-gift-nav-btn cg-gift-next" data-slot="${i}"
-                title="Next eligible gift"${navDisabled}>&#8250;</button>
-            </div>
-          </div>
-          <select id="cg-free-choice-${i}" class="cg-free-gift-select" data-slot="${i}"
-            style="position:absolute;opacity:0;pointer-events:none;height:1px;width:1px;overflow:hidden;">
+          <label class="cg-gift-label" for="cg-free-choice-${i}">Gift ${i + 1}</label>
+          <select id="cg-free-choice-${i}" class="cg-free-gift-select" data-slot="${i}">
             <option value="">— Select a gift —</option>
             ${options}
           </select>
+          ${descHtml}
+          ${gmHtml}
           ${extraCareerHint}
           <div class="cg-free-slot-quals" data-slot="${i}"></div>
         </div>
@@ -1234,56 +1281,22 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
     } catch (_) {}
   },
 
-  _navigateSlot(slot, direction) {
-    const search   = this._slotSearch[slot] || '';
-    const eligible = this._slotEligible[slot] || [];
-    const filtered = search
-      ? eligible.filter(o => o.name.toLowerCase().includes(search.toLowerCase()))
-      : eligible;
-    if (!filtered.length) return;
-
-    const prevSlots  = getFreeGiftSlotsFromData();
-    const currentId  = String(prevSlots[slot] || '').trim();
-    const currentIdx = filtered.findIndex(o => o.id === currentId);
-    let nextIdx;
-    if (direction === 'next') {
-      nextIdx = currentIdx >= 0 ? (currentIdx + 1) % filtered.length : 0;
-    } else {
-      nextIdx = currentIdx >= 0 ? (currentIdx - 1 + filtered.length) % filtered.length : filtered.length - 1;
-    }
-    const nextGift = filtered[nextIdx];
-    if (!nextGift) return;
-
-    const nextSlots = prevSlots.slice();
-    nextSlots[slot] = nextGift.id;
-    this._cleanupSlotQualsOnGiftChange({ slot, prevGiftId: currentId, nextGiftId: nextGift.id });
-    setFreeGiftSlotsToData(nextSlots, 'gift-nav');
-    this._scheduleRender('gift-nav');
-  },
-
   _bindSectionDelegates(section) {
     if (section.__cgBound) return;
     section.__cgBound = true;
 
-    // Prev/Next navigation buttons
-    section.addEventListener('click', e => {
-      const prev = e.target.closest('.cg-gift-prev');
-      const next = e.target.closest('.cg-gift-next');
-      if (prev && !prev.disabled) {
-        e.preventDefault();
-        this._navigateSlot(Number(prev.dataset.slot || 0), 'prev');
-      } else if (next && !next.disabled) {
-        e.preventDefault();
-        this._navigateSlot(Number(next.dataset.slot || 0), 'next');
-      }
-    });
-
-    // Search filter — update slot search string and re-render
+    // [Choice] text input — persist to free_gift_quals[slot].choice_text
     section.addEventListener('input', e => {
-      const inp = e.target.closest('.cg-gift-search');
-      if (!inp) return;
-      this._slotSearch[Number(inp.dataset.slot || 0)] = inp.value || '';
-      this._scheduleRender('gift-search');
+      const choiceInp = e.target.closest('.cg-gift-choice-input');
+      if (!choiceInp) return;
+      const slot = String(choiceInp.dataset.slot || '0');
+      const val  = String(choiceInp.value || '').trim();
+      const map  = getSlotQualMap();
+      if (!map[slot] || typeof map[slot] !== 'object') map[slot] = {};
+      if (val) map[slot].choice_text = val;
+      else delete map[slot].choice_text;
+      if (Object.keys(map[slot]).length === 0) delete map[slot];
+      setSlotQualMap(map);
     });
 
     section.addEventListener('change', (e) => {
@@ -1377,6 +1390,13 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
       delete slotObj.knack_skill;
     }
 
+    // Clean up choice_text if the previous gift needed a text choice and the next does not
+    const prevWasChoice = prevG ? isUnhandledChoiceGift(prevG) : false;
+    const nextIsChoice  = nextG ? isUnhandledChoiceGift(nextG) : false;
+    if (prevWasChoice && !nextIsChoice && slotObj) {
+      delete slotObj.choice_text;
+    }
+
     if (slotObj) {
       prevNeeds.forEach(type => {
         if (nextNeeds.includes(type)) return;
@@ -1423,6 +1443,16 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
       const g = this._getGift(giftIdSel);
       if (!g) {
         wrap.innerHTML = '';
+        return;
+      }
+
+      // [Choice] gift that isn't handled by a qual sub-selector — show text input
+      if (isUnhandledChoiceGift(g)) {
+        if (!map[slotId] || typeof map[slotId] !== 'object') map[slotId] = {};
+        const curChoiceText = String(map[slotId].choice_text || '').trim();
+        const suggestions   = extractGiftSuggestions(g);
+        wrap.innerHTML      = renderChoiceTextInputHtml(i, curChoiceText, suggestions);
+        setSlotQualMap(map);
         return;
       }
 
