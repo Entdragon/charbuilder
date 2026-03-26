@@ -19,6 +19,12 @@ if ($uri === '/ajax.php') {
     exit;
 }
 
+// ── Admin editor ───────────────────────────────────────────────────────────────
+if ($uri === '/admin' || $uri === '/admin/') {
+    require __DIR__ . '/admin.php';
+    exit;
+}
+
 // ── Static files (assets, vendor, public root files) ─────────────────────────
 // Returning false tells php -S to serve the file with its built-in file handler.
 $disk = $root . $uri;

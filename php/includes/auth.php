@@ -23,6 +23,10 @@ function cg_is_logged_in(): bool {
     return !empty($_SESSION['cg_user_id']);
 }
 
+function cg_is_admin(): bool {
+    return !empty($_SESSION['cg_is_admin']);
+}
+
 function cg_current_user_id(): int {
     return (int) ($_SESSION['cg_user_id'] ?? 0);
 }
