@@ -219,24 +219,22 @@ function cg_admin_gift_quality_report(): void {
     $giftIds = array_map(fn($r) => (int)$r['ct_id'], $gifts);
     $ph      = implode(',', array_fill(0, count($giftIds), '?'));
 
-    // Section type info per gift
+    // Section type info per gift — track 'rules' and 'flavour' specifically
     $sectionsMap = [];
     try {
         $sects = cg_query(
             "SELECT ct_gift_id, ct_section_type
              FROM {$p}customtables_table_gift_sections
              WHERE ct_gift_id IN ($ph)
+               AND ct_section_type IN ('rules', 'flavour')
              GROUP BY ct_gift_id, ct_section_type",
             $giftIds
         );
         foreach ($sects as $s) {
             $gId = (int)$s['ct_gift_id'];
-            if (!isset($sectionsMap[$gId])) $sectionsMap[$gId] = ['has_rules' => false, 'has_other' => false];
-            if ($s['ct_section_type'] === 'rules') {
-                $sectionsMap[$gId]['has_rules'] = true;
-            } else {
-                $sectionsMap[$gId]['has_other'] = true;
-            }
+            if (!isset($sectionsMap[$gId])) $sectionsMap[$gId] = ['has_rules' => false, 'has_flavour' => false];
+            if ($s['ct_section_type'] === 'rules')   $sectionsMap[$gId]['has_rules']   = true;
+            if ($s['ct_section_type'] === 'flavour') $sectionsMap[$gId]['has_flavour'] = true;
         }
     } catch (Throwable $e) { /* gift_sections may not exist */ }
 
@@ -275,8 +273,8 @@ function cg_admin_gift_quality_report(): void {
 
         if ($effect === '' && $effDesc === '') {
             $si = $sectionsMap[$id] ?? null;
-            if ($si && !$si['has_rules'] && $si['has_other']) {
-                $issues[] = ['type' => 'flavour_fallback', 'label' => 'Fallback section is non-rules only'];
+            if ($si && !$si['has_rules'] && $si['has_flavour']) {
+                $issues[] = ['type' => 'flavour_fallback', 'label' => 'No rules section — only flavour section available as fallback'];
             }
         }
 
