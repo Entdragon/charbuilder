@@ -186,7 +186,7 @@ function cg_save_character(): void {
         'money_farthings'               => substr((string) ($data['money_farthings'] ?? ''), 0, 20),
 
         // Per-skill notes and gift-granted marks
-        'skill_notes'                   => json_encode(is_array($data['skill_notes']       ?? null) ? $data['skill_notes']       : (is_object($data['skill_notes'] ?? null) ? (array) $data['skill_notes'] : [])),
+        'skill_notes'                   => json_encode(is_array($data['skill_notes']       ?? null) ? $data['skill_notes']       : (is_object($data['skill_notes'] ?? null) ? (array) $data['skill_notes'] : []), JSON_FORCE_OBJECT),
         'gift_skill_marks'              => json_encode(is_array($data['gift_skill_marks']   ?? null) ? $data['gift_skill_marks']   : []),
 
         // Free-gift qualification data (language/mystic/knack per slot)

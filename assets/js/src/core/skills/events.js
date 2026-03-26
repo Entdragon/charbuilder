@@ -168,8 +168,15 @@ export default {
         if (!skillId) return;
 
         FormBuilderAPI._data = FormBuilderAPI._data || {};
-        if (!FormBuilderAPI._data.skill_notes || typeof FormBuilderAPI._data.skill_notes !== 'object') {
-          FormBuilderAPI._data.skill_notes = {};
+        if (!FormBuilderAPI._data.skill_notes
+            || typeof FormBuilderAPI._data.skill_notes !== 'object'
+            || Array.isArray(FormBuilderAPI._data.skill_notes)) {
+          const staleNotes = FormBuilderAPI._data.skill_notes;
+          const recovered = {};
+          if (Array.isArray(staleNotes)) {
+            Object.keys(staleNotes).forEach(k => { if (staleNotes[k]) recovered[k] = String(staleNotes[k]); });
+          }
+          FormBuilderAPI._data.skill_notes = recovered;
         }
 
         if (val) {
@@ -177,6 +184,44 @@ export default {
         } else {
           delete FormBuilderAPI._data.skill_notes[skillId];
         }
+
+        // Charge 1 XP when changing a previously-committed fav use (not first-time set).
+        // favUseOriginal is snapshotted from loaded skill_notes on init().
+        // favUsePaid tracks which skills have already been charged this session.
+        try {
+          const original = (FormBuilderAPI._data.favUseOriginal || {})[skillId];
+          const paid     = FormBuilderAPI._data.favUsePaid || {};
+          // Only charge if: there was a committed value AND the new text differs AND not yet charged
+          if (original !== undefined && original !== '' && val !== original && !paid[skillId]) {
+            paid[skillId] = true;
+            FormBuilderAPI._data.favUsePaid = paid;
+
+            // Resolve skill name from the global skills list
+            const skillList  = window.CG_SKILLS_LIST || [];
+            const skillEntry = Array.isArray(skillList) ? skillList.find(s => String(s.id) === skillId) : null;
+            const skillName  = skillEntry ? String(skillEntry.name || skillId) : skillId;
+
+            // Add 1-XP retrain-log entry (same mechanism as the retrain system)
+            const log = Array.isArray(FormBuilderAPI._data.retrainLog) ? [...FormBuilderAPI._data.retrainLog] : [];
+            log.push({
+              type:      'fav_use',
+              skill_id:  skillId,
+              note:      `Changed favourite use: "${skillName}"`,
+              cost:      1,
+              timestamp: Date.now(),
+            });
+            FormBuilderAPI._data.retrainLog     = log;
+            FormBuilderAPI._data.retrainPenalty = (parseInt(FormBuilderAPI._data.retrainPenalty, 10) || 0) + 1;
+
+            // Refresh the XP widget so the cost appears immediately
+            try {
+              const XPAPI = window.CG_ExperienceAPI;
+              if (XPAPI && typeof XPAPI.initWidget === 'function') {
+                XPAPI.initWidget();
+              }
+            } catch (_) {}
+          }
+        } catch (_) {}
 
         // Debounce dirty marking to avoid lag
         clearTimeout(_favDebounce);

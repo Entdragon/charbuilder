@@ -501,4 +501,6 @@ const ExperienceAPI = {
   RetrainAPI,
 };
 
+window.CG_ExperienceAPI = ExperienceAPI;
+
 export default ExperienceAPI;

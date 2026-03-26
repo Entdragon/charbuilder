@@ -433,10 +433,17 @@ function buildPayload(raw) {
   character.money_denarii   = raw.money_denarii   || '';
   character.money_farthings = raw.money_farthings || '';
 
-  // Skill notes (favourite use text per skill)
-  character.skill_notes = (raw.skill_notes && typeof raw.skill_notes === 'object' && !Array.isArray(raw.skill_notes))
-    ? raw.skill_notes
-    : {};
+  // Skill notes (favourite use text per skill) — same array→object fix as xp_skill_marks
+  character.skill_notes = (() => {
+    const v = raw.skill_notes;
+    if (!v || typeof v !== 'object') return {};
+    if (Array.isArray(v)) {
+      const obj = {};
+      Object.keys(v).forEach(k => { if (v[k]) obj[k] = String(v[k]); });
+      return obj;
+    }
+    return v;
+  })();
 
   // Gift-granted skill marks (skill_id → count of gift-granted marks)
   character.gift_skill_marks = (raw.gift_skill_marks && typeof raw.gift_skill_marks === 'object' && !Array.isArray(raw.gift_skill_marks))
@@ -471,6 +478,23 @@ const FormBuilderAPI = {
     this._data   = { ...payload };
     this.isNew   = Boolean(payload.isNew);
     this.hasData = !this.isNew;
+
+    // Normalise skill_notes: PHP decodes an empty object as [] — convert to {} so
+    // events.js can safely mutate it with string-keyed properties.
+    if (Array.isArray(this._data.skill_notes)) {
+      const recovered = {};
+      const stale = this._data.skill_notes;
+      Object.keys(stale).forEach(k => { if (stale[k]) recovered[k] = String(stale[k]); });
+      this._data.skill_notes = recovered;
+    } else if (!this._data.skill_notes || typeof this._data.skill_notes !== 'object') {
+      this._data.skill_notes = {};
+    }
+
+    // Snapshot the committed fav-use values so we can detect changes and charge 1 XP.
+    // This is set once per session from the loaded skill_notes. Events that change a
+    // previously-committed value trigger a 1-XP retrain penalty.
+    this._data.favUseOriginal = { ...this._data.skill_notes };
+    this._data.favUsePaid     = {};
 
     $('#cg-form-container').html(
       FormBuilder.buildForm(this._data)
@@ -782,39 +806,42 @@ const FormBuilderAPI = {
     this._data.experience_points = d.experience_points;
 
     // Battle data — BattleAPI.persist() keeps this._data.weapons/armor in sync whenever DOM changes.
-    // Flush synchronously via DOM scan (covers the case where the battle tab is currently active).
+    // GUARD: only do a DOM scan if the Battle tab has already been rendered
+    // (#cg-weapons-tbody is inserted by BattleAPI._render(), not the initial buildForm).
+    // Without this guard, saving from any other tab clears saved weapons/armour because
+    // the tbody doesn't exist in the DOM yet.
     try {
-      const weapons = [];
-      document.querySelectorAll('#cg-weapons-tbody .cg-weapon-row').forEach(row => {
-        // Skip rows that came from trappings — _syncBattleArray() rebuilds them from trappings_list on load
-        if (row.dataset.fromTrappings === '1') return;
-        weapons.push({
-          name:   row.querySelector('.cg-weapon-name')?.value   || '',
-          attack: row.querySelector('.cg-weapon-attack')?.value || '',
-          damage: row.querySelector('.cg-weapon-damage')?.value || '',
-          range:  row.querySelector('.cg-weapon-range')?.value  || 'Melee',
-          notes:  row.querySelector('.cg-weapon-notes')?.value  || '',
+      const wtbody = document.getElementById('cg-weapons-tbody');
+      if (wtbody) {
+        const weapons = [];
+        wtbody.querySelectorAll('.cg-weapon-row').forEach(row => {
+          if (row.dataset.fromTrappings === '1') return;
+          weapons.push({
+            name:   row.querySelector('.cg-weapon-name')?.value   || '',
+            attack: row.querySelector('.cg-weapon-attack')?.value || '',
+            damage: row.querySelector('.cg-weapon-damage')?.value || '',
+            range:  row.querySelector('.cg-weapon-range')?.value  || 'Melee',
+            notes:  row.querySelector('.cg-weapon-notes')?.value  || '',
+          });
         });
-      });
-      // Always update — even if empty (clearing all manual weapons is intentional)
-      this._data.weapons = weapons;
-      d.weapons = weapons;
+        this._data.weapons = weapons;
+      }
     } catch (_) {}
     try {
-      const armor = [];
-      document.querySelectorAll('#cg-armor-tbody .cg-armor-row').forEach(row => {
-        // Skip rows that came from trappings — _syncBattleArray() rebuilds them from trappings_list on load
-        if (row.dataset.fromTrappings === '1') return;
-        armor.push({
-          name:    row.querySelector('.cg-armor-name')?.value    || '',
-          soak:    row.querySelector('.cg-armor-soak')?.value    || '',
-          penalty: row.querySelector('.cg-armor-penalty')?.value || '',
-          notes:   row.querySelector('.cg-armor-notes')?.value   || '',
+      const atbody = document.getElementById('cg-armor-tbody');
+      if (atbody) {
+        const armor = [];
+        atbody.querySelectorAll('.cg-armor-row').forEach(row => {
+          if (row.dataset.fromTrappings === '1') return;
+          armor.push({
+            name:    row.querySelector('.cg-armor-name')?.value    || '',
+            soak:    row.querySelector('.cg-armor-soak')?.value    || '',
+            penalty: row.querySelector('.cg-armor-penalty')?.value || '',
+            notes:   row.querySelector('.cg-armor-notes')?.value   || '',
+          });
         });
-      });
-      // Always update — even if empty
-      this._data.armor = armor;
-      d.armor = armor;
+        this._data.armor = armor;
+      }
     } catch (_) {}
 
     d.weapons = Array.isArray(this._data.weapons) ? this._data.weapons : [];

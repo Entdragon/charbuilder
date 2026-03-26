@@ -245,10 +245,18 @@ function renderRetrainPanel() {
         <h4>Retrained This Session</h4>
         <ul class="retrain-log-list">
           ${log.map(entry => {
-            const label = entry.type === 'mark'
-              ? `${entry.skillName || entry.skillId} mark (${entry.source})`
-              : `${entry.giftName || entry.giftId} gift (${entry.source})`;
-            return `<li><span class="retrain-log-item">${label}</span> <span class="retrain-log-xp">+${entry.xpGained} XP</span></li>`;
+            let label, xpStr;
+            if (entry.type === 'fav_use') {
+              label  = entry.note || `Changed favourite use (skill ${entry.skill_id})`;
+              xpStr  = `−${entry.cost || 1} XP`;
+            } else if (entry.type === 'mark') {
+              label  = `${entry.skillName || entry.skillId} mark (${entry.source})`;
+              xpStr  = `+${entry.xpGained} XP`;
+            } else {
+              label  = `${entry.giftName || entry.giftId} gift (${entry.source})`;
+              xpStr  = `+${entry.xpGained} XP`;
+            }
+            return `<li><span class="retrain-log-item">${label}</span> <span class="retrain-log-xp">${xpStr}</span></li>`;
           }).join('')}
         </ul>
       </div>`
