@@ -1,0 +1,39 @@
+[libraryo@silberhorn charbuilder]$ cd ~/charbuilder && git pull && npm run build && cp assets/js/dist/core.bundle.js ~/public_html/characters/assets/js/dist/core.bundle.js && cp assets/css/dist/core.css ~/public_html/characters/assets/css/dist/core.css && cp php/ajax.php ~/public_html/characters/ajax.php && cp php/includes/auth.php ~/public_html/characters/includes/auth.php && cp php/actions/admin.php ~/public_html/characters/actions/admin.php && cp php/admin.php ~/public_html/characters/admin.php && cp php/actions/gifts.php ~/public_html/characters/actions/gifts.php
+remote: Enumerating objects: 6, done.
+remote: Counting objects: 100% (6/6), done.
+remote: Compressing objects: 100% (2/2), done.
+remote: Total 4 (delta 2), reused 4 (delta 2), pack-reused 0 (from 0)
+Unpacking objects: 100% (4/4), 8.19 KiB | 4.10 MiB/s, done.
+From https://github.com/Entdragon/charbuilder
+   475f361f..c0038171  master     -> origin/master
+Updating 475f361f..c0038171
+Fast-forward
+ attached_assets/page-equipment_1774510072776.php | 1426 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 1426 insertions(+)
+ create mode 100644 attached_assets/page-equipment_1774510072776.php
+
+> character-generator@1.0.0 build
+> npm run build:core && npm run build:css
+
+
+> character-generator@1.0.0 build:core
+> esbuild assets/js/src/core/index.js --bundle --outfile=assets/js/dist/core.bundle.js --platform=browser --target=es2015 --format=iife --sourcemap
+
+
+  assets/js/dist/core.bundle.js      352.2kb
+  assets/js/dist/core.bundle.js.map  615.1kb
+
+⚡ Done in 201ms
+
+> character-generator@1.0.0 postbuild:core
+> chmod 0755 assets assets/js assets/js/dist 2>/dev/null || true; chmod 0644 assets/js/dist/core.bundle.js assets/js/dist/core.bundle.js.map 2>/dev/null || true
+
+
+> character-generator@1.0.0 build:css
+> sass assets/css/src/main.scss assets/css/dist/core.css --no-source-map
+
+
+> character-generator@1.0.0 postbuild:css
+> chmod 0755 assets assets/css assets/css/dist 2>/dev/null || true; chmod 0644 assets/css/dist/core.css 2>/dev/null || true
+
+[libraryo@silberhorn charbuilder]$
