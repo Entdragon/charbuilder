@@ -297,6 +297,9 @@ function cg_get_free_gifts(): void {
     // Schema-tolerant: discovers both the gift FK column and the tag/label column
     // via INFORMATION_SCHEMA, and handles the case where the tag column stores
     // integer FK IDs (resolved via JOIN to referenced table) vs. text labels (direct).
+    // Note: INFORMATION_SCHEMA queries run once per request (not in a loop); if per-request
+    // latency is a concern in production, resolved column metadata can be stored in a
+    // WordPress transient and read here instead of querying INFORMATION_SCHEMA each time.
     // This table may not exist on all installs — gracefully skip if absent.
     try {
         $tmTable = "{$p}customtables_table_gift_type_map";
@@ -410,6 +413,15 @@ function cg_get_free_gifts(): void {
     } catch (Throwable $e) {
         // gift_type_map table absent or schema differs — tags will be empty on all gifts
     }
+
+    // Deduplicate and sort descriptor tags per gift for clean chip rendering
+    foreach ($byId as &$gift) {
+        if (!empty($gift['tags'])) {
+            $gift['tags'] = array_values(array_unique($gift['tags']));
+            sort($gift['tags']);
+        }
+    }
+    unset($gift);
 
     cg_json(['success' => true, 'data' => array_values($byId)]);
 }
