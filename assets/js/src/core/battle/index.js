@@ -80,7 +80,116 @@ function ensureSkillsList() {
   return dfd.promise();
 }
 
-const WOUND_LEVELS = ['Hurt', 'Injured', 'Mauled', 'Crippled', 'Dead'];
+// ── Movement helpers ─────────────────────────────────────────────────────────
+const DIE_MAX = { d4: 4, d6: 6, d8: 8, d10: 10, d12: 12 };
+
+function dieToMax(die) {
+  return DIE_MAX[String(die || '').toLowerCase()] || 0;
+}
+
+function buildMovementStats() {
+  const speedDie = traitDie('speed');
+  const bodyDie  = traitDie('body');
+  const maxSpeed = dieToMax(speedDie);
+  const maxBody  = dieToMax(bodyDie);
+
+  const stride  = 1;
+  const dash    = maxSpeed > 0
+    ? Math.floor(maxSpeed / 2) + (maxBody > maxSpeed ? 1 : 0)
+    : '—';
+  const sprint  = speedDie || '—';
+  const dashNum = typeof dash === 'number' ? dash : 0;
+  const run     = (maxBody > 0 && maxSpeed > 0)
+    ? maxBody + maxSpeed + dashNum
+    : '—';
+
+  return { stride, dash, sprint, run, maxBody };
+}
+
+function renderMovementSection() {
+  const m = buildMovementStats();
+  return `
+    <div class="cg-movement-section">
+      <h4 class="cg-battle-subhead">Movement</h4>
+      <div class="cg-movement-grid">
+        <div class="cg-move-stat">
+          <span class="cg-move-label">Stride</span>
+          <span class="cg-move-value" id="cg-move-stride">${escape(String(m.stride))}</span>
+          <span class="cg-move-note">(1)</span>
+        </div>
+        <div class="cg-move-stat">
+          <span class="cg-move-label">Dash</span>
+          <span class="cg-move-value" id="cg-move-dash">${escape(String(m.dash))}</span>
+          <span class="cg-move-note">(½ Max Speed, +1 if Body&gt;Speed)</span>
+        </div>
+        <div class="cg-move-stat">
+          <span class="cg-move-label">Sprint</span>
+          <span class="cg-move-value" id="cg-move-sprint">${escape(String(m.sprint))}</span>
+          <span class="cg-move-note">(Speed die)</span>
+        </div>
+        <div class="cg-move-stat">
+          <span class="cg-move-label">Run</span>
+          <span class="cg-move-value" id="cg-move-run">${escape(String(m.run))}</span>
+          <span class="cg-move-note">(Max Body + Max Speed + Dash)</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ── Damage track ─────────────────────────────────────────────────────────────
+const HIT_STATES = [
+  { count: 'no hits', name: 'Reeling',    note: 'penalty d8; no Counters' },
+  { count: '1 hit',   name: 'Hurt',       note: '+1 damage' },
+  { count: '2 hits',  name: 'Afraid',     note: 'cannot attack or rally' },
+  { count: '3 hits',  name: 'Injured',    note: '+1 damage', hqAfter: true },
+  { count: '4 hits',  name: 'Dying',      note: 'get first aid!' },
+  { count: '5 hits',  name: 'Dead',       note: 'beyond mortal help' },
+  { count: '6 hits',  name: 'Overkilled', note: 'allies become Afraid' },
+  { count: '',        name: 'Sick',       note: 'Reeling causes Knockdown', hqAfter: true },
+];
+
+const STATUS_CONDITIONS = [
+  { name: 'Burdened',      note: "Dash is zero, limit of d8 to Speed Skills" },
+  { name: 'Over-Burdened', note: "Burdened, can't run, disadvantaged" },
+  { name: 'Knockdown',     note: "disadvantaged, can't retreat" },
+  { name: 'Unconscious',   note: 'helpless' },
+];
+
+function healingQuotaRow(circles) {
+  const pips = Array.from({ length: circles }, () => `<span class="cg-hq-circle"></span>`).join('');
+  return `<div class="cg-healing-quota"><span class="cg-hq-label">Healing Quota</span><span class="cg-hq-circles">${pips}</span></div>`;
+}
+
+function renderDamageTrack() {
+  const { maxBody } = buildMovementStats();
+  const hqCount = maxBody > 0 ? maxBody : 8;
+
+  const leftHtml = HIT_STATES.map(s => {
+    const countCell = s.count
+      ? `<span class="cg-hit-count">${s.count}</span>`
+      : `<span class="cg-hit-count cg-hit-count--empty"></span>`;
+    const row = `<div class="cg-hit-row">${countCell}<span class="cg-hit-pip"></span><span class="cg-hit-name">${s.name}</span><span class="cg-hit-note">(${s.note})</span></div>`;
+    return s.hqAfter ? row + healingQuotaRow(hqCount) : row;
+  }).join('');
+
+  const rightHtml = STATUS_CONDITIONS.map(s => `
+    <div class="cg-status-row">
+      <span class="cg-hit-pip"></span>
+      <span class="cg-status-name">${s.name}</span>
+      <span class="cg-hit-note">(${s.note})</span>
+    </div>`).join('');
+
+  return `
+    <div class="cg-damage-track">
+      <h4 class="cg-battle-subhead">Damage &amp; Other Status</h4>
+      <div class="cg-damage-track-layout">
+        <div class="cg-hit-states">${leftHtml}</div>
+        <div class="cg-status-conditions">${rightHtml}</div>
+      </div>
+    </div>
+  `;
+}
 
 
 function escape(val) {
@@ -155,19 +264,20 @@ function renderPoolsSection(pools) {
           <span class="cg-pool-note">(Body + Armour)</span>
         </div>
       </div>
-      <div class="cg-wound-track">
-        <h4 class="cg-battle-subhead">Wound Track</h4>
-        <div class="cg-wound-levels">
-          ${WOUND_LEVELS.map(w => `
-            <div class="cg-wound-level">
-              <span class="cg-wound-box"></span>
-              <span class="cg-wound-name">${w}</span>
-            </div>
-          `).join('')}
-        </div>
-      </div>
     </div>
   `;
+}
+
+function refreshMovement() {
+  const m = buildMovementStats();
+  const strideEl = document.getElementById('cg-move-stride');
+  const dashEl   = document.getElementById('cg-move-dash');
+  const sprintEl = document.getElementById('cg-move-sprint');
+  const runEl    = document.getElementById('cg-move-run');
+  if (strideEl) strideEl.textContent = String(m.stride);
+  if (dashEl)   dashEl.textContent   = String(m.dash);
+  if (sprintEl) sprintEl.textContent = String(m.sprint);
+  if (runEl)    runEl.textContent    = String(m.run);
 }
 
 function weaponRowHtml(w = {}, idx) {
@@ -453,6 +563,8 @@ const BattleAPI = {
 
     container.innerHTML =
       renderPoolsSection(pools) +
+      renderMovementSection() +
+      renderDamageTrack() +
       renderWeaponsTable(weapons) +
       renderArmorTable(armor) +
       renderSpellsTable(spells);
@@ -534,11 +646,14 @@ const BattleAPI = {
     container.addEventListener('input',  () => persist(), true);
     container.addEventListener('change', () => persist(), true);
 
-    // Refresh pools when traits change
-    document.addEventListener('cg:traits:updated', refreshPools);
+    // Refresh pools and movement when traits change
+    document.addEventListener('cg:traits:updated', () => { refreshPools(); refreshMovement(); });
     document.addEventListener('change', e => {
       const t = e.target;
-      if (t && t.id && /^cg-(speed|will|body|mind|trait_species)$/.test(t.id)) refreshPools();
+      if (t && t.id && /^cg-(speed|will|body|mind|trait_species)$/.test(t.id)) {
+        refreshPools();
+        refreshMovement();
+      }
     });
 
     // Re-fetch spells AND refresh pools when gift-related events fire

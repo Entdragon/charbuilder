@@ -61,39 +61,150 @@
   margin-top:     0.15em;
 }
 
-// ── Wound Track — scoped under #cg-modal to beat WordPress span/flex overrides
-#cg-modal .cg-wound-track {
-  margin-bottom:  1.2em;
+// ── Movement section ─────────────────────────────────────────────────────────
+.cg-movement-section {
+  margin-bottom: 1.2em;
 }
 
-#cg-modal .cg-wound-levels {
+#cg-modal .cg-movement-grid {
+  display:        grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap:            0.6em 1.2em;
+  margin-top:     0.5em;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+#cg-modal .cg-move-stat {
   display:        flex;
-  gap:            0.8em;
+  align-items:    baseline;
+  gap:            0.4em;
+  font-size:      0.84rem;
+}
+
+.cg-move-label {
+  font-weight:    700;
+  color:          var(--cg-text, #2c2316);
+  min-width:      3.8em;
+}
+
+.cg-move-value {
+  font-family:    var(--cg-heading-font, 'Cinzel', serif);
+  font-weight:    700;
+  font-size:      1rem;
+  color:          var(--cg-gold-dark, #a8822a);
+  min-width:      2em;
+  text-align:     center;
+}
+
+.cg-move-note {
+  font-size:      0.65rem;
+  color:          var(--cg-text-muted, #6a5b3e);
+  font-style:     italic;
+}
+
+// ── Damage track ─────────────────────────────────────────────────────────────
+.cg-damage-track {
+  margin-bottom: 1.4em;
+}
+
+#cg-modal .cg-damage-track-layout {
+  display:        flex;
+  gap:            1.4em;
   flex-wrap:      wrap;
   margin-top:     0.5em;
+
+  @media (max-width: 560px) {
+    flex-direction: column;
+    gap: 0.6em;
+  }
 }
 
-#cg-modal .cg-wound-level {
+#cg-modal .cg-hit-states {
+  flex:           0 0 auto;
+  min-width:      200px;
+}
+
+#cg-modal .cg-status-conditions {
+  flex:           1;
+  min-width:      160px;
+  padding-top:    0.15em;
+}
+
+#cg-modal .cg-hit-row,
+#cg-modal .cg-status-row {
   display:        flex;
   align-items:    center;
   gap:            0.4em;
-  font-size:      0.85rem;
-  color:          var(--cg-text, #2c2316);
+  font-size:      0.82rem;
+  margin-bottom:  0.22em;
+  line-height:    1.3;
 }
 
-#cg-modal .cg-wound-box {
+.cg-hit-count {
+  font-size:      0.68rem;
+  color:          var(--cg-text-muted, #6a5b3e);
+  min-width:      3.5em;
+  text-align:     right;
+  font-style:     italic;
+
+  &.cg-hit-count--empty {
+    min-width: 3.5em;
+  }
+}
+
+// Pip (checkbox-style circle) — scoped to #cg-modal to override WP resets
+#cg-modal .cg-hit-pip {
   display:        inline-block;
-  width:          18px;
-  height:         18px;
-  border:         2px solid rgba(201,168,76,0.45);
-  border-radius:  3px;
+  width:          14px;
+  height:         14px;
+  border:         2px solid rgba(201,168,76,0.5);
+  border-radius:  50%;
   background:     transparent;
   flex-shrink:    0;
 }
 
-#cg-modal .cg-wound-name {
-  font-size:      0.8rem;
+.cg-hit-name,
+.cg-status-name {
+  font-weight:    700;
   color:          var(--cg-text, #2c2316);
+}
+
+.cg-hit-note {
+  font-size:      0.68rem;
+  color:          var(--cg-text-muted, #6a5b3e);
+  font-style:     italic;
+}
+
+#cg-modal .cg-healing-quota {
+  display:        flex;
+  align-items:    center;
+  gap:            0.4em;
+  margin:         0.3em 0 0.3em 4em;
+  font-size:      0.72rem;
+}
+
+.cg-hq-label {
+  color:          var(--cg-text-muted, #6a5b3e);
+  font-style:     italic;
+  white-space:    nowrap;
+}
+
+.cg-hq-circles {
+  display:        flex;
+  flex-wrap:      wrap;
+  gap:            3px;
+}
+
+#cg-modal .cg-hq-circle {
+  display:        inline-block;
+  width:          11px;
+  height:         11px;
+  border:         1.5px solid rgba(201,168,76,0.5);
+  border-radius:  50%;
+  background:     transparent;
 }
 
 // ── Weapon / Armor Tables ────────────────────────────────────────

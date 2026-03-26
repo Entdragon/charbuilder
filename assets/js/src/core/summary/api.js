@@ -241,6 +241,24 @@ const SummaryAPI = {
       if (dom && dom.value) return dom.value;
       return data[key] || '';
     };
+
+    // ── Movement stats ──────────────────────────────────────────
+    const _dieMax   = { d4: 4, d6: 6, d8: 8, d10: 10, d12: 12 };
+    const _dieToMax = d => _dieMax[String(d || '').toLowerCase()] || 0;
+    const _speedDie = _traitDie('speed');
+    const _maxSpeed = _dieToMax(_speedDie);
+    const _maxBody  = _dieToMax(_traitDie('body'));
+    const _dash     = _maxSpeed > 0
+      ? Math.floor(_maxSpeed / 2) + (_maxBody > _maxSpeed ? 1 : 0)
+      : '—';
+    const _dashNum  = typeof _dash === 'number' ? _dash : 0;
+    const _run      = (_maxBody > 0 && _maxSpeed > 0)
+      ? _maxBody + _maxSpeed + _dashNum
+      : '—';
+    const _hqCount  = _maxBody > 0 ? _maxBody : 8;
+    const _hqCircles = Array.from({ length: _hqCount }, () =>
+      `<span class="cg-hq-circle"></span>`).join('');
+
     const spTraitDie = _traitDie('trait_species');
     const cpTraitDie = _traitDie('trait_career');
     const spSkillIds = [species.skill_one, species.skill_two, species.skill_three]
@@ -536,14 +554,44 @@ const SummaryAPI = {
                 </tbody>
               </table>
             </div>
-            <div class="cg-summary-wound-track">
-              <strong>Wounds:</strong>
-              <span class="cg-wound-boxes">
-                ${['Hurt','Injured','Mauled','Crippled','Dead'].map(w =>
-                  `<span class="cg-wound-pip"><span class="cg-wound-box-print"></span>${w}</span>`
-                ).join('')}
-              </span>
+
+            <div class="summary-movement">
+              <h4 class="summary-sub-heading">Movement</h4>
+              <table class="cg-battle-summary-table">
+                <thead><tr><th>Mode</th><th>Value</th><th>Formula</th></tr></thead>
+                <tbody>
+                  <tr><td>Stride</td><td>1</td><td>(1)</td></tr>
+                  <tr><td>Dash</td><td>${_dash}</td><td>(½ Max Speed, +1 if Body&gt;Speed)</td></tr>
+                  <tr><td>Sprint</td><td>${_speedDie || '—'}</td><td>(Speed die)</td></tr>
+                  <tr><td>Run</td><td>${_run}</td><td>(Max Body + Max Speed + Dash)</td></tr>
+                </tbody>
+              </table>
             </div>
+
+            <div class="summary-damage-track">
+              <h4 class="summary-sub-heading">Damage &amp; Other Status</h4>
+              <div class="cg-damage-track-layout">
+                <div class="cg-hit-states">
+                  <div class="cg-hit-row"><span class="cg-hit-count">no hits</span><span class="cg-hit-pip"></span><span class="cg-hit-name">Reeling</span><span class="cg-hit-note">(penalty d8; no Counters)</span></div>
+                  <div class="cg-hit-row"><span class="cg-hit-count">1 hit</span><span class="cg-hit-pip"></span><span class="cg-hit-name">Hurt</span><span class="cg-hit-note">(+1 damage)</span></div>
+                  <div class="cg-hit-row"><span class="cg-hit-count">2 hits</span><span class="cg-hit-pip"></span><span class="cg-hit-name">Afraid</span><span class="cg-hit-note">(cannot attack or rally)</span></div>
+                  <div class="cg-hit-row"><span class="cg-hit-count">3 hits</span><span class="cg-hit-pip"></span><span class="cg-hit-name">Injured</span><span class="cg-hit-note">(+1 damage)</span></div>
+                  <div class="cg-healing-quota"><span class="cg-hq-label">Healing Quota</span><span class="cg-hq-circles">${_hqCircles}</span></div>
+                  <div class="cg-hit-row"><span class="cg-hit-count">4 hits</span><span class="cg-hit-pip"></span><span class="cg-hit-name">Dying</span><span class="cg-hit-note">(get first aid!)</span></div>
+                  <div class="cg-hit-row"><span class="cg-hit-count">5 hits</span><span class="cg-hit-pip"></span><span class="cg-hit-name">Dead</span><span class="cg-hit-note">(beyond mortal help)</span></div>
+                  <div class="cg-hit-row"><span class="cg-hit-count">6 hits</span><span class="cg-hit-pip"></span><span class="cg-hit-name">Overkilled</span><span class="cg-hit-note">(allies become Afraid)</span></div>
+                  <div class="cg-hit-row"><span class="cg-hit-count cg-hit-count--empty"></span><span class="cg-hit-pip"></span><span class="cg-hit-name">Sick</span><span class="cg-hit-note">(Reeling causes Knockdown)</span></div>
+                  <div class="cg-healing-quota"><span class="cg-hq-label">Healing Quota</span><span class="cg-hq-circles">${_hqCircles}</span></div>
+                </div>
+                <div class="cg-status-conditions">
+                  <div class="cg-status-row"><span class="cg-hit-pip"></span><span class="cg-status-name">Burdened</span><span class="cg-hit-note">(Dash is zero, limit of d8 to Speed Skills)</span></div>
+                  <div class="cg-status-row"><span class="cg-hit-pip"></span><span class="cg-status-name">Over-Burdened</span><span class="cg-hit-note">(Burdened, can't run, disadvantaged)</span></div>
+                  <div class="cg-status-row"><span class="cg-hit-pip"></span><span class="cg-status-name">Knockdown</span><span class="cg-hit-note">(disadvantaged, can't retreat)</span></div>
+                  <div class="cg-status-row"><span class="cg-hit-pip"></span><span class="cg-status-name">Unconscious</span><span class="cg-hit-note">(helpless)</span></div>
+                </div>
+              </div>
+            </div>
+
             ${weaponsHtml}
             ${armorHtml}
             ${spellsHtml}
