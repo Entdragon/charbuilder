@@ -124,8 +124,16 @@ export default {
         if (!skillId || !action) return;
 
         FormBuilderAPI._data = FormBuilderAPI._data || {};
-        if (!FormBuilderAPI._data.xpSkillMarks || typeof FormBuilderAPI._data.xpSkillMarks !== 'object') {
-          FormBuilderAPI._data.xpSkillMarks = {};
+        if (!FormBuilderAPI._data.xpSkillMarks
+            || typeof FormBuilderAPI._data.xpSkillMarks !== 'object'
+            || Array.isArray(FormBuilderAPI._data.xpSkillMarks)) {
+          // Convert stale array (PHP decoded [] as an array) to a plain object
+          const stale = FormBuilderAPI._data.xpSkillMarks;
+          const recovered = {};
+          if (Array.isArray(stale)) {
+            Object.keys(stale).forEach(k => { const n = parseInt(stale[k], 10) || 0; if (n > 0) recovered[k] = n; });
+          }
+          FormBuilderAPI._data.xpSkillMarks = recovered;
         }
 
         const xpBudget = parseInt(FormBuilderAPI._data.xpMarksBudget, 10) || 0;

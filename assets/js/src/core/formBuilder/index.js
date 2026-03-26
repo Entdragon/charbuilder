@@ -231,8 +231,21 @@ function normalizeCore(raw = {}) {
     experience_points: parseInt(raw.experience_points, 10) || 0,
     xpMarksBudget:     parseInt(raw.xpMarksBudget,     10) || 0,
     xpGiftSlots:       parseInt(raw.xpGiftSlots,       10) || 0,
-    xpSkillMarks: (raw.xpSkillMarks && typeof raw.xpSkillMarks === 'object' && !Array.isArray(raw.xpSkillMarks))
-      ? raw.xpSkillMarks : {},
+    xpSkillMarks: (() => {
+      // Fall back to xp_skill_marks (snake_case from PHP load) if camelCase is absent
+      const v = (raw.xpSkillMarks !== undefined && raw.xpSkillMarks !== null)
+        ? raw.xpSkillMarks
+        : (raw.xp_skill_marks ?? null);
+      if (!v || typeof v !== 'object') return {};
+      if (Array.isArray(v)) {
+        // PHP encoded an empty map as [] — salvage any string-keyed properties
+        // that skills/events.js may have added to the array object.
+        const obj = {};
+        Object.keys(v).forEach(k => { const n = parseInt(v[k], 10) || 0; if (n > 0) obj[k] = n; });
+        return obj;
+      }
+      return v;
+    })(),
     xpGifts: Array.isArray(raw.xpGifts) ? raw.xpGifts.filter(Boolean) : [],
     xp_gift_quals: (() => {
       const v = raw.xp_gift_quals || raw.xpGiftQuals;
@@ -750,7 +763,17 @@ const FormBuilderAPI = {
       : (parseInt(this._data.experience_points, 10) || 0);
     d.xpMarksBudget = parseInt(this._data.xpMarksBudget, 10) || 0;
     d.xpGiftSlots   = parseInt(this._data.xpGiftSlots,   10) || 0;
-    d.xpSkillMarks  = this._data.xpSkillMarks || {};
+    // Convert stale PHP [] (array) to plain object; also fall back to snake_case key
+    d.xpSkillMarks  = (() => {
+      const v = this._data.xpSkillMarks ?? this._data.xp_skill_marks;
+      if (!v || typeof v !== 'object') return {};
+      if (Array.isArray(v)) {
+        const obj = {};
+        Object.keys(v).forEach(k => { const n = parseInt(v[k], 10) || 0; if (n > 0) obj[k] = n; });
+        return obj;
+      }
+      return v;
+    })();
     d.xpGifts       = Array.isArray(this._data.xpGifts) ? this._data.xpGifts : [];
     d.xp_gift_quals = (this._data.xp_gift_quals && typeof this._data.xp_gift_quals === 'object' && !Array.isArray(this._data.xp_gift_quals))
       ? this._data.xp_gift_quals : {};

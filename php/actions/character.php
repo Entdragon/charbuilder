@@ -173,7 +173,7 @@ function cg_save_character(): void {
         'experience_points'             => (int) ($data['experience_points'] ?? 0),
         'xp_marks_budget'               => (int) ($data['xp_marks_budget']   ?? $data['xpMarksBudget'] ?? 0),
         'xp_gift_slots'                 => (int) ($data['xp_gift_slots']     ?? $data['xpGiftSlots']   ?? 0),
-        'xp_skill_marks'                => json_encode(is_array($xpSkillMrks) ? $xpSkillMrks : []),
+        'xp_skill_marks'                => json_encode(is_array($xpSkillMrks) ? $xpSkillMrks : [], JSON_FORCE_OBJECT),
         'xp_gifts'                      => json_encode(is_array($xpGifts)     ? $xpGifts     : []),
         'weapons'                       => json_encode(is_array($weapons)     ? $weapons      : []),
         'armor'                         => json_encode(is_array($armor)       ? $armor        : []),
