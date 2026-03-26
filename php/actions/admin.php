@@ -197,6 +197,115 @@ function cg_admin_delete_gift_section(): void {
     cg_json(['success' => true, 'data' => 'Deleted.']);
 }
 
+// ── Gift data quality report ──────────────────────────────────────────────────
+
+function cg_admin_gift_quality_report(): void {
+    cg_admin_require();
+    $p = cg_prefix();
+    $g = "{$p}customtables_table_gifts";
+
+    $gifts = cg_query("
+        SELECT ct_id, ct_gifts_name, ct_gifts_effect, ct_gifts_effect_description,
+               ct_gift_trigger, published
+        FROM $g
+        ORDER BY ct_gifts_name ASC
+    ");
+
+    if (empty($gifts)) {
+        cg_json(['success' => true, 'data' => []]);
+        return;
+    }
+
+    $giftIds = array_map(fn($r) => (int)$r['ct_id'], $gifts);
+    $ph      = implode(',', array_fill(0, count($giftIds), '?'));
+
+    // Section type info per gift
+    $sectionsMap = [];
+    try {
+        $sects = cg_query(
+            "SELECT ct_gift_id, ct_section_type
+             FROM {$p}customtables_table_gift_sections
+             WHERE ct_gift_id IN ($ph)
+             GROUP BY ct_gift_id, ct_section_type",
+            $giftIds
+        );
+        foreach ($sects as $s) {
+            $gId = (int)$s['ct_gift_id'];
+            if (!isset($sectionsMap[$gId])) $sectionsMap[$gId] = ['has_rules' => false, 'has_other' => false];
+            if ($s['ct_section_type'] === 'rules') {
+                $sectionsMap[$gId]['has_rules'] = true;
+            } else {
+                $sectionsMap[$gId]['has_other'] = true;
+            }
+        }
+    } catch (Throwable $e) { /* gift_sections may not exist */ }
+
+    // Rule counts per gift
+    $rulesCountMap = [];
+    try {
+        $counts = cg_query(
+            "SELECT ct_gift_id, COUNT(*) AS cnt
+             FROM {$p}customtables_table_gift_rules
+             WHERE ct_gift_id IN ($ph)
+             GROUP BY ct_gift_id",
+            $giftIds
+        );
+        foreach ($counts as $rc) {
+            $rulesCountMap[(int)$rc['ct_gift_id']] = (int)$rc['cnt'];
+        }
+    } catch (Throwable $e) { /* gift_rules may not exist */ }
+
+    $report = [];
+    foreach ($gifts as $gift) {
+        $id      = (int)$gift['ct_id'];
+        $effect  = trim((string)($gift['ct_gifts_effect'] ?? ''));
+        $effDesc = trim((string)($gift['ct_gifts_effect_description'] ?? ''));
+        $trigger = trim((string)($gift['ct_gift_trigger'] ?? ''));
+        $issues  = [];
+
+        if ($effect === '') {
+            $issues[] = ['type' => 'missing_effect',      'label' => 'Missing card effect'];
+        } elseif (mb_strlen($effect) > 220) {
+            $issues[] = ['type' => 'overlong_effect',     'label' => 'Overlong card effect (' . mb_strlen($effect) . ' chars)'];
+        }
+
+        if ($effDesc === '') {
+            $issues[] = ['type' => 'missing_description', 'label' => 'Missing detail description'];
+        }
+
+        if ($effect === '' && $effDesc === '') {
+            $si = $sectionsMap[$id] ?? null;
+            if ($si && !$si['has_rules'] && $si['has_other']) {
+                $issues[] = ['type' => 'flavour_fallback', 'label' => 'Fallback section is non-rules only'];
+            }
+        }
+
+        if ($trigger !== '') {
+            $issues[] = ['type' => 'trigger_unused', 'label' => 'Has trigger text (not yet shown in builder)'];
+        }
+
+        $rc = $rulesCountMap[$id] ?? 0;
+        if ($rc > 0) {
+            $issues[] = ['type' => 'rules_unused', 'label' => 'Has ' . $rc . ' rule ' . ($rc === 1 ? 'entry' : 'entries') . ' (not yet shown in builder)'];
+        }
+
+        if (!empty($issues)) {
+            $report[] = [
+                'gift_id'   => $id,
+                'gift_name' => $gift['ct_gifts_name'] ?? 'Unnamed',
+                'published' => (bool)(int)($gift['published'] ?? 0),
+                'issues'    => $issues,
+            ];
+        }
+    }
+
+    cg_json(['success' => true, 'data' => [
+        'total_gifts'  => count($gifts),
+        'total_issues' => count($report),
+        'items'        => $report,
+    ]]);
+}
+
 // ── Weapons ───────────────────────────────────────────────────────────────────
 
 function cg_admin_list_weapons(): void {

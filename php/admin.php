@@ -157,6 +157,39 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
 /* scrollbars */
 ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ── Data Quality modal ── */
+.cga-modal { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; }
+.cga-modal[hidden] { display: none; }
+.cga-modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.65); }
+.cga-modal-panel { position: relative; width: min(820px, 94vw); max-height: 86vh;
+                   display: flex; flex-direction: column; background: var(--panel);
+                   border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.cga-modal-header { display: flex; align-items: center; padding: 0.7rem 1rem;
+                    border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.cga-modal-header h2 { font-size: 0.95rem; font-weight: 700; color: var(--gold); letter-spacing: .04em; flex: 1; }
+.cga-modal-close { background: none; border: 1px solid var(--border); color: var(--muted); cursor: pointer;
+                   padding: 0.2rem 0.55rem; border-radius: var(--radius); font-size: 0.88rem; }
+.cga-modal-close:hover { color: var(--text); border-color: var(--gold); }
+.cga-modal-body { flex: 1; overflow-y: auto; }
+
+/* Quality report groups */
+.cga-qr-group { border-bottom: 1px solid var(--border); }
+.cga-qr-group-head { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 1rem;
+                     cursor: pointer; user-select: none; }
+.cga-qr-group-head:hover { background: rgba(201,168,76,0.06); }
+.cga-qr-badge { background: rgba(201,168,76,0.18); color: var(--gold); font-size: 0.7rem; font-weight: 700;
+                padding: 0.1rem 0.45rem; border-radius: 10px; flex-shrink: 0; }
+.cga-qr-toggle { margin-left: auto; color: var(--muted); font-size: 0.8rem; transition: transform .15s; }
+.cga-qr-group.open .cga-qr-toggle { transform: rotate(180deg); }
+.cga-qr-group-body { display: none; }
+.cga-qr-group.open .cga-qr-group-body { display: block; }
+.cga-qr-row { display: flex; align-items: baseline; gap: 0.6rem; padding: 0.38rem 1rem 0.38rem 2.2rem;
+              cursor: pointer; font-size: 0.85rem; border-top: 1px solid rgba(255,255,255,0.04); }
+.cga-qr-row:hover { background: rgba(201,168,76,0.08); }
+.cga-qr-name { font-weight: 600; color: var(--text); flex-shrink: 0; }
+.cga-qr-unpub { font-size: 0.7rem; color: var(--muted); flex-shrink: 0; }
+.cga-qr-detail { font-size: 0.78rem; color: var(--muted); margin-left: auto; text-align: right; }
 </style>
 </head>
 <body>
@@ -165,6 +198,7 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
   <div class="cga-topbar">
     <span class="cga-logo">Library of Calabria — Content Editor</span>
     <span class="cga-user">Logged in as <?= $username ?></span>
+    <button class="cga-tool-btn" onclick="openQualityReport()">Data Quality</button>
     <button class="cga-tool-btn" onclick="runInstallSpells(this)">Install Spells</button>
     <a class="cga-logout" href="/ajax.php?action=cg_logout_user" onclick="return doLogout(event)">Log out</a>
   </div>
@@ -197,6 +231,20 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
   </div>
 
 </div>
+
+<div id="cga-quality-modal" class="cga-modal" hidden>
+  <div class="cga-modal-backdrop" onclick="closeQualityReport()"></div>
+  <div class="cga-modal-panel">
+    <div class="cga-modal-header">
+      <h2>Gift Data Quality Report</h2>
+      <button class="cga-modal-close" onclick="closeQualityReport()">✕</button>
+    </div>
+    <div id="cga-quality-body" class="cga-modal-body">
+      <p style="color:var(--muted);padding:1rem;">Loading…</p>
+    </div>
+  </div>
+</div>
+
 <script>
 (function () {
   'use strict';
@@ -641,6 +689,7 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
 
   // ── Keyboard shortcuts ────────────────────────────────────────────────────
   document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closeQualityReport(); return; }
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
       e.preventDefault();
       document.getElementById('cga-save').click();
@@ -670,6 +719,94 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
     }
     btn.disabled = false;
     btn.textContent = 'Install Spells';
+  };
+
+  // ── Data Quality Report ───────────────────────────────────────────────────
+  const ISSUE_META = {
+    missing_effect:      { label: 'Missing Card Effect',               order: 1 },
+    missing_description: { label: 'Missing Detail Description',        order: 2 },
+    overlong_effect:     { label: 'Overlong Card Effect',              order: 3 },
+    flavour_fallback:    { label: 'Fallback Section Is Non-Rules Only',order: 4 },
+    trigger_unused:      { label: 'Has Trigger Text (Not Shown)',      order: 5 },
+    rules_unused:        { label: 'Has Gift Rules (Not Shown)',        order: 6 },
+  };
+
+  window.openQualityReport = async function () {
+    const modal = document.getElementById('cga-quality-modal');
+    const body  = document.getElementById('cga-quality-body');
+    modal.hidden = false;
+    body.innerHTML = '<p style="color:var(--muted);padding:1rem;">Loading…</p>';
+
+    const res = await post('cg_admin_gift_quality_report');
+    if (!res.success) {
+      body.innerHTML = `<p style="color:var(--danger);padding:1rem;">Failed: ${esc(String(res.data || 'Unknown error'))}</p>`;
+      return;
+    }
+    if (!res.data || !res.data.items) {
+      body.innerHTML = '<p style="color:var(--muted);padding:1rem;">No data returned.</p>';
+      return;
+    }
+
+    const { total_gifts, total_issues, items } = res.data;
+
+    if (!items.length) {
+      body.innerHTML = `<p style="color:var(--success);padding:1rem;">No issues found across ${total_gifts} gifts. All good!</p>`;
+      return;
+    }
+
+    // Group by issue type
+    const groups = {};
+    for (const item of items) {
+      for (const issue of item.issues) {
+        if (!groups[issue.type]) {
+          const meta = ISSUE_META[issue.type] || { label: issue.type, order: 99 };
+          groups[issue.type] = { meta, gifts: [] };
+        }
+        groups[issue.type].gifts.push({
+          gift_id: item.gift_id, gift_name: item.gift_name,
+          published: item.published, detail: issue.label,
+        });
+      }
+    }
+
+    const sortedGroups = Object.values(groups).sort((a, b) => a.meta.order - b.meta.order);
+
+    let html = `<div style="padding:0.65rem 1rem;background:rgba(0,0,0,0.25);border-bottom:1px solid var(--border);
+                font-size:0.82rem;color:var(--muted);">${total_issues} of ${total_gifts} gifts have issues</div>`;
+
+    for (const group of sortedGroups) {
+      html += `<div class="cga-qr-group">
+        <div class="cga-qr-group-head" onclick="this.parentElement.classList.toggle('open')">
+          <span class="cga-qr-badge">${group.gifts.length}</span>
+          <span>${esc(group.meta.label)}</span>
+          <span class="cga-qr-toggle">▾</span>
+        </div>
+        <div class="cga-qr-group-body">
+          ${group.gifts.map(g => `
+            <div class="cga-qr-row" data-id="${g.gift_id}">
+              <span class="cga-qr-name">${esc(g.gift_name)}</span>
+              ${!g.published ? '<span class="cga-qr-unpub">unpublished</span>' : ''}
+              <span class="cga-qr-detail">${esc(g.detail)}</span>
+            </div>`).join('')}
+        </div>
+      </div>`;
+    }
+
+    body.innerHTML = html;
+
+    body.querySelectorAll('.cga-qr-row').forEach(row => {
+      row.addEventListener('click', () => {
+        closeQualityReport();
+        if (pane !== 'gifts') {
+          document.querySelector('.cga-tab[data-pane="gifts"]').click();
+        }
+        loadRecord(parseInt(row.dataset.id));
+      });
+    });
+  };
+
+  window.closeQualityReport = function () {
+    document.getElementById('cga-quality-modal').hidden = true;
   };
 
   // ── Escape helper ─────────────────────────────────────────────────────────

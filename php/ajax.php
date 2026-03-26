@@ -122,6 +122,7 @@ $actionFiles = [
     'cg_admin_delete_gift_rule'   => 'actions/admin.php',
     'cg_admin_save_gift_section'  => 'actions/admin.php',
     'cg_admin_delete_gift_section'=> 'actions/admin.php',
+    'cg_admin_gift_quality_report'=> 'actions/admin.php',
     'cg_admin_list_weapons'       => 'actions/admin.php',
     'cg_admin_get_weapon'         => 'actions/admin.php',
     'cg_admin_save_weapon'        => 'actions/admin.php',
