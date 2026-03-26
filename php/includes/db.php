@@ -176,17 +176,25 @@ function cg_ensure_profile_columns(): void {
     $p     = cg_prefix();
     $table = $p . 'character_records';
 
+    $needed = [
+        'personality_trait' => "VARCHAR(255) DEFAULT ''",
+        'skill_notes'       => 'TEXT DEFAULT NULL',
+        'gift_skill_marks'  => 'TEXT DEFAULT NULL',
+    ];
+
     try {
         $cols = cg_query(
             "SELECT COLUMN_NAME FROM information_schema.COLUMNS
              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?
-               AND COLUMN_NAME IN ('personality_trait')",
+               AND COLUMN_NAME IN ('" . implode("','", array_keys($needed)) . "')",
             [$table]
         );
         $existing = array_column($cols, 'COLUMN_NAME');
 
-        if (!in_array('personality_trait', $existing)) {
-            cg_exec("ALTER TABLE `{$table}` ADD COLUMN personality_trait VARCHAR(255) DEFAULT ''");
+        foreach ($needed as $col => $def) {
+            if (!in_array($col, $existing)) {
+                cg_exec("ALTER TABLE `{$table}` ADD COLUMN `{$col}` {$def}");
+            }
         }
     } catch (Throwable $e) {
         error_log('[CG] ensureProfileColumns: ' . $e->getMessage());

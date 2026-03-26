@@ -287,9 +287,10 @@ function weaponRowHtml(w = {}, idx) {
     ? resolveAttackPool(w._attack_dice_raw)
     : (w.attack || '');
   const attackVal = _rawAttack ? compactPool(_rawAttack) : _rawAttack;
-  const trappingAttr = w._from_trappings ? ' data-from-trappings="1"' : '';
+  const trappingAttr   = w._from_trappings   ? ' data-from-trappings="1"' : '';
+  const rawDiceAttr    = w._attack_dice_raw  ? ` data-attack-dice-raw="${escape(w._attack_dice_raw)}"` : '';
   return `
-    <tr class="cg-weapon-row" data-idx="${idx}"${trappingAttr}>
+    <tr class="cg-weapon-row" data-idx="${idx}"${trappingAttr}${rawDiceAttr}>
       <td><input class="cg-battle-input cg-weapon-name"   value="${escape(w.name   || '')}" placeholder="e.g. Short Sword" /></td>
       <td><input class="cg-battle-input cg-weapon-attack" value="${escape(attackVal)}"       placeholder="e.g. d6+d8" /></td>
       <td><input class="cg-battle-input cg-weapon-damage" value="${escape(w.damage  || '')}" placeholder="e.g. +1" /></td>
@@ -498,6 +499,7 @@ function readWeaponsFromDom() {
       notes:  row.querySelector('.cg-weapon-notes')?.value  || '',
     };
     if (row.dataset.fromTrappings === '1') w._from_trappings = true;
+    if (row.dataset.attackDiceRaw)         w._attack_dice_raw = row.dataset.attackDiceRaw;
     out.push(w);
   });
   return out;
