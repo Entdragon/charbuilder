@@ -237,9 +237,9 @@ function buildCombatPools() {
   if (activeGifts.includes(String(GIFT_SOAK_ADD_SPECIES)) && species) extraSoak.push(species);
 
   return {
-    initiative: poolString(speed, mind),
-    dodge:      poolString(...dodgeDice),
-    soak:       poolString(body, ...armorSoak, ...extraSoak),
+    initiative: compactPool(poolString(speed, mind)),
+    dodge:      compactPool(poolString(...dodgeDice)),
+    soak:       compactPool(poolString(body, ...armorSoak, ...extraSoak)),
   };
 }
 
@@ -283,9 +283,10 @@ function refreshMovement() {
 function weaponRowHtml(w = {}, idx) {
   // For trapping-sourced weapons, compute the attack pool from trait dice at render time
   // (the DOM is fully ready when the battle tab opens, so traitDie() returns live values).
-  const attackVal = w._attack_dice_raw
+  const _rawAttack = w._attack_dice_raw
     ? resolveAttackPool(w._attack_dice_raw)
     : (w.attack || '');
+  const attackVal = _rawAttack ? compactPool(_rawAttack) : _rawAttack;
   const trappingAttr = w._from_trappings ? ' data-from-trappings="1"' : '';
   return `
     <tr class="cg-weapon-row" data-idx="${idx}"${trappingAttr}>

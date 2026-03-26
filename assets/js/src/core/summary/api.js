@@ -134,12 +134,12 @@ const SummaryAPI = {
     const skillNotes = (data.skill_notes && typeof data.skill_notes === 'object') ? data.skill_notes : {};
 
     function dicePools(...dice) { return dice.filter(Boolean).join(' + ') || '—'; }
-    const initiative = dicePools(data.speed, data.will);
+    const initiative = compactPool(dicePools(data.speed, data.will));
     const dodgeSkillPool = resolveAttackPool('Dodge');
     const _diePat = /^d\d+$/;
-    const dodge = dicePools(data.speed, ...dodgeSkillPool.split('+').map(s => s.trim()).filter(s => _diePat.test(s)));
+    const dodge = compactPool(dicePools(data.speed, ...dodgeSkillPool.split('+').map(s => s.trim()).filter(s => _diePat.test(s))));
     const armorSoakDice = armor.map(a => a.soak).filter(Boolean);
-    const soak       = dicePools(data.body, ...armorSoakDice);
+    const soak       = compactPool(dicePools(data.body, ...armorSoakDice));
 
     const allCareerNames = [career.careerName].filter(Boolean);
     extraCareers.forEach(ec => { if (ec.name) allCareerNames.push(ec.name); });
@@ -276,7 +276,7 @@ const SummaryAPI = {
       const totalMk = (parseInt(marks[id], 10) || 0) + (parseInt(xpMarks[id], 10) || 0);
       const mkDie   = marksToDice(totalMk);
       const poolDice = [spDie, cpDie].concat(ecDies).concat([mkDie]).filter(Boolean);
-      const pool = poolDice.length ? poolDice.join(' + ') : '—';
+      const pool = poolDice.length ? compactPool(poolDice.join(' + ')) : '—';
       const note = skillNotes[id] ? String(skillNotes[id]).trim() : '';
       const nameCell = note
         ? `${skill.name}<span class="summary-skill-note"> (${note})</span>`
@@ -292,7 +292,8 @@ const SummaryAPI = {
         <table class="cg-battle-summary-table">
           <thead><tr><th>Name</th><th>Attack Pool</th><th>Damage</th><th>Range</th><th>Notes</th></tr></thead>
           <tbody>${weapons.map(w => {
-            const atk = w.attack || (w._attack_dice_raw ? resolveAttackPool(w._attack_dice_raw) : '');
+            const _atkRaw = w.attack || (w._attack_dice_raw ? resolveAttackPool(w._attack_dice_raw) : '');
+            const atk = _atkRaw ? compactPool(_atkRaw) : _atkRaw;
             return `<tr>
               <td>${w.name   || '—'}</td><td>${atk || '—'}</td>
               <td>${w.damage || '—'}</td><td>${w.range  || 'Melee'}</td>
@@ -362,7 +363,8 @@ const SummaryAPI = {
       // Weapons (from synced battle array)
       weapons.forEach(w => {
         if (w.name) {
-          const wAtk = w.attack || (w._attack_dice_raw ? resolveAttackPool(w._attack_dice_raw) : '');
+          const _wAtkRaw = w.attack || (w._attack_dice_raw ? resolveAttackPool(w._attack_dice_raw) : '');
+          const wAtk = _wAtkRaw ? compactPool(_wAtkRaw) : _wAtkRaw;
           const details = [wAtk, w.damage, w.range !== 'Melee' ? w.range : ''].filter(Boolean).join(', ');
           equipList += `<li><strong>${w.name}</strong>${details ? ` — ${details}` : ''}${w.notes ? ` (${w.notes})` : ''}</li>`;
         }
