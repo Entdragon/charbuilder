@@ -130,6 +130,31 @@ function cg_last_insert_id(): int {
  * Ensure the character_records table has the weapons and armor columns.
  * Safe to call on every request — uses IF NOT EXISTS-style check.
  */
+function cg_ensure_profile_columns(): void {
+    static $done = false;
+    if ($done) return;
+    $done = true;
+
+    $p     = cg_prefix();
+    $table = $p . 'character_records';
+
+    try {
+        $cols = cg_query(
+            "SELECT COLUMN_NAME FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?
+               AND COLUMN_NAME IN ('personality_trait')",
+            [$table]
+        );
+        $existing = array_column($cols, 'COLUMN_NAME');
+
+        if (!in_array('personality_trait', $existing)) {
+            cg_exec("ALTER TABLE `{$table}` ADD COLUMN personality_trait VARCHAR(255) DEFAULT ''");
+        }
+    } catch (Throwable $e) {
+        error_log('[CG] ensureProfileColumns: ' . $e->getMessage());
+    }
+}
+
 function cg_ensure_battle_columns(): void {
     static $done = false;
     if ($done) return;

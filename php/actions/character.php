@@ -19,7 +19,9 @@ function cg_normalize_character(array $row): array {
             $row[$field] = [];
         }
     }
-    $row['xpSkillMarks']   = $row['xp_skill_marks'];
+    $row['xpSkillMarks']     = $row['xp_skill_marks'];
+    $row['skillMarks']       = $row['skill_marks'];
+    $row['personality_trait'] = (string) ($row['personality_trait'] ?? '');
 
     // JSON fields that decode to arrays
     foreach (['xp_gifts', 'weapons', 'armor', 'trappings_list'] as $field) {
@@ -80,6 +82,7 @@ function cg_get_character(): void {
     $p   = cg_prefix();
     $uid = cg_current_user_id();
     cg_ensure_battle_columns();
+    cg_ensure_profile_columns();
 
     $row = cg_query_one(
         "SELECT * FROM {$p}character_records WHERE id = ? AND user_id = ? LIMIT 1",
@@ -105,6 +108,7 @@ function cg_save_character(): void {
     $id  = (int) ($data['id'] ?? 0);
 
     cg_ensure_battle_columns();
+    cg_ensure_profile_columns();
 
     $skillMarks       = $data['skill_marks'] ?? [];
     $giftReplacements = $data['career_gift_replacements'] ?? [];
@@ -131,6 +135,7 @@ function cg_save_character(): void {
         'free_gift_3'                   => (int)  ($freeGifts[2] ?? 0),
         'career_gift_replacements'      => json_encode(is_array($giftReplacements) ? $giftReplacements : []),
         'local_area'                    => (string) ($data['local_area']  ?? ''),
+        'personality_trait'             => (string) ($data['personality_trait'] ?? ''),
         'language'                      => (string) ($data['language']    ?? ''),
         'skill_marks'                   => json_encode(is_array($skillMarks) ? $skillMarks : []),
         'description'                   => (string) ($data['description'] ?? ''),

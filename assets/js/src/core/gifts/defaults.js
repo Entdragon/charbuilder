@@ -74,6 +74,11 @@ async function fetchLKGift() {
 function renderLK(host) {
   if (!host) return;
   const data = getData();
+  // Bootstrap local_knowledge_region from loaded local_area if not yet set
+  if (!data.local_knowledge_region && data.local_area) {
+    setKey('local_knowledge_region', String(data.local_area));
+    data.local_knowledge_region = data.local_area;
+  }
   const regionVal = safeHtml(String(data.local_knowledge_region || ''));
   const gift = _lkGift;
   const name = gift ? safeHtml(String(gift.name || 'Local Knowledge')) : 'Local Knowledge';
@@ -174,9 +179,15 @@ function renderPersonality(host) {
   const cur  = String(data.personality_trait || '');
   const list = _personalityList || [];
 
+  // Determine whether cur is a known list entry or a custom value
+  const safeCur  = safeHtml(cur);
+  const inList   = list.some(n => safeHtml(n) === safeCur || n === cur);
+  const dropVal  = inList ? cur : '';
+  const customVal = inList ? '' : cur;
+
   const opts = list.map(name => {
     const safe = safeHtml(name);
-    const sel  = (safe === safeHtml(cur)) ? ' selected' : '';
+    const sel  = (safe === safeHtml(dropVal)) ? ' selected' : '';
     return `<option value="${safe}"${sel}>${safe}</option>`;
   }).join('');
 
@@ -189,13 +200,33 @@ function renderPersonality(host) {
       <option value="">— Select personality trait —</option>
       ${opts}
     </select>
+    <input
+      type="text"
+      id="cg-personality-custom"
+      class="cg-default-gift-text"
+      placeholder="Or type a custom personality…"
+      value="${safeHtml(customVal)}"
+      maxlength="120"
+      style="margin-top:4px; display:block;"
+    />
     ${desc}
   `;
 
-  const sel = host.querySelector('#cg-personality-select');
-  if (sel) {
-    sel.addEventListener('change', (e) => {
-      setKey('personality_trait', String(e.target.value || '').trim());
+  const selEl = host.querySelector('#cg-personality-select');
+  const inpEl = host.querySelector('#cg-personality-custom');
+
+  if (selEl) {
+    selEl.addEventListener('change', (e) => {
+      const v = String(e.target.value || '').trim();
+      if (inpEl) inpEl.value = '';
+      setKey('personality_trait', v);
+    });
+  }
+  if (inpEl) {
+    inpEl.addEventListener('input', (e) => {
+      const v = String(e.target.value || '').trim();
+      if (v && selEl) selEl.value = '';
+      setKey('personality_trait', v);
     });
   }
 }

@@ -181,8 +181,9 @@ function normalizeCore(raw = {}) {
     backstory:   raw.backstory ?? '',
 
     // Optional fields PHP also supports
-    local_area:  raw.local_area ?? '',
+    local_area:  raw.local_knowledge_region || raw.local_area || '',
     language:    raw.language ?? '',
+    personality_trait: raw.personality_trait ?? '',
 
     will:        raw.will ?? '',
     body:        raw.body ?? '',
@@ -344,8 +345,9 @@ function buildPayload(raw) {
   character.description = (core.description ?? '');
   character.backstory   = (core.backstory ?? '');
 
-  character.local_area  = (core.local_area ?? '');
-  character.language    = (core.language ?? '');
+  character.local_area       = (core.local_area ?? '');
+  character.language         = (core.language ?? '');
+  character.personality_trait = (core.personality_trait ?? '');
 
   character.will          = (core.will ?? '');
   character.body          = (core.body ?? '');
@@ -568,7 +570,7 @@ const FormBuilderAPI = {
     // 1) start with in-memory (normalize array/object)
     // 2) merge legacy inputs if present
     // 3) CG_SKILLMARKS_DOMSCAN: merge from active mark buttons (Skills UI uses buttons)
-    const mergedMarks = { ...normalizeMarks(this._data.skillMarks) };
+    const mergedMarks = { ...normalizeMarks(this._data.skillMarks ?? this._data.skill_marks) };
 
     $('input.skill-marks').each((i, el) => {
       const skillId = $(el).data('skill-id');
