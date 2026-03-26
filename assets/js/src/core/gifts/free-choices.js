@@ -1365,14 +1365,13 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
           ? `<span class="cg-gift-rule-badge cg-gift-rule-badge--${safeHtml(ruleType.toLowerCase().replace(/\s+/g, '-'))}">${safeHtml(ruleType.charAt(0).toUpperCase() + ruleType.slice(1))}</span>`
           : '';
 
-        // ×2 badge: show when ct_gifts_manifold > 0 per spec ("where ct_gifts_manifold is true").
-        // Uses the raw DB field directly, not the broader allowsMultiple() helper which also
-        // returns true for qual-type gifts (their repeatability is implicit, not manifold-tagged).
-        // Gift 223 (Increased Trait: Career) is intentionally excluded: it already displays a
-        // dedicated "Extra Career unlocked" hint below the dropdown that explains its repeatable
-        // nature in context. Showing ×2 alongside that hint would be redundant and confusing.
+        // ×2 badge: show when ct_gifts_manifold or allows_multiple > 0 per spec.
+        // Uses raw DB fields directly, not the broader allowsMultiple() JS helper which also
+        // returns true for qual-type gifts (their repeatability is implicit, not manifold-flagged).
+        // Note: gift 184 shows a separate "Extra Career unlocked" context hint (below); that
+        // is independent of this badge and applies to a different gift (Increased Extra Career).
         const rawManifold = Number(curGift.ct_gifts_manifold ?? curGift.allows_multiple ?? 0);
-        const isManifold = Number.isFinite(rawManifold) && rawManifold > 0 && selectedId !== '223';
+        const isManifold = Number.isFinite(rawManifold) && rawManifold > 0;
         const manifoldHtml = isManifold
           ? `<span class="cg-gift-manifold-badge" title="This gift can be taken more than once">×2</span>`
           : '';
