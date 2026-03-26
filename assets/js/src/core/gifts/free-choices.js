@@ -946,6 +946,9 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
   _byId: null,
   _loading: false,
 
+  _slotEligible: [[], [], []],   // eligible gift items per slot (refreshed on each render)
+  _slotSearch:   ['', '', ''],   // search filter text per slot
+
 
     _renderQueued: false,
     _renderRunning: false,
@@ -1138,27 +1141,45 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
         optionItems.push({ id, name, gift: g, isGmOnly, unknownNotes });
       });
 
+      // ── Navigation state ──────────────────────────────────────────────────
+      const eligible = optionItems.filter(o => !o._forced);
+      this._slotEligible[i] = eligible;
+
+      const search   = this._slotSearch[i] || '';
+      const filtered = search
+        ? eligible.filter(o => o.name.toLowerCase().includes(search.toLowerCase()))
+        : eligible;
+      const curIdx   = selectedId ? filtered.findIndex(o => o.id === selectedId) : -1;
+      const posBadge = filtered.length
+        ? (curIdx >= 0 ? `${curIdx + 1} of ${filtered.length}` : `— of ${filtered.length}`)
+        : 'no eligible gifts';
+
+      // ── Hidden select (data/event compat) ─────────────────────────────────
       const options = optionItems.map(o => {
         const sel = (String(selectedId) === String(o.id)) ? ' selected' : '';
         let label = String(o.name);
-
-        if (o._forced) {
-          label += ' (saved)';
-        } else if (o.isGmOnly) {
-          const gmReason = getGmApprovalReason(o.gift);
-          label += ` — [GM approval: ${gmReason}]`;
-        } else if (o.unknownNotes && o.unknownNotes.length) {
-          label += ` — [${o.unknownNotes[0]}]`;
-        }
-
-        const safeLabel = String(label).replace(/"/g, '&quot;');
-        return `<option value="${String(o.id)}"${sel}>${safeLabel}</option>`;
+        if (o._forced)                             label += ' (saved)';
+        else if (o.isGmOnly)                       label += ` — [GM: ${getGmApprovalReason(o.gift)}]`;
+        else if (o.unknownNotes && o.unknownNotes.length) label += ` — [${o.unknownNotes[0]}]`;
+        return `<option value="${String(o.id)}"${sel}>${String(label).replace(/"/g, '&quot;')}</option>`;
       }).join('\n');
+
+      // ── Card display ──────────────────────────────────────────────────────
+      const curName  = curGift ? giftName(curGift) : '';
+      const nameHtml = curName
+        ? `<div class="cg-gift-card-name">${String(curName).replace(/</g, '&lt;')}</div>`
+        : `<div class="cg-gift-card-name cg-gift-card-name--empty">— Select a gift —</div>`;
 
       const selectedDesc = curGift ? giftEffectDescription(curGift) : '';
       const descHtml = selectedDesc
-        ? `<div class="cg-gift-effect-desc" style="margin-top:4px; font-size:0.82rem; color:var(--cg-text-muted); font-style:italic; padding-left:2px;">${String(selectedDesc).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`
+        ? `<div class="cg-gift-card-desc">${String(selectedDesc).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`
         : '';
+
+      const gmHtml = curGift && gmApprovalRequired(curGift)
+        ? `<div class="cg-gift-gm-badge">⚠ GM approval required</div>`
+        : '';
+
+      const navDisabled = filtered.length <= 1 ? ' disabled' : '';
 
       const extraCareerHint = selectedId === '184'
         ? `<span class="cg-gift-extra-career-hint">
@@ -1169,14 +1190,28 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
 
       return `
         <div class="cg-free-slot" data-slot="${i}">
-          <div style="display:flex; align-items:center; gap:6px;">
-            <span style="font-weight:600; white-space:nowrap; font-size:0.88rem; color:var(--cg-text-muted); text-transform:uppercase; letter-spacing:0.05em;">Gift</span>
-            <select id="cg-free-choice-${i}" class="cg-free-gift-select" data-slot="${i}">
-              <option value="">— Select a gift —</option>
-              ${options}
-            </select>
+          <div class="cg-gift-card">
+            <div class="cg-gift-card-header">
+              <span class="cg-gift-slot-label">Gift ${i + 1}</span>
+              <span class="cg-gift-pos">${posBadge}</span>
+            </div>
+            ${nameHtml}
+            ${descHtml}
+            ${gmHtml}
+            <div class="cg-gift-nav-bar">
+              <button type="button" class="cg-gift-nav-btn cg-gift-prev" data-slot="${i}"
+                title="Previous eligible gift"${navDisabled}>&#8249;</button>
+              <input type="search" class="cg-gift-search" data-slot="${i}"
+                placeholder="Filter gifts…" value="${escape(search)}" autocomplete="off" />
+              <button type="button" class="cg-gift-nav-btn cg-gift-next" data-slot="${i}"
+                title="Next eligible gift"${navDisabled}>&#8250;</button>
+            </div>
           </div>
-          ${descHtml}
+          <select id="cg-free-choice-${i}" class="cg-free-gift-select" data-slot="${i}"
+            style="position:absolute;opacity:0;pointer-events:none;height:1px;width:1px;overflow:hidden;">
+            <option value="">— Select a gift —</option>
+            ${options}
+          </select>
           ${extraCareerHint}
           <div class="cg-free-slot-quals" data-slot="${i}"></div>
         </div>
@@ -1199,9 +1234,57 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
     } catch (_) {}
   },
 
+  _navigateSlot(slot, direction) {
+    const search   = this._slotSearch[slot] || '';
+    const eligible = this._slotEligible[slot] || [];
+    const filtered = search
+      ? eligible.filter(o => o.name.toLowerCase().includes(search.toLowerCase()))
+      : eligible;
+    if (!filtered.length) return;
+
+    const prevSlots  = getFreeGiftSlotsFromData();
+    const currentId  = String(prevSlots[slot] || '').trim();
+    const currentIdx = filtered.findIndex(o => o.id === currentId);
+    let nextIdx;
+    if (direction === 'next') {
+      nextIdx = currentIdx >= 0 ? (currentIdx + 1) % filtered.length : 0;
+    } else {
+      nextIdx = currentIdx >= 0 ? (currentIdx - 1 + filtered.length) % filtered.length : filtered.length - 1;
+    }
+    const nextGift = filtered[nextIdx];
+    if (!nextGift) return;
+
+    const nextSlots = prevSlots.slice();
+    nextSlots[slot] = nextGift.id;
+    this._cleanupSlotQualsOnGiftChange({ slot, prevGiftId: currentId, nextGiftId: nextGift.id });
+    setFreeGiftSlotsToData(nextSlots, 'gift-nav');
+    this._scheduleRender('gift-nav');
+  },
+
   _bindSectionDelegates(section) {
     if (section.__cgBound) return;
     section.__cgBound = true;
+
+    // Prev/Next navigation buttons
+    section.addEventListener('click', e => {
+      const prev = e.target.closest('.cg-gift-prev');
+      const next = e.target.closest('.cg-gift-next');
+      if (prev && !prev.disabled) {
+        e.preventDefault();
+        this._navigateSlot(Number(prev.dataset.slot || 0), 'prev');
+      } else if (next && !next.disabled) {
+        e.preventDefault();
+        this._navigateSlot(Number(next.dataset.slot || 0), 'next');
+      }
+    });
+
+    // Search filter — update slot search string and re-render
+    section.addEventListener('input', e => {
+      const inp = e.target.closest('.cg-gift-search');
+      if (!inp) return;
+      this._slotSearch[Number(inp.dataset.slot || 0)] = inp.value || '';
+      this._scheduleRender('gift-search');
+    });
 
     section.addEventListener('change', (e) => {
       const t = e.target;
