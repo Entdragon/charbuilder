@@ -17,6 +17,7 @@ import State from './state.js';
 import Quals from '../quals/index.js';
 import QualState from '../quals/state.js';
 import TraitsService from '../traits/service.js';
+import SkillsIndex from '../skills/index.js';
 
 function cgWin() {
   if (typeof globalThis !== 'undefined') return globalThis;
@@ -910,25 +911,45 @@ function qualStateRemoveIfSafe(type, value, slotMap) {
 function renderQualSelectHtml({ slot, type, value, allGifts, excludeValues = [] }) {
   const items = getQualItemsForType(type, allGifts);
   const excluded = new Set((excludeValues || []).map(v => canon(String(v || ''))).filter(Boolean));
+
+  // Detect if the saved value is a custom (not-in-catalog) entry
+  const knownCanon = new Set(
+    (Array.isArray(items) ? items : [])
+      .map(it => canon(String(it?.label ?? it?.key ?? ''))).filter(Boolean)
+  );
+  const isCustomValue = !!(value && !knownCanon.has(canon(value)));
+
+  const esc = s => String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
   const opts = (Array.isArray(items) ? items : []).map(it => {
     const label = String(it?.label ?? it?.key ?? '').trim();
     if (!label) return '';
-    // Always include the current slot's saved value even if another slot has the same
-    const isCurrent = canon(value) === canon(label);
+    const isCurrent = !isCustomValue && canon(value) === canon(label);
     if (!isCurrent && excluded.has(canon(label))) return '';
     const sel = isCurrent ? ' selected' : '';
-    return `<option value="${label}"${sel}>${label}</option>`;
+    return `<option value="${esc(label)}"${sel}>${esc(label)}</option>`;
   }).filter(Boolean).join('\n');
 
   const nice = type.charAt(0).toUpperCase() + type.slice(1);
+  const otherSel  = isCustomValue ? ' selected' : '';
+  const inputDisp = isCustomValue ? '' : 'none';
 
   return `
     <label style="display:flex; flex-direction:column; gap:4px; margin-top:8px; min-width:220px;">
-      <span style="font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:var(--cg-text-muted);">${nice}</span>
+      <span style="font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:var(--cg-text-muted);">${esc(nice)}</span>
       <select class="cg-free-qual-select" data-slot="${slot}" data-qtype="${type}">
-        <option value="">— Select ${nice} —</option>
+        <option value="">— Select ${esc(nice)} —</option>
         ${opts}
+        <option value="__other__"${otherSel}>Other (type below)…</option>
       </select>
+      <input type="text"
+        class="cg-qual-custom-input cg-free-select"
+        data-slot="${slot}"
+        data-qtype="${type}"
+        value="${esc(isCustomValue ? value : '')}"
+        placeholder="Enter custom ${esc(nice.toLowerCase())}…"
+        autocomplete="off"
+        style="display:${inputDisp}; margin-top:4px;" />
     </label>
   `;
 }
@@ -1102,6 +1123,10 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
 
     this._bindGlobalEventsOnce();
     this.refresh({ reason: 'init', fetch: true });
+
+    // Kick off skills list fetch early so Knack For dropdown is populated
+    // even if the Skills tab has never been visited.
+    try { SkillsIndex.init(); } catch (_) {}
   },
 
   _bindGlobalEventsOnce() {
@@ -1111,6 +1136,12 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
     const rerenderSoon = this._rerenderSoon || ((e) => { this._scheduleRender((e && e.type) ? e.type : 'event'); });
     this._rerenderSoon = rerenderSoon;
 
+
+    // Re-render when skills list arrives (Knack For dropdown needs it)
+    try {
+      document.addEventListener('cg:skills-list:loaded', rerenderSoon);
+      if ($ && $.fn) $(document).on('cg:skills-list:loaded.cgfreechoices', rerenderSoon);
+    } catch (_) {}
 
     // Prefer jQuery binding when available to avoid double-firing (jQuery also sees CustomEvent)
     if ($ && $.fn) {
@@ -1313,17 +1344,36 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
     section.__cgBound = true;
 
     // [Choice] text input — persist to free_gift_quals[slot].choice_text
+    // Also handles custom qual entry text inputs (.cg-qual-custom-input)
     section.addEventListener('input', e => {
       const choiceInp = e.target.closest('.cg-gift-choice-input');
-      if (!choiceInp) return;
-      const slot = String(choiceInp.dataset.slot || '0');
-      const val  = String(choiceInp.value || '').trim();
-      const map  = getSlotQualMap();
-      if (!map[slot] || typeof map[slot] !== 'object') map[slot] = {};
-      if (val) map[slot].choice_text = val;
-      else delete map[slot].choice_text;
-      if (Object.keys(map[slot]).length === 0) delete map[slot];
-      setSlotQualMap(map);
+      if (choiceInp) {
+        const slot = String(choiceInp.dataset.slot || '0');
+        const val  = String(choiceInp.value || '').trim();
+        const map  = getSlotQualMap();
+        if (!map[slot] || typeof map[slot] !== 'object') map[slot] = {};
+        if (val) map[slot].choice_text = val;
+        else delete map[slot].choice_text;
+        if (Object.keys(map[slot]).length === 0) delete map[slot];
+        setSlotQualMap(map);
+        return;
+      }
+
+      const customQualInp = e.target.closest('.cg-qual-custom-input');
+      if (customQualInp) {
+        const slot = String(customQualInp.dataset.slot || '0');
+        const type = String(customQualInp.dataset.qtype || '').toLowerCase();
+        const val  = String(customQualInp.value || '').trim();
+        const map  = getSlotQualMap();
+        if (!map[slot] || typeof map[slot] !== 'object') map[slot] = {};
+        const prev = String(map[slot][type] || '').trim();
+        if (val) map[slot][type] = val;
+        else delete map[slot][type];
+        if (Object.keys(map[slot]).length === 0) delete map[slot];
+        setSlotQualMap(map);
+        if (prev && canon(prev) !== canon(val)) qualStateRemoveIfSafe(type, prev, map);
+        if (val) qualStateAdd(type, val);
+      }
     });
 
     section.addEventListener('change', (e) => {
@@ -1348,7 +1398,30 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
       if (t.classList.contains('cg-free-qual-select')) {
         const slot = String(t.getAttribute('data-slot') || '0');
         const type = String(t.getAttribute('data-qtype') || '').toLowerCase();
-        const val = String(t.value || '').trim();
+        const val  = String(t.value || '').trim();
+
+        // "Other (type below)…" — reveal the custom text input, don't save yet
+        if (val === '__other__') {
+          const customInp = t.closest('label')?.querySelector('.cg-qual-custom-input');
+          if (customInp) {
+            customInp.style.display = '';
+            customInp.focus();
+          }
+          return;
+        }
+
+        // Switching away from a custom value — hide + clear the text input
+        const customInp = t.closest('label')?.querySelector('.cg-qual-custom-input');
+        if (customInp) {
+          const oldCustomVal = String(customInp.value || '').trim();
+          if (oldCustomVal) {
+            // Remove the old custom value from QualState
+            const map2 = getSlotQualMap();
+            qualStateRemoveIfSafe(type, oldCustomVal, map2);
+          }
+          customInp.value = '';
+          customInp.style.display = 'none';
+        }
 
         const map = getSlotQualMap();
         if (!map[slot] || typeof map[slot] !== 'object') map[slot] = {};

@@ -78,6 +78,13 @@ function fetchSkillsList() {
       FormBuilderAPI._data = FormBuilderAPI._data || {};
       FormBuilderAPI._data.skillsList = list;
 
+      // Notify any listener (e.g. free-choices Knack For dropdown) that skills are ready
+      try {
+        const detail = { count: list.length };
+        document.dispatchEvent(new CustomEvent('cg:skills-list:loaded', { detail }));
+        if ($) $(document).trigger('cg:skills-list:loaded', [detail]);
+      } catch (_) {}
+
       if (isSkillsTabActive()) {
         SkillsRender.render();
       }

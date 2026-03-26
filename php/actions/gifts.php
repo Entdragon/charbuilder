@@ -2,8 +2,8 @@
 require_once __DIR__ . '/../includes/db.php';
 
 const CG_DEFAULT_LANGUAGES = [
-    'Calabrian','Common','Dwarven','Elven','Goblin','Hesperian',
-    'Kawtaw','Mordic','Old Calabrian','Orcish','Sylvan','Urathi',
+    'Berla Feini','Calabrian','Common','Dwarven','Elven','Goblin','Hesperian',
+    'Kawtaw','Magniloquentia','Mordic','Old Calabrian','Orcish','Sylvan','Urathi','Zhonggese',
 ];
 
 const CG_DEFAULT_PERSONALITIES = [
@@ -288,15 +288,13 @@ function cg_ensure_language_table(): void {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     ");
 
-    $count = (int) (cg_query_one("SELECT COUNT(*) AS cnt FROM {$table}")['cnt'] ?? 0);
-    if ($count === 0) {
-        $langs = CG_DEFAULT_LANGUAGES;
-        $placeholders = implode(', ', array_map(fn($i) => "(?, {$i})", range(0, count($langs) - 1)));
-        cg_exec(
-            "INSERT IGNORE INTO {$table} (name, sort_order) VALUES {$placeholders}",
-            $langs
-        );
-    }
+    // Always INSERT IGNORE so newly added default languages appear on existing installs
+    $langs = CG_DEFAULT_LANGUAGES;
+    $placeholders = implode(', ', array_map(fn($i) => "(?, {$i})", range(0, count($langs) - 1)));
+    cg_exec(
+        "INSERT IGNORE INTO {$table} (name, sort_order) VALUES {$placeholders}",
+        $langs
+    );
 }
 
 function cg_get_language_list(): void {
