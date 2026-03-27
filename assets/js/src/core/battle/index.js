@@ -547,17 +547,25 @@ const BattleAPI = {
     const container = document.getElementById('cg-battle-panel');
     if (!container) return;
 
-    const hadSkills = !!(
+    // Call ensureSkillsList() first so its synchronous side-effect (copying
+    // window.CG_SKILLS_LIST → _data.skillsList) runs before hadSkills is
+    // evaluated and before _render() is called.
+    ensureSkillsList().then(() => {
+      // Re-check skills after the sync/fetch so _render always has the list.
+      this._render(container);
+    });
+
+    // Also render immediately with whatever we have (may be empty skills on
+    // very first page load; the .then() above fires synchronously when the
+    // window cache is already populated, so this path is instant in practice).
+    const hadSkillsNow = !!(
       Array.isArray((FormBuilderAPI?._data || {}).skillsList) &&
       (FormBuilderAPI._data.skillsList || []).length
-    ) || !!(Array.isArray(window.CG_SKILLS_LIST) && window.CG_SKILLS_LIST.length);
-
-    this._render(container);
-
-    // If skills weren't loaded yet, fetch them and re-render once ready so
-    // resolveAttackPool can substitute skill dice into weapon / dodge pools.
-    if (!hadSkills) {
-      ensureSkillsList().then(() => { this._render(container); });
+    );
+    if (!hadSkillsNow) {
+      // Skills not ready yet (first ever load — network fetch in progress).
+      // Show a placeholder render; the .then() above will re-render with skills.
+      this._render(container);
     }
 
     // Fetch spells for current gifts and render/update the spells section.
