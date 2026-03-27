@@ -563,6 +563,24 @@ const BattleAPI = {
 
   _render(container) {
     const data    = FormBuilderAPI?._data || {};
+
+    // Restore _attack_dice_raw for trapping weapons that were saved before the
+    // field was preserved (old save data has _from_trappings=true but no _attack_dice_raw).
+    // Look up the raw formula from _data.trappings_list which is always saved.
+    if (Array.isArray(data.weapons) && Array.isArray(data.trappings_list)) {
+      const trappingsByName = {};
+      data.trappings_list.forEach(t => {
+        if (t && t.name && t.attack_dice) trappingsByName[String(t.name).toLowerCase()] = t.attack_dice;
+      });
+      data.weapons = data.weapons.map(w => {
+        if (w._from_trappings && !w._attack_dice_raw) {
+          const key = String(w.name || '').toLowerCase();
+          if (trappingsByName[key]) return { ...w, _attack_dice_raw: trappingsByName[key] };
+        }
+        return w;
+      });
+    }
+
     const weapons = Array.isArray(data.weapons) ? data.weapons : [];
     const armor   = Array.isArray(data.armor)   ? data.armor   : [];
     const spells  = Array.isArray(data.spells)  ? data.spells  : [];
