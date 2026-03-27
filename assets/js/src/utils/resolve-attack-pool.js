@@ -13,24 +13,11 @@ function traitDieFromData(key, data) {
   return (data && data[key]) || '';
 }
 
-let _debugLogged = false;
 export function resolveAttackPool(raw, { FormBuilderAPI, SpeciesAPI, CareerAPI } = {}) {
   if (!raw) return '';
 
   const FB   = FormBuilderAPI || window.CG_FormBuilderAPI || window.FormBuilderAPI;
   const data = (FB && FB._data) || {};
-
-  if (!_debugLogged) {
-    _debugLogged = true;
-    console.log('[resolveAttackPool DEBUG] raw:', raw,
-      '\n  skillsList length:', (data.skillsList || []).length,
-      '\n  skillMarks:', JSON.stringify(data.skillMarks),
-      '\n  gift_skill_marks:', JSON.stringify(data.gift_skill_marks),
-      '\n  xpSkillMarks:', JSON.stringify(data.xpSkillMarks),
-      '\n  trappings_list length:', (data.trappings_list || []).length,
-      '\n  first trapping attack_dice:', data.trappings_list?.[0]?.attack_dice
-    );
-  }
 
   const traitMap = {
     'body':    traitDieFromData('body',         data),

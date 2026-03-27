@@ -42,24 +42,27 @@ function normaliseSkillsList(raw) {
 }
 
 function ensureSkillsList() {
-  // Already done this session
-  if (_skillsEnsured) return $.Deferred().resolve().promise();
-
   const data = FormBuilderAPI._data || {};
 
-  // Already in _data
+  // Always sync _data.skillsList from window cache if _data was reset (e.g. new character loaded).
+  // _skillsEnsured only skips the network fetch — not the in-memory sync.
+  if (!(Array.isArray(data.skillsList) && data.skillsList.length)) {
+    if (Array.isArray(window.CG_SKILLS_LIST) && window.CG_SKILLS_LIST.length) {
+      FormBuilderAPI._data = data;
+      FormBuilderAPI._data.skillsList = window.CG_SKILLS_LIST;
+      _skillsEnsured = true;
+      return $.Deferred().resolve().promise();
+    }
+  }
+
+  // Already in _data (either just synced above or was there from init)
   if (Array.isArray(data.skillsList) && data.skillsList.length) {
     _skillsEnsured = true;
     return $.Deferred().resolve().promise();
   }
 
-  // Available on window (Skills tab may have already fetched it)
-  if (Array.isArray(window.CG_SKILLS_LIST) && window.CG_SKILLS_LIST.length) {
-    FormBuilderAPI._data = data;
-    FormBuilderAPI._data.skillsList = window.CG_SKILLS_LIST;
-    _skillsEnsured = true;
-    return $.Deferred().resolve().promise();
-  }
+  // Network fetch already done this session and window cache is gone — nothing more to do
+  if (_skillsEnsured) return $.Deferred().resolve().promise();
 
   // Fetch from server
   const { ajax_url, nonce } = ajaxEnv();

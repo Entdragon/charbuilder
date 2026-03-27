@@ -1,0 +1,39 @@
+[CG] init() called, SSO token: present
+character-generator/:633 [CG] attempting SSO login…
+injection-topics.js:1 Browsing Topics API removed from https://libraryofcalbria.com/character-generator/ which is main frame
+character-generator/:636 [CG] SSO result: {"success":true,"data":{"username":"admin_25l0dxf3","redirect":"/"}}
+index.js:73 [Core] bundle loaded (#1)
+index.js:73 [Core] init() called
+index.js:73 [MainAPI] init() called
+index.js:73 [BuilderEvents] bindUIEvents() called
+index.js:73 [BuilderLoad] init
+index.js:73 [BuilderLoad] populating #cg-splash-load-select
+index.js:73 [BuilderLoad] fetching characters via AJAX… 
+free-choices.js:775 [FreeChoices] Fetched gifts Object
+index.js:73 [BuilderLoad] fetched 9 records
+events.js:60 [FormBuilderAPI] fetchCharacter() called with ID: 54
+index.js:73 🔎 [AJAX] raw cg_get_character response: {success: true, data: {…}}
+index.js:73 🔍 [AJAX] parsed.data: {id: '54', user_id: 1, name: 'The Big Bird - AKA BB', player_name: 'Michael', age: '19', …}
+catalog.js:25 [BuilderUI] openBuilder() {isNew: false, payload: {…}}
+index.js:27 🛠️ FormBuilder.buildForm fired: {id: '54', user_id: 1, name: 'The Big Bird - AKA BB', player_name: 'Michael', age: '19', …}
+api.js:7 [SpeciesAPI] Fetching species via AJAX…
+api.js:9 [CareerAPI] Fetching careers via AJAX…
+events.js:147 [SpeciesEvents] selected species → 
+extra.js:197 [CareerEvents] selected career → 
+index.js:20 [BuilderUI] cg:character:loaded → rehydrate for record {id: '54', user_id: 1, name: 'The Big Bird - AKA BB', player_name: 'Michael', age: '19', …}
+events.js:147 [SpeciesEvents] selected species → 
+extra.js:197 [CareerEvents] selected career → 
+index.js:52 🔽 [buildForm] SELECT VALUES AFTER RENDER: {will: 'd6', speed: 'd8', body: 'd8', mind: 'd6', trait_species: 'd6', …}
+api.js:7 [SpeciesAPI] Species list fetched: 116
+api.js:9 [CareerAPI] Career list fetched: 186
+events.js:147 [SpeciesEvents] selected species → 54
+api.js:7 [SpeciesAPI] Fetching species profile 54
+extra.js:197 [CareerEvents] selected career → 55
+api.js:9 [CareerAPI] Fetching career profile 55
+builder-events.js:179 [resolveAttackPool DEBUG] raw: Dodge 
+  skillsList length: 0 
+  skillMarks: {"2":"3","7":"3","13":"3","15":"1","16":"2","24":"1"} 
+  gift_skill_marks: {} 
+  xpSkillMarks: {"2":"1"} 
+  trappings_list length: 6 
+  first trapping attack_dice: Body, Species, Brawling vs. defense
