@@ -288,7 +288,7 @@ function weaponRowHtml(w = {}, idx) {
     : (w.attack || '');
   const attackVal = _rawAttack ? compactPool(_rawAttack) : _rawAttack;
   const trappingAttr   = w._from_trappings   ? ' data-from-trappings="1"' : '';
-  const rawDiceAttr    = w._attack_dice_raw  ? ` data-attack-dice-raw="${escape(w._attack_dice_raw)}"` : '';
+  const rawDiceAttr    = w._attack_dice_raw  ? ` data-attack-dice-raw="${String(w._attack_dice_raw).replace(/"/g, '&quot;')}"` : '';
   return `
     <tr class="cg-weapon-row" data-idx="${idx}"${trappingAttr}${rawDiceAttr}>
       <td><input class="cg-battle-input cg-weapon-name"   value="${escape(w.name   || '')}" placeholder="e.g. Short Sword" /></td>
