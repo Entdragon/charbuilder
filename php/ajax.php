@@ -128,6 +128,7 @@ $actionFiles = [
     'cg_admin_save_weapon'        => 'actions/admin.php',
 
     'cg_admin_sync_trappings_children' => 'actions/admin.php',
+    'cg_admin_sync_single_gift'        => 'actions/admin.php',
 ];
 
 if (!isset($actionFiles[$action])) {
@@ -136,7 +137,15 @@ if (!isset($actionFiles[$action])) {
 }
 
 // ── Auth gate ─────────────────────────────────────────────────────────────────
-if (!in_array($action, $publicActions, true) && !cg_is_logged_in()) {
+// Allow server-to-server sync calls with a shared secret (no session required).
+// Only applies to the single-gift sync endpoint so the bypass surface is minimal.
+$_cgSyncSecret   = defined('CG_SYNC_SECRET') ? CG_SYNC_SECRET : '';
+$_cgPostSecret   = trim($_POST['sync_secret'] ?? '');
+$_cgSecretValid  = $action === 'cg_admin_sync_single_gift'
+    && $_cgSyncSecret !== ''
+    && hash_equals($_cgSyncSecret, $_cgPostSecret);
+
+if (!$_cgSecretValid && !in_array($action, $publicActions, true) && !cg_is_logged_in()) {
     http_response_code(401);
     cg_json(['success' => false, 'data' => 'Not logged in.']);
     exit;

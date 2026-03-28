@@ -304,15 +304,128 @@ function cg_admin_gift_quality_report(): void {
     ]]);
 }
 
-// ── Sync Trappings gift child tables ─────────────────────────────────────────
+// ── Shared helper: sync child tables for one Trappings gift ──────────────────
+
+/**
+ * Wipe-and-rebuild gift_rules + gift_sections for a single Trappings gift.
+ * Returns array of change-log strings.
+ *
+ * @param array $gift  Row from customtables_table_gifts
+ *                     (keys: ct_id, ct_gifts_name, ct_gifts_effect, ct_gifts_effect_description)
+ */
+function cg_sync_one_trappings_gift(array $gift): array {
+    $p   = cg_prefix();
+    $tr  = "{$p}customtables_table_gift_rules";
+    $ts  = "{$p}customtables_table_gift_sections";
+
+    $id      = (int)   ($gift['ct_id']                      ?? 0);
+    $summary = trim((string) ($gift['ct_gifts_effect']       ?? ''));
+    $desc    = trim((string) ($gift['ct_gifts_effect_description'] ?? ''));
+
+    $changes = [];
+
+    // Split on @@FLAVOUR marker
+    $parts       = explode('@@FLAVOUR', $desc, 2);
+    $rulesText   = trim($parts[0]);
+    $flavourText = isset($parts[1]) ? trim($parts[1]) : '';
+
+    // ── gift_rules: one passive row ──────────────────────────────────────────
+    try {
+        $del = cg_exec("DELETE FROM $tr WHERE ct_gift_id = ?", [$id]);
+        $changes[] = 'gift_rules deleted: ' . $del['rowCount'];
+        cg_exec(
+            "INSERT INTO $tr
+                (ct_gift_id, ct_sort, ct_rule_type, ct_rule_title,
+                 ct_cost_text, ct_limit_text, ct_summary, ct_details,
+                 created_at, updated_at)
+             VALUES (?, 10, 'passive', '', '', '', ?, ?, NOW(), NOW())",
+            [$id, $summary, $rulesText]
+        );
+        $changes[] = 'gift_rules inserted';
+    } catch (Throwable $e) {
+        $changes[] = 'gift_rules error: ' . $e->getMessage();
+    }
+
+    // ── gift_sections: one row per @@SECTION: block ──────────────────────────
+    try {
+        $del = cg_exec("DELETE FROM $ts WHERE ct_gift_id = ?", [$id]);
+        $changes[] = 'gift_sections deleted: ' . $del['rowCount'];
+
+        $rawParts = preg_split('/@@SECTION\s*:/i', $rulesText, -1, PREG_SPLIT_NO_EMPTY);
+        $sort = 10;
+
+        foreach ($rawParts as $rawPart) {
+            $rawPart = trim($rawPart);
+            if ($rawPart === '') continue;
+
+            $nlPos   = strpos($rawPart, "\n");
+            $heading = $nlPos !== false ? trim(substr($rawPart, 0, $nlPos)) : trim($rawPart);
+            $body    = $nlPos !== false ? trim(substr($rawPart, $nlPos + 1)) : '';
+
+            $body = preg_replace('/\n?[ \t]*@@REFRESH[^\n]*/i', '', $body);
+            $body = preg_replace('/@@TRAPPINGS\s*:[ \t]*/i', '', $body);
+            $body = preg_replace('/[ \t]*@@[A-Z_]+\s*:[^\n]*/i', '', $body);
+            $body = trim(preg_replace("/\n{3,}/", "\n\n", $body));
+
+            if ($heading === '' && $body === '') continue;
+
+            $secType = 'rules';
+            if (preg_match('/^Action\s+["\(]/i', $heading) ||
+                preg_match('/^(Improved Action|Reaction|Long Action)\s+["\(]/i', $heading)) {
+                $secType = 'action_block';
+            }
+
+            cg_exec(
+                "INSERT INTO $ts
+                    (ct_gift_id, ct_sort, ct_section_type, ct_heading, ct_body,
+                     created_at, updated_at)
+                 VALUES (?, ?, ?, ?, ?, NOW(), NOW())",
+                [$id, $sort, $secType, $heading, $body]
+            );
+            $changes[] = "gift_sections '{$secType}' inserted: {$heading}";
+            $sort += 10;
+        }
+
+        // No @@SECTION: markers → one plain rules row
+        if ($sort === 10 && $rulesText !== '') {
+            $plainBody = preg_replace('/[ \t]*@@[A-Z_]+\s*:[^\n]*/i', '', $rulesText);
+            $plainBody = trim(preg_replace("/\n{3,}/", "\n\n", $plainBody));
+            cg_exec(
+                "INSERT INTO $ts
+                    (ct_gift_id, ct_sort, ct_section_type, ct_heading, ct_body,
+                     created_at, updated_at)
+                 VALUES (?, 10, 'rules', '', ?, NOW(), NOW())",
+                [$id, $plainBody]
+            );
+            $changes[] = "gift_sections 'rules' inserted (no sections)";
+            $sort = 20;
+        }
+
+        // Flavour section
+        if ($flavourText !== '') {
+            cg_exec(
+                "INSERT INTO $ts
+                    (ct_gift_id, ct_sort, ct_section_type, ct_heading, ct_body,
+                     created_at, updated_at)
+                 VALUES (?, ?, 'flavour', '', ?, NOW(), NOW())",
+                [$id, $sort, $flavourText]
+            );
+            $changes[] = "gift_sections 'flavour' inserted";
+        }
+    } catch (Throwable $e) {
+        $changes[] = 'gift_sections error: ' . $e->getMessage();
+    }
+
+    return $changes;
+}
+
+// ── Sync Trappings gift child tables (all at once) ────────────────────────────
 
 function cg_admin_sync_trappings_children(): void {
     cg_admin_require();
     $p  = cg_prefix();
     $tg = "{$p}customtables_table_gifts";
     $gc = "{$p}customtables_table_giftclass";
-    $tr = "{$p}customtables_table_gift_rules";
-    $ts = "{$p}customtables_table_gift_sections";
     $tm = "{$p}customtables_table_gift_type_map";
     $tt = "{$p}customtables_table_gifttype";
 
@@ -347,116 +460,15 @@ function cg_admin_sync_trappings_children(): void {
     $giftIds  = [];
 
     foreach ($gifts as $gift) {
-        $id      = (int) $gift['ct_id'];
-        $name    = (string) ($gift['ct_gifts_name'] ?? '');
-        $summary = trim((string) ($gift['ct_gifts_effect'] ?? ''));
-        $desc    = trim((string) ($gift['ct_gifts_effect_description'] ?? ''));
+        $id   = (int) ($gift['ct_id'] ?? 0);
+        $name = (string) ($gift['ct_gifts_name'] ?? '');
         $giftIds[] = $id;
-        $changes   = [];
 
-        // ── 2. Split on @@FLAVOUR marker ────────────────────────────────────
-        $parts       = explode('@@FLAVOUR', $desc, 2);
-        $rulesText   = trim($parts[0]);
-        $flavourText = isset($parts[1]) ? trim($parts[1]) : '';
-
-        // ── 3. Wipe all gift_rules rows, then insert one clean row ───────────
-        try {
-            $deleted = cg_exec("DELETE FROM $tr WHERE ct_gift_id = ?", [$id]);
-            $changes[] = 'gift_rules deleted: ' . $deleted['rowCount'];
-            cg_exec(
-                "INSERT INTO $tr
-                    (ct_gift_id, ct_sort, ct_rule_type, ct_rule_title,
-                     ct_cost_text, ct_limit_text, ct_summary, ct_details,
-                     created_at, updated_at)
-                 VALUES (?, 10, 'passive', '', '', '', ?, ?, NOW(), NOW())",
-                [$id, $summary, $rulesText]
-            );
-            $changes[] = 'gift_rules inserted';
-        } catch (Throwable $e) {
-            $changes[] = 'gift_rules error: ' . $e->getMessage();
-        }
-
-        // ── 4. Wipe all gift_sections rows, then insert clean set ─────────────
-        try {
-            $deleted = cg_exec("DELETE FROM $ts WHERE ct_gift_id = ?", [$id]);
-            $changes[] = 'gift_sections deleted: ' . $deleted['rowCount'];
-
-            // Parse @@SECTION: blocks from rulesText into individual structured rows
-            $rawParts = preg_split('/@@SECTION\s*:/i', $rulesText, -1, PREG_SPLIT_NO_EMPTY);
-            $sort = 10;
-
-            foreach ($rawParts as $rawPart) {
-                $rawPart = trim($rawPart);
-                if ($rawPart === '') continue;
-
-                // First line = section heading, rest = body
-                $nlPos   = strpos($rawPart, "\n");
-                $heading = $nlPos !== false ? trim(substr($rawPart, 0, $nlPos)) : trim($rawPart);
-                $body    = $nlPos !== false ? trim(substr($rawPart, $nlPos + 1)) : '';
-
-                // Strip @@REFRESH lines entirely
-                $body = preg_replace('/\n?[ \t]*@@REFRESH[^\n]*/i', '', $body);
-                // Strip @@TRAPPINGS: label but keep its content (items list follows on next line(s))
-                $body = preg_replace('/@@TRAPPINGS\s*:[ \t]*/i', '', $body);
-                // Strip any remaining @@ directives (line only, content stays)
-                $body = preg_replace('/[ \t]*@@[A-Z_]+\s*:[^\n]*/i', '', $body);
-                // Collapse excess blank lines
-                $body = trim(preg_replace("/\n{3,}/", "\n\n", $body));
-
-                if ($heading === '' && $body === '') continue;
-
-                // Determine section type from the heading
-                $secType = 'rules';
-                if (preg_match('/^Action\s+["\(]/i', $heading) ||
-                    preg_match('/^(Improved Action|Reaction|Long Action)\s+["\(]/i', $heading)) {
-                    $secType = 'action_block';
-                }
-
-                cg_exec(
-                    "INSERT INTO $ts
-                        (ct_gift_id, ct_sort, ct_section_type, ct_heading, ct_body,
-                         created_at, updated_at)
-                     VALUES (?, ?, ?, ?, ?, NOW(), NOW())",
-                    [$id, $sort, $secType, $heading, $body]
-                );
-                $changes[] = "gift_sections '{$secType}' inserted: {$heading}";
-                $sort += 10;
-            }
-
-            // If no @@SECTION: markers were found, fall back to one plain rules row
-            if ($sort === 10 && $rulesText !== '') {
-                $plainBody = preg_replace('/[ \t]*@@[A-Z_]+\s*:[^\n]*/i', '', $rulesText);
-                $plainBody = trim(preg_replace("/\n{3,}/", "\n\n", $plainBody));
-                cg_exec(
-                    "INSERT INTO $ts
-                        (ct_gift_id, ct_sort, ct_section_type, ct_heading, ct_body,
-                         created_at, updated_at)
-                     VALUES (?, 10, 'rules', '', ?, NOW(), NOW())",
-                    [$id, $plainBody]
-                );
-                $changes[] = "gift_sections 'rules' inserted (no sections)";
-                $sort = 20;
-            }
-
-            // 'flavour' section — only when @@FLAVOUR marker was present
-            if ($flavourText !== '') {
-                cg_exec(
-                    "INSERT INTO $ts
-                        (ct_gift_id, ct_sort, ct_section_type, ct_heading, ct_body,
-                         created_at, updated_at)
-                     VALUES (?, ?, 'flavour', '', ?, NOW(), NOW())",
-                    [$id, $sort, $flavourText]
-                );
-                $changes[] = "gift_sections 'flavour' inserted";
-            }
-        } catch (Throwable $e) {
-            $changes[] = 'gift_sections error: ' . $e->getMessage();
-        }
+        $changes = cg_sync_one_trappings_gift($gift);
 
         $report[] = [
             'gift_id'   => $id,
             'gift_name' => $name,
-            'has_flavour' => $flavourText !== '',
             'changes'   => $changes,
         ];
     }
@@ -490,6 +502,71 @@ function cg_admin_sync_trappings_children(): void {
         'processed'        => count($report),
         'type_map_deleted' => $typeMapDeleted,
         'items'            => $report,
+    ]]);
+}
+
+// ── Sync single gift child tables (for pipeline / webhook use) ───────────────
+
+/**
+ * Sync child tables for a single gift by ID.
+ *
+ * Auth: standard admin session OR shared CG_SYNC_SECRET token.
+ * The sync_secret path is used by the WordPress mu-plugin after a CT save.
+ *
+ * POST params:
+ *   gift_id     int    required
+ *   sync_secret string optional — bypasses session auth when CG_SYNC_SECRET matches
+ */
+function cg_admin_sync_single_gift(): void {
+    // Allow server-to-server call when sync_secret matches configured secret
+    $cfgSecret  = defined('CG_SYNC_SECRET') ? CG_SYNC_SECRET : '';
+    $postSecret = trim($_POST['sync_secret'] ?? '');
+    $hasSecret  = $cfgSecret !== '' && hash_equals($cfgSecret, $postSecret);
+
+    if (!$hasSecret) {
+        cg_admin_require();
+    }
+
+    $giftId = (int) ($_POST['gift_id'] ?? 0);
+    if (!$giftId) {
+        cg_json(['success' => false, 'data' => 'Missing gift_id.']);
+        return;
+    }
+
+    $p  = cg_prefix();
+    $tg = "{$p}customtables_table_gifts";
+    $gc = "{$p}customtables_table_giftclass";
+
+    // Fetch the gift row
+    try {
+        $rows = cg_query(
+            "SELECT g.ct_id, g.ct_gifts_name, g.ct_gifts_effect,
+                    g.ct_gifts_effect_description, gc.ct_class_name
+             FROM $tg AS g
+             LEFT JOIN $gc AS gc ON gc.ct_id = g.ct_gift_class
+             WHERE g.ct_id = ?",
+            [$giftId]
+        );
+    } catch (Throwable $e) {
+        $rows = cg_query(
+            "SELECT ct_id, ct_gifts_name, ct_gifts_effect, ct_gifts_effect_description
+             FROM $tg WHERE ct_id = ?",
+            [$giftId]
+        );
+    }
+
+    if (empty($rows)) {
+        cg_json(['success' => false, 'data' => "Gift {$giftId} not found."]);
+        return;
+    }
+
+    $gift    = $rows[0];
+    $changes = cg_sync_one_trappings_gift($gift);
+
+    cg_json(['success' => true, 'data' => [
+        'gift_id'   => $giftId,
+        'gift_name' => $gift['ct_gifts_name'] ?? '',
+        'changes'   => $changes,
     ]]);
 }
 
