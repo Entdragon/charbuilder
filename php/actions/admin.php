@@ -304,6 +304,275 @@ function cg_admin_gift_quality_report(): void {
     ]]);
 }
 
+// ── Markup block parser ───────────────────────────────────────────────────────
+
+/**
+ * Parse all @@DIRECTIVE: blocks from a gift description into a structured array.
+ *
+ * Each @@ that starts on its own line (or at the start of the text) opens a new
+ * block; its content runs until the next @@ marker or end of string.
+ *
+ * Also normalises the common typo @@R:equires: → @@REQUIRES:.
+ *
+ * Returns array of ['directive'=>string, 'first_line'=>string, 'body'=>string].
+ */
+function cg_parse_markup_blocks(string $text): array {
+    $text = str_replace(["\r\n", "\r"], "\n", $text);
+    // Normalise typo
+    $text = preg_replace('/@@R:equires\s*:/i', '@@REQUIRES:', $text);
+
+    $blocks = [];
+
+    // Match every @@WORD: that is either at the start of string or after a newline
+    if (!preg_match_all('/(?:^|\n)(@@[A-Z][A-Z_]*\s*:[ \t]*)/mi', $text, $matches, PREG_OFFSET_CAPTURE)) {
+        return $blocks;
+    }
+
+    $count = count($matches[0]);
+    for ($i = 0; $i < $count; $i++) {
+        $fullMatch  = $matches[0][$i][0];   // e.g. "\n@@PASSIVE: "
+        $matchStart = $matches[0][$i][1];   // byte offset in $text
+        $tagLen     = strlen($fullMatch);
+
+        $contentStart = $matchStart + $tagLen;
+        $contentEnd   = ($i + 1 < $count) ? $matches[0][$i + 1][1] : strlen($text);
+
+        $directiveRaw = trim(strtoupper(preg_replace('/@@([A-Z][A-Z_]*)\s*:.*$/si', '$1', trim($fullMatch))));
+
+        $content   = rtrim(substr($text, $contentStart, $contentEnd - $contentStart));
+        $lines     = explode("\n", $content, 2);
+        $firstLine = trim($lines[0]);
+        $body      = isset($lines[1]) ? trim($lines[1]) : '';
+
+        $blocks[] = [
+            'directive'  => $directiveRaw,
+            'first_line' => $firstLine,
+            'body'       => $body,
+        ];
+    }
+
+    return $blocks;
+}
+
+// ── General gift sync (all @@markup types) ────────────────────────────────────
+
+/**
+ * Parse all @@DIRECTIVE: blocks from a gift's description and rebuild ALL
+ * four child tables: gift_rules, gift_sections, gift_triggers, gift_requirements.
+ *
+ * Rules:
+ * - If description has no @@ markers, child tables are left untouched.
+ * - If description has @@SECTION: markers, delegates to cg_sync_one_trappings_gift().
+ * - Otherwise parses @@PASSIVE/ACTION/REACTION/etc → gift_rules,
+ *                    @@TRIGGER            → gift_triggers,
+ *                    @@REQUIRES           → gift_requirements,
+ *                    @@SECTION / @@FLAVOUR → gift_sections.
+ * - @@TRIGGER rows are deduplicated before insert.
+ * - @@REQUIRES values are resolved to gift_ref if a matching gift name is found.
+ */
+function cg_sync_one_gift_general(array $gift): array {
+    $id      = (int)   ($gift['ct_id']                            ?? 0);
+    $desc    = trim((string) ($gift['ct_gifts_effect_description'] ?? ''));
+
+    // Nothing to do if no @@ markup present — preserve manually-entered data
+    if ($desc === '' || !preg_match('/@@[A-Z]/i', $desc)) {
+        return ['no @@ markup in description — child tables unchanged'];
+    }
+
+    // Trappings-style (@@SECTION: markers) → dedicated handler
+    if (stripos($desc, '@@SECTION:') !== false) {
+        return cg_sync_one_trappings_gift($gift);
+    }
+
+    $p     = cg_prefix();
+    $tr    = "{$p}customtables_table_gift_rules";
+    $ts    = "{$p}customtables_table_gift_sections";
+    $treq  = "{$p}customtables_table_gift_requirements";
+    $ttrig = "{$p}customtables_table_gift_triggers";
+    $tg    = "{$p}customtables_table_gifts";
+
+    $changes = [];
+    $blocks  = cg_parse_markup_blocks($desc);
+
+    $rules        = [];
+    $sections     = [];
+    $requirements = [];
+    $triggers     = [];
+    $flavourText  = '';
+
+    foreach ($blocks as $b) {
+        $dir  = $b['directive'];
+        $line = $b['first_line'];
+        $body = $b['body'];
+
+        switch ($dir) {
+            case 'PASSIVE':
+                $rules[] = ['type' => 'passive',         'summary' => $line, 'details' => $body];
+                break;
+            case 'ACTION':
+                $rules[] = ['type' => 'action',          'summary' => $line, 'details' => $body];
+                break;
+            case 'REACTION':
+                $rules[] = ['type' => 'reaction',        'summary' => $line, 'details' => $body];
+                break;
+            case 'IMPROVED_ACTION':
+                $rules[] = ['type' => 'improved_action', 'summary' => $line, 'details' => $body];
+                break;
+            case 'LONG_ACTION':
+                $rules[] = ['type' => 'long_action',     'summary' => $line, 'details' => $body];
+                break;
+            case 'START':
+                $rules[] = ['type' => 'start',           'summary' => $line, 'details' => $body];
+                break;
+            case 'TRIGGER':
+                if ($line !== '') $triggers[] = $line;
+                break;
+            case 'REQUIRES':
+                // Each non-empty line (first + body) is a separate requirement
+                foreach (array_filter(array_map('trim', array_merge([$line], explode("\n", $body)))) as $req) {
+                    $requirements[] = $req;
+                }
+                break;
+            case 'SECTION':
+                $sections[] = ['heading' => $line, 'body' => $body];
+                break;
+            case 'FLAVOUR':
+                $flavourText = $line . ($body !== '' ? "\n" . $body : '');
+                break;
+            case 'REFRESH':
+                break; // already stored in ct_gifts_refresh column
+        }
+    }
+
+    // Deduplicate triggers
+    $triggers = array_values(array_unique($triggers));
+
+    // ── gift_rules ────────────────────────────────────────────────────────────
+    if (!empty($rules)) {
+        try {
+            $del = cg_exec("DELETE FROM $tr WHERE ct_gift_id = ?", [$id]);
+            $changes[] = 'gift_rules deleted: ' . $del['rowCount'];
+            $sort = 10;
+            foreach ($rules as $rule) {
+                cg_exec(
+                    "INSERT INTO $tr
+                        (ct_gift_id, ct_sort, ct_rule_type, ct_rule_title,
+                         ct_cost_text, ct_limit_text, ct_summary, ct_details,
+                         created_at, updated_at)
+                     VALUES (?, ?, ?, '', '', '', ?, ?, NOW(), NOW())",
+                    [$id, $sort, $rule['type'], $rule['summary'], $rule['details']]
+                );
+                $changes[] = "gift_rules ({$rule['type']}): " . mb_substr($rule['summary'], 0, 60);
+                $sort += 10;
+            }
+        } catch (Throwable $e) {
+            $changes[] = 'gift_rules error: ' . $e->getMessage();
+        }
+    }
+
+    // ── gift_sections ─────────────────────────────────────────────────────────
+    if (!empty($sections) || $flavourText !== '') {
+        try {
+            $del = cg_exec("DELETE FROM $ts WHERE ct_gift_id = ?", [$id]);
+            $changes[] = 'gift_sections deleted: ' . $del['rowCount'];
+            $sort = 10;
+            foreach ($sections as $sec) {
+                $h       = $sec['heading'];
+                $secType = 'rules';
+                if (preg_match('/^Action\s+["\(]/i', $h) ||
+                    preg_match('/^(Improved Action|Reaction|Long Action)\s+["\(]/i', $h)) {
+                    $secType = 'action_block';
+                }
+                cg_exec(
+                    "INSERT INTO $ts
+                        (ct_gift_id, ct_sort, ct_section_type, ct_heading, ct_body,
+                         created_at, updated_at)
+                     VALUES (?, ?, ?, ?, ?, NOW(), NOW())",
+                    [$id, $sort, $secType, $h, $sec['body']]
+                );
+                $changes[] = "gift_sections '{$secType}': {$h}";
+                $sort += 10;
+            }
+            if ($flavourText !== '') {
+                cg_exec(
+                    "INSERT INTO $ts
+                        (ct_gift_id, ct_sort, ct_section_type, ct_heading, ct_body,
+                         created_at, updated_at)
+                     VALUES (?, ?, 'flavour', '', ?, NOW(), NOW())",
+                    [$id, $sort, $flavourText]
+                );
+                $changes[] = "gift_sections 'flavour' inserted";
+            }
+        } catch (Throwable $e) {
+            $changes[] = 'gift_sections error: ' . $e->getMessage();
+        }
+    }
+
+    // ── gift_triggers ─────────────────────────────────────────────────────────
+    if (!empty($triggers)) {
+        try {
+            $del = cg_exec("DELETE FROM $ttrig WHERE ct_gift_id = ?", [$id]);
+            $changes[] = 'gift_triggers deleted: ' . $del['rowCount'];
+            $sort = 10;
+            foreach ($triggers as $trig) {
+                cg_exec(
+                    "INSERT INTO $ttrig
+                        (ct_gift_id, ct_sort, ct_trigger_kind, ct_trigger_text,
+                         created_at, updated_at)
+                     VALUES (?, ?, 'condition', ?, NOW(), NOW())",
+                    [$id, $sort, $trig]
+                );
+                $changes[] = "gift_triggers: {$trig}";
+                $sort += 10;
+            }
+        } catch (Throwable $e) {
+            $changes[] = 'gift_triggers error: ' . $e->getMessage();
+        }
+    }
+
+    // ── gift_requirements ─────────────────────────────────────────────────────
+    if (!empty($requirements)) {
+        try {
+            $del = cg_exec("DELETE FROM $treq WHERE ct_gift_id = ?", [$id]);
+            $changes[] = 'gift_requirements deleted: ' . $del['rowCount'];
+            $sort = 10;
+            foreach ($requirements as $req) {
+                // Try to resolve to a gift_ref first
+                $refId   = 0;
+                $refKind = 'text';
+                try {
+                    $refRows = cg_query(
+                        "SELECT ct_id FROM $tg WHERE ct_gifts_name = ? AND published = 1 LIMIT 1",
+                        [$req]
+                    );
+                    if (!empty($refRows)) {
+                        $refId   = (int) $refRows[0]['ct_id'];
+                        $refKind = 'gift_ref';
+                    }
+                } catch (Throwable $ignored) {}
+
+                cg_exec(
+                    "INSERT INTO $treq
+                        (ct_gift_id, ct_sort, ct_req_kind, ct_req_ref_id, ct_req_text,
+                         created_at, updated_at)
+                     VALUES (?, ?, ?, ?, ?, NOW(), NOW())",
+                    [$id, $sort, $refKind, $refId, $req]
+                );
+                $changes[] = "gift_requirements ({$refKind}): {$req}";
+                $sort += 10;
+            }
+        } catch (Throwable $e) {
+            $changes[] = 'gift_requirements error: ' . $e->getMessage();
+        }
+    }
+
+    if (empty($rules) && empty($sections) && empty($triggers) && empty($requirements) && $flavourText === '') {
+        $changes[] = '@@ markers present but no recognised blocks — child tables unchanged';
+    }
+
+    return $changes;
+}
+
 // ── Shared helper: sync child tables for one Trappings gift ──────────────────
 
 /**
@@ -561,7 +830,7 @@ function cg_admin_sync_single_gift(): void {
     }
 
     $gift    = $rows[0];
-    $changes = cg_sync_one_trappings_gift($gift);
+    $changes = cg_sync_one_gift_general($gift);
 
     cg_json(['success' => true, 'data' => [
         'gift_id'   => $giftId,
