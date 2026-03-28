@@ -359,98 +359,51 @@ function cg_admin_sync_trappings_children(): void {
         $rulesText   = trim($parts[0]);
         $flavourText = isset($parts[1]) ? trim($parts[1]) : '';
 
-        // ── 3. Upsert gift_rules (first row only) ────────────────────────────
+        // ── 3. Wipe all gift_rules rows, then insert one clean row ───────────
         try {
-            $existingRule = cg_query_one(
-                "SELECT ct_id FROM $tr WHERE ct_gift_id = ? ORDER BY ct_sort ASC, ct_id ASC LIMIT 1",
-                [$id]
+            $deleted = cg_exec("DELETE FROM $tr WHERE ct_gift_id = ?", [$id]);
+            $changes[] = 'gift_rules deleted: ' . $deleted['rowCount'];
+            cg_exec(
+                "INSERT INTO $tr
+                    (ct_gift_id, ct_sort, ct_rule_type, ct_rule_title,
+                     ct_cost_text, ct_limit_text, ct_summary, ct_details,
+                     created_at, updated_at)
+                 VALUES (?, 10, 'passive', '', '', '', ?, ?, NOW(), NOW())",
+                [$id, $summary, $rulesText]
             );
-            if ($existingRule) {
-                cg_exec(
-                    "UPDATE $tr SET ct_summary = ?, ct_details = ?, updated_at = NOW()
-                     WHERE ct_id = ?",
-                    [$summary, $rulesText, (int) $existingRule['ct_id']]
-                );
-                $changes[] = 'gift_rules updated';
-            } else {
-                cg_exec(
-                    "INSERT INTO $tr
-                        (ct_gift_id, ct_sort, ct_rule_type, ct_rule_title,
-                         ct_cost_text, ct_limit_text, ct_summary, ct_details,
-                         created_at, updated_at)
-                     VALUES (?, 10, 'passive', '', '', '', ?, ?, NOW(), NOW())",
-                    [$id, $summary, $rulesText]
-                );
-                $changes[] = 'gift_rules inserted';
-            }
+            $changes[] = 'gift_rules inserted';
         } catch (Throwable $e) {
             $changes[] = 'gift_rules error: ' . $e->getMessage();
         }
 
-        // ── 4. Upsert gift_sections 'rules' row ──────────────────────────────
+        // ── 4. Wipe all gift_sections rows, then insert clean set ─────────────
         try {
-            $existingRulesSect = cg_query_one(
-                "SELECT ct_id FROM $ts
-                 WHERE ct_gift_id = ? AND ct_section_type = 'rules'
-                 ORDER BY ct_sort ASC, ct_id ASC LIMIT 1",
-                [$id]
+            $deleted = cg_exec("DELETE FROM $ts WHERE ct_gift_id = ?", [$id]);
+            $changes[] = 'gift_sections deleted: ' . $deleted['rowCount'];
+
+            // 'rules' section — always inserted
+            cg_exec(
+                "INSERT INTO $ts
+                    (ct_gift_id, ct_sort, ct_section_type, ct_heading, ct_body,
+                     created_at, updated_at)
+                 VALUES (?, 10, 'rules', '', ?, NOW(), NOW())",
+                [$id, $rulesText]
             );
-            if ($existingRulesSect) {
-                cg_exec(
-                    "UPDATE $ts SET ct_body = ?, updated_at = NOW() WHERE ct_id = ?",
-                    [$rulesText, (int) $existingRulesSect['ct_id']]
-                );
-                $changes[] = "gift_sections 'rules' updated";
-            } else {
+            $changes[] = "gift_sections 'rules' inserted";
+
+            // 'flavour' section — only when @@FLAVOUR marker was present
+            if ($flavourText !== '') {
                 cg_exec(
                     "INSERT INTO $ts
                         (ct_gift_id, ct_sort, ct_section_type, ct_heading, ct_body,
                          created_at, updated_at)
-                     VALUES (?, 10, 'rules', '', ?, NOW(), NOW())",
-                    [$id, $rulesText]
+                     VALUES (?, 20, 'flavour', '', ?, NOW(), NOW())",
+                    [$id, $flavourText]
                 );
-                $changes[] = "gift_sections 'rules' inserted";
+                $changes[] = "gift_sections 'flavour' inserted";
             }
         } catch (Throwable $e) {
-            $changes[] = "gift_sections 'rules' error: " . $e->getMessage();
-        }
-
-        // ── 5. Upsert or delete gift_sections 'flavour' row ──────────────────
-        try {
-            $existingFlavourSect = cg_query_one(
-                "SELECT ct_id FROM $ts
-                 WHERE ct_gift_id = ? AND ct_section_type = 'flavour'
-                 ORDER BY ct_sort ASC, ct_id ASC LIMIT 1",
-                [$id]
-            );
-            if ($flavourText !== '') {
-                if ($existingFlavourSect) {
-                    cg_exec(
-                        "UPDATE $ts SET ct_body = ?, updated_at = NOW() WHERE ct_id = ?",
-                        [$flavourText, (int) $existingFlavourSect['ct_id']]
-                    );
-                    $changes[] = "gift_sections 'flavour' updated";
-                } else {
-                    cg_exec(
-                        "INSERT INTO $ts
-                            (ct_gift_id, ct_sort, ct_section_type, ct_heading, ct_body,
-                             created_at, updated_at)
-                         VALUES (?, 20, 'flavour', '', ?, NOW(), NOW())",
-                        [$id, $flavourText]
-                    );
-                    $changes[] = "gift_sections 'flavour' inserted";
-                }
-            } else {
-                if ($existingFlavourSect) {
-                    cg_exec(
-                        "DELETE FROM $ts WHERE ct_id = ?",
-                        [(int) $existingFlavourSect['ct_id']]
-                    );
-                    $changes[] = "gift_sections 'flavour' deleted (no @@FLAVOUR marker)";
-                }
-            }
-        } catch (Throwable $e) {
-            $changes[] = "gift_sections 'flavour' error: " . $e->getMessage();
+            $changes[] = 'gift_sections error: ' . $e->getMessage();
         }
 
         $report[] = [
