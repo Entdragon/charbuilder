@@ -304,6 +304,195 @@ function cg_admin_gift_quality_report(): void {
     ]]);
 }
 
+// ── Sync Trappings gift child tables ─────────────────────────────────────────
+
+function cg_admin_sync_trappings_children(): void {
+    cg_admin_require();
+    $p  = cg_prefix();
+    $tg = "{$p}customtables_table_gifts";
+    $gc = "{$p}customtables_table_giftclass";
+    $tr = "{$p}customtables_table_gift_rules";
+    $ts = "{$p}customtables_table_gift_sections";
+    $tm = "{$p}customtables_table_gift_type_map";
+    $tt = "{$p}customtables_table_gifttype";
+
+    // ── 1. Find all Trappings gifts ───────────────────────────────────────────
+    try {
+        $gifts = cg_query("
+            SELECT DISTINCT g.ct_id, g.ct_gifts_name,
+                   g.ct_gifts_effect, g.ct_gifts_effect_description
+            FROM $tg AS g
+            LEFT JOIN $gc AS gc ON gc.ct_id = g.ct_gift_class
+            WHERE g.ct_gifts_name LIKE '%Trappings%'
+               OR LOWER(TRIM(COALESCE(gc.ct_class_name, ''))) = 'trappings'
+            ORDER BY g.ct_gifts_name ASC
+        ");
+    } catch (Throwable $e) {
+        // giftclass table may not exist — fall back to name-only match
+        $gifts = cg_query("
+            SELECT ct_id, ct_gifts_name,
+                   ct_gifts_effect, ct_gifts_effect_description
+            FROM $tg
+            WHERE ct_gifts_name LIKE '%Trappings%'
+            ORDER BY ct_gifts_name ASC
+        ");
+    }
+
+    if (empty($gifts)) {
+        cg_json(['success' => true, 'data' => ['processed' => 0, 'items' => []]]);
+        return;
+    }
+
+    $report   = [];
+    $giftIds  = [];
+
+    foreach ($gifts as $gift) {
+        $id      = (int) $gift['ct_id'];
+        $name    = (string) ($gift['ct_gifts_name'] ?? '');
+        $summary = trim((string) ($gift['ct_gifts_effect'] ?? ''));
+        $desc    = trim((string) ($gift['ct_gifts_effect_description'] ?? ''));
+        $giftIds[] = $id;
+        $changes   = [];
+
+        // ── 2. Split on @@FLAVOUR marker ────────────────────────────────────
+        $parts       = explode('@@FLAVOUR', $desc, 2);
+        $rulesText   = trim($parts[0]);
+        $flavourText = isset($parts[1]) ? trim($parts[1]) : '';
+
+        // ── 3. Upsert gift_rules (first row only) ────────────────────────────
+        try {
+            $existingRule = cg_query_one(
+                "SELECT ct_id FROM $tr WHERE ct_gift_id = ? ORDER BY ct_sort ASC, ct_id ASC LIMIT 1",
+                [$id]
+            );
+            if ($existingRule) {
+                cg_exec(
+                    "UPDATE $tr SET ct_summary = ?, ct_details = ?, updated_at = NOW()
+                     WHERE ct_id = ?",
+                    [$summary, $rulesText, (int) $existingRule['ct_id']]
+                );
+                $changes[] = 'gift_rules updated';
+            } else {
+                cg_exec(
+                    "INSERT INTO $tr
+                        (ct_gift_id, ct_sort, ct_rule_type, ct_rule_title,
+                         ct_cost_text, ct_limit_text, ct_summary, ct_details,
+                         created_at, updated_at)
+                     VALUES (?, 10, 'passive', '', '', ?, ?, NOW(), NOW())",
+                    [$id, $summary, $rulesText]
+                );
+                $changes[] = 'gift_rules inserted';
+            }
+        } catch (Throwable $e) {
+            $changes[] = 'gift_rules error: ' . $e->getMessage();
+        }
+
+        // ── 4. Upsert gift_sections 'rules' row ──────────────────────────────
+        try {
+            $existingRulesSect = cg_query_one(
+                "SELECT ct_id FROM $ts
+                 WHERE ct_gift_id = ? AND ct_section_type = 'rules'
+                 ORDER BY ct_sort ASC, ct_id ASC LIMIT 1",
+                [$id]
+            );
+            if ($existingRulesSect) {
+                cg_exec(
+                    "UPDATE $ts SET ct_body = ?, updated_at = NOW() WHERE ct_id = ?",
+                    [$rulesText, (int) $existingRulesSect['ct_id']]
+                );
+                $changes[] = "gift_sections 'rules' updated";
+            } else {
+                cg_exec(
+                    "INSERT INTO $ts
+                        (ct_gift_id, ct_sort, ct_section_type, ct_heading, ct_body,
+                         created_at, updated_at)
+                     VALUES (?, 10, 'rules', '', ?, NOW(), NOW())",
+                    [$id, $rulesText]
+                );
+                $changes[] = "gift_sections 'rules' inserted";
+            }
+        } catch (Throwable $e) {
+            $changes[] = "gift_sections 'rules' error: " . $e->getMessage();
+        }
+
+        // ── 5. Upsert or delete gift_sections 'flavour' row ──────────────────
+        try {
+            $existingFlavourSect = cg_query_one(
+                "SELECT ct_id FROM $ts
+                 WHERE ct_gift_id = ? AND ct_section_type = 'flavour'
+                 ORDER BY ct_sort ASC, ct_id ASC LIMIT 1",
+                [$id]
+            );
+            if ($flavourText !== '') {
+                if ($existingFlavourSect) {
+                    cg_exec(
+                        "UPDATE $ts SET ct_body = ?, updated_at = NOW() WHERE ct_id = ?",
+                        [$flavourText, (int) $existingFlavourSect['ct_id']]
+                    );
+                    $changes[] = "gift_sections 'flavour' updated";
+                } else {
+                    cg_exec(
+                        "INSERT INTO $ts
+                            (ct_gift_id, ct_sort, ct_section_type, ct_heading, ct_body,
+                             created_at, updated_at)
+                         VALUES (?, 20, 'flavour', '', ?, NOW(), NOW())",
+                        [$id, $flavourText]
+                    );
+                    $changes[] = "gift_sections 'flavour' inserted";
+                }
+            } else {
+                if ($existingFlavourSect) {
+                    cg_exec(
+                        "DELETE FROM $ts WHERE ct_id = ?",
+                        [(int) $existingFlavourSect['ct_id']]
+                    );
+                    $changes[] = "gift_sections 'flavour' deleted (no @@FLAVOUR marker)";
+                }
+            }
+        } catch (Throwable $e) {
+            $changes[] = "gift_sections 'flavour' error: " . $e->getMessage();
+        }
+
+        $report[] = [
+            'gift_id'   => $id,
+            'gift_name' => $name,
+            'has_flavour' => $flavourText !== '',
+            'changes'   => $changes,
+        ];
+    }
+
+    // ── 6. Remove redundant gift_type_map entries for Trappings gifts ─────────
+    $typeMapDeleted = 0;
+    if (!empty($giftIds)) {
+        try {
+            $ph = implode(',', array_fill(0, count($giftIds), '?'));
+
+            // Find gifttype IDs that represent "Trappings"
+            $trappingsTypes = cg_query(
+                "SELECT ct_id FROM $tt WHERE ct_type_name LIKE '%Trappings%'",
+                []
+            );
+            if (!empty($trappingsTypes)) {
+                $typeIds = array_map(fn($r) => (int) $r['ct_id'], $trappingsTypes);
+                $tph     = implode(',', array_fill(0, count($typeIds), '?'));
+                $res     = cg_exec(
+                    "DELETE FROM $tm WHERE gift_id IN ($ph) AND type_id IN ($tph)",
+                    array_merge($giftIds, $typeIds)
+                );
+                $typeMapDeleted = $res['rowCount'];
+            }
+        } catch (Throwable $e) {
+            // gift_type_map or gifttype table may not exist — skip silently
+        }
+    }
+
+    cg_json(['success' => true, 'data' => [
+        'processed'        => count($report),
+        'type_map_deleted' => $typeMapDeleted,
+        'items'            => $report,
+    ]]);
+}
+
 // ── Weapons ───────────────────────────────────────────────────────────────────
 
 function cg_admin_list_weapons(): void {
