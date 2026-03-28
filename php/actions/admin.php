@@ -378,7 +378,7 @@ function cg_admin_sync_trappings_children(): void {
                         (ct_gift_id, ct_sort, ct_rule_type, ct_rule_title,
                          ct_cost_text, ct_limit_text, ct_summary, ct_details,
                          created_at, updated_at)
-                     VALUES (?, 10, 'passive', '', '', ?, ?, NOW(), NOW())",
+                     VALUES (?, 10, 'passive', '', '', '', ?, ?, NOW(), NOW())",
                     [$id, $summary, $rulesText]
                 );
                 $changes[] = 'gift_rules inserted';
