@@ -381,15 +381,62 @@ function cg_admin_sync_trappings_children(): void {
             $deleted = cg_exec("DELETE FROM $ts WHERE ct_gift_id = ?", [$id]);
             $changes[] = 'gift_sections deleted: ' . $deleted['rowCount'];
 
-            // 'rules' section — always inserted
-            cg_exec(
-                "INSERT INTO $ts
-                    (ct_gift_id, ct_sort, ct_section_type, ct_heading, ct_body,
-                     created_at, updated_at)
-                 VALUES (?, 10, 'rules', '', ?, NOW(), NOW())",
-                [$id, $rulesText]
-            );
-            $changes[] = "gift_sections 'rules' inserted";
+            // Parse @@SECTION: blocks from rulesText into individual structured rows
+            $rawParts = preg_split('/@@SECTION\s*:/i', $rulesText, -1, PREG_SPLIT_NO_EMPTY);
+            $sort = 10;
+
+            foreach ($rawParts as $rawPart) {
+                $rawPart = trim($rawPart);
+                if ($rawPart === '') continue;
+
+                // First line = section heading, rest = body
+                $nlPos   = strpos($rawPart, "\n");
+                $heading = $nlPos !== false ? trim(substr($rawPart, 0, $nlPos)) : trim($rawPart);
+                $body    = $nlPos !== false ? trim(substr($rawPart, $nlPos + 1)) : '';
+
+                // Strip @@REFRESH lines entirely
+                $body = preg_replace('/\n?[ \t]*@@REFRESH[^\n]*/i', '', $body);
+                // Strip @@TRAPPINGS: label but keep its content (items list follows on next line(s))
+                $body = preg_replace('/@@TRAPPINGS\s*:[ \t]*/i', '', $body);
+                // Strip any remaining @@ directives (line only, content stays)
+                $body = preg_replace('/[ \t]*@@[A-Z_]+\s*:[^\n]*/i', '', $body);
+                // Collapse excess blank lines
+                $body = trim(preg_replace("/\n{3,}/", "\n\n", $body));
+
+                if ($heading === '' && $body === '') continue;
+
+                // Determine section type from the heading
+                $secType = 'rules';
+                if (preg_match('/^Action\s+["\(]/i', $heading) ||
+                    preg_match('/^(Improved Action|Reaction|Long Action)\s+["\(]/i', $heading)) {
+                    $secType = 'action_block';
+                }
+
+                cg_exec(
+                    "INSERT INTO $ts
+                        (ct_gift_id, ct_sort, ct_section_type, ct_heading, ct_body,
+                         created_at, updated_at)
+                     VALUES (?, ?, ?, ?, ?, NOW(), NOW())",
+                    [$id, $sort, $secType, $heading, $body]
+                );
+                $changes[] = "gift_sections '{$secType}' inserted: {$heading}";
+                $sort += 10;
+            }
+
+            // If no @@SECTION: markers were found, fall back to one plain rules row
+            if ($sort === 10 && $rulesText !== '') {
+                $plainBody = preg_replace('/[ \t]*@@[A-Z_]+\s*:[^\n]*/i', '', $rulesText);
+                $plainBody = trim(preg_replace("/\n{3,}/", "\n\n", $plainBody));
+                cg_exec(
+                    "INSERT INTO $ts
+                        (ct_gift_id, ct_sort, ct_section_type, ct_heading, ct_body,
+                         created_at, updated_at)
+                     VALUES (?, 10, 'rules', '', ?, NOW(), NOW())",
+                    [$id, $plainBody]
+                );
+                $changes[] = "gift_sections 'rules' inserted (no sections)";
+                $sort = 20;
+            }
 
             // 'flavour' section — only when @@FLAVOUR marker was present
             if ($flavourText !== '') {
@@ -397,8 +444,8 @@ function cg_admin_sync_trappings_children(): void {
                     "INSERT INTO $ts
                         (ct_gift_id, ct_sort, ct_section_type, ct_heading, ct_body,
                          created_at, updated_at)
-                     VALUES (?, 20, 'flavour', '', ?, NOW(), NOW())",
-                    [$id, $flavourText]
+                     VALUES (?, ?, 'flavour', '', ?, NOW(), NOW())",
+                    [$id, $sort, $flavourText]
                 );
                 $changes[] = "gift_sections 'flavour' inserted";
             }
