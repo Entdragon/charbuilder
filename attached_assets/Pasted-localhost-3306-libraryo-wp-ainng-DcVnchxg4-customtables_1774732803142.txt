@@ -1,0 +1,148 @@
+localhost:3306/libraryo_wp_ainng/DcVnchxg4_customtables_table_giftclass/		https://silberhorn.myhost.nz:2083/cpsess7939253260/3rdparty/phpMyAdmin/index.php?route=/table/sql&db=libraryo_wp_ainng&table=DcVnchxg4_customtables_table_gifts
+
+   Showing rows 0 - 24 (91 total, Query took 0.0006 seconds.) [ct_type_name: AIR... - GÀI BANG...]
+
+
+
+   Showing rows 0 - 24 (91 total, Query took 0.0020 seconds.) [ct_type_name: AIR... - GÀI BANG...]
+
+
+
+   Showing rows 0 - 24 (64 total, Query took 0.0135 seconds.) [ct_class_name: AMBIDEXTERITY... - JADEITE DRAGON MAGIC...]
+
+
+
+   Showing rows 0 - 24 (38 total, Query took 0.0005 seconds.) [ct_gifts_name: ANTIÑGERO TRAPPINGS... - MUSKETEER'S TRAPPINGS...]
+
+
+-- 1. What's in the gifttype table? (looking for duplicate Trappings entries)
+SELECT ct_id, ct_type_name, ct_slug
+FROM DcVnchxg4_customtables_table_gifttype
+ORDER BY ct_type_name;
+
+
+-- 2. How many gift_type_map entries point to each gifttype?
+SELECT gt.ct_id, gt.ct_type_name, gt.ct_slug, COUNT(m.id) AS mapped_gifts
+FROM DcVnchxg4_customtables_table_gifttype gt
+LEFT JOIN DcVnchxg4_customtables_table_gift_type_map m ON m.type_id = gt.ct_id
+GROUP BY gt.ct_id, gt.ct_type_name, gt.ct_slug
+ORDER BY gt.ct_type_name;
+
+
+-- 3. What does the giftclass table look like, and how many gifts point to each?
+SELECT gc.ct_id, gc.ct_class_name, gc.ct_slug, COUNT(g.ct_id) AS gift_count
+FROM DcVnchxg4_customtables_table_giftclass gc
+LEFT JOIN DcVnchxg4_customtables_table_gifts g ON g.ct_gift_class = gc.ct_id
+GROUP BY gc.ct_id, gc.ct_class_name, gc.ct_slug
+ORDER BY gc.ct_class_name;
+
+
+-- 4. Which gifts have "Trappings" in their name, and what class ID are they pointing to?
+SELECT g.ct_id, g.ct_gifts_name, g.ct_gift_class, gc.ct_class_name
+FROM DcVnchxg4_customtables_table_gifts g
+LEFT JOIN DcVnchxg4_customtables_table_giftclass gc ON gc.ct_id = g.ct_gift_class
+WHERE g.ct_gifts_name LIKE '%Trappings%'
+ORDER BY g.ct_gifts_name;
+
+
+ct_id	ct_type_name   	ct_slug	ct_id	ct_type_name   	ct_slug	mapped_gifts	ct_id	ct_class_name   	ct_slug	gift_count	ct_id	ct_gifts_name   	ct_gift_class	ct_class_name	
+1	Air	air	
+2	Apprentice	apprentice	
+3	Atavism	atavism	
+63	Bái Hè Shù	bai-he-shu	
+4	Battle	battle	
+5	Blessed	blessed	
+6	Budjaduya	budjaduya	
+71	Changes	changes	
+7	Chapter	chapter	
+89	Charism	charism	
+8	Clout	clout	
+9	Combat	combat	
+10	Cout	cout	
+11	Culture	culture	
+85	Divination	divination	
+80	Dragon	dragon	
+84	Druid	druid	
+55	Drunken Fist	drunken-fist	
+12	Earth	earth	
+56	Empty-Hand	empty-hand	
+64	Fan	fan	
+87	Female	female	
+13	Fire	fire	
+14	Foolish	foolish	
+53	Gài Bang	gai-bang	
+1	Air	air	19	
+2	Apprentice	apprentice	32	
+3	Atavism	atavism	15	
+63	Bái Hè Shù	bai-he-shu	5	
+4	Battle	battle	0	
+5	Blessed	blessed	20	
+6	Budjaduya	budjaduya	4	
+71	Changes	changes	6	
+7	Chapter	chapter	1	
+89	Charism	charism	10	
+8	Clout	clout	8	
+9	Combat	combat	181	
+10	Cout	cout	0	
+11	Culture	culture	20	
+85	Divination	divination	3	
+80	Dragon	dragon	25	
+84	Druid	druid	0	
+55	Drunken Fist	drunken-fist	7	
+12	Earth	earth	17	
+56	Empty-Hand	empty-hand	8	
+64	Fan	fan	3	
+87	Female	female	1	
+13	Fire	fire	17	
+14	Foolish	foolish	0	
+53	Gài Bang	gai-bang	6	
+1	Ambidexterity	ambidexterity	1	
+2	Atavism	atavism	14	
+3	Battle	battle	9	
+27	Beggar	beggar	6	
+28	Black Tortoise Gifts	black-tortoise-gifts	6	
+59	Blessed Ways	blessed-ways	18	
+4	Chapter	chapter	3	
+58	Charisms	charisms	10	
+39	Chopping Weapons Moves	chopping-weapons-moves	3	
+5	Combat	combat	42	
+62	Counter-Tactics	counter-tactics	1	
+6	Culture	culture	4	
+7	Danger-Sense	danger-sense	2	
+8	Development	development	11	
+56	Druid	druid	19	
+29	Drunken Style Fighting	drunken-style-fighting	7	
+40	Earth-Sky Fighting	earth-sky-fighting	4	
+30	Empty-Hand Techniques	empty-hand-techniques	8	
+38	Exotic Fighting Gifts	exotic-fighting-gifts	8	
+41	Fan Fighting	fan-fighting	3	
+9	Foolery	foolery	1	
+10	Foolish	foolish	10	
+31	Forest Ghost Gifts	forest-ghost-gifts	9	
+55	Jade Dragon Magic	jade-dragon-magic	7	
+54	Jadeite Dragon Magic	jadeite-dragon-magic	8	
+131	Antiñgero Trappings	12	Magical	
+380	Archer's Trappings	25	Trappings	
+216	Changes Magic Trappings	49	The Magic of Changes	
+14	Cleric's Trappings [Left-Hand]	25	Trappings	
+38	Cleric's Trappings [Right-Hand]	25	Trappings	
+39	Cognoscente's Trappings [Green]	25	Trappings	
+41	Cognoscente's Trappings [Purple]	25	Trappings	
+25	Dilettante's Trappings	25	Trappings	
+398	Druid's Trappings	56	Druid	
+381	Dukun's Trappings	12	Magical	
+401	Elementalist's Trappings [Blue]	25	Trappings	
+399	Elementalist's Trappings [Brown]	25	Trappings	
+400	Elementalist's Trappings [Red]	25	Trappings	
+28	Elementalist's Trappings [Star]	25	Trappings	
+45	Elementalist's Trappings [Yellow]	25	Trappings	
+113	Fool's Trappings	10	Foolish	
+429	Forest Ghost’s Trappings	31	Forest Ghost Gifts	
+382	Fusileer's Trappings	25	Trappings	
+391	Jezailer's Trappings	25	Trappings	
+392	Knight's Trappings	25	Trappings	
+388	Koa-Niho's Trappings	12	Magical	
+389	Kohatu Trappings	12	Magical	
+667	Kyndranigar's Trappings	60	Kyndranigar's Virtues	
+386	Medjey's Trappings	25	Trappings	
+390	Musketeer's Trappings	25	Trappings	
