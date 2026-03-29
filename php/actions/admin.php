@@ -317,6 +317,65 @@ function cg_admin_gift_quality_report(): void {
     ]]);
 }
 
+// ── Trappings body normaliser ─────────────────────────────────────────────────
+
+/**
+ * Convert all @@TRAPPINGS: content in a section body to "- item" bullet lines.
+ *
+ * Handles three authoring styles:
+ *   (A) Inline:  @@TRAPPINGS: item text          → - item text
+ *   (B) Block:   @@TRAPPINGS:\n item\n item        → - item\n - item
+ *   (C) Pre-tagged: @@TRAPPINGS:\n- item\n- item  → - item\n - item (deduped prefix)
+ *
+ * Lines already prefixed with "- " or "• " have the prefix stripped and re-added
+ * so the final output is always uniform "- item".
+ */
+function cg_expand_trappings_to_list(string $body): string {
+    $body  = str_replace(["\r\n", "\r"], "\n", $body);
+    $lines = explode("\n", $body);
+    $out   = [];
+    $inBlock = false;   // true while we're inside a bare @@TRAPPINGS: block
+
+    foreach ($lines as $line) {
+        $t = rtrim($line);
+
+        // Inline @@TRAPPINGS: item text
+        if (preg_match('/^[ \t]*@@TRAPPINGS\s*:[ \t]+(.+)$/i', $t, $m)) {
+            $out[] = '- ' . trim($m[1]);
+            $inBlock = false;
+            continue;
+        }
+
+        // Bare @@TRAPPINGS: marker on its own line — start collecting block items
+        if (preg_match('/^[ \t]*@@TRAPPINGS\s*:[ \t]*$/i', $t)) {
+            $inBlock = true;
+            // Don't emit the marker line itself
+            continue;
+        }
+
+        if ($inBlock) {
+            if ($t === '') {
+                // Blank line ends the block
+                $inBlock = false;
+                $out[] = '';
+            } elseif (preg_match('/^@@/i', $t)) {
+                // Another @@ directive ends the block — process this line normally below
+                $inBlock = false;
+                $out[] = $t;
+            } else {
+                // Strip any existing bullet prefix then re-apply "- "
+                $clean = preg_replace('/^[-•]\s+/', '', $t);
+                $out[] = '- ' . $clean;
+            }
+            continue;
+        }
+
+        $out[] = $t;
+    }
+
+    return implode("\n", $out);
+}
+
 // ── Markup block parser ───────────────────────────────────────────────────────
 
 /**
@@ -645,10 +704,8 @@ function cg_sync_one_trappings_gift(array $gift): array {
             $body    = $nlPos !== false ? trim(substr($rawPart, $nlPos + 1)) : '';
 
             $body = preg_replace('/\n?[ \t]*@@REFRESH[^\n]*/i', '', $body);
-            // Bare @@TRAPPINGS: on its own line is just a section marker — strip it entirely
-            $body = preg_replace('/[ \t]*@@TRAPPINGS\s*:[ \t]*\n/i', '', $body);
-            // Inline @@TRAPPINGS: item → "- item" so the template renders a bullet list
-            $body = preg_replace('/[ \t]*@@TRAPPINGS\s*:[ \t]+/i', '- ', $body);
+            // Convert all @@TRAPPINGS: content to "- item" bullet lines (all three authoring styles)
+            $body = cg_expand_trappings_to_list($body);
             // Strip any remaining @@directives except @@TABLE: which the template renders natively
             $body = preg_replace('/[ \t]*@@(?!TABLE\b)[A-Z_]+\s*:[^\n]*/i', '', $body);
             $body = trim(preg_replace("/\n{3,}/", "\n\n", $body));
@@ -675,8 +732,7 @@ function cg_sync_one_trappings_gift(array $gift): array {
         // No @@SECTION: markers → one plain rules row
         if ($sort === 10 && $rulesText !== '') {
             $plainBody = preg_replace('/\n?[ \t]*@@REFRESH[^\n]*/i', '', $rulesText);
-            $plainBody = preg_replace('/[ \t]*@@TRAPPINGS\s*:[ \t]*\n/i', '', $plainBody);
-            $plainBody = preg_replace('/[ \t]*@@TRAPPINGS\s*:[ \t]+/i', '- ', $plainBody);
+            $plainBody = cg_expand_trappings_to_list($plainBody);
             $plainBody = preg_replace('/[ \t]*@@(?!TABLE\b)[A-Z_]+\s*:[^\n]*/i', '', $plainBody);
             $plainBody = trim(preg_replace("/\n{3,}/", "\n\n", $plainBody));
             cg_exec(
