@@ -11,6 +11,19 @@ function cg_admin_require(): void {
     }
 }
 
+/**
+ * Like cg_admin_require() but also accepts a valid sync_secret in $_POST.
+ * Use for bulk sync endpoints that the WordPress mu-plugin may call server-to-server.
+ */
+function cg_admin_require_or_secret(): void {
+    $secret = defined('CG_SYNC_SECRET') ? CG_SYNC_SECRET : '';
+    $posted = trim($_POST['sync_secret'] ?? '');
+    if ($secret !== '' && $posted !== '' && hash_equals($secret, $posted)) {
+        return; // bypass — valid server-to-server secret
+    }
+    cg_admin_require();
+}
+
 // ── Gifts ─────────────────────────────────────────────────────────────────────
 
 function cg_admin_list_gifts(): void {
@@ -698,7 +711,7 @@ function cg_sync_one_trappings_gift(array $gift): array {
 // ── Sync Trappings gift child tables (all at once) ────────────────────────────
 
 function cg_admin_sync_trappings_children(): void {
-    cg_admin_require();
+    cg_admin_require_or_secret();
     $p  = cg_prefix();
     $tg = "{$p}customtables_table_gifts";
     $gc = "{$p}customtables_table_giftclass";

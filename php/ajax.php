@@ -141,7 +141,8 @@ if (!isset($actionFiles[$action])) {
 // Only applies to the single-gift sync endpoint so the bypass surface is minimal.
 $_cgSyncSecret   = defined('CG_SYNC_SECRET') ? CG_SYNC_SECRET : '';
 $_cgPostSecret   = trim($_POST['sync_secret'] ?? '');
-$_cgSecretValid  = $action === 'cg_admin_sync_single_gift'
+$_cgSyncActions  = ['cg_admin_sync_single_gift', 'cg_admin_sync_trappings_children'];
+$_cgSecretValid  = in_array($action, $_cgSyncActions, true)
     && $_cgSyncSecret !== ''
     && hash_equals($_cgSyncSecret, $_cgPostSecret);
 
