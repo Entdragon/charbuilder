@@ -632,8 +632,10 @@ function cg_sync_one_trappings_gift(array $gift): array {
             $body    = $nlPos !== false ? trim(substr($rawPart, $nlPos + 1)) : '';
 
             $body = preg_replace('/\n?[ \t]*@@REFRESH[^\n]*/i', '', $body);
-            // Convert @@TRAPPINGS: items to "- item" so the template renders them as a bullet list
-            $body = preg_replace('/@@TRAPPINGS\s*:[ \t]*/i', '- ', $body);
+            // Bare @@TRAPPINGS: on its own line is just a section marker — strip it entirely
+            $body = preg_replace('/[ \t]*@@TRAPPINGS\s*:[ \t]*\n/i', '', $body);
+            // Inline @@TRAPPINGS: item → "- item" so the template renders a bullet list
+            $body = preg_replace('/[ \t]*@@TRAPPINGS\s*:[ \t]+/i', '- ', $body);
             // Strip any remaining @@directives except @@TABLE: which the template renders natively
             $body = preg_replace('/[ \t]*@@(?!TABLE\b)[A-Z_]+\s*:[^\n]*/i', '', $body);
             $body = trim(preg_replace("/\n{3,}/", "\n\n", $body));
@@ -660,7 +662,8 @@ function cg_sync_one_trappings_gift(array $gift): array {
         // No @@SECTION: markers → one plain rules row
         if ($sort === 10 && $rulesText !== '') {
             $plainBody = preg_replace('/\n?[ \t]*@@REFRESH[^\n]*/i', '', $rulesText);
-            $plainBody = preg_replace('/@@TRAPPINGS\s*:[ \t]*/i', '- ', $plainBody);
+            $plainBody = preg_replace('/[ \t]*@@TRAPPINGS\s*:[ \t]*\n/i', '', $plainBody);
+            $plainBody = preg_replace('/[ \t]*@@TRAPPINGS\s*:[ \t]+/i', '- ', $plainBody);
             $plainBody = preg_replace('/[ \t]*@@(?!TABLE\b)[A-Z_]+\s*:[^\n]*/i', '', $plainBody);
             $plainBody = trim(preg_replace("/\n{3,}/", "\n\n", $plainBody));
             cg_exec(
