@@ -669,10 +669,10 @@ function cg_sync_one_trappings_gift(array $gift): array {
     if ($trigField === '' && $id > 0) {
         try {
             $trow = cg_query(
-                "SELECT ct_gifts_trigger FROM {$p}customtables_table_gifts WHERE ct_id = ? LIMIT 1",
+                "SELECT ct_gift_trigger FROM {$p}customtables_table_gifts WHERE ct_id = ? LIMIT 1",
                 [$id]
             );
-            $trigField = trim((string) ($trow[0]['ct_gifts_trigger'] ?? ''));
+            $trigField = trim((string) ($trow[0]['ct_gift_trigger'] ?? ''));
         } catch (Throwable $ignored) { /* column doesn't exist on this install */ }
     }
 
@@ -745,11 +745,7 @@ function cg_sync_one_trappings_gift(array $gift): array {
                 $body = preg_replace('/\n?[ \t]*@@REFRESH[^\n]*/i', '', $body);
                 // Convert @@TRAPPINGS: content to "- item" bullet lines
                 $body = cg_expand_trappings_to_list($body);
-                // Strip @@directives except @@TABLE: (template renders tables natively)
-                $body = preg_replace('/[ \t]*@@(?!TABLE\b)[A-Z_]+\s*:[^\n]*/i', '', $body);
                 $body = trim(preg_replace("/\n{3,}/", "\n\n", $body));
-
-                if ($heading === '' && $body === '') continue;
 
                 $secType = 'rules';
                 if (preg_match('/^Action\s+["\(]/i', $heading) ||
@@ -757,16 +753,46 @@ function cg_sync_one_trappings_gift(array $gift): array {
                     $secType = 'action_block';
                 }
 
-                cg_exec(
-                    "INSERT INTO $ts
-                        (ct_gift_id, ct_sort, ct_section_type, ct_heading, ct_body,
-                         created_at, updated_at)
-                     VALUES (?, ?, ?, ?, ?, NOW(), NOW())",
-                    [$id, $sort, $secType, $heading, $body]
-                );
-                $changes[] = "gift_sections '{$secType}' inserted: {$heading}";
-                $sort      += 10;
-                $hadContent = true;
+                // Split body at @@TABLE: boundaries — each table becomes its own
+                // section row with heading "@@TABLE: <title>" so the WP template
+                // can detect and render it as an HTML table (same as Abjure Monster).
+                $segs = preg_split('/(^[ \t]*@@TABLE\s*:[^\n]*\n?)/mi',
+                                   $body, -1, PREG_SPLIT_DELIM_CAPTURE);
+
+                // Segments alternate: [prose, @@TABLE:header\n, rows, @@TABLE:header\n, rows, ...]
+                $prosePart = preg_replace('/[ \t]*@@(?!TABLE\b)[A-Z_]+\s*:[^\n]*/i', '', trim($segs[0] ?? ''));
+                $prosePart = trim(preg_replace("/\n{3,}/", "\n\n", $prosePart));
+
+                if ($heading !== '' || $prosePart !== '') {
+                    cg_exec(
+                        "INSERT INTO $ts
+                            (ct_gift_id, ct_sort, ct_section_type, ct_heading, ct_body,
+                             created_at, updated_at)
+                         VALUES (?, ?, ?, ?, ?, NOW(), NOW())",
+                        [$id, $sort, $secType, $heading, $prosePart]
+                    );
+                    $changes[] = "gift_sections '{$secType}' inserted: {$heading}";
+                    $sort      += 10;
+                    $hadContent = true;
+                }
+
+                // Each @@TABLE: block becomes a separate RULES section row
+                for ($ti = 1; $ti + 1 < count($segs); $ti += 2) {
+                    $tableHeader = trim($segs[$ti]);                      // "@@TABLE: Title"
+                    $tableRows   = trim($segs[$ti + 1] ?? '');
+                    if ($tableRows === '') continue;
+                    $tableHeading = preg_replace('/^[ \t]*@@TABLE\s*:[ \t]*/i', '@@TABLE: ', $tableHeader);
+                    cg_exec(
+                        "INSERT INTO $ts
+                            (ct_gift_id, ct_sort, ct_section_type, ct_heading, ct_body,
+                             created_at, updated_at)
+                         VALUES (?, ?, 'rules', ?, ?, NOW(), NOW())",
+                        [$id, $sort, trim($tableHeading), $tableRows]
+                    );
+                    $changes[] = "gift_sections table inserted: {$tableHeading}";
+                    $sort      += 10;
+                    $hadContent = true;
+                }
 
             } elseif ($b['directive'] === 'FLAVOUR') {
                 $flavourText = $b['first_line'];
