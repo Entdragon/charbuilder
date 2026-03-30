@@ -660,10 +660,21 @@ function cg_sync_one_trappings_gift(array $gift): array {
     $ts    = "{$p}customtables_table_gift_sections";
     $ttrig = "{$p}customtables_table_gift_triggers";
 
-    $id        = (int)   ($gift['ct_id']                        ?? 0);
-    $summary   = trim((string) ($gift['ct_gifts_effect']         ?? ''));
-    $desc      = trim((string) ($gift['ct_gifts_effect_description'] ?? ''));
-    $trigField = trim((string) ($gift['ct_gifts_trigger']        ?? ''));
+    $id      = (int)   ($gift['ct_id']                      ?? 0);
+    $summary = trim((string) ($gift['ct_gifts_effect']       ?? ''));
+    $desc    = trim((string) ($gift['ct_gifts_effect_description'] ?? ''));
+
+    // Fetch trigger field separately — column may not exist on all installs
+    $trigField = trim((string) ($gift['ct_gifts_trigger'] ?? ''));
+    if ($trigField === '' && $id > 0) {
+        try {
+            $trow = cg_query(
+                "SELECT ct_gifts_trigger FROM {$p}customtables_table_gifts WHERE ct_id = ? LIMIT 1",
+                [$id]
+            );
+            $trigField = trim((string) ($trow[0]['ct_gifts_trigger'] ?? ''));
+        } catch (Throwable $ignored) { /* column doesn't exist on this install */ }
+    }
 
     $changes = [];
 
@@ -830,7 +841,7 @@ function cg_admin_sync_trappings_children(): void {
     try {
         $gifts = cg_query("
             SELECT DISTINCT g.ct_id, g.ct_gifts_name,
-                   g.ct_gifts_effect, g.ct_gifts_effect_description, g.ct_gifts_trigger
+                   g.ct_gifts_effect, g.ct_gifts_effect_description
             FROM $tg AS g
             LEFT JOIN $gc AS gc ON gc.ct_id = g.ct_gift_class
             WHERE g.ct_gifts_name LIKE '%Trappings%'
@@ -841,7 +852,7 @@ function cg_admin_sync_trappings_children(): void {
         // giftclass table may not exist — fall back to name-only match
         $gifts = cg_query("
             SELECT ct_id, ct_gifts_name,
-                   ct_gifts_effect, ct_gifts_effect_description, ct_gifts_trigger
+                   ct_gifts_effect, ct_gifts_effect_description
             FROM $tg
             WHERE ct_gifts_name LIKE '%Trappings%'
             ORDER BY ct_gifts_name ASC
@@ -938,7 +949,7 @@ function cg_admin_sync_single_gift(): void {
     try {
         $rows = cg_query(
             "SELECT g.ct_id, g.ct_gifts_name, g.ct_gifts_effect,
-                    g.ct_gifts_effect_description, g.ct_gifts_trigger, gc.ct_class_name
+                    g.ct_gifts_effect_description, gc.ct_class_name
              FROM $tg AS g
              LEFT JOIN $gc AS gc ON gc.ct_id = g.ct_gift_class
              WHERE g.ct_id = ?",
@@ -946,8 +957,7 @@ function cg_admin_sync_single_gift(): void {
         );
     } catch (Throwable $e) {
         $rows = cg_query(
-            "SELECT ct_id, ct_gifts_name, ct_gifts_effect, ct_gifts_effect_description,
-                    ct_gifts_trigger
+            "SELECT ct_id, ct_gifts_name, ct_gifts_effect, ct_gifts_effect_description
              FROM $tg WHERE ct_id = ?",
             [$giftId]
         );
