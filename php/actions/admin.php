@@ -665,15 +665,37 @@ function cg_sync_one_trappings_gift(array $gift): array {
 
     $changes = [];
 
-    // Parse all @@-blocks in document order — handles @@FLAVOUR at any position
-    $blocks = cg_parse_markup_blocks($desc);
+    // ── Custom parser: split ONLY on @@SECTION: and @@FLAVOUR: ───────────────
+    // We intentionally do NOT use cg_parse_markup_blocks() here because that
+    // function splits on every @@WORD: directive, including @@TABLE:, which
+    // would tear @@TABLE: blocks out of their parent section body.
+    // By restricting the split pattern to only SECTION and FLAVOUR, @@TABLE:
+    // (and all other directives) remain intact inside the section body.
+    $desc = str_replace(["\r\n", "\r"], "\n", $desc);
+    $blocks = [];
+    preg_match_all('/(?:^|\n)(@@(SECTION|FLAVOUR)\s*:[ \t]*)/mi',
+                   $desc, $ms, PREG_OFFSET_CAPTURE);
+    $count = count($ms[0]);
+    for ($i = 0; $i < $count; $i++) {
+        $fullMatch    = $ms[0][$i][0];                // e.g. "\n@@SECTION: "
+        $matchStart   = $ms[0][$i][1];
+        $contentStart = $matchStart + strlen($fullMatch);
+        $contentEnd   = ($i + 1 < $count) ? $ms[0][$i + 1][1] : strlen($desc);
+        $content      = rtrim(substr($desc, $contentStart, $contentEnd - $contentStart));
+        $lines        = explode("\n", $content, 2);
+        $blocks[]     = [
+            'directive'  => strtoupper(trim($ms[2][$i][0])),   // 'SECTION' or 'FLAVOUR'
+            'first_line' => trim($lines[0]),
+            'body'       => isset($lines[1]) ? trim($lines[1]) : '',
+        ];
+    }
 
-    // Build rulesText for gift_rules ct_details (SECTION heading+body concatenated)
+    // Build rulesText for gift_rules ct_details (all SECTION heading+body joined)
     $rulesText = '';
-    foreach ($blocks as $block) {
-        if ($block['directive'] !== 'SECTION') continue;
-        $part = $block['first_line'];
-        if ($block['body'] !== '') $part .= "\n" . $block['body'];
+    foreach ($blocks as $b) {
+        if ($b['directive'] !== 'SECTION') continue;
+        $part = $b['first_line'];
+        if ($b['body'] !== '') $part .= "\n" . $b['body'];
         $rulesText .= ($rulesText !== '' ? "\n\n" : '') . $part;
     }
 
@@ -694,23 +716,23 @@ function cg_sync_one_trappings_gift(array $gift): array {
         $changes[] = 'gift_rules error: ' . $e->getMessage();
     }
 
-    // ── gift_sections: iterate blocks in original document order ─────────────
+    // ── gift_sections: insert in original document order ─────────────────────
     try {
         $del = cg_exec("DELETE FROM $ts WHERE ct_gift_id = ?", [$id]);
         $changes[] = 'gift_sections deleted: ' . $del['rowCount'];
 
         $sort       = 10;
-        $hadContent = false;   // true once any SECTION or FLAVOUR row is inserted
+        $hadContent = false;
 
-        foreach ($blocks as $block) {
-            if ($block['directive'] === 'SECTION') {
-                $heading = $block['first_line'];
-                $body    = $block['body'];
+        foreach ($blocks as $b) {
+            if ($b['directive'] === 'SECTION') {
+                $heading = $b['first_line'];
+                $body    = $b['body'];
 
                 $body = preg_replace('/\n?[ \t]*@@REFRESH[^\n]*/i', '', $body);
-                // Convert all @@TRAPPINGS: content to "- item" bullet lines
+                // Convert @@TRAPPINGS: content to "- item" bullet lines
                 $body = cg_expand_trappings_to_list($body);
-                // Strip remaining @@directives except @@TABLE: (rendered natively)
+                // Strip @@directives except @@TABLE: (template renders tables natively)
                 $body = preg_replace('/[ \t]*@@(?!TABLE\b)[A-Z_]+\s*:[^\n]*/i', '', $body);
                 $body = trim(preg_replace("/\n{3,}/", "\n\n", $body));
 
@@ -733,9 +755,9 @@ function cg_sync_one_trappings_gift(array $gift): array {
                 $sort      += 10;
                 $hadContent = true;
 
-            } elseif ($block['directive'] === 'FLAVOUR') {
-                $flavourText = $block['first_line'];
-                if ($block['body'] !== '') $flavourText .= "\n" . $block['body'];
+            } elseif ($b['directive'] === 'FLAVOUR') {
+                $flavourText = $b['first_line'];
+                if ($b['body'] !== '') $flavourText .= "\n" . $b['body'];
                 $flavourText = trim($flavourText);
                 if ($flavourText === '') continue;
 
@@ -752,8 +774,7 @@ function cg_sync_one_trappings_gift(array $gift): array {
             }
         }
 
-        // No SECTION or FLAVOUR blocks found → one plain rules row from the raw description
-        // (strips all @@directives; @@TABLE: is preserved for native rendering)
+        // No SECTION or FLAVOUR blocks found → one plain rules row from full desc
         if (!$hadContent && $desc !== '') {
             $plainBody = preg_replace('/\n?[ \t]*@@REFRESH[^\n]*/i', '', $desc);
             $plainBody = cg_expand_trappings_to_list($plainBody);
