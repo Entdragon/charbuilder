@@ -665,24 +665,15 @@ function cg_sync_one_trappings_gift(array $gift): array {
 
     $changes = [];
 
-    // Parse all @@-blocks in order — handles @@FLAVOUR at any position
+    // Parse all @@-blocks in document order — handles @@FLAVOUR at any position
     $blocks = cg_parse_markup_blocks($desc);
 
-    $sectionBlocks = [];
-    $flavourBlock  = null;
-    foreach ($blocks as $block) {
-        if ($block['directive'] === 'SECTION') {
-            $sectionBlocks[] = $block;
-        } elseif ($block['directive'] === 'FLAVOUR') {
-            $flavourBlock = $block;
-        }
-    }
-
-    // Reconstruct "rules text" for gift_rules ct_details (heading + body of each section)
+    // Build rulesText for gift_rules ct_details (SECTION heading+body concatenated)
     $rulesText = '';
-    foreach ($sectionBlocks as $sb) {
-        $part = $sb['first_line'];
-        if ($sb['body'] !== '') $part .= "\n" . $sb['body'];
+    foreach ($blocks as $block) {
+        if ($block['directive'] !== 'SECTION') continue;
+        $part = $block['first_line'];
+        if ($block['body'] !== '') $part .= "\n" . $block['body'];
         $rulesText .= ($rulesText !== '' ? "\n\n" : '') . $part;
     }
 
@@ -703,45 +694,67 @@ function cg_sync_one_trappings_gift(array $gift): array {
         $changes[] = 'gift_rules error: ' . $e->getMessage();
     }
 
-    // ── gift_sections: one row per @@SECTION: block ──────────────────────────
+    // ── gift_sections: iterate blocks in original document order ─────────────
     try {
         $del = cg_exec("DELETE FROM $ts WHERE ct_gift_id = ?", [$id]);
         $changes[] = 'gift_sections deleted: ' . $del['rowCount'];
 
-        $sort = 10;
+        $sort       = 10;
+        $hadContent = false;   // true once any SECTION or FLAVOUR row is inserted
 
-        foreach ($sectionBlocks as $sb) {
-            $heading = $sb['first_line'];
-            $body    = $sb['body'];
+        foreach ($blocks as $block) {
+            if ($block['directive'] === 'SECTION') {
+                $heading = $block['first_line'];
+                $body    = $block['body'];
 
-            $body = preg_replace('/\n?[ \t]*@@REFRESH[^\n]*/i', '', $body);
-            // Convert all @@TRAPPINGS: content to "- item" bullet lines (all three authoring styles)
-            $body = cg_expand_trappings_to_list($body);
-            // Strip any remaining @@directives except @@TABLE: which the template renders natively
-            $body = preg_replace('/[ \t]*@@(?!TABLE\b)[A-Z_]+\s*:[^\n]*/i', '', $body);
-            $body = trim(preg_replace("/\n{3,}/", "\n\n", $body));
+                $body = preg_replace('/\n?[ \t]*@@REFRESH[^\n]*/i', '', $body);
+                // Convert all @@TRAPPINGS: content to "- item" bullet lines
+                $body = cg_expand_trappings_to_list($body);
+                // Strip remaining @@directives except @@TABLE: (rendered natively)
+                $body = preg_replace('/[ \t]*@@(?!TABLE\b)[A-Z_]+\s*:[^\n]*/i', '', $body);
+                $body = trim(preg_replace("/\n{3,}/", "\n\n", $body));
 
-            if ($heading === '' && $body === '') continue;
+                if ($heading === '' && $body === '') continue;
 
-            $secType = 'rules';
-            if (preg_match('/^Action\s+["\(]/i', $heading) ||
-                preg_match('/^(Improved Action|Reaction|Long Action)\s+["\(]/i', $heading)) {
-                $secType = 'action_block';
+                $secType = 'rules';
+                if (preg_match('/^Action\s+["\(]/i', $heading) ||
+                    preg_match('/^(Improved Action|Reaction|Long Action)\s+["\(]/i', $heading)) {
+                    $secType = 'action_block';
+                }
+
+                cg_exec(
+                    "INSERT INTO $ts
+                        (ct_gift_id, ct_sort, ct_section_type, ct_heading, ct_body,
+                         created_at, updated_at)
+                     VALUES (?, ?, ?, ?, ?, NOW(), NOW())",
+                    [$id, $sort, $secType, $heading, $body]
+                );
+                $changes[] = "gift_sections '{$secType}' inserted: {$heading}";
+                $sort      += 10;
+                $hadContent = true;
+
+            } elseif ($block['directive'] === 'FLAVOUR') {
+                $flavourText = $block['first_line'];
+                if ($block['body'] !== '') $flavourText .= "\n" . $block['body'];
+                $flavourText = trim($flavourText);
+                if ($flavourText === '') continue;
+
+                cg_exec(
+                    "INSERT INTO $ts
+                        (ct_gift_id, ct_sort, ct_section_type, ct_heading, ct_body,
+                         created_at, updated_at)
+                     VALUES (?, ?, 'flavour', '', ?, NOW(), NOW())",
+                    [$id, $sort, $flavourText]
+                );
+                $changes[] = "gift_sections 'flavour' inserted";
+                $sort      += 10;
+                $hadContent = true;
             }
-
-            cg_exec(
-                "INSERT INTO $ts
-                    (ct_gift_id, ct_sort, ct_section_type, ct_heading, ct_body,
-                     created_at, updated_at)
-                 VALUES (?, ?, ?, ?, ?, NOW(), NOW())",
-                [$id, $sort, $secType, $heading, $body]
-            );
-            $changes[] = "gift_sections '{$secType}' inserted: {$heading}";
-            $sort += 10;
         }
 
-        // No @@SECTION: markers → one plain rules row from full description
-        if ($sort === 10 && $desc !== '') {
+        // No SECTION or FLAVOUR blocks found → one plain rules row from the raw description
+        // (strips all @@directives; @@TABLE: is preserved for native rendering)
+        if (!$hadContent && $desc !== '') {
             $plainBody = preg_replace('/\n?[ \t]*@@REFRESH[^\n]*/i', '', $desc);
             $plainBody = cg_expand_trappings_to_list($plainBody);
             $plainBody = preg_replace('/[ \t]*@@(?!TABLE\b)[A-Z_]+\s*:[^\n]*/i', '', $plainBody);
@@ -753,25 +766,7 @@ function cg_sync_one_trappings_gift(array $gift): array {
                  VALUES (?, 10, 'rules', '', ?, NOW(), NOW())",
                 [$id, $plainBody]
             );
-            $changes[] = "gift_sections 'rules' inserted (no sections)";
-            $sort = 20;
-        }
-
-        // Flavour section (inserted at whatever sort position it lands, preserving authoring order)
-        if ($flavourBlock !== null) {
-            $flavourText = $flavourBlock['first_line'];
-            if ($flavourBlock['body'] !== '') $flavourText .= "\n" . $flavourBlock['body'];
-            $flavourText = trim($flavourText);
-            if ($flavourText !== '') {
-                cg_exec(
-                    "INSERT INTO $ts
-                        (ct_gift_id, ct_sort, ct_section_type, ct_heading, ct_body,
-                         created_at, updated_at)
-                     VALUES (?, ?, 'flavour', '', ?, NOW(), NOW())",
-                    [$id, $sort, $flavourText]
-                );
-                $changes[] = "gift_sections 'flavour' inserted";
-            }
+            $changes[] = "gift_sections 'rules' inserted (no blocks)";
         }
     } catch (Throwable $e) {
         $changes[] = 'gift_sections error: ' . $e->getMessage();
