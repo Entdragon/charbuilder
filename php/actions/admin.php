@@ -665,10 +665,26 @@ function cg_sync_one_trappings_gift(array $gift): array {
 
     $changes = [];
 
-    // Split on @@FLAVOUR marker
-    $parts       = explode('@@FLAVOUR', $desc, 2);
-    $rulesText   = trim($parts[0]);
-    $flavourText = isset($parts[1]) ? trim($parts[1]) : '';
+    // Parse all @@-blocks in order — handles @@FLAVOUR at any position
+    $blocks = cg_parse_markup_blocks($desc);
+
+    $sectionBlocks = [];
+    $flavourBlock  = null;
+    foreach ($blocks as $block) {
+        if ($block['directive'] === 'SECTION') {
+            $sectionBlocks[] = $block;
+        } elseif ($block['directive'] === 'FLAVOUR') {
+            $flavourBlock = $block;
+        }
+    }
+
+    // Reconstruct "rules text" for gift_rules ct_details (heading + body of each section)
+    $rulesText = '';
+    foreach ($sectionBlocks as $sb) {
+        $part = $sb['first_line'];
+        if ($sb['body'] !== '') $part .= "\n" . $sb['body'];
+        $rulesText .= ($rulesText !== '' ? "\n\n" : '') . $part;
+    }
 
     // ── gift_rules: one passive row ──────────────────────────────────────────
     try {
@@ -692,16 +708,11 @@ function cg_sync_one_trappings_gift(array $gift): array {
         $del = cg_exec("DELETE FROM $ts WHERE ct_gift_id = ?", [$id]);
         $changes[] = 'gift_sections deleted: ' . $del['rowCount'];
 
-        $rawParts = preg_split('/@@SECTION\s*:/i', $rulesText, -1, PREG_SPLIT_NO_EMPTY);
         $sort = 10;
 
-        foreach ($rawParts as $rawPart) {
-            $rawPart = trim($rawPart);
-            if ($rawPart === '') continue;
-
-            $nlPos   = strpos($rawPart, "\n");
-            $heading = $nlPos !== false ? trim(substr($rawPart, 0, $nlPos)) : trim($rawPart);
-            $body    = $nlPos !== false ? trim(substr($rawPart, $nlPos + 1)) : '';
+        foreach ($sectionBlocks as $sb) {
+            $heading = $sb['first_line'];
+            $body    = $sb['body'];
 
             $body = preg_replace('/\n?[ \t]*@@REFRESH[^\n]*/i', '', $body);
             // Convert all @@TRAPPINGS: content to "- item" bullet lines (all three authoring styles)
@@ -729,9 +740,9 @@ function cg_sync_one_trappings_gift(array $gift): array {
             $sort += 10;
         }
 
-        // No @@SECTION: markers → one plain rules row
-        if ($sort === 10 && $rulesText !== '') {
-            $plainBody = preg_replace('/\n?[ \t]*@@REFRESH[^\n]*/i', '', $rulesText);
+        // No @@SECTION: markers → one plain rules row from full description
+        if ($sort === 10 && $desc !== '') {
+            $plainBody = preg_replace('/\n?[ \t]*@@REFRESH[^\n]*/i', '', $desc);
             $plainBody = cg_expand_trappings_to_list($plainBody);
             $plainBody = preg_replace('/[ \t]*@@(?!TABLE\b)[A-Z_]+\s*:[^\n]*/i', '', $plainBody);
             $plainBody = trim(preg_replace("/\n{3,}/", "\n\n", $plainBody));
@@ -746,16 +757,21 @@ function cg_sync_one_trappings_gift(array $gift): array {
             $sort = 20;
         }
 
-        // Flavour section
-        if ($flavourText !== '') {
-            cg_exec(
-                "INSERT INTO $ts
-                    (ct_gift_id, ct_sort, ct_section_type, ct_heading, ct_body,
-                     created_at, updated_at)
-                 VALUES (?, ?, 'flavour', '', ?, NOW(), NOW())",
-                [$id, $sort, $flavourText]
-            );
-            $changes[] = "gift_sections 'flavour' inserted";
+        // Flavour section (inserted at whatever sort position it lands, preserving authoring order)
+        if ($flavourBlock !== null) {
+            $flavourText = $flavourBlock['first_line'];
+            if ($flavourBlock['body'] !== '') $flavourText .= "\n" . $flavourBlock['body'];
+            $flavourText = trim($flavourText);
+            if ($flavourText !== '') {
+                cg_exec(
+                    "INSERT INTO $ts
+                        (ct_gift_id, ct_sort, ct_section_type, ct_heading, ct_body,
+                         created_at, updated_at)
+                     VALUES (?, ?, 'flavour', '', ?, NOW(), NOW())",
+                    [$id, $sort, $flavourText]
+                );
+                $changes[] = "gift_sections 'flavour' inserted";
+            }
         }
     } catch (Throwable $e) {
         $changes[] = 'gift_sections error: ' . $e->getMessage();
