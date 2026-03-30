@@ -48,10 +48,10 @@ function cg_strip_effect_description_tags($text) {
   $text = cg_norm_text($text);
   if ($text === '') return '';
 
-  // Strip ALL @@ directive lines — internal formatting codes, never user-visible.
-  // Content on the same line as the directive is removed; content on subsequent
-  // lines (e.g. items listed under @@TRAPPINGS:) is preserved.
-  $text = preg_replace('/^[ \t]*@@[A-Z_]+\s*:?[^\n]*/mi', '', $text);
+  // Strip @@ directive lines — internal formatting codes, never user-visible.
+  // @@TABLE: is intentionally preserved so cg_render_text_blocks can detect it
+  // and render pipe-delimited rows as an HTML table.
+  $text = preg_replace('/^[ \t]*@@(?!TABLE\b)[A-Z_]+\s*:?[^\n]*/mi', '', $text);
   $text = preg_replace("/\n{3,}/", "\n\n", $text);
 
   return trim($text);

@@ -655,13 +655,15 @@ function cg_sync_one_gift_general(array $gift): array {
  *                     (keys: ct_id, ct_gifts_name, ct_gifts_effect, ct_gifts_effect_description)
  */
 function cg_sync_one_trappings_gift(array $gift): array {
-    $p   = cg_prefix();
-    $tr  = "{$p}customtables_table_gift_rules";
-    $ts  = "{$p}customtables_table_gift_sections";
+    $p     = cg_prefix();
+    $tr    = "{$p}customtables_table_gift_rules";
+    $ts    = "{$p}customtables_table_gift_sections";
+    $ttrig = "{$p}customtables_table_gift_triggers";
 
-    $id      = (int)   ($gift['ct_id']                      ?? 0);
-    $summary = trim((string) ($gift['ct_gifts_effect']       ?? ''));
-    $desc    = trim((string) ($gift['ct_gifts_effect_description'] ?? ''));
+    $id        = (int)   ($gift['ct_id']                        ?? 0);
+    $summary   = trim((string) ($gift['ct_gifts_effect']         ?? ''));
+    $desc      = trim((string) ($gift['ct_gifts_effect_description'] ?? ''));
+    $trigField = trim((string) ($gift['ct_gifts_trigger']        ?? ''));
 
     $changes = [];
 
@@ -793,6 +795,24 @@ function cg_sync_one_trappings_gift(array $gift): array {
         $changes[] = 'gift_sections error: ' . $e->getMessage();
     }
 
+    // ── gift_triggers: wipe stale rows; rebuild from ct_gifts_trigger field ──
+    try {
+        $del = cg_exec("DELETE FROM $ttrig WHERE ct_gift_id = ?", [$id]);
+        $changes[] = 'gift_triggers deleted: ' . $del['rowCount'];
+        if ($trigField !== '') {
+            cg_exec(
+                "INSERT INTO $ttrig
+                    (ct_gift_id, ct_sort, ct_trigger_kind, ct_trigger_text,
+                     created_at, updated_at)
+                 VALUES (?, 10, 'condition', ?, NOW(), NOW())",
+                [$id, $trigField]
+            );
+            $changes[] = "gift_triggers: {$trigField}";
+        }
+    } catch (Throwable $e) {
+        $changes[] = 'gift_triggers error: ' . $e->getMessage();
+    }
+
     return $changes;
 }
 
@@ -810,7 +830,7 @@ function cg_admin_sync_trappings_children(): void {
     try {
         $gifts = cg_query("
             SELECT DISTINCT g.ct_id, g.ct_gifts_name,
-                   g.ct_gifts_effect, g.ct_gifts_effect_description
+                   g.ct_gifts_effect, g.ct_gifts_effect_description, g.ct_gifts_trigger
             FROM $tg AS g
             LEFT JOIN $gc AS gc ON gc.ct_id = g.ct_gift_class
             WHERE g.ct_gifts_name LIKE '%Trappings%'
@@ -821,7 +841,7 @@ function cg_admin_sync_trappings_children(): void {
         // giftclass table may not exist — fall back to name-only match
         $gifts = cg_query("
             SELECT ct_id, ct_gifts_name,
-                   ct_gifts_effect, ct_gifts_effect_description
+                   ct_gifts_effect, ct_gifts_effect_description, ct_gifts_trigger
             FROM $tg
             WHERE ct_gifts_name LIKE '%Trappings%'
             ORDER BY ct_gifts_name ASC
@@ -918,7 +938,7 @@ function cg_admin_sync_single_gift(): void {
     try {
         $rows = cg_query(
             "SELECT g.ct_id, g.ct_gifts_name, g.ct_gifts_effect,
-                    g.ct_gifts_effect_description, gc.ct_class_name
+                    g.ct_gifts_effect_description, g.ct_gifts_trigger, gc.ct_class_name
              FROM $tg AS g
              LEFT JOIN $gc AS gc ON gc.ct_id = g.ct_gift_class
              WHERE g.ct_id = ?",
@@ -926,7 +946,8 @@ function cg_admin_sync_single_gift(): void {
         );
     } catch (Throwable $e) {
         $rows = cg_query(
-            "SELECT ct_id, ct_gifts_name, ct_gifts_effect, ct_gifts_effect_description
+            "SELECT ct_id, ct_gifts_name, ct_gifts_effect, ct_gifts_effect_description,
+                    ct_gifts_trigger
              FROM $tg WHERE ct_id = ?",
             [$giftId]
         );
