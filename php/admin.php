@@ -451,7 +451,18 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
     document.getElementById('cga-save').disabled = false;
 
     if (res.success) {
-      status('Saved ✓', 'ok');
+      if (pane === 'gifts') {
+        status('Syncing…', 'ok');
+        const syncRes = await post('cg_admin_sync_single_gift', { gift_id: curId });
+        if (syncRes.success) {
+          status('Saved + Synced ✓', 'ok');
+        } else {
+          status('Saved ✓  (sync: ' + (syncRes.data || 'error') + ')', 'err');
+        }
+        loadGiftChildren(curId);
+      } else {
+        status('Saved ✓', 'ok');
+      }
       loadList(document.getElementById('cga-search').value.trim());
     } else {
       status('Error: ' + (res.data || 'save failed'), 'err');
