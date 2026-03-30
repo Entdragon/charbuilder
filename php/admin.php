@@ -446,26 +446,30 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
       if (el.name) params[el.name] = el.checked ? '1' : '0';
     });
 
-    document.getElementById('cga-save').disabled = true;
-    const res = await post(action, params);
-    document.getElementById('cga-save').disabled = false;
+    const saveBtn = document.getElementById('cga-save');
+    saveBtn.disabled = true;
+    try {
+      const res = await post(action, params);
 
-    if (res.success) {
-      if (pane === 'gifts') {
-        status('Syncing…', 'ok');
-        const syncRes = await post('cg_admin_sync_single_gift', { gift_id: curId });
-        if (syncRes.success) {
-          status('Saved + Synced ✓', 'ok');
+      if (res.success) {
+        if (pane === 'gifts') {
+          status('Syncing…', 'ok');
+          const syncRes = await post('cg_admin_sync_single_gift', { gift_id: curId });
+          if (syncRes.success) {
+            status('Saved + Synced ✓', 'ok');
+          } else {
+            status('Saved ✓  (sync: ' + (syncRes.data || 'error') + ')', 'err');
+          }
+          await loadGiftChildren(curId);
         } else {
-          status('Saved ✓  (sync: ' + (syncRes.data || 'error') + ')', 'err');
+          status('Saved ✓', 'ok');
         }
-        loadGiftChildren(curId);
+        loadList(document.getElementById('cga-search').value.trim());
       } else {
-        status('Saved ✓', 'ok');
+        status('Error: ' + (res.data || 'save failed'), 'err');
       }
-      loadList(document.getElementById('cga-search').value.trim());
-    } else {
-      status('Error: ' + (res.data || 'save failed'), 'err');
+    } finally {
+      saveBtn.disabled = false;
     }
   });
 
