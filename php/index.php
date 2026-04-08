@@ -819,6 +819,9 @@ try {
 
     #cg-modal-close { display: none !important; }
 
+    /* Hide the bundle's native form Save buttons — wizard nav has its own */
+    .cg-form-buttons { display: none !important; }
+
     /* Hide the bundle's native tab bar — wizard controls it */
     .cg-tabs-bar { display: none !important; }
 
@@ -993,7 +996,10 @@ try {
           <div class="wizard-header">
             <div class="wizard-header-top">
               <h2 class="wizard-title" id="cg-wizard-title">New Character</h2>
-              <button class="wizard-close-btn" id="cg-wizard-close-btn">✕ Close</button>
+              <div style="display:flex;align-items:center;gap:0.6rem;">
+                <button id="cg-wizard-ally-btn" style="display:none;font-size:0.78rem;padding:0.35rem 0.9rem;" class="btn-ghost">&#9733; Ally</button>
+                <button class="wizard-close-btn" id="cg-wizard-close-btn">✕ Close</button>
+              </div>
             </div>
             <div class="wizard-progress-wrap">
               <div class="wizard-progress" id="cg-wizard-progress">
@@ -1028,7 +1034,6 @@ try {
             <div class="wizard-save-btns">
               <button class="btn btn-gold cg-save-button" style="font-size:0.78rem;padding:0.55rem 1.1rem;">&#128190; Save</button>
               <button class="btn btn-gold cg-save-button cg-close-after-save" style="font-size:0.78rem;padding:0.55rem 1.1rem;">&#128190; Save &amp; Close</button>
-              <button id="cg-wizard-ally-btn" style="display:none;font-size:0.78rem;padding:0.55rem 1.1rem;" class="btn-ghost">&#9733; Ally</button>
             </div>
             <button class="btn-nav-next" id="cg-wizard-next">Next &#8594;</button>
           </div>
