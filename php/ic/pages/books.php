@@ -53,17 +53,30 @@ $books = cg_query("SELECT * FROM `{$p}customtables_table_books` WHERE published=
         </p>
       <?php endif; ?>
 
-      <?php if ($url): ?>
-        <a href="<?= htmlspecialchars($url) ?>" target="_blank" rel="noopener"
-           style="display:inline-flex; align-items:center; gap:0.4rem;
-                  background:rgba(201,168,76,0.12); border:1px solid rgba(201,168,76,0.3);
-                  color:var(--ic-gold); border-radius:var(--ic-radius);
-                  font-family:'Cinzel',serif; font-size:0.72rem; font-weight:700;
-                  letter-spacing:0.06em; text-transform:uppercase; padding:0.45rem 1rem;
-                  text-decoration:none; transition:background 0.2s;">
-          Buy on DriveThruRPG →
-        </a>
-      <?php endif; ?>
+      <div style="display:flex; gap:0.75rem; flex-wrap:wrap; align-items:center;">
+        <?php if ($slug): ?>
+          <a href="/ic/books/<?= htmlspecialchars($slug) ?>"
+             style="display:inline-flex; align-items:center; gap:0.4rem;
+                    background:rgba(201,168,76,0.06); border:1px solid rgba(201,168,76,0.2);
+                    color:var(--ic-text-muted); border-radius:var(--ic-radius);
+                    font-family:'Cinzel',serif; font-size:0.72rem; font-weight:700;
+                    letter-spacing:0.06em; text-transform:uppercase; padding:0.45rem 1rem;
+                    text-decoration:none; transition:background 0.2s;">
+            View Contents →
+          </a>
+        <?php endif; ?>
+        <?php if ($url): ?>
+          <a href="<?= htmlspecialchars($url) ?>" target="_blank" rel="noopener"
+             style="display:inline-flex; align-items:center; gap:0.4rem;
+                    background:rgba(201,168,76,0.12); border:1px solid rgba(201,168,76,0.3);
+                    color:var(--ic-gold); border-radius:var(--ic-radius);
+                    font-family:'Cinzel',serif; font-size:0.72rem; font-weight:700;
+                    letter-spacing:0.06em; text-transform:uppercase; padding:0.45rem 1rem;
+                    text-decoration:none; transition:background 0.2s;">
+            Buy on DriveThruRPG →
+          </a>
+        <?php endif; ?>
+      </div>
     </div>
   </div>
 <?php endforeach; ?>

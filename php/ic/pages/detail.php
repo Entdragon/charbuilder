@@ -39,7 +39,11 @@ $row = null;
 switch ($entity) {
 
     case 'species':
-        $row = cg_query_one("SELECT * FROM `{$p}customtables_table_species` WHERE ct_slug=? AND published=1", [$slug]);
+        $row = cg_query_one("
+            SELECT sp.*, b.ct_book_name, b.ct_ct_slug AS book_slug
+            FROM `{$p}customtables_table_species` sp
+            LEFT JOIN `{$p}customtables_table_books` b ON b.id = sp.ct_species_source_book
+            WHERE sp.ct_slug=? AND sp.published=1", [$slug]);
         if (!$row) $notFound();
 
         // Traits with gift + skill names joined
@@ -138,10 +142,17 @@ switch ($entity) {
               </div>
             <?php endif; ?>
 
-            <?php if ($row['ct_pg_no']): ?>
+            <?php if ($row['ct_book_name'] || $row['ct_pg_no']): ?>
               <div class="sidebar-card">
                 <p class="sidebar-card-title">Source</p>
-                <p style="font-size:0.9rem; color:var(--ic-text-muted); margin:0;">Page <?= htmlspecialchars((string)$row['ct_pg_no']) ?></p>
+                <?php if ($row['ct_book_name']): ?>
+                  <p style="font-size:0.9rem; margin:0 0 0.2rem;">
+                    <a href="/ic/books/<?= htmlspecialchars($row['book_slug']) ?>"><?= htmlspecialchars($row['ct_book_name']) ?></a>
+                  </p>
+                <?php endif; ?>
+                <?php if ($row['ct_pg_no']): ?>
+                  <p style="font-size:0.85rem; color:var(--ic-text-dim); margin:0;">Page <?= htmlspecialchars((string)$row['ct_pg_no']) ?></p>
+                <?php endif; ?>
               </div>
             <?php endif; ?>
           </aside>
@@ -150,7 +161,11 @@ switch ($entity) {
         break;
 
     case 'careers':
-        $row = cg_query_one("SELECT * FROM `{$p}customtables_table_careers` WHERE ct_slug=? AND published=1", [$slug]);
+        $row = cg_query_one("
+            SELECT c.*, b.ct_book_name, b.ct_ct_slug AS book_slug
+            FROM `{$p}customtables_table_careers` c
+            LEFT JOIN `{$p}customtables_table_books` b ON b.id = c.ct_career_source_book
+            WHERE c.ct_slug=? AND c.published=1", [$slug]);
         if (!$row) $notFound();
 
         $typeMap = [1 => 'Major', 2 => 'Minor'];
@@ -245,10 +260,17 @@ switch ($entity) {
               </div>
             <?php endif; ?>
 
-            <?php if ($row['ct_pg_no']): ?>
+            <?php if ($row['ct_book_name'] || $row['ct_pg_no']): ?>
               <div class="sidebar-card">
                 <p class="sidebar-card-title">Source</p>
-                <p style="font-size:0.9rem; color:var(--ic-text-muted); margin:0;">Page <?= htmlspecialchars((string)$row['ct_pg_no']) ?></p>
+                <?php if ($row['ct_book_name']): ?>
+                  <p style="font-size:0.9rem; margin:0 0 0.2rem;">
+                    <a href="/ic/books/<?= htmlspecialchars($row['book_slug']) ?>"><?= htmlspecialchars($row['ct_book_name']) ?></a>
+                  </p>
+                <?php endif; ?>
+                <?php if ($row['ct_pg_no']): ?>
+                  <p style="font-size:0.85rem; color:var(--ic-text-dim); margin:0;">Page <?= htmlspecialchars((string)$row['ct_pg_no']) ?></p>
+                <?php endif; ?>
               </div>
             <?php endif; ?>
           </aside>
@@ -258,9 +280,10 @@ switch ($entity) {
 
     case 'gifts':
         $row = cg_query_one("
-          SELECT g.*, gc.ct_class_name
+          SELECT g.*, gc.ct_class_name, b.ct_book_name, b.ct_ct_slug AS book_slug
           FROM `{$p}customtables_table_gifts` g
           LEFT JOIN `{$p}customtables_table_giftclass` gc ON gc.id = g.ct_gift_class
+          LEFT JOIN `{$p}customtables_table_books` b ON b.id = g.ct_book_id
           WHERE g.ct_slug=? AND g.published=1", [$slug]);
         if (!$row) $notFound();
 
@@ -309,6 +332,12 @@ switch ($entity) {
                     <td style="color:var(--ic-text-muted);">Allowed</td>
                   </tr>
                 <?php endif; ?>
+                <?php if ($row['ct_book_name']): ?>
+                  <tr>
+                    <td style="color:var(--ic-text-dim); padding:0.25rem 0;">Book</td>
+                    <td><a href="/ic/books/<?= htmlspecialchars($row['book_slug']) ?>"><?= htmlspecialchars($row['ct_book_name']) ?></a></td>
+                  </tr>
+                <?php endif; ?>
                 <?php if ($row['ct_pg_no']): ?>
                   <tr>
                     <td style="color:var(--ic-text-dim); padding:0.25rem 0;">Page</td>
@@ -323,7 +352,11 @@ switch ($entity) {
         break;
 
     case 'skills':
-        $row = cg_query_one("SELECT * FROM `{$p}customtables_table_skills` WHERE ct_slug=? AND published=1", [$slug]);
+        $row = cg_query_one("
+            SELECT sk.*, b.ct_book_name, b.ct_ct_slug AS book_slug
+            FROM `{$p}customtables_table_skills` sk
+            LEFT JOIN `{$p}customtables_table_books` b ON b.id = sk.ct_skill_source_book
+            WHERE sk.ct_slug=? AND sk.published=1", [$slug]);
         if (!$row) $notFound();
 
         $descs = [];
@@ -347,6 +380,26 @@ switch ($entity) {
             $in = implode(',', $improveGifts);
             $igRows = cg_query("SELECT id, ct_gifts_name, ct_slug FROM `{$p}customtables_table_gifts` WHERE id IN ($in) AND published=1");
         }
+
+        // Careers that use this skill
+        $skillCareers = cg_query("
+            SELECT c.ct_career_name, c.ct_slug
+            FROM `{$p}customtables_table_careers` c
+            JOIN `{$p}customtables_table_career_skills` cs ON cs.career_id = c.id
+            WHERE cs.skill_id = ? AND c.published=1
+            ORDER BY c.ct_career_name
+        ", [(int)$row['id']]);
+
+        // Species that have this skill
+        $skillSpecies = cg_query("
+            SELECT sp.ct_species_name, sp.ct_slug
+            FROM `{$p}customtables_table_species` sp
+            JOIN `{$p}customtables_table_species_traits` st ON st.species_id = sp.id
+            WHERE st.trait_key LIKE 'skill%'
+              AND CAST(st.text_value AS UNSIGNED) = ?
+              AND sp.published=1
+            ORDER BY sp.ct_species_name
+        ", [(int)$row['id']]);
 
         $pageTitle = $row['ct_skill_name'];
         $activeNav = 'skills';
@@ -383,6 +436,28 @@ switch ($entity) {
           </div>
 
           <aside class="detail-sidebar">
+            <?php if ($skillCareers): ?>
+              <div class="sidebar-card">
+                <p class="sidebar-card-title">Careers Using This Skill</p>
+                <ul class="trait-list">
+                  <?php foreach ($skillCareers as $c): ?>
+                    <li><a href="/ic/careers/<?= htmlspecialchars($c['ct_slug']) ?>"><?= htmlspecialchars($c['ct_career_name']) ?></a></li>
+                  <?php endforeach; ?>
+                </ul>
+              </div>
+            <?php endif; ?>
+
+            <?php if ($skillSpecies): ?>
+              <div class="sidebar-card">
+                <p class="sidebar-card-title">Species With This Skill</p>
+                <ul class="trait-list">
+                  <?php foreach ($skillSpecies as $sp): ?>
+                    <li><a href="/ic/species/<?= htmlspecialchars($sp['ct_slug']) ?>"><?= htmlspecialchars($sp['ct_species_name']) ?></a></li>
+                  <?php endforeach; ?>
+                </ul>
+              </div>
+            <?php endif; ?>
+
             <?php if ($igRows): ?>
               <div class="sidebar-card">
                 <p class="sidebar-card-title">Gifts That Improve This Skill</p>
@@ -393,10 +468,18 @@ switch ($entity) {
                 </ul>
               </div>
             <?php endif; ?>
-            <?php if ($row['ct_pg_no']): ?>
+
+            <?php if ($row['ct_book_name'] || $row['ct_pg_no']): ?>
               <div class="sidebar-card">
                 <p class="sidebar-card-title">Source</p>
-                <p style="font-size:0.9rem; color:var(--ic-text-muted); margin:0;">Page <?= htmlspecialchars((string)$row['ct_pg_no']) ?></p>
+                <?php if ($row['ct_book_name']): ?>
+                  <p style="font-size:0.9rem; margin:0 0 0.2rem;">
+                    <a href="/ic/books/<?= htmlspecialchars($row['book_slug']) ?>"><?= htmlspecialchars($row['ct_book_name']) ?></a>
+                  </p>
+                <?php endif; ?>
+                <?php if ($row['ct_pg_no']): ?>
+                  <p style="font-size:0.85rem; color:var(--ic-text-dim); margin:0;">Page <?= htmlspecialchars((string)$row['ct_pg_no']) ?></p>
+                <?php endif; ?>
               </div>
             <?php endif; ?>
           </aside>
@@ -534,6 +617,143 @@ switch ($entity) {
                 <?php endforeach; ?>
               </table>
             </div>
+          </aside>
+        </div>
+        <?php
+        break;
+
+    case 'books':
+        $row = cg_query_one("SELECT * FROM `{$p}customtables_table_books` WHERE ct_ct_slug=? AND published=1", [$slug]);
+        if (!$row) $notFound();
+
+        // Dedup abstract (raw DB value repeats the same paragraph 3×)
+        $bookDesc = $row['ct_book_abstract'] ?? '';
+        if ($bookDesc && strlen($bookDesc) > 120) {
+            $marker = substr($bookDesc, 0, 80);
+            $repeat = strpos($bookDesc, $marker, 80);
+            if ($repeat !== false) $bookDesc = trim(substr($bookDesc, 0, $repeat));
+            $bookDesc = rtrim($bookDesc, ". \t\n\r");
+        }
+
+        $bookId = (int)$row['id'];
+
+        // Species in this book
+        $bookSpecies = cg_query("
+            SELECT ct_species_name, ct_slug, ct_pg_no
+            FROM `{$p}customtables_table_species`
+            WHERE ct_species_source_book = ? AND published=1
+            ORDER BY ct_species_name
+        ", [$bookId]);
+
+        // Careers in this book
+        $bookCareers = cg_query("
+            SELECT ct_career_name, ct_slug, ct_pg_no
+            FROM `{$p}customtables_table_careers`
+            WHERE ct_career_source_book = ? AND published=1
+            ORDER BY ct_career_name
+        ", [$bookId]);
+
+        // Gifts in this book
+        $bookGifts = cg_query("
+            SELECT ct_gifts_name, ct_slug, ct_pg_no
+            FROM `{$p}customtables_table_gifts`
+            WHERE ct_book_id = ? AND published=1
+            ORDER BY ct_gifts_name
+        ", [$bookId]);
+
+        $pageTitle = $row['ct_book_name'];
+        $activeNav = 'books';
+        require __DIR__ . '/../layout-head.php';
+        ?>
+        <div class="breadcrumb">
+          <a href="/ic">Home</a> <span>›</span>
+          <a href="/ic/books">Books</a> <span>›</span>
+          <?= htmlspecialchars($row['ct_book_name']) ?>
+        </div>
+
+        <div class="detail-layout">
+          <div>
+            <p class="detail-name"><?= htmlspecialchars($row['ct_book_name']) ?></p>
+
+            <?php if ($bookDesc): ?>
+              <div class="detail-desc"><?= nl2br(htmlspecialchars($bookDesc)) ?></div>
+            <?php endif; ?>
+
+            <?php if ($bookSpecies): ?>
+              <div class="detail-section">
+                <p class="detail-section-title">Species (<?= count($bookSpecies) ?>)</p>
+                <div class="card-tags">
+                  <?php foreach ($bookSpecies as $sp): ?>
+                    <a href="/ic/species/<?= htmlspecialchars($sp['ct_slug']) ?>" class="tag tag-skill"><?= htmlspecialchars($sp['ct_species_name']) ?></a>
+                  <?php endforeach; ?>
+                </div>
+              </div>
+            <?php endif; ?>
+
+            <?php if ($bookCareers): ?>
+              <div class="detail-section">
+                <p class="detail-section-title">Careers (<?= count($bookCareers) ?>)</p>
+                <div class="card-tags">
+                  <?php foreach ($bookCareers as $c): ?>
+                    <a href="/ic/careers/<?= htmlspecialchars($c['ct_slug']) ?>" class="tag tag-skill"><?= htmlspecialchars($c['ct_career_name']) ?></a>
+                  <?php endforeach; ?>
+                </div>
+              </div>
+            <?php endif; ?>
+
+            <?php if ($bookGifts): ?>
+              <div class="detail-section">
+                <p class="detail-section-title">Gifts (<?= count($bookGifts) ?>)</p>
+                <div class="card-tags">
+                  <?php foreach ($bookGifts as $g): ?>
+                    <a href="/ic/gifts/<?= htmlspecialchars($g['ct_slug']) ?>" class="tag tag-skill"><?= htmlspecialchars($g['ct_gifts_name']) ?></a>
+                  <?php endforeach; ?>
+                </div>
+              </div>
+            <?php endif; ?>
+          </div>
+
+          <aside class="detail-sidebar">
+            <?php if ($row['ct_cover_image']): ?>
+              <div class="sidebar-card" style="padding:0; overflow:hidden; border-radius:var(--ic-radius-lg);">
+                <?php if ($row['ct_url_to_buy']): ?>
+                  <a href="<?= htmlspecialchars($row['ct_url_to_buy']) ?>" target="_blank" rel="noopener">
+                <?php endif; ?>
+                <img src="<?= htmlspecialchars($row['ct_cover_image']) ?>"
+                     alt="<?= htmlspecialchars($row['ct_book_name']) ?> cover"
+                     style="width:100%; display:block; border-radius:var(--ic-radius-lg);">
+                <?php if ($row['ct_url_to_buy']): ?>
+                  </a>
+                <?php endif; ?>
+              </div>
+            <?php endif; ?>
+
+            <div class="sidebar-card">
+              <p class="sidebar-card-title">Contents</p>
+              <table style="width:100%; font-size:0.88rem; border-collapse:collapse;">
+                <?php if ($bookSpecies): ?>
+                  <tr><td style="color:var(--ic-text-dim); padding:0.25rem 0;">Species</td><td style="color:var(--ic-text-muted);"><?= count($bookSpecies) ?></td></tr>
+                <?php endif; ?>
+                <?php if ($bookCareers): ?>
+                  <tr><td style="color:var(--ic-text-dim); padding:0.25rem 0;">Careers</td><td style="color:var(--ic-text-muted);"><?= count($bookCareers) ?></td></tr>
+                <?php endif; ?>
+                <?php if ($bookGifts): ?>
+                  <tr><td style="color:var(--ic-text-dim); padding:0.25rem 0;">Gifts</td><td style="color:var(--ic-text-muted);"><?= count($bookGifts) ?></td></tr>
+                <?php endif; ?>
+              </table>
+            </div>
+
+            <?php if ($row['ct_url_to_buy']): ?>
+              <div class="sidebar-card">
+                <a href="<?= htmlspecialchars($row['ct_url_to_buy']) ?>" target="_blank" rel="noopener"
+                   style="display:block; text-align:center; background:rgba(201,168,76,0.12); border:1px solid rgba(201,168,76,0.3);
+                          color:var(--ic-gold); border-radius:var(--ic-radius); font-family:'Cinzel',serif;
+                          font-size:0.72rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase;
+                          padding:0.6rem 1rem; text-decoration:none;">
+                  Buy on DriveThruRPG →
+                </a>
+              </div>
+            <?php endif; ?>
           </aside>
         </div>
         <?php
