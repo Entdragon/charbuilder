@@ -175,7 +175,7 @@ function cg_run_diagnostics(): void {
  * POST: user_id, password, admin_key
  */
 function cg_admin_set_password(): void {
-    $adminKey = getenv('CG_ADMIN_KEY') ?: '';
+    $adminKey = defined('CG_ADMIN_KEY') ? CG_ADMIN_KEY : '';
     $provided = $_POST['admin_key'] ?? '';
     if (!$adminKey || !hash_equals($adminKey, $provided)) {
         cg_json(['success' => false, 'data' => 'Forbidden']);
