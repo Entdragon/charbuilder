@@ -8,39 +8,54 @@ $slug   = $slug   ?? '';
 
 $p = cg_prefix();
 
-// ── Book detail (static — UJ is a single-volume game) ────────────────────
+// ── Book detail ───────────────────────────────────────────────────────────
 if ($entity === 'books') {
-    $speciesCount = (int)(cg_query_one("SELECT COUNT(*) n FROM `{$p}uj_species` WHERE published=1")['n'] ?? 0);
-    $careerCount  = (int)(cg_query_one("SELECT COUNT(*) n FROM `{$p}uj_careers` WHERE published=1")['n'] ?? 0);
-    $giftCount    = (int)(cg_query_one("SELECT COUNT(*) n FROM `{$p}uj_gifts` WHERE published=1")['n'] ?? 0);
-    $skillCount   = (int)(cg_query_one("SELECT COUNT(*) n FROM `{$p}uj_skills` WHERE published=1")['n'] ?? 0);
+    $book = cg_query_one("SELECT * FROM `{$p}uj_books` WHERE slug=? AND published=1", [$slug]);
+    if (!$book) {
+        http_response_code(404);
+        $pageTitle = 'Not Found';
+        $activeNav = 'books';
+        require __DIR__ . '/../layout-head.php';
+        echo '<div class="page-header"><h1 style="color:var(--uj-error);">Not Found</h1>';
+        echo '<p><a href="/uj/books">← Back to Books</a></p></div>';
+        require __DIR__ . '/../layout-foot.php';
+        exit;
+    }
 
-    $allSpecies = cg_query("SELECT name, slug FROM `{$p}uj_species` WHERE published=1 ORDER BY name");
-    $allCareers = cg_query("SELECT name, slug FROM `{$p}uj_careers` WHERE published=1 ORDER BY name");
-    $allGifts   = cg_query("SELECT name, slug FROM `{$p}uj_gifts`   WHERE published=1 ORDER BY name");
+    // For the core book, load all content; supplements show blurb only
+    $allSpecies = $allCareers = $allGifts = [];
+    $speciesCount = $careerCount = $giftCount = $skillCount = 0;
+    if ($book['slug'] === 'urban-jungle') {
+        $speciesCount = (int)(cg_query_one("SELECT COUNT(*) n FROM `{$p}uj_species` WHERE published=1")['n'] ?? 0);
+        $careerCount  = (int)(cg_query_one("SELECT COUNT(*) n FROM `{$p}uj_careers` WHERE published=1")['n'] ?? 0);
+        $giftCount    = (int)(cg_query_one("SELECT COUNT(*) n FROM `{$p}uj_gifts`   WHERE published=1")['n'] ?? 0);
+        $skillCount   = (int)(cg_query_one("SELECT COUNT(*) n FROM `{$p}uj_skills`  WHERE published=1")['n'] ?? 0);
+        $allSpecies   = cg_query("SELECT name, slug FROM `{$p}uj_species` WHERE published=1 ORDER BY name");
+        $allCareers   = cg_query("SELECT name, slug FROM `{$p}uj_careers` WHERE published=1 ORDER BY name");
+        $allGifts     = cg_query("SELECT name, slug FROM `{$p}uj_gifts`   WHERE published=1 ORDER BY name");
+    }
 
-    $pageTitle = 'Urban Jungle';
+    $pageTitle = $book['name'];
     $activeNav = 'books';
     require __DIR__ . '/../layout-head.php';
     ?>
     <div class="breadcrumb">
       <a href="/uj">Home</a> <span>›</span>
       <a href="/uj/books">Books</a> <span>›</span>
-      Urban Jungle
+      <?= htmlspecialchars($book['name']) ?>
     </div>
 
     <div class="detail-layout">
       <div class="detail-body">
-        <p class="detail-name">Urban Jungle: Anthropomorphic Noir Role-Play</p>
+        <p class="detail-name"><?= htmlspecialchars($book['name']) ?></p>
 
-        <div class="detail-desc">
-          <p>The early 20th century of the United States was rife with fantastic change: from the rise of industry giants, to the great experiment of Prohibition, to the tragedy of the Great Depression, onto the dawn of the Atomic Age. The sky was tamed, the world was mapped, and the possibilities of science seemed limitless, all blue skies and buttered toast…</p>
-          <p>… for some folks, anyway.</p>
-          <p>A complete game in one volume, <em>Urban Jungle</em> makes you a player in an anthropomorphic world of pulp-adventure, hard-boiled crime, and film noir. You'll tangle with hardened gangsters, with jaded debutantes, with world-weary veterans, and with all kinds of shady characters.</p>
-          <p>Our simple character creation lets you build a character in minutes. A goals-and-rewards system has your character learning from their mistakes, profiting from their successes, and growing out of the minor leagues and into the big time.</p>
-          <p>Keep your hands clean, or get involved in dirty work. Don't get dizzy as the tables turn, as a friendly conversation might become an unfriendly battle in less time than it took you to read this sentence.</p>
-          <p style="font-style:italic; color:var(--uj-text-dim);">Don't let the long whiskers and the wagging tails fool you. A smile is just another way of baring teeth.</p>
-        </div>
+        <?php if ($book['blurb']): ?>
+          <div class="detail-desc">
+            <?php foreach (explode("\n", $book['blurb']) as $para): if (!trim($para)) continue; ?>
+              <p><?= htmlspecialchars($para) ?></p>
+            <?php endforeach; ?>
+          </div>
+        <?php endif; ?>
 
         <?php if ($allSpecies): ?>
         <div class="detail-section">
@@ -77,19 +92,31 @@ if ($entity === 'books') {
       </div>
 
       <div class="detail-sidebar">
+        <?php if ($book['cover_url']): ?>
+          <div class="sidebar-card" style="padding:0; overflow:hidden; border-radius:var(--uj-radius-lg);">
+            <?php if ($book['buy_url']): ?><a href="<?= htmlspecialchars($book['buy_url']) ?>" target="_blank" rel="noopener"><?php endif; ?>
+            <img src="<?= htmlspecialchars($book['cover_url']) ?>"
+                 alt="<?= htmlspecialchars($book['name']) ?> cover"
+                 style="width:100%; display:block; border-radius:var(--uj-radius-lg);">
+            <?php if ($book['buy_url']): ?></a><?php endif; ?>
+          </div>
+        <?php endif; ?>
+
+        <?php if ($speciesCount || $careerCount || $giftCount || $skillCount): ?>
         <div class="sidebar-card">
           <h3 class="sidebar-card-title">Contents</h3>
           <table style="width:100%; font-size:0.88rem; border-collapse:collapse;">
-            <tr><td style="color:var(--uj-text-dim); padding:0.25rem 0;">Species</td><td style="color:var(--uj-text-muted);"><?= $speciesCount ?></td></tr>
-            <tr><td style="color:var(--uj-text-dim); padding:0.25rem 0;">Careers</td><td style="color:var(--uj-text-muted);"><?= $careerCount ?></td></tr>
-            <tr><td style="color:var(--uj-text-dim); padding:0.25rem 0;">Gifts</td><td style="color:var(--uj-text-muted);"><?= $giftCount ?></td></tr>
-            <tr><td style="color:var(--uj-text-dim); padding:0.25rem 0;">Skills</td><td style="color:var(--uj-text-muted);"><?= $skillCount ?></td></tr>
+            <?php if ($speciesCount): ?><tr><td style="color:var(--uj-text-dim); padding:0.25rem 0;">Species</td><td style="color:var(--uj-text-muted);"><?= $speciesCount ?></td></tr><?php endif; ?>
+            <?php if ($careerCount):  ?><tr><td style="color:var(--uj-text-dim); padding:0.25rem 0;">Careers</td><td style="color:var(--uj-text-muted);"><?= $careerCount ?></td></tr><?php endif; ?>
+            <?php if ($giftCount):    ?><tr><td style="color:var(--uj-text-dim); padding:0.25rem 0;">Gifts</td><td style="color:var(--uj-text-muted);"><?= $giftCount ?></td></tr><?php endif; ?>
+            <?php if ($skillCount):   ?><tr><td style="color:var(--uj-text-dim); padding:0.25rem 0;">Skills</td><td style="color:var(--uj-text-muted);"><?= $skillCount ?></td></tr><?php endif; ?>
           </table>
         </div>
+        <?php endif; ?>
 
+        <?php if ($book['buy_url']): ?>
         <div class="sidebar-card">
-          <a href="https://www.drivethrurpg.com/en/product/194021/urban-jungle-anthropomorphic-noir-role-play"
-             target="_blank" rel="noopener"
+          <a href="<?= htmlspecialchars($book['buy_url']) ?>" target="_blank" rel="noopener"
              style="display:block; text-align:center; background:rgba(75,191,216,0.12); border:1px solid rgba(75,191,216,0.3);
                     color:var(--uj-teal); border-radius:var(--uj-radius); font-family:'Cinzel',serif;
                     font-size:0.72rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase;
@@ -97,6 +124,7 @@ if ($entity === 'books') {
             Buy on DriveThruRPG →
           </a>
         </div>
+        <?php endif; ?>
       </div>
     </div>
     <?php
