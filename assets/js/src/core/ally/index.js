@@ -207,6 +207,12 @@ const AllyModule = {
     $(document).on('input.ally', '#cg-ally-name', e => {
       this._patch({ name: e.target.value });
     });
+    $(document).on('input.ally', '#cg-ally-age', e => {
+      this._patch({ age: e.target.value });
+    });
+    $(document).on('change.ally', '#cg-ally-gender', e => {
+      this._patch({ gender: e.target.value });
+    });
     $(document).on('input.ally', '#cg-ally-description', e => {
       this._patch({ description: e.target.value });
     });
@@ -414,6 +420,7 @@ const AllyModule = {
   // ── Section builders ─────────────────────────────────────────────────────────
 
   _buildIdentityHtml(ally) {
+    const gender = ally.gender || '';
     return `
     <div class="cg-ally-box">
       <h4 class="cg-ally-subhead">Identity</h4>
@@ -421,6 +428,23 @@ const AllyModule = {
         <label class="cg-ally-label" for="cg-ally-name">Name</label>
         <input type="text" id="cg-ally-name" class="cg-ally-input"
                value="${esc(ally.name || '')}" placeholder="Ally's name" />
+      </div>
+      <div class="cg-ally-field-row cg-ally-field-row--inline">
+        <div class="cg-ally-field-half">
+          <label class="cg-ally-label" for="cg-ally-age">Age</label>
+          <input type="text" id="cg-ally-age" class="cg-ally-input"
+                 value="${esc(ally.age || '')}" placeholder="Age" />
+        </div>
+        <div class="cg-ally-field-half">
+          <label class="cg-ally-label" for="cg-ally-gender">Gender</label>
+          <select id="cg-ally-gender" class="cg-ally-select">
+            <option value="">—</option>
+            <option value="Male"      ${gender === 'Male'      ? 'selected' : ''}>Male</option>
+            <option value="Female"    ${gender === 'Female'    ? 'selected' : ''}>Female</option>
+            <option value="Nonbinary" ${gender === 'Nonbinary' ? 'selected' : ''}>Nonbinary</option>
+            <option value="Other"     ${gender === 'Other'     ? 'selected' : ''}>Other</option>
+          </select>
+        </div>
       </div>
       <div class="cg-ally-field-row">
         <label class="cg-ally-label" for="cg-ally-description">Description</label>
@@ -1096,24 +1120,30 @@ const AllyModule = {
     const sp   = this._speciesProfile || {};
     const cp   = this._careerProfile  || {};
 
-    const name       = ally.name        || '—';
-    const desc       = ally.description || '';
-    const speciesName = sp.name || sp.speciesName || '';
-    const careerName  = cp.name || cp.careerName  || '';
-
+    // ── Identity ──────────────────────────────────────────────────────────────
+    const name         = ally.name        || '—';
+    const age          = ally.age         || '—';
+    const gender       = ally.gender      || '—';
+    const desc         = ally.description || '';
+    const speciesName  = sp.name || sp.speciesName || '';
+    const careerName   = cp.name || cp.careerName  || '';
     const mainCharName = FormBuilderAPI._data?.name || '';
+    const mainLang     = this._getMainLang();
 
-    const mainLang = this._getMainLang();
-    const spGifts  = [sp.gift_1, sp.gift_2, sp.gift_3].filter(Boolean);
-    const cpGifts  = [cp.gift_1, cp.gift_2, cp.gift_3].filter(Boolean);
-    const count    = this._improvedAllyCount();
-    const improvedIds = Array.isArray(ally.improved_gift_ids) ? ally.improved_gift_ids : [];
-    const improvedNames = improvedIds.map(id => {
-      if (!id || !this._giftList) return id;
+    // ── Gift description helper (uses loaded _giftList) ───────────────────────
+    const _giftDesc = (id) => {
+      if (!id || !this._giftList) return '';
       const g = this._giftList.find(x => String(x.id || x.ct_id || '') === String(id));
-      return g ? String(g.name || g.ct_gifts_name || id) : id;
-    }).filter(Boolean);
+      if (!g) return '';
+      return String(g.trigger || g.ct_gift_trigger || g.effect || g.ct_gifts_effect_description || '').trim();
+    };
+    const _giftNameById = (id) => {
+      if (!id || !this._giftList) return String(id);
+      const g = this._giftList.find(x => String(x.id || x.ct_id || '') === String(id));
+      return g ? String(g.name || g.ct_gifts_name || id) : String(id);
+    };
 
+    // ── Combat pools ─────────────────────────────────────────────────────────
     const tr      = this._resolveAllyTraits();
     const weapons = this._deriveAllyWeapons(sp, cp, tr);
     const armor   = this._deriveAllyArmor(sp, cp);
@@ -1121,6 +1151,19 @@ const AllyModule = {
     const initP  = `${tr.speed} + ${tr.mind}`;
     const dodgeP = tr.speed;
 
+    // ── Movement (mirrors summary/api.js logic) ───────────────────────────────
+    const _dieMax = { d4: 4, d6: 6, d8: 8, d10: 10, d12: 12 };
+    const maxSpeed = _dieMax[(tr.speed || '').toLowerCase()] || 0;
+    const maxBody  = _dieMax[(tr.body  || '').toLowerCase()] || 0;
+    const _dash    = maxSpeed > 0
+      ? Math.floor(maxSpeed / 2) + (maxBody > maxSpeed ? 1 : 0)
+      : '—';
+    const _dashNum = typeof _dash === 'number' ? _dash : 0;
+    const _run     = (maxBody > 0 && maxSpeed > 0) ? maxBody + maxSpeed + _dashNum : '—';
+    const hqCount  = maxBody > 0 ? maxBody : 8;
+    const hqCircles = Array.from({ length: hqCount }, () => `<span class="cg-hq-circle"></span>`).join('');
+
+    // ── Trappings + money ─────────────────────────────────────────────────────
     const trappings     = Array.isArray(ally.trappings_list) ? ally.trappings_list : [];
     const autoTrappings = [...weapons, ...armor];
     const denar = (() => {
@@ -1128,31 +1171,12 @@ const AllyModule = {
       return parseInt(h.denar || 0, 10);
     })();
 
-    const allGiftRows = [];
-    if (mainLang) allGiftRows.push(`<li><strong>Language:</strong> ${esc(mainLang)}</li>`);
-    spGifts.forEach(g => allGiftRows.push(`<li><strong>Species:</strong> ${esc(g)}</li>`));
-    cpGifts.forEach(g => allGiftRows.push(`<li><strong>Career:</strong> ${esc(g)}</li>`));
-    improvedNames.forEach(g => allGiftRows.push(`<li><strong>Improved Ally:</strong> ${esc(g)}</li>`));
-
-    const weaponRows = weapons.map(w =>
-      `<tr><td>${esc(w.name)}</td><td>${esc(w.attack)}</td><td>${esc(w.damage)}</td><td>${esc(w.range)}</td></tr>`
-    ).join('');
-
-    const armorRows = armor.map(a =>
-      `<tr><td>${esc(a.name)}</td><td>${esc(a.soak)}</td></tr>`
-    ).join('');
-
-    const trappingRows = [
-      ...autoTrappings.map(t => `<li>${esc(t.name)} <em>(auto)</em></li>`),
-      ...trappings.map(t => `<li>${esc(t.name)}${t.cost_d ? ` — ${esc(t.cost_d)}d` : ''}</li>`),
-    ].join('');
-
-    // Build skills rows for print — uses same helpers as _buildSkillsHtml
-    const spSkillNamesP  = this._allySpSkillNames(sp);
-    const cpSkillNamesP  = this._allyCpSkillNames(cp);
-    const allSkillsP     = Array.isArray(window.CG_SKILLS_LIST) ? window.CG_SKILLS_LIST : [];
-    const printSpLabel   = esc(sp.name || sp.speciesName || 'Species');
-    const printCpLabel   = esc(cp.name || cp.careerName  || 'Career');
+    // ── Skills (4-col: Skill | Species | Career | Pool) ───────────────────────
+    const spSkillNamesP = this._allySpSkillNames(sp);
+    const cpSkillNamesP = this._allyCpSkillNames(cp);
+    const allSkillsP    = Array.isArray(window.CG_SKILLS_LIST) ? window.CG_SKILLS_LIST : [];
+    const printSpLabel  = esc(speciesName || 'Species');
+    const printCpLabel  = esc(careerName  || 'Career');
     const skillsRows = allSkillsP.map(skill => {
       const n  = String(skill.name || '');
       const lc = n.toLowerCase();
@@ -1162,90 +1186,232 @@ const AllyModule = {
       const cpDie = inCp ? tr.trait_career  : '—';
       let pool = '—';
       if (inSp && inCp) pool = `${tr.trait_species} + ${tr.trait_career}`;
-      else if (inSp)   pool = tr.trait_species;
-      else if (inCp)   pool = tr.trait_career;
+      else if (inSp)    pool = tr.trait_species;
+      else if (inCp)    pool = tr.trait_career;
       return `<tr><td>${esc(n)}</td><td>${esc(spDie)}</td><td>${esc(cpDie)}</td><td>${esc(pool)}</td></tr>`;
     });
 
-    const allBase = Object.values(tr).every(v => v === 'd6');
-    const traitsNote = allBase ? ' (all d6)' : '';
+    // ── Weapons / Armour table rows ───────────────────────────────────────────
+    const weaponRows = weapons.map(w =>
+      `<tr><td>${esc(w.name)}</td><td>${esc(w.attack)}</td><td>${esc(w.damage)}</td><td>${esc(w.range)}</td></tr>`
+    ).join('');
+    const armorRows = armor.map(a =>
+      `<tr><td>${esc(a.name)}</td><td>${esc(a.soak)}</td></tr>`
+    ).join('');
+
+    // ── Trapping equipment list rows ──────────────────────────────────────────
+    const trappingRows = [
+      ...autoTrappings.map(t => `<li>${esc(t.name)} <em>(auto)</em></li>`),
+      ...trappings.map(t => `<li>${esc(t.name)}${t.cost_d ? ` — ${esc(t.cost_d)}d` : ''}</li>`),
+    ].join('');
+
+    // ── Species gifts block (with descriptions — mirrors main char sheet) ──────
+    let speciesGiftsHtml = '';
+    if (mainLang) {
+      speciesGiftsHtml += `<li><strong>Language:</strong> <em>${esc(mainLang)}</em></li>`;
+    }
+    [1,2,3].forEach(i => {
+      const giftName = sp[`gift_${i}`];
+      const giftId   = sp[`gift_id_${i}`];
+      if (!giftName) return;
+      const d = _giftDesc(giftId);
+      speciesGiftsHtml += `<li><strong>${esc(giftName)}</strong>${d ? `<span class="summary-gift-desc"> — ${esc(d)}</span>` : ''}</li>`;
+    });
+
+    // ── Career gifts block (with descriptions) ────────────────────────────────
+    let careerGiftsHtml = '';
+    [1,2,3].forEach(i => {
+      const giftName = cp[`gift_${i}`];
+      const giftId   = cp[`gift_id_${i}`];
+      if (!giftName) return;
+      const d = _giftDesc(giftId);
+      careerGiftsHtml += `<li><strong>${esc(giftName)}</strong>${d ? `<span class="summary-gift-desc"> — ${esc(d)}</span>` : ''}</li>`;
+    });
+
+    // ── Improved Ally gifts block ─────────────────────────────────────────────
+    const improvedIds = Array.isArray(ally.improved_gift_ids) ? ally.improved_gift_ids : [];
+    let improvedGiftsHtml = '';
+    improvedIds.filter(Boolean).forEach(id => {
+      const n = _giftNameById(id);
+      const d = _giftDesc(id);
+      improvedGiftsHtml += `<li><strong>${esc(n)}</strong>${d ? `<span class="summary-gift-desc"> — ${esc(d)}</span>` : ''}</li>`;
+    });
+
+    // ── Traits list (vertical, matches main char right-col format) ────────────
+    const traitItems = [
+      ['Will',    tr.will],
+      ['Mind',    tr.mind],
+      ['Speed',   tr.speed],
+      ['Species', tr.trait_species],
+      ['Body',    tr.body],
+      ['Career',  tr.trait_career],
+    ];
+    const traitsHtml = traitItems.map(([label, die]) =>
+      `<li><strong>${label}:</strong> ${esc(die || '—')}</li>`
+    ).join('');
 
     return `
 <div id="cg-summary-sheet">
+
+  <!-- ══ ALLY SHEET BANNER ══ -->
+  <div class="summary-ally-banner">Ally Sheet</div>
+
+  <!-- ══ HEADER ══ -->
   <div class="summary-header-block">
     <h2>${esc(name)}</h2>
     <div class="summary-basic-row">
-      ${speciesName ? `<span><strong>Species:</strong> ${esc(speciesName)}</span>` : ''}
-      ${careerName  ? `<span><strong>Career:</strong>  ${esc(careerName)}</span>`  : ''}
+      <span><strong>Age:</strong> ${esc(age)}</span>
+      <span><strong>Gender:</strong> ${esc(gender)}</span>
+      ${speciesName  ? `<span><strong>Species:</strong> ${esc(speciesName)}</span>`   : ''}
+      ${careerName   ? `<span><strong>Career:</strong> ${esc(careerName)}</span>`     : ''}
       ${mainCharName ? `<span><strong>Ally of:</strong> ${esc(mainCharName)}</span>` : ''}
     </div>
-    ${desc ? `<p class="summary-motto">${esc(desc)}</p>` : ''}
+    ${desc ? `<div class="summary-motto"><em>${esc(desc)}</em></div>` : ''}
   </div>
 
+  <!-- ══ PAGE 1 — two columns ══ -->
   <div class="summary-page1-body">
+
+    <!-- Left column: Species / Career / Gifts -->
     <div class="summary-col-left">
 
-      <div class="summary-section">
-        <h3>Traits${traitsNote}</h3>
-        <table class="cg-battle-summary-table">
-          <thead><tr><th>Body</th><th>Speed</th><th>Will</th><th>Mind</th><th>Species</th><th>Career</th></tr></thead>
-          <tbody><tr>
-            <td>${esc(tr.body)}</td><td>${esc(tr.speed)}</td><td>${esc(tr.will)}</td>
-            <td>${esc(tr.mind)}</td><td>${esc(tr.trait_species)}</td><td>${esc(tr.trait_career)}</td>
-          </tr></tbody>
-        </table>
+      ${speciesName ? `
+      <div class="summary-section summary-species">
+        <h3>Species: ${esc(speciesName)}</h3>
+        ${(() => {
+          const parts = [];
+          if (sp.habitat) parts.push(`<span><strong>Habitat:</strong> ${esc(sp.habitat)}</span>`);
+          if (sp.diet)    parts.push(`<span><strong>Diet:</strong> ${esc(sp.diet)}</span>`);
+          if (sp.cycle)   parts.push(`<span><strong>Cycle:</strong> ${esc(sp.cycle)}</span>`);
+          const senses = [sp.sense_1, sp.sense_2, sp.sense_3].filter(Boolean);
+          if (senses.length) parts.push(`<span><strong>Senses:</strong> ${esc(senses.join(', '))}</span>`);
+          return parts.length ? `<div class="summary-species-traits">${parts.join(' &nbsp;|&nbsp; ')}</div>` : '';
+        })()}
+        ${speciesGiftsHtml ? `<ul>${speciesGiftsHtml}</ul>` : ''}
+      </div>` : ''}
+
+      ${careerName ? `
+      <div class="summary-section summary-career">
+        <h3>Career: ${esc(careerName)}</h3>
+        ${careerGiftsHtml ? `<ul>${careerGiftsHtml}</ul>` : ''}
+      </div>` : ''}
+
+      ${improvedGiftsHtml ? `
+      <div class="summary-section summary-gifts">
+        <h3>Improved Ally</h3>
+        <ul>${improvedGiftsHtml}</ul>
+      </div>` : ''}
+
+    </div><!-- /col-left -->
+
+    <!-- Right column: Traits / Battle Array / Movement / Damage / Weapons / Armour -->
+    <div class="summary-col-right">
+
+      <div class="summary-section summary-traits">
+        <h3>Traits</h3>
+        <ul>${traitsHtml}</ul>
       </div>
 
-      <div class="summary-section">
+      <div class="summary-section summary-battle">
         <h3>Battle Array</h3>
-        <table class="cg-battle-summary-table">
-          <thead><tr><th>Pool</th><th>Dice</th><th>Notes</th></tr></thead>
-          <tbody>
-            <tr><td>Initiative</td><td>${esc(initP)}</td><td>Speed + Mind</td></tr>
-            <tr><td>Dodge</td><td>${esc(dodgeP)}</td><td>Speed</td></tr>
-            <tr><td>Soak</td><td>${esc(soak)}</td><td>${esc(soakNote)}</td></tr>
-          </tbody>
-        </table>
+        <div class="summary-battle-pools">
+          <table class="cg-battle-summary-table cg-battle-pools-table">
+            <thead><tr><th>Pool</th><th>Dice</th></tr></thead>
+            <tbody>
+              <tr><td>Initiative</td><td>${esc(initP)}</td></tr>
+              <tr><td>Dodge</td><td>${esc(dodgeP)}</td></tr>
+              <tr><td>Soak (${esc(soakNote)})</td><td>${esc(soak)}</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="summary-movement">
+          <h4 class="summary-sub-heading">Movement</h4>
+          <table class="cg-battle-summary-table">
+            <thead><tr><th>Mode</th><th>Value</th><th>Formula</th></tr></thead>
+            <tbody>
+              <tr><td>Stride</td><td>1</td><td>(1)</td></tr>
+              <tr><td>Dash</td><td>${_dash}</td><td>(½ Max Speed, +1 if Body&gt;Speed)</td></tr>
+              <tr><td>Sprint</td><td>${esc(tr.speed) || '—'}</td><td>(Speed die)</td></tr>
+              <tr><td>Run</td><td>${_run}</td><td>(Max Body + Max Speed + Dash)</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="summary-damage-track">
+          <h4 class="summary-sub-heading">Damage &amp; Other Status</h4>
+          <div class="cg-damage-track-layout">
+            <div class="cg-hit-states">
+              <div class="cg-hit-row"><span class="cg-hit-count">no hits</span><span class="cg-hit-pip"></span><span class="cg-hit-name">Reeling</span><span class="cg-hit-note">(penalty d8; no Counters)</span></div>
+              <div class="cg-hit-row"><span class="cg-hit-count">1 hit</span><span class="cg-hit-pip"></span><span class="cg-hit-name">Hurt</span><span class="cg-hit-note">(+1 damage)</span></div>
+              <div class="cg-hit-row"><span class="cg-hit-count">2 hits</span><span class="cg-hit-pip"></span><span class="cg-hit-name">Afraid</span><span class="cg-hit-note">(cannot attack or rally)</span></div>
+              <div class="cg-hit-row"><span class="cg-hit-count">3 hits</span><span class="cg-hit-pip"></span><span class="cg-hit-name">Injured</span><span class="cg-hit-note">(+1 damage)</span></div>
+              <div class="cg-healing-quota"><span class="cg-hq-label">Healing Quota</span><span class="cg-hq-circles">${hqCircles}</span></div>
+              <div class="cg-hit-row"><span class="cg-hit-count">4 hits</span><span class="cg-hit-pip"></span><span class="cg-hit-name">Dying</span><span class="cg-hit-note">(get first aid!)</span></div>
+              <div class="cg-hit-row"><span class="cg-hit-count">5 hits</span><span class="cg-hit-pip"></span><span class="cg-hit-name">Dead</span><span class="cg-hit-note">(beyond mortal help)</span></div>
+            </div>
+            <div class="cg-status-conditions">
+              <div class="cg-status-row"><span class="cg-hit-pip"></span><span class="cg-status-name">Burdened</span><span class="cg-hit-note">(Dash is zero, limit of d8 to Speed Skills)</span></div>
+              <div class="cg-status-row"><span class="cg-hit-pip"></span><span class="cg-status-name">Over-Burdened</span><span class="cg-hit-note">(Burdened, can't run, disadvantaged)</span></div>
+              <div class="cg-status-row"><span class="cg-hit-pip"></span><span class="cg-status-name">Knockdown</span><span class="cg-hit-note">(disadvantaged, can't retreat)</span></div>
+              <div class="cg-status-row"><span class="cg-hit-pip"></span><span class="cg-status-name">Unconscious</span><span class="cg-hit-note">(helpless)</span></div>
+            </div>
+          </div>
+        </div>
+
         ${weaponRows ? `
-        <p class="summary-sub-heading">Weapons</p>
+        <h4 class="summary-sub-heading">Weapons</h4>
         <table class="cg-battle-summary-table">
-          <thead><tr><th>Name</th><th>Attack</th><th>Damage</th><th>Range</th></tr></thead>
+          <thead><tr><th>Name</th><th>Attack Pool</th><th>Damage</th><th>Range</th></tr></thead>
           <tbody>${weaponRows}</tbody>
         </table>` : ''}
+
         ${armorRows ? `
-        <p class="summary-sub-heading">Armour</p>
+        <h4 class="summary-sub-heading">Armour</h4>
         <table class="cg-battle-summary-table">
           <thead><tr><th>Name</th><th>Soak Dice</th></tr></thead>
           <tbody>${armorRows}</tbody>
         </table>` : ''}
+
+      </div><!-- /summary-battle -->
+
+    </div><!-- /col-right -->
+
+  </div><!-- /page1-body -->
+
+  <!-- ══ PAGE 2 ══ -->
+  <div class="summary-page2">
+
+    ${skillsRows.length ? `
+    <div class="summary-section summary-skills">
+      <h3>Skills</h3>
+      <div class="cg-summary-skills-wrap">
+        <table class="cg-summary-skills">
+          <thead><tr><th>Skill</th><th>${printSpLabel}</th><th>${printCpLabel}</th><th>Dice Pool</th></tr></thead>
+          <tbody>${skillsRows.join('')}</tbody>
+        </table>
       </div>
+    </div>` : ''}
 
-    </div>
-    <div class="summary-col-right">
+    ${trappingRows ? `
+    <div class="summary-section summary-equipment">
+      <h3>Equipment</h3>
+      <ul>${trappingRows}</ul>
+    </div>` : ''}
 
-      <div class="summary-section">
-        <h3>Gifts</h3>
-        <ul>${allGiftRows.join('') || '<li>None</li>'}</ul>
-      </div>
+    ${denar > 0 ? `
+    <div class="summary-section summary-money">
+      <h3>Money</h3>
+      <div class="summary-money-row"><span><strong>Denar:</strong> ${denar}</span></div>
+    </div>` : ''}
 
-      ${(trappingRows || denar > 0) ? `
-      <div class="summary-section summary-equipment">
-        <h3>Equipment &amp; Money</h3>
-        ${trappingRows ? `<ul>${trappingRows}</ul>` : ''}
-        ${denar > 0 ? `<p><strong>Denar:</strong> ${denar}</p>` : ''}
-      </div>` : ''}
+    ${desc ? `
+    <div class="summary-section summary-description">
+      <h3>Description</h3>
+      <p>${esc(desc)}</p>
+    </div>` : ''}
 
-    </div>
-  </div>
-
-  ${skillsRows.length ? `
-  <div class="summary-section summary-skills-full">
-    <h3>Skills</h3>
-    <table class="cg-summary-skills">
-      <thead><tr><th>Skill</th><th>${printSpLabel}</th><th>${printCpLabel}</th><th>Dice Pool</th></tr></thead>
-      <tbody>${skillsRows.join('')}</tbody>
-    </table>
-  </div>` : ''}
+  </div><!-- /page2 -->
 
 </div>`;
   },

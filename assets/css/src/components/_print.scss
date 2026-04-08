@@ -303,6 +303,18 @@
     font-size: 9.5pt !important;
   }
 
+  // ── Ally Sheet banner ────────────────────────────────────────────────────────
+  .summary-ally-banner {
+    font-size:      7pt !important;
+    border-color:   #c9a84c !important;
+    color:          #7a6a4a !important;
+    margin-bottom:  4pt !important;
+    padding:        1pt 6pt !important;
+    width:          auto !important;
+    display:        block !important;
+    text-align:     center !important;
+  }
+
   // ── Gift descriptions ────────────────────────────────────────────────────────
   .summary-gift-desc {
     font-size:  8.5pt !important;
