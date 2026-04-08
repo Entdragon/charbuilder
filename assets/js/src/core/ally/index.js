@@ -144,22 +144,30 @@ const AllyModule = {
       }, 0);
     });
 
-    // React to main character gift changes
-    $(document).on(
-      'cg:free-gift:changed cg:xp-gift:changed change.cg-ally-gifts',
-      () => {
+    // React to gift changes — covers:
+    //   • cg:free-gift:changed  (new-character reset path in state.js)
+    //   • cg:xp-gift:changed    (XP gift purchases)
+    //   • .cg-free-gift-select  (the ACTUAL dropdown — setFreeGiftSlotsToData never emits the event)
+    const onGiftChange = () => {
+      // Delay one tick so FormBuilderAPI._data.free_gifts is updated before we read it
+      setTimeout(() => {
         this._syncTabVisibility();
         if (this._hasAllyGift()) {
           const panel = document.getElementById('cg-ally-inner');
           if (!panel || !panel.dataset.rendered) {
             this._render();
+            this._ensureGiftList();
             this._populateSelects();
           } else {
             this._refreshImprovedSlots();
           }
         }
-      }
-    );
+      }, 0);
+    };
+
+    $(document).on('cg:free-gift:changed cg:xp-gift:changed', onGiftChange);
+    // Also catch the raw dropdown change (the primary path used by free-choices.js)
+    $(document).on('change.ally-gift-watch', '.cg-free-gift-select', onGiftChange);
 
     // Tab click — re-populate selects when ally tab becomes visible
     $(document).on('click', '[data-tab="tab-ally"]', () => {

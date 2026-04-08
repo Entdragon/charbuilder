@@ -10279,21 +10279,23 @@
           }
         }, 0);
       });
-      $24(document).on(
-        "cg:free-gift:changed cg:xp-gift:changed change.cg-ally-gifts",
-        () => {
+      const onGiftChange = () => {
+        setTimeout(() => {
           this._syncTabVisibility();
           if (this._hasAllyGift()) {
             const panel = document.getElementById("cg-ally-inner");
             if (!panel || !panel.dataset.rendered) {
               this._render();
+              this._ensureGiftList();
               this._populateSelects();
             } else {
               this._refreshImprovedSlots();
             }
           }
-        }
-      );
+        }, 0);
+      };
+      $24(document).on("cg:free-gift:changed cg:xp-gift:changed", onGiftChange);
+      $24(document).on("change.ally-gift-watch", ".cg-free-gift-select", onGiftChange);
       $24(document).on("click", '[data-tab="tab-ally"]', () => {
         setTimeout(() => {
           this._populateSelects();
