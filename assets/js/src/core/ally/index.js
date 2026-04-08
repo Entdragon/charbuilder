@@ -336,7 +336,11 @@ const AllyModule = {
     this._refreshBattleArea();
     this._refreshTrappingsArea();
     this._refreshMoneyArea();
-    if (!careerId) return;
+    if (!careerId) {
+      this._fetchAllyGiftTrappings();
+      this._fetchAllySpells();
+      return;
+    }
     this._loadCareerProfile(careerId);
   },
 
@@ -1187,7 +1191,10 @@ const AllyModule = {
           this._refreshBattleArea();
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        // On error, reset the key so the next change retries the fetch
+        if (key === this._lastAllySpellKey) this._lastAllySpellKey = '';
+      });
   },
 
   // ── Currency / money (G4) ────────────────────────────────────────────────────

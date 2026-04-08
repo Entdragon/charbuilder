@@ -10663,8 +10663,11 @@
       this._refreshBattleArea();
       this._refreshTrappingsArea();
       this._refreshMoneyArea();
-      if (!careerId)
+      if (!careerId) {
+        this._fetchAllyGiftTrappings();
+        this._fetchAllySpells();
         return;
+      }
       this._loadCareerProfile(careerId);
     },
     _loadCareerProfile(careerId) {
@@ -11453,6 +11456,8 @@
           this._refreshBattleArea();
         }
       }).catch(() => {
+        if (key === this._lastAllySpellKey)
+          this._lastAllySpellKey = "";
       });
     },
     // ── Currency / money (G4) ────────────────────────────────────────────────────
