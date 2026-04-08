@@ -145,6 +145,11 @@ $actionFiles = [
     'uj_get_attacks'     => 'actions/uj.php',
     'uj_get_items'       => 'actions/uj.php',
     'uj_get_all_traits'  => 'actions/uj.php',
+    'uj_build_joins'     => 'actions/uj.php',
+    'uj_get_species_full'=> 'actions/uj.php',
+    'uj_get_types_full'  => 'actions/uj.php',
+    'uj_get_careers_full'=> 'actions/uj.php',
+    'uj_get_all_full'    => 'actions/uj.php',
 ];
 
 if (!isset($actionFiles[$action])) {

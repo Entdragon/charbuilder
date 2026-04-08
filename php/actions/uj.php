@@ -177,6 +177,71 @@ function uj_create_tables_internal(): array {
             PRIMARY KEY (`id`),
             UNIQUE KEY `slug` (`slug`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+        // ── Junction tables ───────────────────────────────────────────────────
+
+        "CREATE TABLE IF NOT EXISTS `{$p}uj_species_skills` (
+            `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `species_id` INT UNSIGNED NOT NULL,
+            `skill_id`   INT UNSIGNED NOT NULL,
+            `sort_order` TINYINT      NOT NULL DEFAULT 1,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `species_skill` (`species_id`, `skill_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+        "CREATE TABLE IF NOT EXISTS `{$p}uj_species_gifts` (
+            `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `species_id` INT UNSIGNED NOT NULL,
+            `gift_id`    INT UNSIGNED NOT NULL,
+            `sort_order` TINYINT      NOT NULL DEFAULT 1,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `species_gift` (`species_id`, `gift_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+        "CREATE TABLE IF NOT EXISTS `{$p}uj_types_skills` (
+            `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `type_id`    INT UNSIGNED NOT NULL,
+            `skill_id`   INT UNSIGNED NOT NULL,
+            `sort_order` TINYINT      NOT NULL DEFAULT 1,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `type_skill` (`type_id`, `skill_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+        "CREATE TABLE IF NOT EXISTS `{$p}uj_types_gifts` (
+            `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `type_id`    INT UNSIGNED NOT NULL,
+            `gift_id`    INT UNSIGNED NOT NULL,
+            `sort_order` TINYINT      NOT NULL DEFAULT 1,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `type_gift` (`type_id`, `gift_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+        "CREATE TABLE IF NOT EXISTS `{$p}uj_types_soaks` (
+            `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `type_id`    INT UNSIGNED NOT NULL,
+            `soak_id`    INT UNSIGNED NOT NULL,
+            `sort_order` TINYINT      NOT NULL DEFAULT 1,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `type_soak` (`type_id`, `soak_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+        "CREATE TABLE IF NOT EXISTS `{$p}uj_careers_skills` (
+            `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `career_id`  INT UNSIGNED NOT NULL,
+            `skill_id`   INT UNSIGNED NOT NULL,
+            `sort_order` TINYINT      NOT NULL DEFAULT 1,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `career_skill` (`career_id`, `skill_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+        "CREATE TABLE IF NOT EXISTS `{$p}uj_careers_gifts` (
+            `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `career_id`  INT UNSIGNED NOT NULL,
+            `gift_id`    INT UNSIGNED NOT NULL,
+            `sort_order` TINYINT      NOT NULL DEFAULT 1,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `career_gift` (`career_id`, `gift_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
     ];
 
     $created = [];
@@ -212,8 +277,9 @@ function uj_install_data(): void {
     $counts['soaks']    = uj_install_soaks();
     $counts['attacks']  = uj_install_attacks();
     $counts['items']    = uj_install_items();
+    $counts['joins']    = uj_build_joins_internal();
 
-    $msg = "Upserted: {$counts['species']} species, {$counts['types']} types, {$counts['careers']} careers, {$counts['skills']} skills, {$counts['gifts']} gifts, {$counts['soaks']} soaks, {$counts['attacks']} attacks, {$counts['items']} items.";
+    $msg = "Upserted: {$counts['species']} species, {$counts['types']} types, {$counts['careers']} careers, {$counts['skills']} skills, {$counts['gifts']} gifts, {$counts['soaks']} soaks, {$counts['attacks']} attacks, {$counts['items']} items. Built {$counts['joins']} join rows.";
     cg_json(['success' => true, 'data' => $msg]);
 }
 
@@ -861,6 +927,270 @@ function uj_get_all_traits(): void {
     $at = cg_query("SELECT id, name, slug, category, attack_range, counter_range, attack_dice, effect, notes FROM `" . uj_tbl('attacks') . "` WHERE published = 1 ORDER BY category ASC, name ASC");
     $it = cg_query("SELECT id, name, slug, cost_class, price_early, price_late FROM `" . uj_tbl('items') . "` WHERE published = 1 ORDER BY name ASC");
     cg_json(['success' => true, 'data' => ['species' => $sp, 'types' => $ty, 'careers' => $ca, 'skills' => $sk, 'gifts' => $gi, 'soaks' => $so, 'attacks' => $at, 'items' => $it]]);
+}
+
+// ── Join builder ─────────────────────────────────────────────────────────────
+
+/**
+ * Strip trailing damage modifier from soak names ('Distress Soak −4' → 'Distress Soak')
+ * and strip option suffixes from gift names ('Ally [of choice]' → 'Ally').
+ */
+function uj_normalize_name(string $name): string {
+    // Strip ' [...]' suffix (gift options like 'Ally [of choice]')
+    $name = preg_replace('/\s*\[.*?\]$/u', '', $name);
+    // Strip trailing ' −N' or ' -N' (Unicode minus or ASCII hyphen + digits)
+    $name = preg_replace('/\s+[\x{2212}\-]\d+$/u', '', $name);
+    return trim($name);
+}
+
+/**
+ * Internal worker — resolves text name references to IDs and populates the 7 junction tables.
+ * Returns the total number of join rows inserted.
+ */
+function uj_build_joins_internal(): int {
+    // Clear all junction tables first (full rebuild).
+    foreach (['species_skills','species_gifts','types_skills','types_gifts','types_soaks','careers_skills','careers_gifts'] as $tbl) {
+        cg_exec("DELETE FROM `" . uj_tbl($tbl) . "`", []);
+    }
+
+    // Build name → id maps for skills, gifts, soaks.
+    $skillMap = [];
+    foreach (cg_query("SELECT id, name FROM `" . uj_tbl('skills') . "`") as $r) {
+        $skillMap[$r['name']] = (int)$r['id'];
+    }
+    $giftMap = [];
+    foreach (cg_query("SELECT id, name FROM `" . uj_tbl('gifts') . "`") as $r) {
+        $giftMap[$r['name']] = (int)$r['id'];
+    }
+    $soakMap = [];
+    foreach (cg_query("SELECT id, name FROM `" . uj_tbl('soaks') . "`") as $r) {
+        $soakMap[$r['name']] = (int)$r['id'];
+    }
+
+    $count = 0;
+
+    // ── Species ──────────────────────────────────────────────────────────────
+    foreach (cg_query("SELECT id, skill_1, skill_2, skill_3, gift_1, gift_2 FROM `" . uj_tbl('species') . "` WHERE published=1") as $sp) {
+        foreach ([[$sp['skill_1'],1],[$sp['skill_2'],2],[$sp['skill_3'],3]] as [$raw, $ord]) {
+            $name = uj_normalize_name((string)$raw);
+            if ($name && isset($skillMap[$name])) {
+                cg_exec("INSERT IGNORE INTO `" . uj_tbl('species_skills') . "` (species_id, skill_id, sort_order) VALUES (?,?,?)",
+                    [$sp['id'], $skillMap[$name], $ord]);
+                $count++;
+            }
+        }
+        foreach ([[$sp['gift_1'],1],[$sp['gift_2'],2]] as [$raw, $ord]) {
+            $name = uj_normalize_name((string)$raw);
+            if ($name && isset($giftMap[$name])) {
+                cg_exec("INSERT IGNORE INTO `" . uj_tbl('species_gifts') . "` (species_id, gift_id, sort_order) VALUES (?,?,?)",
+                    [$sp['id'], $giftMap[$name], $ord]);
+                $count++;
+            }
+        }
+    }
+
+    // ── Types ────────────────────────────────────────────────────────────────
+    foreach (cg_query("SELECT id, skill_1, skill_2, skill_3, gift_1, soak_1, soak_2 FROM `" . uj_tbl('types') . "` WHERE published=1") as $ty) {
+        foreach ([[$ty['skill_1'],1],[$ty['skill_2'],2],[$ty['skill_3'],3]] as [$raw, $ord]) {
+            $name = uj_normalize_name((string)$raw);
+            if ($name && isset($skillMap[$name])) {
+                cg_exec("INSERT IGNORE INTO `" . uj_tbl('types_skills') . "` (type_id, skill_id, sort_order) VALUES (?,?,?)",
+                    [$ty['id'], $skillMap[$name], $ord]);
+                $count++;
+            }
+        }
+        $gname = uj_normalize_name((string)($ty['gift_1'] ?? ''));
+        if ($gname && isset($giftMap[$gname])) {
+            cg_exec("INSERT IGNORE INTO `" . uj_tbl('types_gifts') . "` (type_id, gift_id, sort_order) VALUES (?,?,?)",
+                [$ty['id'], $giftMap[$gname], 1]);
+            $count++;
+        }
+        foreach ([[$ty['soak_1'],1],[$ty['soak_2'],2]] as [$raw, $ord]) {
+            $name = uj_normalize_name((string)$raw);
+            if ($name && isset($soakMap[$name])) {
+                cg_exec("INSERT IGNORE INTO `" . uj_tbl('types_soaks') . "` (type_id, soak_id, sort_order) VALUES (?,?,?)",
+                    [$ty['id'], $soakMap[$name], $ord]);
+                $count++;
+            }
+        }
+    }
+
+    // ── Careers ──────────────────────────────────────────────────────────────
+    foreach (cg_query("SELECT id, skill_1, skill_2, skill_3, gift_1, gift_2 FROM `" . uj_tbl('careers') . "` WHERE published=1") as $ca) {
+        foreach ([[$ca['skill_1'],1],[$ca['skill_2'],2],[$ca['skill_3'],3]] as [$raw, $ord]) {
+            $name = uj_normalize_name((string)$raw);
+            if ($name && isset($skillMap[$name])) {
+                cg_exec("INSERT IGNORE INTO `" . uj_tbl('careers_skills') . "` (career_id, skill_id, sort_order) VALUES (?,?,?)",
+                    [$ca['id'], $skillMap[$name], $ord]);
+                $count++;
+            }
+        }
+        foreach ([[$ca['gift_1'],1],[$ca['gift_2'],2]] as [$raw, $ord]) {
+            $name = uj_normalize_name((string)$raw);
+            if ($name && isset($giftMap[$name])) {
+                cg_exec("INSERT IGNORE INTO `" . uj_tbl('careers_gifts') . "` (career_id, gift_id, sort_order) VALUES (?,?,?)",
+                    [$ca['id'], $giftMap[$name], $ord]);
+                $count++;
+            }
+        }
+    }
+
+    return $count;
+}
+
+// AJAX action — auth-gated wrapper around the internal worker.
+function uj_build_joins(): void {
+    uj_admin_require();
+    $n = uj_build_joins_internal();
+    cg_json(['success' => true, 'data' => "Built {$n} join rows across species, types, and careers."]);
+}
+
+// ── Full resolved-data GET endpoints ─────────────────────────────────────────
+
+/**
+ * Helper: index a flat join query into a map keyed by parent_id → array of linked rows.
+ * $rows must have 'parent_id', plus whatever fields you want to keep.
+ */
+function uj_index_by_parent(array $rows, string $parentCol): array {
+    $map = [];
+    foreach ($rows as $r) {
+        $pid = (int)$r[$parentCol];
+        unset($r[$parentCol]);
+        $map[$pid][] = $r;
+    }
+    return $map;
+}
+
+function uj_get_species_full(): void {
+    $p = cg_prefix();
+    $species = cg_query("SELECT id, name, slug, description FROM `{$p}uj_species` WHERE published=1 ORDER BY name ASC");
+
+    $skillRows = cg_query(
+        "SELECT ss.species_id AS parent_id, sk.id, sk.name, sk.slug, sk.paired_trait, ss.sort_order
+           FROM `{$p}uj_species_skills` ss
+           JOIN `{$p}uj_skills` sk ON sk.id = ss.skill_id
+          ORDER BY ss.species_id, ss.sort_order"
+    );
+    $giftRows = cg_query(
+        "SELECT sg.species_id AS parent_id, g.id, g.name, g.slug, g.subtitle, g.gift_type, g.recharge, sg.sort_order
+           FROM `{$p}uj_species_gifts` sg
+           JOIN `{$p}uj_gifts` g ON g.id = sg.gift_id
+          ORDER BY sg.species_id, sg.sort_order"
+    );
+
+    $skillMap = uj_index_by_parent($skillRows, 'parent_id');
+    $giftMap  = uj_index_by_parent($giftRows,  'parent_id');
+
+    foreach ($species as &$sp) {
+        $id = (int)$sp['id'];
+        $sp['skills'] = $skillMap[$id] ?? [];
+        $sp['gifts']  = $giftMap[$id]  ?? [];
+    }
+    cg_json(['success' => true, 'data' => $species]);
+}
+
+function uj_get_types_full(): void {
+    $p = cg_prefix();
+    $types = cg_query("SELECT id, name, slug, description, gear FROM `{$p}uj_types` WHERE published=1 ORDER BY name ASC");
+
+    $skillRows = cg_query(
+        "SELECT ts.type_id AS parent_id, sk.id, sk.name, sk.slug, sk.paired_trait, ts.sort_order
+           FROM `{$p}uj_types_skills` ts
+           JOIN `{$p}uj_skills` sk ON sk.id = ts.skill_id
+          ORDER BY ts.type_id, ts.sort_order"
+    );
+    $giftRows = cg_query(
+        "SELECT tg.type_id AS parent_id, g.id, g.name, g.slug, g.subtitle, g.gift_type, g.recharge, tg.sort_order
+           FROM `{$p}uj_types_gifts` tg
+           JOIN `{$p}uj_gifts` g ON g.id = tg.gift_id
+          ORDER BY tg.type_id, tg.sort_order"
+    );
+    $soakRows = cg_query(
+        "SELECT tso.type_id AS parent_id, so.id, so.name, so.slug, so.damage_negated, so.recharge, so.side_effect, so.soak_type, tso.sort_order
+           FROM `{$p}uj_types_soaks` tso
+           JOIN `{$p}uj_soaks` so ON so.id = tso.soak_id
+          ORDER BY tso.type_id, tso.sort_order"
+    );
+
+    $skillMap = uj_index_by_parent($skillRows, 'parent_id');
+    $giftMap  = uj_index_by_parent($giftRows,  'parent_id');
+    $soakMap  = uj_index_by_parent($soakRows,  'parent_id');
+
+    foreach ($types as &$ty) {
+        $id = (int)$ty['id'];
+        $ty['skills'] = $skillMap[$id] ?? [];
+        $ty['gifts']  = $giftMap[$id]  ?? [];
+        $ty['soaks']  = $soakMap[$id]  ?? [];
+    }
+    cg_json(['success' => true, 'data' => $types]);
+}
+
+function uj_get_careers_full(): void {
+    $p = cg_prefix();
+    $careers = cg_query("SELECT id, name, slug, description, gear FROM `{$p}uj_careers` WHERE published=1 ORDER BY name ASC");
+
+    $skillRows = cg_query(
+        "SELECT cs.career_id AS parent_id, sk.id, sk.name, sk.slug, sk.paired_trait, cs.sort_order
+           FROM `{$p}uj_careers_skills` cs
+           JOIN `{$p}uj_skills` sk ON sk.id = cs.skill_id
+          ORDER BY cs.career_id, cs.sort_order"
+    );
+    $giftRows = cg_query(
+        "SELECT cg.career_id AS parent_id, g.id, g.name, g.slug, g.subtitle, g.gift_type, g.recharge, cg.sort_order
+           FROM `{$p}uj_careers_gifts` cg
+           JOIN `{$p}uj_gifts` g ON g.id = cg.gift_id
+          ORDER BY cg.career_id, cg.sort_order"
+    );
+
+    $skillMap = uj_index_by_parent($skillRows, 'parent_id');
+    $giftMap  = uj_index_by_parent($giftRows,  'parent_id');
+
+    foreach ($careers as &$ca) {
+        $id = (int)$ca['id'];
+        $ca['skills'] = $skillMap[$id] ?? [];
+        $ca['gifts']  = $giftMap[$id]  ?? [];
+    }
+    cg_json(['success' => true, 'data' => $careers]);
+}
+
+function uj_get_all_full(): void {
+    $p = cg_prefix();
+
+    // Fetch all base tables
+    $species  = cg_query("SELECT id, name, slug, description FROM `{$p}uj_species` WHERE published=1 ORDER BY name ASC");
+    $types    = cg_query("SELECT id, name, slug, description, gear FROM `{$p}uj_types` WHERE published=1 ORDER BY name ASC");
+    $careers  = cg_query("SELECT id, name, slug, description, gear FROM `{$p}uj_careers` WHERE published=1 ORDER BY name ASC");
+    $skills   = cg_query("SELECT id, name, slug, description, paired_trait FROM `{$p}uj_skills` WHERE published=1 ORDER BY name ASC");
+    $gifts    = cg_query("SELECT id, name, slug, subtitle, description, gift_type, recharge FROM `{$p}uj_gifts` WHERE published=1 ORDER BY gift_type ASC, name ASC");
+    $soaks    = cg_query("SELECT id, name, slug, damage_negated, recharge, side_effect, soak_type FROM `{$p}uj_soaks` WHERE published=1 ORDER BY soak_type ASC, name ASC");
+
+    // Fetch all junction rows
+    $spSkills = uj_index_by_parent(cg_query("SELECT ss.species_id AS parent_id, sk.id, sk.name, sk.slug, sk.paired_trait, ss.sort_order FROM `{$p}uj_species_skills` ss JOIN `{$p}uj_skills` sk ON sk.id=ss.skill_id ORDER BY ss.species_id, ss.sort_order"), 'parent_id');
+    $spGifts  = uj_index_by_parent(cg_query("SELECT sg.species_id AS parent_id, g.id, g.name, g.slug, g.subtitle, g.gift_type, g.recharge, sg.sort_order FROM `{$p}uj_species_gifts` sg JOIN `{$p}uj_gifts` g ON g.id=sg.gift_id ORDER BY sg.species_id, sg.sort_order"), 'parent_id');
+    $tySkills = uj_index_by_parent(cg_query("SELECT ts.type_id AS parent_id, sk.id, sk.name, sk.slug, sk.paired_trait, ts.sort_order FROM `{$p}uj_types_skills` ts JOIN `{$p}uj_skills` sk ON sk.id=ts.skill_id ORDER BY ts.type_id, ts.sort_order"), 'parent_id');
+    $tyGifts  = uj_index_by_parent(cg_query("SELECT tg.type_id AS parent_id, g.id, g.name, g.slug, g.subtitle, g.gift_type, g.recharge, tg.sort_order FROM `{$p}uj_types_gifts` tg JOIN `{$p}uj_gifts` g ON g.id=tg.gift_id ORDER BY tg.type_id, tg.sort_order"), 'parent_id');
+    $tysoaks  = uj_index_by_parent(cg_query("SELECT tso.type_id AS parent_id, so.id, so.name, so.slug, so.damage_negated, so.recharge, so.side_effect, so.soak_type, tso.sort_order FROM `{$p}uj_types_soaks` tso JOIN `{$p}uj_soaks` so ON so.id=tso.soak_id ORDER BY tso.type_id, tso.sort_order"), 'parent_id');
+    $caSkills = uj_index_by_parent(cg_query("SELECT cs.career_id AS parent_id, sk.id, sk.name, sk.slug, sk.paired_trait, cs.sort_order FROM `{$p}uj_careers_skills` cs JOIN `{$p}uj_skills` sk ON sk.id=cs.skill_id ORDER BY cs.career_id, cs.sort_order"), 'parent_id');
+    $caGifts  = uj_index_by_parent(cg_query("SELECT cg2.career_id AS parent_id, g.id, g.name, g.slug, g.subtitle, g.gift_type, g.recharge, cg2.sort_order FROM `{$p}uj_careers_gifts` cg2 JOIN `{$p}uj_gifts` g ON g.id=cg2.gift_id ORDER BY cg2.career_id, cg2.sort_order"), 'parent_id');
+
+    foreach ($species as &$sp) {
+        $id = (int)$sp['id'];
+        $sp['skills'] = $spSkills[$id] ?? [];
+        $sp['gifts']  = $spGifts[$id]  ?? [];
+    }
+    foreach ($types as &$ty) {
+        $id = (int)$ty['id'];
+        $ty['skills'] = $tySkills[$id] ?? [];
+        $ty['gifts']  = $tyGifts[$id]  ?? [];
+        $ty['soaks']  = $tysoaks[$id]  ?? [];
+    }
+    foreach ($careers as &$ca) {
+        $id = (int)$ca['id'];
+        $ca['skills'] = $caSkills[$id] ?? [];
+        $ca['gifts']  = $caGifts[$id]  ?? [];
+    }
+
+    cg_json(['success' => true, 'data' => compact('species','types','careers','skills','gifts','soaks')]);
 }
 
 // ── Skills data ───────────────────────────────────────────────────────────────
