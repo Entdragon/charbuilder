@@ -23,15 +23,19 @@
         }
         var xhr = new XMLHttpRequest();
         xhr.open("POST", "/ajax.php");
+        xhr.timeout = 2e4;
         xhr.onload = function() {
           try {
             resolve(JSON.parse(xhr.responseText));
           } catch (e) {
-            reject(e);
+            reject(new Error("Bad response from server for action: " + action));
           }
         };
         xhr.onerror = function() {
-          reject(new Error("Network error"));
+          reject(new Error("Network error for action: " + action));
+        };
+        xhr.ontimeout = function() {
+          reject(new Error("Timeout for action: " + action));
         };
         xhr.send(fd);
       });
@@ -140,9 +144,10 @@
         loadingEl.style.display = "none";
       showCharList();
     }).catch(function(err) {
-      if (loadingEl)
-        loadingEl.textContent = "Error loading data. Please refresh.";
-      console.error(err);
+      if (loadingEl) {
+        loadingEl.textContent = "Error loading data \u2014 " + (err && err.message ? err.message : "please refresh.");
+      }
+      console.error("[UJ Builder]", err);
     });
     function showCharList() {
       if (wizardScreen)
