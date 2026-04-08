@@ -20,11 +20,18 @@ function ic_parse_gift_markup(string $raw): string {
         }
         $tag  = $m[1];
         $body = trim($m[2]);
+
+        // Helper: named block (label badge + inline text)
+        $namedBlock = function (string $cls, string $label, string $body) use (&$html): void {
+            $html .= '<div class="gift-block ' . $cls . '"><span class="gift-block-label">' . $label . '</span>';
+            if ($body) $html .= ' <span class="gift-block-text">' . htmlspecialchars($body) . '</span>';
+            $html .= '</div>';
+        };
+
         switch ($tag) {
+            // ── Ability blocks ─────────────────────────────────────────
             case 'PASSIVE':
-                $html .= '<div class="gift-block gift-passive"><span class="gift-block-label">Passive</span>';
-                if ($body) $html .= ' <span class="gift-block-text">' . htmlspecialchars($body) . '</span>';
-                $html .= '</div>';
+                $namedBlock('gift-passive', 'Passive', $body);
                 break;
             case 'STUNT':
                 $html .= '<div class="gift-block gift-stunt"><span class="gift-block-label">Stunt</span>';
@@ -36,14 +43,103 @@ function ic_parse_gift_markup(string $raw): string {
                 if ($body) $html .= ' <em>' . htmlspecialchars(trim($body, '"')) . '</em>';
                 $html .= '</div>';
                 break;
+            case 'REACTION':
+                $html .= '<div class="gift-block gift-reaction"><span class="gift-block-label">Reaction</span>';
+                if ($body) $html .= ' <span class="gift-block-text">' . nl2br(htmlspecialchars($body)) . '</span>';
+                $html .= '</div>';
+                break;
+
+            // ── Condition blocks ───────────────────────────────────────
+            case 'TRIGGER':
+            case 'T':
+                $namedBlock('gift-trigger', 'Trigger', $body);
+                break;
+            case 'REQUIRES':
+                // May be multi-line (multiple requirements in one block)
+                if ($body) {
+                    $lines = array_filter(array_map('trim', explode("\n", $body)));
+                    foreach ($lines as $line) {
+                        $namedBlock('gift-requires', 'Requires', $line);
+                    }
+                }
+                break;
+            case 'REFRESH':
+            case 'R':
+                $namedBlock('gift-refresh', 'Refresh', $body);
+                break;
+            case 'LIMIT':
+                $namedBlock('gift-limit', 'Limit', $body);
+                break;
+
+            // ── Equipment block ────────────────────────────────────────
+            case 'TRAPPINGS':
+                if ($body) {
+                    $html .= '<div class="gift-trappings">';
+                    $html .= '<span class="gift-block-label gift-trappings-label">Trappings</span>';
+                    $html .= '<ul class="gift-trappings-list">';
+                    $items = array_filter(array_map('trim', explode("\n", $body)));
+                    foreach ($items as $item) {
+                        $html .= '<li>' . htmlspecialchars($item) . '</li>';
+                    }
+                    $html .= '</ul></div>';
+                }
+                break;
+
+            // ── Content sections ───────────────────────────────────────
             case 'SECTION':
-                if ($body) $html .= '<p class="gift-section">' . nl2br(htmlspecialchars($body)) . '</p>';
+            case 'S':
+                if ($body) {
+                    // If first line is a short title followed by more content, treat as heading
+                    $nl = strpos($body, "\n");
+                    if ($nl !== false) {
+                        $heading = trim(substr($body, 0, $nl));
+                        $rest    = trim(substr($body, $nl + 1));
+                        if ($heading && $rest) {
+                            $html .= '<div class="gift-section-block">';
+                            $html .= '<p class="gift-section-heading">' . htmlspecialchars($heading) . '</p>';
+                            $html .= '<p class="gift-section">' . nl2br(htmlspecialchars($rest)) . '</p>';
+                            $html .= '</div>';
+                        } elseif ($rest) {
+                            $html .= '<p class="gift-section">' . nl2br(htmlspecialchars($rest)) . '</p>';
+                        } else {
+                            $html .= '<p class="gift-section">' . nl2br(htmlspecialchars($heading)) . '</p>';
+                        }
+                    } else {
+                        $html .= '<p class="gift-section">' . nl2br(htmlspecialchars($body)) . '</p>';
+                    }
+                }
                 break;
             case 'FLAVOUR':
-                if ($body) $html .= '<p class="gift-flavour"><em>' . htmlspecialchars($body) . '</em></p>';
+            case 'FLASVOUR':
+            case 'FAVOUR':
+                if ($body) $html .= '<p class="gift-flavour"><em>' . nl2br(htmlspecialchars($body)) . '</em></p>';
                 break;
+
+            // ── Notes ──────────────────────────────────────────────────
+            case 'NOTE':
+            case 'NOTES':
+                if ($body) {
+                    $html .= '<div class="gift-note">';
+                    $html .= '<span class="gift-block-label">Note</span> ';
+                    $html .= htmlspecialchars($body);
+                    $html .= '</div>';
+                }
+                break;
+
+            // ── Table ──────────────────────────────────────────────────
+            case 'TABLE':
+                if ($body) {
+                    $html .= '<div class="gift-table-block">';
+                    $html .= '<pre class="gift-table">' . htmlspecialchars($body) . '</pre>';
+                    $html .= '</div>';
+                }
+                break;
+
             default:
-                $html .= '<p class="gift-section">' . nl2br(htmlspecialchars($body ?: $block)) . '</p>';
+                // Unknown tag — render label + body
+                if ($body) {
+                    $html .= '<p class="gift-section"><strong>' . htmlspecialchars(ucfirst(strtolower($tag))) . ':</strong> ' . nl2br(htmlspecialchars($body)) . '</p>';
+                }
         }
     }
     return $html;
@@ -404,10 +500,13 @@ switch ($entity) {
 
     case 'gifts':
         $row = cg_query_one("
-          SELECT g.*, gc.ct_class_name, gc.ct_slug AS class_slug, b.ct_book_name, b.ct_ct_slug AS book_slug
+          SELECT g.*, gc.ct_class_name, gc.ct_slug AS class_slug,
+                 b.ct_book_name, b.ct_ct_slug AS book_slug,
+                 rf.ct_refresh_name AS refresh_name
           FROM `{$p}customtables_table_gifts` g
           LEFT JOIN `{$p}customtables_table_giftclass` gc ON gc.id = g.ct_gift_class
           LEFT JOIN `{$p}customtables_table_books` b ON b.id = g.ct_book_id
+          LEFT JOIN `{$p}customtables_table_refresh` rf ON rf.id = g.ct_gifts_refresh
           WHERE g.ct_slug=? AND g.published=1", [$slug]);
         if (!$row) $notFound();
 
@@ -455,7 +554,11 @@ switch ($entity) {
               </div>
             <?php endif; ?>
 
-            <?php if ($giftPrereqs): ?>
+            <?php
+            // Show gift_prereq requirements only if the description doesn't have @@REQUIRES: blocks
+            // (@@REQUIRES: in the description is the more complete source)
+            $descHasRequires = str_contains($row['ct_gifts_effect_description'] ?? '', '@@REQUIRES');
+            if ($giftPrereqs && !$descHasRequires): ?>
               <div class="detail-section">
                 <p class="detail-section-title">Requirements</p>
                 <ul style="margin:0; padding-left:1.2em; color:var(--ic-text-muted); font-size:0.95rem;">
@@ -493,10 +596,10 @@ switch ($entity) {
                     <td style="color:var(--ic-text-muted);"><?= htmlspecialchars($row['ct_gift_trigger']) ?></td>
                   </tr>
                 <?php endif; ?>
-                <?php if (!empty($row['ct_gifts_refresh'])): ?>
+                <?php if (!empty($row['refresh_name'])): ?>
                   <tr>
                     <td style="color:var(--ic-text-dim); padding:0.25rem 0;">Refresh</td>
-                    <td style="color:var(--ic-text-muted);"><?= htmlspecialchars($row['ct_gifts_refresh']) ?></td>
+                    <td style="color:var(--ic-text-muted);"><?= htmlspecialchars($row['refresh_name']) ?></td>
                   </tr>
                 <?php endif; ?>
                 <?php if (!empty($row['ct_gifts_allows_multiple'])): ?>

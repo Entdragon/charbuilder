@@ -622,7 +622,110 @@ $na = fn(string $k): string => ($activeNav ?? '') === $k ? ' active' : '';
     }
 
     .gift-section { color:var(--ic-text-muted); margin:0.6rem 0; font-size:1rem; line-height:1.65; }
-    .gift-flavour { color:var(--ic-text-dim); margin:0.6rem 0; font-size:0.95rem; line-height:1.6; }
+    .gift-flavour { color:var(--ic-text-dim); margin:0.6rem 0; font-size:0.95rem; line-height:1.6; font-style:italic; }
+
+    .gift-section-block { margin:0.6rem 0; }
+    .gift-section-heading {
+      font-family:    'Cinzel', Georgia, serif;
+      font-size:      0.78rem;
+      font-weight:    700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color:          var(--ic-text-dim);
+      margin:         0 0 0.35rem;
+    }
+
+    /* Trigger (amber/orange) */
+    .gift-trigger {
+      background: rgba(210,140,50,0.1);
+      border-left: 3px solid #d28c32;
+    }
+    .gift-trigger .gift-block-label { background: #d28c32; color: #fff; }
+
+    /* Requires (muted red/rose) */
+    .gift-requires {
+      background: rgba(180,80,80,0.08);
+      border-left: 3px solid #b45050;
+    }
+    .gift-requires .gift-block-label { background: #b45050; color: #fff; }
+
+    /* Refresh (teal) */
+    .gift-refresh {
+      background: rgba(50,160,150,0.08);
+      border-left: 3px solid #32a096;
+    }
+    .gift-refresh .gift-block-label { background: #32a096; color: #fff; }
+
+    /* Reaction (purple) */
+    .gift-reaction {
+      background: rgba(130,80,180,0.08);
+      border-left: 3px solid #8250b4;
+    }
+    .gift-reaction .gift-block-label { background: #8250b4; color: #fff; }
+
+    /* Limit (grey) */
+    .gift-limit {
+      background: rgba(120,120,120,0.08);
+      border-left: 3px solid #888;
+    }
+    .gift-limit .gift-block-label { background: #888; color: #fff; }
+
+    /* Trappings (equipment list) */
+    .gift-trappings {
+      margin: 0.75rem 0;
+      padding: 0.6rem 0.75rem;
+      background: rgba(179,138,90,0.05);
+      border: 1px solid var(--ic-border-light);
+      border-radius: var(--ic-radius);
+    }
+    .gift-trappings-label {
+      font-family:    'Cinzel', Georgia, serif;
+      font-size:      0.65rem;
+      font-weight:    700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      background:     var(--ic-gold);
+      color:          var(--ic-bg);
+      padding:        0.12rem 0.4rem;
+      border-radius:  3px;
+      display:        inline-block;
+      margin-bottom:  0.4rem;
+    }
+    .gift-trappings-list {
+      margin: 0.25rem 0 0 1.1rem;
+      padding: 0;
+      list-style: disc;
+      font-size: 0.95rem;
+      color: var(--ic-text-muted);
+      line-height: 1.55;
+    }
+
+    /* Note callout */
+    .gift-note {
+      margin: 0.6rem 0;
+      padding: 0.4rem 0.75rem;
+      background: rgba(100,160,100,0.08);
+      border-left: 3px solid #64a064;
+      border-radius: var(--ic-radius);
+      font-size: 0.9rem;
+      color: var(--ic-text-muted);
+    }
+
+    /* Table block */
+    .gift-table-block {
+      margin: 0.75rem 0;
+      overflow-x: auto;
+    }
+    .gift-table {
+      font-size: 0.82rem;
+      color: var(--ic-text-muted);
+      background: var(--ic-surface-2);
+      border-radius: var(--ic-radius);
+      padding: 0.6rem 0.75rem;
+      white-space: pre-wrap;
+      line-height: 1.5;
+      border: 1px solid var(--ic-border-light);
+    }
 
     /* ── Breadcrumb ───────────────────────────────────────────────────── */
     .breadcrumb {
