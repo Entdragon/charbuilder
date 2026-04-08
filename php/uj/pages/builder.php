@@ -755,6 +755,7 @@ require __DIR__ . '/../layout-head.php';
     username: <?= json_encode($username) ?>,
   };
 </script>
-<script src="/assets/js/dist/uj-builder.js?v=<?= filemtime(__DIR__ . '/../../../assets/js/dist/uj-builder.js') ?>"></script>
+<?php $ujJsPath = __DIR__ . '/../../../assets/js/dist/uj-builder.js'; ?>
+<script src="/assets/js/dist/uj-builder.js?v=<?= file_exists($ujJsPath) ? filemtime($ujJsPath) : '0' ?>"></script>
 
 <?php require __DIR__ . '/../layout-foot.php'; ?>
