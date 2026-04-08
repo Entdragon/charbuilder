@@ -887,6 +887,13 @@ $na = fn(string $k): string => ($activeNav ?? '') === $k ? ' active' : '';
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input type="text" name="q" placeholder="Search species, gifts, careers…" value="<?= htmlspecialchars($_GET['q'] ?? '') ?>">
     </form>
+    <?php if (cg_is_logged_in()): ?>
+    <button id="ic-change-pw-btn" style="background:transparent;border:1px solid rgba(201,168,76,0.3);border-radius:5px;color:var(--ic-text-muted);font-family:'Cinzel',serif;font-size:0.68rem;font-weight:600;letter-spacing:0.06em;padding:0.35rem 0.75rem;cursor:pointer;text-transform:uppercase;transition:all 0.2s;white-space:nowrap;"
+      onmouseover="this.style.borderColor='var(--ic-gold)';this.style.color='var(--ic-gold)'"
+      onmouseout="this.style.borderColor='rgba(201,168,76,0.3)';this.style.color='var(--ic-text-muted)'">
+      Change Password
+    </button>
+    <?php endif; ?>
   </header>
 
   <div id="ic-body">
