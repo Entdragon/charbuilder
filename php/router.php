@@ -38,5 +38,11 @@ if (str_starts_with($uri, '/uj') && ($uri === '/uj' || $uri === '/uj/' || str_st
     exit;
 }
 
+// ── Ironclaw reference pages ───────────────────────────────────────────────────
+if (str_starts_with($uri, '/ic') && ($uri === '/ic' || $uri === '/ic/' || str_starts_with($uri, '/ic/'))) {
+    require __DIR__ . '/ic.php';
+    exit;
+}
+
 // ── SPA catch-all → main PHP template ─────────────────────────────────────────
 require __DIR__ . '/index.php';

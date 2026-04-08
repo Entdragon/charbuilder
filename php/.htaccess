@@ -14,6 +14,9 @@
   # Route /uj and all /uj/* paths to uj.php
   RewriteRule ^uj(/.*)?$ uj.php [L,QSA]
 
+  # Route /ic and all /ic/* paths to ic.php
+  RewriteRule ^ic(/.*)?$ ic.php [L,QSA]
+
   # Route /api/ajax to ajax.php
   RewriteRule ^api/ajax/?$ ajax.php [L,QSA]
 

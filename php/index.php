@@ -543,13 +543,13 @@ try {
   <div id="site-body">
 
     <nav id="site-nav" aria-label="Site navigation">
-      <a href="https://libraryofcalbria.com/ironclaw/" class="nav-item parent">Ironclaw</a>
+      <a href="/ic" class="nav-item parent">Ironclaw</a>
       <a href="https://libraryofcalbria.com/ironclaw-books/" class="nav-item child">Ironclaw Books</a>
-      <a href="https://libraryofcalbria.com/species-catalog/" class="nav-item child">Species</a>
-      <a href="https://libraryofcalbria.com/careers/" class="nav-item child">Careers</a>
-      <a href="https://libraryofcalbria.com/gifts-catalog/" class="nav-item child">Gifts</a>
-      <a href="https://libraryofcalbria.com/skills-catalog/" class="nav-item child">Skills</a>
-      <a href="https://libraryofcalbria.com/index/" class="nav-item child">Index</a>
+      <a href="/ic/species"   class="nav-item child">Species</a>
+      <a href="/ic/careers"   class="nav-item child">Careers</a>
+      <a href="/ic/gifts"     class="nav-item child">Gifts</a>
+      <a href="/ic/skills"    class="nav-item child">Skills</a>
+      <a href="/ic/equipment" class="nav-item child">Equipment</a>
       <div class="nav-divider"></div>
       <a href="https://characters.libraryofcalbria.com/" class="nav-item active">Character Generator</a>
       <?php if (!$loggedIn): ?>
