@@ -10435,6 +10435,7 @@
       const panel = document.getElementById("cg-ally-inner");
       if (!panel)
         return;
+      this._ensureSkillsList();
       const ally = this._getData();
       panel.dataset.rendered = "1";
       panel.innerHTML = `<div class="cg-ally-export-bar">
@@ -10562,15 +10563,40 @@
       </div>
     </div>`;
     },
+    /** Return trigger/effect text for a gift by ID (from the loaded gift list). */
+    _giftTrigger(giftId2) {
+      if (!giftId2 || !this._giftList)
+        return "";
+      const g = this._giftList.find((x) => String(x.id || x.ct_id || "") === String(giftId2));
+      if (!g)
+        return "";
+      return String(g.trigger || g.effect_description || g.effect || "").trim();
+    },
+    /** Render one gift row as "Name — trigger text" matching the player sheet style. */
+    _giftRowHtml(name, trigger) {
+      if (!trigger)
+        return `<li class="cg-ally-gift-item">${esc(name)}</li>`;
+      return `<li class="cg-ally-gift-item">${esc(name)}<span class="cg-ally-gift-trigger"> \u2014 ${esc(trigger)}</span></li>`;
+    },
     _buildGiftsHtml() {
       const ally = this._getData();
       const sp = this._speciesProfile || {};
       const cp = this._careerProfile || {};
       const mainLang = this._getMainLang();
-      const spGifts = [sp.gift_1, sp.gift_2, sp.gift_3].filter(Boolean);
-      const cpGifts = [cp.gift_1, cp.gift_2, cp.gift_3].filter(Boolean);
       const count = this._improvedAllyCount();
       const ids = Array.isArray(ally.improved_gift_ids) ? ally.improved_gift_ids : [];
+      const spGiftRows = [1, 2, 3].map((i) => {
+        const name = sp[`gift_${i}`];
+        if (!name)
+          return "";
+        return this._giftRowHtml(name, this._giftTrigger(sp[`gift_id_${i}`]));
+      }).filter(Boolean);
+      const cpGiftRows = [1, 2, 3].map((i) => {
+        const name = cp[`gift_${i}`];
+        if (!name)
+          return "";
+        return this._giftRowHtml(name, this._giftTrigger(cp[`gift_id_${i}`]));
+      }).filter(Boolean);
       return `
     <div class="cg-ally-box">
       <h4 class="cg-ally-subhead">Gifts</h4>
@@ -10580,20 +10606,16 @@
         <div class="cg-ally-gift-item">${esc(mainLang || "(same as character)")}</div>
       </div>
 
-      ${spGifts.length ? `
+      ${spGiftRows.length ? `
       <div class="cg-ally-gift-group">
         <div class="cg-ally-gift-label">Species Gifts</div>
-        <ul class="cg-ally-gift-list">
-          ${spGifts.map((g) => `<li>${esc(g)}</li>`).join("")}
-        </ul>
+        <ul class="cg-ally-gift-list">${spGiftRows.join("")}</ul>
       </div>` : ""}
 
-      ${cpGifts.length ? `
+      ${cpGiftRows.length ? `
       <div class="cg-ally-gift-group">
         <div class="cg-ally-gift-label">Career Gifts</div>
-        <ul class="cg-ally-gift-list">
-          ${cpGifts.map((g) => `<li>${esc(g)}</li>`).join("")}
-        </ul>
+        <ul class="cg-ally-gift-list">${cpGiftRows.join("")}</ul>
       </div>` : ""}
 
       <div id="cg-ally-improved-slots">
@@ -10611,26 +10633,27 @@
         html += `<div class="cg-ally-improved-slot">
         <select class="cg-ally-improved-gift-select cg-ally-select" data-slot="${i}">
           <option value="">\u2014 Choose a Gift \u2014</option>
-          ${this._buildGiftOptions(sel)}
+          ${this._buildGiftOptions(sel, i)}
         </select>
       </div>`;
       }
       html += `</div>`;
       return html;
     },
-    _buildGiftOptions(selectedId) {
+    _buildGiftOptions(selectedId, slotIndex = -1) {
       if (!this._giftList)
         return "";
-      const owned = this._getAllyOwnedGiftIds();
+      const owned = this._getAllyOwnedGiftIds(slotIndex);
       return (this._giftList || []).filter((g) => {
         const id = String(g.id || g.ct_id || "");
         if (!id || id === "0")
           return false;
-        if (parseInt(g.ct_gifts_major || g.major || 0, 10) > 0)
+        const cls = String(g.giftclass || "").trim().toLowerCase();
+        if (cls === "major")
           return false;
         if (id === "242")
           return false;
-        const allows = parseInt(g.ct_gifts_manifold || g.allows_multiple || g.manifold || 0, 10) > 0;
+        const allows = parseInt(g.ct_gifts_manifold || g.allows_multiple || 0, 10) > 0;
         if (!allows && owned.has(id) && id !== selectedId)
           return false;
         return true;
@@ -10641,15 +10664,24 @@
         return `<option value="${esc(id)}"${sel}>${esc(name)}</option>`;
       }).join("");
     },
-    _getAllyOwnedGiftIds() {
+    /** IDs of all gifts the ally already has.
+     *  excludeSlotIndex: the improved-slot position being built (excluded so
+     *  the current slot's own value doesn't block re-selecting the same gift). */
+    _getAllyOwnedGiftIds(excludeSlotIndex = -1) {
       const sp = this._speciesProfile || {};
       const cp = this._careerProfile || {};
+      const ally = this._getData();
       const ids = /* @__PURE__ */ new Set();
       ["gift_id_1", "gift_id_2", "gift_id_3"].forEach((k) => {
         if (sp[k])
           ids.add(String(sp[k]));
         if (cp[k])
           ids.add(String(cp[k]));
+      });
+      const improvedIds = Array.isArray(ally.improved_gift_ids) ? ally.improved_gift_ids : [];
+      improvedIds.forEach((id, idx) => {
+        if (idx !== excludeSlotIndex && id)
+          ids.add(String(id));
       });
       return ids;
     },
@@ -10723,40 +10755,82 @@
       }
       return s;
     },
+    /** Ensure CG_SKILLS_LIST is loaded; returns a promise resolving to the list. */
+    _ensureSkillsList() {
+      if (Array.isArray(window.CG_SKILLS_LIST) && window.CG_SKILLS_LIST.length) {
+        return Promise.resolve(window.CG_SKILLS_LIST);
+      }
+      const env = ajaxEnv8();
+      return new Promise((resolve) => {
+        $24.post(env.ajax_url, {
+          action: "cg_get_skills_list",
+          security: env.nonce,
+          nonce: env.nonce,
+          _ajax_nonce: env.nonce
+        }).then((res) => {
+          let list = [];
+          if (res && res.success && Array.isArray(res.data))
+            list = res.data;
+          else if (Array.isArray(res))
+            list = res;
+          list = list.map((s) => ({
+            id: String(s.id || s.skill_id || ""),
+            name: String(s.name || s.ct_skill_name || "")
+          })).filter((s) => s.id && s.name);
+          window.CG_SKILLS_LIST = list;
+          resolve(list);
+        }).catch(() => resolve([]));
+      });
+    },
     _buildSkillsHtml() {
       const sp = this._speciesProfile || {};
       const cp = this._careerProfile || {};
       const tr = this._resolveAllyTraits();
-      const rows = [];
-      const seen = /* @__PURE__ */ new Set();
+      const spSkillNames = /* @__PURE__ */ new Set();
       const spIds = [sp.skill_one_id, sp.skill_two_id, sp.skill_three_id];
       ["skill_one", "skill_two", "skill_three"].forEach((k, i) => {
         const raw = sp[k] ? String(sp[k]).trim() : "";
         const name = this._resolveSkillName(raw || spIds[i]);
-        if (!name || seen.has(name.toLowerCase()))
-          return;
-        seen.add(name.toLowerCase());
-        rows.push({ name, die: tr.trait_species, source: "Species" });
+        if (name && !/^\d+$/.test(name))
+          spSkillNames.add(name.toLowerCase());
       });
+      const cpSkillNames = /* @__PURE__ */ new Set();
       ["skill_name_one", "skill_name_two", "skill_name_three"].forEach((k, i) => {
         const fallbackKey = ["skill_one", "skill_two", "skill_three"][i];
-        const raw = cp[k] || cp[fallbackKey] ? String(cp[k] || cp[fallbackKey]).trim() : "";
+        const raw = String(cp[k] || cp[fallbackKey] || "").trim();
         const name = this._resolveSkillName(raw);
-        if (!name || seen.has(name.toLowerCase()))
-          return;
-        seen.add(name.toLowerCase());
-        rows.push({ name, die: tr.trait_career, source: "Career" });
+        if (name && !/^\d+$/.test(name))
+          cpSkillNames.add(name.toLowerCase());
       });
-      if (!rows.length)
-        return "";
+      const allSkills = Array.isArray(window.CG_SKILLS_LIST) ? window.CG_SKILLS_LIST : [];
+      if (!allSkills.length) {
+        this._ensureSkillsList().then(() => {
+          const el = document.getElementById("cg-ally-skills-area");
+          if (el)
+            el.innerHTML = this._buildSkillsHtml();
+        });
+        return `<div class="cg-ally-box">
+        <h4 class="cg-ally-subhead">Skills</h4>
+        <p class="cg-ally-loading">Loading skills\u2026</p>
+      </div>`;
+      }
+      const rows = allSkills.map((skill) => {
+        const name = String(skill.name || "");
+        const lc = name.toLowerCase();
+        if (spSkillNames.has(lc))
+          return { name, pool: `d6 + ${tr.trait_species}` };
+        if (cpSkillNames.has(lc))
+          return { name, pool: `d6 + ${tr.trait_career}` };
+        return { name, pool: "\u2014" };
+      });
       return `
     <div class="cg-ally-box">
       <h4 class="cg-ally-subhead">Skills</h4>
       <table class="cg-ally-table">
-        <thead><tr><th>Skill</th><th>Pool</th><th>Source</th></tr></thead>
+        <thead><tr><th>Skill</th><th>Dice Pool</th></tr></thead>
         <tbody>
           ${rows.map(
-        (r) => `<tr><td>${esc(r.name)}</td><td>${esc(r.die)}</td><td>${esc(r.source)}</td></tr>`
+        (r) => `<tr><td>${esc(r.name)}</td><td>${esc(r.pool)}</td></tr>`
       ).join("")}
         </tbody>
       </table>
@@ -11000,23 +11074,31 @@
         ...autoTrappings.map((t) => `<li>${esc(t.name)} <em>(auto)</em></li>`),
         ...trappings.map((t) => `<li>${esc(t.name)}${t.cost_d ? ` \u2014 ${esc(t.cost_d)}d` : ""}</li>`)
       ].join("");
-      const skillsSeen = /* @__PURE__ */ new Set();
-      const skillsRows = [];
-      const spIds = [sp.skill_one_id, sp.skill_two_id, sp.skill_three_id];
+      const spSkillNamesP = /* @__PURE__ */ new Set();
+      const spIdsP = [sp.skill_one_id, sp.skill_two_id, sp.skill_three_id];
       ["skill_one", "skill_two", "skill_three"].forEach((k, i) => {
-        const n = this._resolveSkillName(sp[k] || spIds[i]);
-        if (!n || skillsSeen.has(n.toLowerCase()))
-          return;
-        skillsSeen.add(n.toLowerCase());
-        skillsRows.push(`<tr><td>${esc(n)}</td><td>${esc(tr.trait_species)}</td><td>Species</td></tr>`);
+        const raw = sp[k] ? String(sp[k]).trim() : "";
+        const n = this._resolveSkillName(raw || spIdsP[i]);
+        if (n && !/^\d+$/.test(n))
+          spSkillNamesP.add(n.toLowerCase());
       });
+      const cpSkillNamesP = /* @__PURE__ */ new Set();
       ["skill_name_one", "skill_name_two", "skill_name_three"].forEach((k, i) => {
         const fallbackKey = ["skill_one", "skill_two", "skill_three"][i];
-        const n = this._resolveSkillName(cp[k] || cp[fallbackKey]);
-        if (!n || skillsSeen.has(n.toLowerCase()))
-          return;
-        skillsSeen.add(n.toLowerCase());
-        skillsRows.push(`<tr><td>${esc(n)}</td><td>${esc(tr.trait_career)}</td><td>Career</td></tr>`);
+        const raw = String(cp[k] || cp[fallbackKey] || "").trim();
+        const n = this._resolveSkillName(raw);
+        if (n && !/^\d+$/.test(n))
+          cpSkillNamesP.add(n.toLowerCase());
+      });
+      const allSkillsP = Array.isArray(window.CG_SKILLS_LIST) ? window.CG_SKILLS_LIST : [];
+      const skillsRows = allSkillsP.map((skill) => {
+        const n = String(skill.name || "");
+        const lc = n.toLowerCase();
+        if (spSkillNamesP.has(lc))
+          return `<tr><td>${esc(n)}</td><td>d6 + ${esc(tr.trait_species)}</td></tr>`;
+        if (cpSkillNamesP.has(lc))
+          return `<tr><td>${esc(n)}</td><td>d6 + ${esc(tr.trait_career)}</td></tr>`;
+        return `<tr><td>${esc(n)}</td><td>\u2014</td></tr>`;
       });
       const allBase = Object.values(tr).every((v) => v === "d6");
       const traitsNote = allBase ? " (all d6)" : "";
@@ -11074,7 +11156,7 @@
       <div class="summary-section">
         <h3>Skills</h3>
         <table class="cg-battle-summary-table">
-          <thead><tr><th>Skill</th><th>Pool</th><th>Source</th></tr></thead>
+          <thead><tr><th>Skill</th><th>Dice Pool</th></tr></thead>
           <tbody>${skillsRows.join("")}</tbody>
         </table>
       </div>` : ""}
