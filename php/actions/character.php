@@ -77,18 +77,46 @@ function cg_load_characters(): void {
     $uid = cg_current_user_id();
 
     $rows = cg_query(
-        "SELECT id, name, player_name, age, gender, species AS species_id, career AS career_id
-         FROM {$p}character_records WHERE user_id = ? ORDER BY updated DESC",
+        "SELECT cr.id, cr.name, cr.player_name, cr.age, cr.gender,
+                cr.species AS species_id, cr.career AS career_id,
+                cr.updated,
+                COALESCE(sp.ct_species_name, 'Unknown') AS species_name,
+                COALESCE(ca.ct_career_name,  'Unknown') AS career_name
+         FROM {$p}character_records cr
+         LEFT JOIN {$p}customtables_table_species sp ON sp.ct_id = cr.species
+         LEFT JOIN {$p}customtables_table_careers ca ON ca.ct_id = cr.career
+         WHERE cr.user_id = ?
+         ORDER BY cr.updated DESC",
         [$uid]
     );
 
     $normalized = array_map(fn($r) => array_merge($r, [
-        'id'         => (string) $r['id'],
-        'species_id' => (string) ($r['species_id'] ?? 0),
-        'career_id'  => (string) ($r['career_id']  ?? 0),
+        'id'           => (string) $r['id'],
+        'species_id'   => (string) ($r['species_id'] ?? 0),
+        'career_id'    => (string) ($r['career_id']  ?? 0),
+        'species_name' => $r['species_name'] ?? 'Unknown',
+        'career_name'  => $r['career_name']  ?? 'Unknown',
     ]), $rows);
 
     cg_json(['success' => true, 'data' => $normalized]);
+}
+
+function cg_delete_character(): void {
+    $charId = (int) ($_POST['id'] ?? 0);
+    if ($charId <= 0) {
+        cg_json(['success' => false, 'data' => 'Invalid character ID.']);
+        return;
+    }
+
+    $p   = cg_prefix();
+    $uid = cg_current_user_id();
+
+    cg_exec(
+        "DELETE FROM {$p}character_records WHERE id = ? AND user_id = ?",
+        [$charId, $uid]
+    );
+
+    cg_json(['success' => true, 'data' => null]);
 }
 
 function cg_get_character(): void {

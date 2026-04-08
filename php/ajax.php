@@ -90,6 +90,7 @@ $actionFiles = [
     'cg_load_characters'     => 'actions/character.php',
     'cg_get_character'       => 'actions/character.php',
     'cg_save_character'      => 'actions/character.php',
+    'cg_delete_character'    => 'actions/character.php',
 
     'cg_get_career_list'      => 'actions/career.php',
     'cg_get_career_gifts'     => 'actions/career.php',

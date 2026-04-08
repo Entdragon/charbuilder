@@ -432,53 +432,356 @@ try {
     .app-topbar__username { font-size: 0.9rem; color: var(--text-muted); }
     .app-topbar__username strong { color: var(--text); font-weight: 600; }
 
-    .app-main {
-      flex:            1;
+    #cg-open-builder-trigger { display: none; }
+
+    /* ── Character list view ───────────────────────────────────────────────── */
+
+    #cg-char-list-view {
+      flex:    1;
+      display: flex;
+      flex-direction: column;
+      padding: 2rem 2.5rem;
+    }
+
+    .char-list-header {
       display:         flex;
       align-items:     center;
-      justify-content: center;
-      padding:         3rem 2rem;
+      justify-content: space-between;
+      margin-bottom:   2rem;
+      flex-wrap:       wrap;
+      gap:             1rem;
     }
 
-    .app-hero { text-align: center; max-width: 480px; }
-
-    .app-hero__ornament {
-      font-size:     2rem;
-      color:         var(--gold);
-      display:       block;
-      margin-bottom: 1rem;
-      opacity:       0.7;
-    }
-
-    .app-hero__title {
+    .char-list-title {
       font-family:    'Cinzel', Georgia, serif;
-      font-size:      2rem;
+      font-size:      1.5rem;
       font-weight:    700;
       color:          var(--gold-light);
       letter-spacing: 0.05em;
-      margin:         0 0 0.4rem;
-      line-height:    1.2;
+      margin:         0;
     }
 
-    .app-hero__subtitle {
-      font-family:    'Cinzel', Georgia, serif;
-      font-size:      0.8rem;
-      color:          var(--text-muted);
-      letter-spacing: 0.15em;
+    .char-list-title span {
+      display:    block;
+      font-size:  0.7rem;
+      color:      var(--text-dim);
+      letter-spacing: 0.14em;
       text-transform: uppercase;
-      margin:         0 0 2rem;
+      font-weight: 400;
+      margin-top: 0.2rem;
     }
 
-    .app-hero__rule {
-      height:     1px;
+    #cg-char-grid {
+      display:               grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap:                   1.25rem;
+    }
+
+    .char-card {
+      background:    var(--surface);
+      border:        1px solid var(--gold-border);
+      border-radius: 10px;
+      padding:       1.4rem 1.5rem 1.2rem;
+      display:       flex;
+      flex-direction: column;
+      gap:           0.6rem;
+      transition:    border-color 0.2s, box-shadow 0.2s;
+      position:      relative;
+      overflow:      hidden;
+    }
+
+    .char-card::before {
+      content:    '';
+      position:   absolute;
+      top:        0; left: 0; right: 0;
+      height:     2px;
       background: linear-gradient(90deg, transparent, var(--gold-border), transparent);
-      margin:     0 auto 2.5rem;
-      width:      80%;
     }
 
-    .app-hero__cta { padding: 0.9rem 2.5rem; font-size: 0.9rem; }
+    .char-card:hover { border-color: var(--gold); box-shadow: 0 4px 18px rgba(201,168,76,0.15); }
 
-    #cg-open-builder-trigger { display: none; }
+    .char-card__name {
+      font-family:    'Cinzel', Georgia, serif;
+      font-size:      1.05rem;
+      font-weight:    700;
+      color:          var(--gold-light);
+      letter-spacing: 0.03em;
+      margin:         0;
+      line-height:    1.25;
+    }
+
+    .char-card__meta {
+      font-size:  0.88rem;
+      color:      var(--text-muted);
+      line-height: 1.5;
+      margin:     0;
+    }
+
+    .char-card__meta strong { color: var(--text); font-weight: 600; }
+
+    .char-card__updated {
+      font-size:     0.75rem;
+      color:         var(--text-dim);
+      font-style:    italic;
+      margin-top:    0.25rem;
+    }
+
+    .char-card__actions {
+      display:    flex;
+      gap:        0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .char-card__actions .btn-sm {
+      flex:        1;
+      padding:     0.4rem 0.7rem;
+      font-size:   0.72rem;
+      font-family: 'Cinzel', Georgia, serif;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      border-radius: 4px;
+      cursor:      pointer;
+      transition:  all 0.18s;
+      border:      1px solid var(--gold-border);
+    }
+
+    .char-card__actions .btn-edit {
+      background: linear-gradient(135deg, var(--gold-dark) 0%, var(--gold) 50%, var(--gold-dark) 100%);
+      color:      #1a1410;
+    }
+
+    .char-card__actions .btn-edit:hover {
+      background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 50%, var(--gold) 100%);
+      box-shadow: 0 2px 10px rgba(201,168,76,0.3);
+    }
+
+    .char-card__actions .btn-delete {
+      background:   transparent;
+      color:        var(--text-muted);
+      border-color: rgba(201,168,76,0.15);
+    }
+
+    .char-card__actions .btn-delete:hover { color: #e07070; border-color: rgba(224,112,112,0.4); background: rgba(224,112,112,0.07); }
+
+    .char-list-empty {
+      text-align:  center;
+      padding:     4rem 2rem;
+      color:       var(--text-dim);
+      font-style:  italic;
+      font-size:   1rem;
+    }
+
+    .char-list-empty strong {
+      display:        block;
+      font-family:    'Cinzel', Georgia, serif;
+      font-size:      1.1rem;
+      color:          var(--text-muted);
+      font-style:     normal;
+      margin-bottom:  0.5rem;
+    }
+
+    .char-list-loading {
+      text-align:  center;
+      padding:     4rem 2rem;
+      color:       var(--text-dim);
+      font-style:  italic;
+    }
+
+    /* ── Wizard view ───────────────────────────────────────────────────────── */
+
+    #cg-wizard-view {
+      flex:           1;
+      display:        none;
+      flex-direction: column;
+    }
+
+    .wizard-header {
+      background:    var(--surface);
+      border-bottom: 1px solid var(--gold-border);
+      padding:       1.1rem 2rem 0;
+    }
+
+    .wizard-header-top {
+      display:         flex;
+      align-items:     center;
+      justify-content: space-between;
+      margin-bottom:   1rem;
+      gap:             1rem;
+    }
+
+    .wizard-title {
+      font-family:    'Cinzel', Georgia, serif;
+      font-size:      1rem;
+      font-weight:    700;
+      color:          var(--gold-light);
+      letter-spacing: 0.06em;
+      margin:         0;
+    }
+
+    .wizard-close-btn {
+      background:  transparent;
+      border:      1px solid rgba(201,168,76,0.2);
+      color:       var(--text-muted);
+      font-size:   0.78rem;
+      font-family: 'Cinzel', Georgia, serif;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding:     0.35rem 0.9rem;
+      border-radius: 4px;
+      cursor:      pointer;
+      transition:  all 0.18s;
+    }
+
+    .wizard-close-btn:hover { color: var(--gold-light); border-color: var(--gold-border); }
+
+    .wizard-progress {
+      display:         flex;
+      gap:             0;
+      overflow-x:      auto;
+      padding-bottom:  0;
+      scrollbar-width: none;
+    }
+
+    .wizard-progress::-webkit-scrollbar { display: none; }
+
+    .wizard-step-tab {
+      flex:            0 0 auto;
+      display:         flex;
+      align-items:     center;
+      gap:             0.45rem;
+      padding:         0.55rem 1rem 0.7rem;
+      font-family:     'Cinzel', Georgia, serif;
+      font-size:       0.72rem;
+      font-weight:     600;
+      letter-spacing:  0.05em;
+      text-transform:  uppercase;
+      color:           var(--text-dim);
+      border-bottom:   2px solid transparent;
+      cursor:          default;
+      white-space:     nowrap;
+      transition:      color 0.2s, border-color 0.2s;
+    }
+
+    .wizard-step-tab .step-num {
+      width:         18px;
+      height:        18px;
+      border-radius: 50%;
+      background:    var(--surface-2);
+      border:        1px solid var(--text-dim);
+      display:       flex;
+      align-items:   center;
+      justify-content: center;
+      font-size:     0.65rem;
+      flex-shrink:   0;
+    }
+
+    .wizard-step-tab.active {
+      color:        var(--gold);
+      border-color: var(--gold);
+    }
+
+    .wizard-step-tab.active .step-num {
+      background: var(--gold);
+      border-color: var(--gold);
+      color: #1a1410;
+    }
+
+    .wizard-step-tab.done { color: var(--text-muted); }
+
+    .wizard-step-tab.done .step-num {
+      background:   var(--gold-dark);
+      border-color: var(--gold-dark);
+      color:        #1a1410;
+    }
+
+    .wizard-body {
+      flex:      1;
+      overflow:  auto;
+      display:   flex;
+      flex-direction: column;
+    }
+
+    .wizard-nav {
+      display:         flex;
+      align-items:     center;
+      justify-content: space-between;
+      padding:         0.9rem 2rem;
+      background:      var(--surface);
+      border-top:      1px solid var(--gold-border);
+      gap:             1rem;
+      flex-shrink:     0;
+    }
+
+    .wizard-nav .btn-nav-back {
+      background:   transparent;
+      color:        var(--gold);
+      border:       1px solid var(--gold-border);
+      font-family:  'Cinzel', Georgia, serif;
+      font-size:    0.78rem;
+      font-weight:  600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding:      0.55rem 1.3rem;
+      border-radius: 5px;
+      cursor:       pointer;
+      transition:   all 0.18s;
+    }
+
+    .wizard-nav .btn-nav-back:hover { background: var(--gold-glow); }
+    .wizard-nav .btn-nav-back:disabled { opacity: 0.35; cursor: default; }
+
+    .wizard-nav .btn-nav-next {
+      background: linear-gradient(135deg, var(--gold-dark) 0%, var(--gold) 50%, var(--gold-dark) 100%);
+      color:      #1a1410;
+      border:     1px solid var(--gold-dark);
+      font-family:  'Cinzel', Georgia, serif;
+      font-size:    0.78rem;
+      font-weight:  600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding:      0.55rem 1.3rem;
+      border-radius: 5px;
+      cursor:       pointer;
+      transition:   all 0.18s;
+    }
+
+    .wizard-nav .btn-nav-next:hover { background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 50%, var(--gold) 100%); box-shadow: 0 3px 12px rgba(201,168,76,0.3); }
+
+    .wizard-nav .wizard-save-btns { display: flex; gap: 0.5rem; }
+
+    /* Restyle the modal as a page section (no overlay) */
+    #cg-modal-overlay {
+      position:   static !important;
+      display:    block !important;
+      background: transparent !important;
+      flex:       1;
+      overflow:   hidden;
+    }
+
+    #cg-modal {
+      position:     static !important;
+      width:        100% !important;
+      max-width:    none !important;
+      height:       100% !important;
+      max-height:   none !important;
+      border-radius: 0 !important;
+      box-shadow:   none !important;
+      border:       none !important;
+      background:   transparent !important;
+      overflow:     auto;
+      padding:      0 !important;
+    }
+
+    #cg-modal-close { display: none !important; }
+
+    /* Hide the bundle's native tab bar — wizard controls it */
+    .cg-tabs-bar { display: none !important; }
+
+    /* Only show active tab panel */
+    .cg-tab-wrap .tab-panel { display: none !important; }
+    .cg-tab-wrap .tab-panel.active { display: block !important; }
 
     .button,
     .button.primary,
@@ -612,46 +915,73 @@ try {
           <button class="btn-ghost" id="cg-logout-btn">Sign Out</button>
         </div>
 
-        <main class="app-main">
-          <div class="app-hero">
-            <span class="app-hero__ornament">✦ ◆ ✦</span>
-            <h2 class="app-hero__title">Your Characters</h2>
-            <p class="app-hero__subtitle">Library of Calabria &mdash; Character Records</p>
-            <div class="app-hero__rule"></div>
-            <button id="cg-open-builder" class="btn btn-gold app-hero__cta">
-              ✦ &nbsp; Open Character Builder
-            </button>
+        <!-- ── Character list view ──────────────────────────────────────── -->
+        <div id="cg-char-list-view">
+          <div class="char-list-header">
+            <h2 class="char-list-title">
+              My Characters
+              <span>Library of Calabria &mdash; Ironclaw Records</span>
+            </h2>
+            <button id="cg-new-char-btn" class="btn btn-gold">✦ &nbsp; New Character</button>
           </div>
-        </main>
-
-        <div id="cg-modal-splash" class="cg-modal-splash cg-hidden">
-          <div class="cg-modal-splash__content">
-            <h2>Character Builder</h2>
-            <p style="color:var(--text-muted);font-family:'Crimson Pro',Georgia,serif;font-size:0.95rem;margin:0 0 1.5rem">Begin a new tale or continue an existing one.</p>
-            <button id="cg-new-splash" class="button primary">✦ &nbsp; New Character</button>
-            <div class="cg-splash-load">
-              <label for="cg-splash-load-select">Load an existing character</label>
-              <select id="cg-splash-load-select">
-                <option value="">— Loading… —</option>
-              </select>
-              <button id="cg-load-splash" class="button">Load Character</button>
-            </div>
+          <div id="cg-char-grid">
+            <div class="char-list-loading">Loading characters…</div>
           </div>
         </div>
 
-        <div id="cg-modal-overlay" class="cg-hidden">
-          <div id="cg-modal">
-            <button id="cg-modal-close" class="cg-modal-close">✕</button>
-            <div id="cg-form-container"></div>
-            <div id="cg-unsaved-confirm" class="cg-hidden">
-              <div class="unsaved-dialog">
-                <p>You have unsaved changes. What would you like to do?</p>
-                <div class="unsaved-buttons">
-                  <button id="unsaved-save"   class="button primary">Save &amp; Exit</button>
-                  <button id="unsaved-exit"   class="button secondary">Exit Without Saving</button>
-                  <button id="unsaved-cancel" class="button">Cancel</button>
+        <!-- ── Step-by-step wizard view ─────────────────────────────────── -->
+        <div id="cg-wizard-view">
+
+          <!-- Progress bar / step tabs -->
+          <div class="wizard-header">
+            <div class="wizard-header-top">
+              <h2 class="wizard-title" id="cg-wizard-title">New Character</h2>
+              <button class="wizard-close-btn" id="cg-wizard-close-btn">✕ Close</button>
+            </div>
+            <div class="wizard-progress" id="cg-wizard-progress">
+              <!-- steps rendered by JS -->
+            </div>
+          </div>
+
+          <!-- Form container (bundle renders here) -->
+          <div class="wizard-body">
+            <div id="cg-modal-overlay" class="cg-hidden">
+              <div id="cg-modal">
+                <button id="cg-modal-close" class="cg-modal-close">✕</button>
+                <div id="cg-form-container"></div>
+                <div id="cg-unsaved-confirm" class="cg-hidden">
+                  <div class="unsaved-dialog">
+                    <p>You have unsaved changes. What would you like to do?</p>
+                    <div class="unsaved-buttons">
+                      <button id="unsaved-save"   class="button primary">Save &amp; Exit</button>
+                      <button id="unsaved-exit"   class="button secondary">Exit Without Saving</button>
+                      <button id="unsaved-cancel" class="button">Cancel</button>
+                    </div>
+                  </div>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <!-- Back / Next navigation -->
+          <div class="wizard-nav">
+            <button class="btn-nav-back" id="cg-wizard-back" disabled>&#8592; Back</button>
+            <div class="wizard-save-btns">
+              <button class="btn btn-gold cg-save-button" style="font-size:0.78rem;padding:0.55rem 1.1rem;">&#128190; Save</button>
+              <button class="btn btn-gold cg-save-button cg-close-after-save" style="font-size:0.78rem;padding:0.55rem 1.1rem;">&#128190; Save &amp; Close</button>
+              <button id="cg-wizard-ally-btn" style="display:none;font-size:0.78rem;padding:0.55rem 1.1rem;" class="btn-ghost">&#9733; Ally</button>
+            </div>
+            <button class="btn-nav-next" id="cg-wizard-next">Next &#8594;</button>
+          </div>
+        </div>
+
+        <!-- Hidden splash elements required by builder-events.js -->
+        <div id="cg-modal-splash" class="cg-modal-splash cg-hidden" style="display:none!important">
+          <div class="cg-modal-splash__content">
+            <button id="cg-new-splash" class="button primary"></button>
+            <div class="cg-splash-load">
+              <select id="cg-splash-load-select"><option value="">—</option></select>
+              <button id="cg-load-splash" class="button"></button>
             </div>
           </div>
         </div>
@@ -697,8 +1027,11 @@ try {
   function showApp(username) {
     authScreen.style.display = 'none';
     appScreen.style.display  = 'flex';
+    appScreen.style.flexDirection = 'column';
     document.getElementById('cg-username-display').textContent = username;
     loadBundle();
+    showListView();
+    loadCharacterList();
   }
 
   document.querySelectorAll('.auth-tab').forEach(tab => {
@@ -759,9 +1092,210 @@ try {
     document.body.appendChild(s);
   }
 
+  /* ── View switching ─────────────────────────────────────────────────────── */
+
+  const listView   = document.getElementById('cg-char-list-view');
+  const wizardView = document.getElementById('cg-wizard-view');
+
+  function showListView() {
+    listView.style.display   = 'flex';
+    wizardView.style.display = 'none';
+  }
+
+  function showWizardView(title) {
+    listView.style.display   = 'none';
+    wizardView.style.display = 'flex';
+    document.getElementById('cg-wizard-title').textContent = title || 'Character Builder';
+  }
+
   if (loggedIn) {
     loadBundle();
+    showListView();
+    loadCharacterList();
   }
+
+  /* ── Character card list ────────────────────────────────────────────────── */
+
+  function formatDate(str) {
+    if (!str) return '';
+    try {
+      const d = new Date(str.replace(' ', 'T'));
+      return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    } catch (_) { return str; }
+  }
+
+  function loadCharacterList() {
+    const grid = document.getElementById('cg-char-grid');
+    grid.innerHTML = '<div class="char-list-loading">Loading characters\u2026</div>';
+    ajax('cg_load_characters', {}).then(res => {
+      if (!res.success) { grid.innerHTML = '<div class="char-list-empty"><strong>Could not load characters.</strong>' + (res.data || '') + '</div>'; return; }
+      const chars = res.data || [];
+      if (!chars.length) {
+        grid.innerHTML = '<div class="char-list-empty"><strong>No characters yet.</strong>Click \u201cNew Character\u201d to create your first.</div>';
+        return;
+      }
+      grid.innerHTML = chars.map(c => {
+        const name    = c.name    || '(Unnamed)';
+        const species = c.species_name || 'Unknown';
+        const career  = c.career_name  || 'Unknown';
+        const updated = c.updated ? formatDate(c.updated) : '';
+        return `<div class="char-card" data-char-id="${c.id}">
+          <h3 class="char-card__name">${escHtml(name)}</h3>
+          <p class="char-card__meta">
+            <strong>Species:</strong> ${escHtml(species)}<br>
+            <strong>Career:</strong>  ${escHtml(career)}
+          </p>
+          ${updated ? `<div class="char-card__updated">Last updated: ${escHtml(updated)}</div>` : ''}
+          <div class="char-card__actions">
+            <button class="btn-sm btn-edit" data-action="edit" data-id="${c.id}" data-name="${escHtml(name)}">Edit</button>
+            <button class="btn-sm btn-delete" data-action="delete" data-id="${c.id}" data-name="${escHtml(name)}">Delete</button>
+          </div>
+        </div>`;
+      }).join('');
+    });
+  }
+
+  function escHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  document.getElementById('cg-new-char-btn').addEventListener('click', () => {
+    showWizardView('New Character');
+    wizardGoToStep(0);
+    document.getElementById('cg-new-splash').click();
+  });
+
+  document.getElementById('cg-char-grid').addEventListener('click', e => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const id   = btn.dataset.id;
+    const name = btn.dataset.name;
+    if (btn.dataset.action === 'edit') {
+      showWizardView('Edit: ' + name);
+      wizardGoToStep(0);
+      const sel = document.getElementById('cg-splash-load-select');
+      sel.value = id;
+      if (!sel.value || sel.value !== String(id)) {
+        document.dispatchEvent(new CustomEvent('cg:characters:refresh', { detail: { source: 'card-edit' } }));
+        setTimeout(() => {
+          sel.value = id;
+          document.getElementById('cg-load-splash').click();
+        }, 300);
+      } else {
+        document.getElementById('cg-load-splash').click();
+      }
+    } else if (btn.dataset.action === 'delete') {
+      if (!confirm('Delete "' + name + '"? This cannot be undone.')) return;
+      ajax('cg_delete_character', { id }).then(res => {
+        if (res.success) { loadCharacterList(); }
+        else { alert('Delete failed: ' + (res.data || 'Unknown error.')); }
+      });
+    }
+  });
+
+  /* ── Wizard step navigation ─────────────────────────────────────────────── */
+
+  const WIZARD_STEPS = [
+    { tab: 'tab-details',     label: 'Details' },
+    { tab: 'tab-traits',      label: 'Traits & Species & Career' },
+    { tab: 'tab-gifts',       label: 'Gifts' },
+    { tab: 'tab-skills',      label: 'Skills' },
+    { tab: 'tab-trappings',   label: 'Battle & Equipment' },
+    { tab: 'tab-description', label: 'Description' },
+    { tab: 'tab-summary',     label: 'Character Sheet' },
+  ];
+
+  let currentStep = 0;
+
+  (function buildProgressBar() {
+    const bar = document.getElementById('cg-wizard-progress');
+    bar.innerHTML = WIZARD_STEPS.map((s, i) => `
+      <div class="wizard-step-tab" id="wstep-${i}">
+        <span class="step-num">${i + 1}</span>
+        ${escHtml(s.label)}
+      </div>`).join('');
+  })();
+
+  function wizardGoToStep(idx) {
+    if (idx < 0 || idx >= WIZARD_STEPS.length) return;
+    currentStep = idx;
+
+    WIZARD_STEPS.forEach((s, i) => {
+      const el = document.getElementById('wstep-' + i);
+      if (!el) return;
+      el.classList.toggle('active', i === idx);
+      el.classList.toggle('done',   i <  idx);
+    });
+
+    document.getElementById('cg-wizard-back').disabled = (idx === 0);
+    const nextBtn = document.getElementById('cg-wizard-next');
+    nextBtn.textContent = (idx === WIZARD_STEPS.length - 1) ? 'Finish \u2192' : 'Next \u2192';
+
+    const tabId  = WIZARD_STEPS[idx].tab;
+    const hidden = document.querySelector('.cg-tabs li[data-tab="' + tabId + '"]');
+    if (hidden) hidden.click();
+  }
+
+  document.getElementById('cg-wizard-back').addEventListener('click', () => {
+    wizardGoToStep(currentStep - 1);
+  });
+
+  document.getElementById('cg-wizard-next').addEventListener('click', () => {
+    if (currentStep === 1) {
+      const speciesSel = document.getElementById('cg-species');
+      if (speciesSel && !speciesSel.value) {
+        alert('Please select a Species before continuing.');
+        return;
+      }
+    }
+    if (currentStep < WIZARD_STEPS.length - 1) {
+      wizardGoToStep(currentStep + 1);
+    } else {
+      document.getElementById('cg-wizard-close-btn').click();
+    }
+  });
+
+  document.getElementById('cg-wizard-close-btn').addEventListener('click', () => {
+    const closeBtn = document.getElementById('cg-modal-close');
+    if (closeBtn) { closeBtn.click(); }
+    else {
+      showListView();
+      loadCharacterList();
+    }
+  });
+
+  /* ── Ally button — mirrors the hidden tab-ally LI visibility ───────────── */
+
+  (function setupAllyButton() {
+    const allyBtn = document.getElementById('cg-wizard-ally-btn');
+    if (!allyBtn) return;
+
+    function syncAllyBtn() {
+      const allyTab = document.querySelector('.cg-tabs li[data-tab="tab-ally"]');
+      const visible = allyTab && allyTab.style.display !== 'none' && getComputedStyle(allyTab).display !== 'none';
+      allyBtn.style.display = visible ? '' : 'none';
+    }
+
+    allyBtn.addEventListener('click', () => {
+      const allyTab = document.querySelector('.cg-tabs li[data-tab="tab-ally"]');
+      if (allyTab) allyTab.click();
+    });
+
+    const obs = new MutationObserver(syncAllyBtn);
+    obs.observe(document.body, { attributes: true, attributeFilter: ['style'], subtree: true });
+  })();
+
+  /* ── Listen for builder opened/closed events ────────────────────────────── */
+
+  document.addEventListener('cg:builder:opened', () => {
+    wizardGoToStep(0);
+  });
+
+  document.addEventListener('cg:builder:closed', () => {
+    showListView();
+    loadCharacterList();
+  });
+
 })();
 </script>
 </body>
