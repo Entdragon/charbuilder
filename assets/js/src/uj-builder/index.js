@@ -196,6 +196,10 @@
     experience:      0,
     purchasedGifts:  [],
     currentStep:     0,
+    extraCareerId:   null,
+    extraTypeId:     null,
+    extraCareerDie:  null,
+    extraTypeDie:    null,
   };
 
   var DICE_POOL   = ['d4', 'd6', 'd6', 'd6', 'd6', 'd8', 'd8'];
@@ -211,9 +215,19 @@
 
   function effectiveDie(baseDie, traitLabel) {
     if (!state.purchasedGifts || !state.purchasedGifts.length) return baseDie;
-    var slug  = 'improved-trait-' + traitLabel.toLowerCase();
+    var slug  = 'improved-trait-' + traitLabel.toLowerCase().replace(/\s+/g, '-');
     var count = state.purchasedGifts.filter(function(p) { return p.slug === slug; }).length;
     return count ? stepDieUp(baseDie, count) : baseDie;
+  }
+
+  function effectiveExtraCareerDie() {
+    if (!state.extraCareerDie) return null;
+    return effectiveDie(state.extraCareerDie, 'Extra Career');
+  }
+
+  function effectiveExtraTypeDie() {
+    if (!state.extraTypeDie) return null;
+    return effectiveDie(state.extraTypeDie, 'Extra Type');
   }
 
   /* ── DOM refs ───────────────────────────────────────────── */
@@ -346,6 +360,10 @@
     state.experience     = 0;
     state.purchasedGifts = [];
     state.currentStep    = 0;
+    state.extraCareerId  = null;
+    state.extraTypeId    = null;
+    state.extraCareerDie = null;
+    state.extraTypeDie   = null;
     showWizard();
   }
 
@@ -376,6 +394,10 @@
       state.purchasedGifts = (function() {
         try { return JSON.parse(c.purchased_gifts || '[]') || []; } catch(e) { return []; }
       })();
+      state.extraCareerId  = c.extra_career_id ? Number(c.extra_career_id) : null;
+      state.extraTypeId    = c.extra_type_id   ? Number(c.extra_type_id)   : null;
+      state.extraCareerDie = c.extra_career_die || null;
+      state.extraTypeDie   = c.extra_type_die   || null;
       state.currentStep    = 0;
       showWizard();
     });
@@ -412,6 +434,10 @@
       state.purchasedGifts = (function() {
         try { return JSON.parse(c.purchased_gifts || '[]') || []; } catch(e) { return []; }
       })();
+      state.extraCareerId  = c.extra_career_id ? Number(c.extra_career_id) : null;
+      state.extraTypeId    = c.extra_type_id   ? Number(c.extra_type_id)   : null;
+      state.extraCareerDie = c.extra_career_die || null;
+      state.extraTypeDie   = c.extra_type_die   || null;
       showDevelop();
     });
   }
@@ -449,6 +475,10 @@
       state.purchasedGifts  = (function() {
         try { return JSON.parse(c.purchased_gifts || '[]') || []; } catch(e) { return []; }
       })();
+      state.extraCareerId   = c.extra_career_id ? Number(c.extra_career_id) : null;
+      state.extraTypeId     = c.extra_type_id   ? Number(c.extra_type_id)   : null;
+      state.extraCareerDie  = c.extra_career_die || null;
+      state.extraTypeDie    = c.extra_type_die   || null;
       state.currentStep = 6;
       showWizard();
     });
@@ -497,14 +527,36 @@
       return out;
     }
 
+    // Helper: get current base die for a named trait
+    function getDieForTrait(traitLabel) {
+      var map = {
+        'Body': state.bodyDie, 'Speed': state.speedDie,
+        'Mind': state.mindDie, 'Will': state.willDie,
+        'Species': state.speciesDie, 'Type': state.typeDie, 'Career': state.careerDie,
+        'Extra Career': state.extraCareerDie || 'd4',
+        'Extra Type':   state.extraTypeDie   || 'd4',
+      };
+      return map[traitLabel] || 'd6';
+    }
+
     function buildShopCard(item, kind) {
       var owned        = countPurchased(item.slug);
-      var canMultiple  = item.requires_text && /again/i.test(item.requires_text);
+      var canMultiple  = !!item._allowsMultiple || !!(item.requires_text && /again/i.test(item.requires_text));
       var fromCreation = !!creationGrantedSlugs[item.slug];
       var alreadyOwned = (owned > 0 || fromCreation) && !canMultiple;
+      var atMaxDie     = false;
+      if (item._traitLabel && canMultiple) {
+        var baseDie = getDieForTrait(item._traitLabel);
+        atMaxDie = effectiveDie(baseDie, item._traitLabel) === 'd12';
+        if (atMaxDie) alreadyOwned = true;
+      }
       var canAfford    = xpAvail >= 10;
       var btnDisabled  = alreadyOwned || !canAfford ? ' disabled' : '';
-      var btnLabel     = fromCreation ? 'Granted at creation' : (alreadyOwned ? 'Already owned' : (!canAfford ? 'Need 10 XP' : 'Buy — 10 XP'));
+      var btnLabel     = fromCreation  ? 'Granted at creation'
+                       : atMaxDie     ? 'At maximum (d12)'
+                       : alreadyOwned ? 'Already owned'
+                       : !canAfford   ? 'Need 10 XP'
+                       :               'Buy — 10 XP';
 
       return '<div class="dev-shop-card" style="' + (alreadyOwned ? 'opacity:0.45;pointer-events:none;' : '') + '">' +
         '<div class="dev-shop-card-header">' +
@@ -521,23 +573,101 @@
       '</div>';
     }
 
+    // Build set of all owned slugs (creation + purchased) — used for Extra trait eligibility
+    var ownedSlugSet = {};
+    Object.keys(creationGrantedSlugs).forEach(function(s) { ownedSlugSet[s] = true; });
+    state.purchasedGifts.forEach(function(p) { ownedSlugSet[p.slug] = true; });
+
+    function buildExtraTraitCard(g) {
+      var isCareer         = g.slug === 'extra-career';
+      var alreadyPurchased = isCareer ? (state.extraCareerId !== null) : (state.extraTypeId !== null);
+      var canAfford        = xpAvail >= 10;
+      var candidateList    = isCareer ? (d.careers || []) : (d.types || []);
+      var kindLabel        = isCareer ? 'Career' : 'Type';
+
+      // Eligible: every creation gift (and for type: soaks too) must be owned
+      var eligibleItems = candidateList.filter(function(item) {
+        var required = (item.gifts || []).concat(isCareer ? [] : (item.soaks || []));
+        return required.length > 0 && required.every(function(gift) {
+          return ownedSlugSet[gift.slug || String(gift.id)];
+        });
+      });
+
+      var selectedId   = isCareer ? state.extraCareerId : state.extraTypeId;
+      var selectedName = '';
+      var selectedDie  = isCareer ? state.extraCareerDie : state.extraTypeDie;
+      if (selectedId) {
+        var found = candidateList.find(function(x) { return x.id == selectedId; });
+        if (found) selectedName = found.name;
+      }
+
+      var html = '<div class="dev-shop-card' + (alreadyPurchased ? '" style="opacity:0.65"' : '"') + '>';
+      html += '<div class="dev-shop-card-header">';
+      html += '<div class="dev-shop-card-name">' + esc(g.name) + '</div>';
+      html += '<div><span class="dev-badge dev-badge-type">Gift</span>';
+      if (alreadyPurchased) html += ' <span class="dev-badge dev-badge-owned">Purchased</span>';
+      html += '</div></div>';
+      if (g.subtitle) html += '<div style="font-size:0.78rem;color:var(--uj-amber-light);font-style:italic;margin-bottom:0.15rem;">' + esc(g.subtitle) + '</div>';
+      if (g.description) html += '<p class="dev-shop-card-desc">' + esc(g.description) + '</p>';
+
+      if (alreadyPurchased) {
+        var effDie = effectiveDie(selectedDie, isCareer ? 'Extra Career' : 'Extra Type');
+        html += '<div style="padding:0.4rem 0;font-size:0.85rem;color:var(--uj-teal);">' +
+          'Chosen: <strong>' + esc(selectedName) + '</strong> — die: <strong>' + esc(effDie) + '</strong>' +
+          (effDie !== selectedDie ? ' <span style="font-size:0.75rem;color:var(--uj-text-dim);">(base ' + esc(selectedDie) + ')</span>' : '') +
+          '</div>';
+      } else {
+        html += '<div style="margin:0.6rem 0;">';
+        if (eligibleItems.length === 0) {
+          html += '<div style="font-size:0.82rem;color:var(--uj-text-dim);font-style:italic;">No eligible ' + kindLabel + 's yet — you must first purchase all creation gifts' +
+            (isCareer ? '' : ' and soaks') + ' from a ' + kindLabel + ' through development.</div>';
+        } else {
+          html += '<label style="font-size:0.76rem;color:var(--uj-text-dim);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:0.35rem;">Choose an eligible ' + kindLabel + ':</label>';
+          html += '<select class="field-select extra-trait-select" style="width:100%;margin-bottom:0.5rem;">';
+          html += '<option value="">— Select ' + kindLabel + ' —</option>';
+          eligibleItems.forEach(function(item) {
+            html += '<option value="' + esc(item.id) + '">' + esc(item.name) + '</option>';
+          });
+          html += '</select>';
+        }
+        html += '</div>';
+        var btnDisabled2 = (!canAfford || eligibleItems.length === 0) ? ' disabled' : '';
+        var btnLabel2    = !canAfford ? 'Need 10 XP' : (eligibleItems.length === 0 ? 'Not eligible yet' : 'Buy — 10 XP');
+        html += '<div class="dev-shop-card-footer">' +
+          '<button class="uj-btn uj-btn-teal" style="font-size:0.75rem;padding:0.3rem 0.85rem;" ' +
+          'data-buy-slug="' + esc(g.slug) + '" data-buy-name="' + esc(g.name) + '" data-buy-kind="Gift"' + btnDisabled2 + '>' + btnLabel2 + '</button>' +
+          '</div>';
+      }
+      html += '</div>';
+      return html;
+    }
+
     var IMPROVED_TRAITS = ['Body', 'Speed', 'Mind', 'Will', 'Career', 'Species', 'Type'];
+    if (state.extraCareerId !== null) IMPROVED_TRAITS.push('Extra Career');
+    if (state.extraTypeId   !== null) IMPROVED_TRAITS.push('Extra Type');
+
     var expandedGifts = [];
     allGifts.forEach(function(g) {
       if (g.slug === 'improved-trait') {
         IMPROVED_TRAITS.forEach(function(trait) {
           expandedGifts.push(Object.assign({}, g, {
-            name:         'Improved ' + trait,
-            slug:         'improved-trait-' + trait.toLowerCase(),
-            subtitle:     'Improved Trait [' + trait + ']',
-            requires_text: null,
+            name:            'Improved ' + trait,
+            slug:            'improved-trait-' + trait.toLowerCase().replace(/\s+/g, '-'),
+            subtitle:        'Improved Trait [' + trait + ']',
+            requires_text:   null,
+            _allowsMultiple: true,
+            _traitLabel:     trait,
           }));
         });
+      } else if (g.slug === 'extra-career' || g.slug === 'extra-type') {
+        expandedGifts.push(Object.assign({}, g, { _isExtraTrait: true }));
       } else {
         expandedGifts.push(g);
       }
     });
-    var giftsHtml = expandedGifts.map(function(g) { return buildShopCard(g, 'Gift'); }).join('');
+    var giftsHtml = expandedGifts.map(function(g) {
+      return g._isExtraTrait ? buildExtraTraitCard(g) : buildShopCard(g, 'Gift');
+    }).join('');
     var soaksHtml = allSoaks.map(function(s) { return buildShopCard(s, 'Soak'); }).join('');
 
     var historyHtml = '';
@@ -685,8 +815,31 @@
         var slug = btn.dataset.buySlug;
         var name = btn.dataset.buyName;
         var kind = btn.dataset.buyKind;
-        if (!confirm('Spend 10 XP to purchase "' + name + '"?')) return;
         var today = new Date().toISOString().substring(0, 10);
+
+        // Extra Career / Extra Type — need a selection from the dropdown first
+        if (slug === 'extra-career' || slug === 'extra-type') {
+          var sel = btn.closest('.dev-shop-card').querySelector('.extra-trait-select');
+          var selectedId = sel && sel.value ? Number(sel.value) : null;
+          if (!selectedId) {
+            alert('Please select a ' + (slug === 'extra-career' ? 'Career' : 'Type') + ' from the list first.');
+            return;
+          }
+          var selectedName = sel.options[sel.selectedIndex].text;
+          if (!confirm('Spend 10 XP to purchase "' + name + ': ' + selectedName + '"?')) return;
+          if (slug === 'extra-career') {
+            state.extraCareerId  = selectedId;
+            state.extraCareerDie = 'd4';
+          } else {
+            state.extraTypeId  = selectedId;
+            state.extraTypeDie = 'd4';
+          }
+          state.purchasedGifts.push({ slug: slug, name: name + ': ' + selectedName, kind: kind, xp_cost: 10, purchased_on: today });
+          saveDevelop(renderDevelop);
+          return;
+        }
+
+        if (!confirm('Spend 10 XP to purchase "' + name + '"?')) return;
         state.purchasedGifts.push({ slug: slug, name: name, kind: kind, xp_cost: 10, purchased_on: today });
         saveDevelop(renderDevelop);
       });
@@ -706,6 +859,10 @@
       ally_speed_die:   state.allySpeedDie || 'd6',
       ally_mind_die:    state.allyMindDie  || 'd6',
       ally_will_die:    state.allyWillDie  || 'd6',
+      extra_career_id:  state.extraCareerId  !== null ? state.extraCareerId  : '',
+      extra_type_id:    state.extraTypeId    !== null ? state.extraTypeId    : '',
+      extra_career_die: state.extraCareerDie || '',
+      extra_type_die:   state.extraTypeDie   || '',
     }).then(function() {
       if (callback) callback();
     });
@@ -1230,10 +1387,14 @@
 
   /* ── Step 6: Summary ─────────────────────────────────────── */
   function buildSummaryStep() {
-    var d  = state.allData || {};
-    var sp = (d.species  || []).find(function(x) { return x.id == state.speciesId; }) || null;
-    var ty = (d.types    || []).find(function(x) { return x.id == state.typeId;    }) || null;
-    var ca = (d.careers  || []).find(function(x) { return x.id == state.careerId;  }) || null;
+    var d      = state.allData || {};
+    var sp     = (d.species  || []).find(function(x) { return x.id == state.speciesId;     }) || null;
+    var ty     = (d.types    || []).find(function(x) { return x.id == state.typeId;        }) || null;
+    var ca     = (d.careers  || []).find(function(x) { return x.id == state.careerId;      }) || null;
+    var extraCa = state.extraCareerId ? ((d.careers || []).find(function(x) { return x.id == state.extraCareerId; }) || null) : null;
+    var extraTy = state.extraTypeId   ? ((d.types   || []).find(function(x) { return x.id == state.extraTypeId;   }) || null) : null;
+    var effExtraCaDie = effectiveExtraCareerDie();
+    var effExtraTyDie = effectiveExtraTypeDie();
 
     /* Helper: does item grant a skill by name? */
     function itemGrantsSkill(item, skillName) {
@@ -1246,9 +1407,11 @@
     /* Helper: collect all dice granted for a skill name */
     function skillDiceFor(skillName) {
       var dice = [];
-      if (itemGrantsSkill(sp, skillName) && state.speciesDie) dice.push({ die: state.speciesDie, src: 'Species' });
-      if (itemGrantsSkill(ty, skillName) && state.typeDie)    dice.push({ die: state.typeDie,    src: 'Type'    });
-      if (itemGrantsSkill(ca, skillName) && state.careerDie)  dice.push({ die: state.careerDie,  src: 'Career'  });
+      if (itemGrantsSkill(sp,     skillName) && state.speciesDie) dice.push({ die: state.speciesDie, src: 'Species'      });
+      if (itemGrantsSkill(ty,     skillName) && state.typeDie)    dice.push({ die: state.typeDie,    src: 'Type'         });
+      if (itemGrantsSkill(ca,     skillName) && state.careerDie)  dice.push({ die: state.careerDie,  src: 'Career'       });
+      if (itemGrantsSkill(extraCa,skillName) && effExtraCaDie)    dice.push({ die: effExtraCaDie,    src: 'Extra Career' });
+      if (itemGrantsSkill(extraTy,skillName) && effExtraTyDie)    dice.push({ die: effExtraTyDie,    src: 'Extra Type'   });
       return dice;
     }
 
@@ -1369,6 +1532,20 @@
         '<span class="summary-trait-die" style="font-size:1.1rem;' + (effCareerDie !== state.careerDie ? 'color:var(--uj-teal);' : '') + '">' + (ca ? (effCareerDie || '—') : '—') + '</span>' +
         (ca ? '<span style="font-size:0.78rem;color:var(--uj-text-dim);">' + esc(ca.name) + '</span>' : '') +
       '</div>' +
+      (extraCa && effExtraCaDie ? (
+        '<div class="summary-source-die-item" style="border-color:var(--uj-teal);">' +
+          '<span class="source-die-label" style="color:var(--uj-teal);">Extra Career Die</span>' +
+          '<span class="summary-trait-die" style="font-size:1.1rem;color:var(--uj-teal);">' + esc(effExtraCaDie) + '</span>' +
+          '<span style="font-size:0.78rem;color:var(--uj-text-dim);">' + esc(extraCa.name) + '</span>' +
+        '</div>'
+      ) : '') +
+      (extraTy && effExtraTyDie ? (
+        '<div class="summary-source-die-item" style="border-color:var(--uj-teal);">' +
+          '<span class="source-die-label" style="color:var(--uj-teal);">Extra Type Die</span>' +
+          '<span class="summary-trait-die" style="font-size:1.1rem;color:var(--uj-teal);">' + esc(effExtraTyDie) + '</span>' +
+          '<span style="font-size:0.78rem;color:var(--uj-text-dim);">' + esc(extraTy.name) + '</span>' +
+        '</div>'
+      ) : '') +
     '</div>';
 
     // ── Complete Skills Table ────────────────────────────────
@@ -1380,19 +1557,26 @@
           '<th class="skill-die-col" title="Species die">Species</th>' +
           '<th class="skill-die-col" title="Type die">Type</th>' +
           '<th class="skill-die-col" title="Career die">Career</th>' +
+          (extraCa ? '<th class="skill-die-col" title="Extra Career die" style="color:var(--uj-teal);">+Career<br><span style="font-size:0.68rem;font-weight:400;">' + esc(extraCa.name) + '</span></th>' : '') +
+          (extraTy ? '<th class="skill-die-col" title="Extra Type die" style="color:var(--uj-teal);">+Type<br><span style="font-size:0.68rem;font-weight:400;">' + esc(extraTy.name) + '</span></th>' : '') +
           '<th class="skill-total-col">Dice Pool</th>' +
         '</tr></thead><tbody>';
     CORE_SKILLS.forEach(function(skillName) {
-      var spDie = itemGrantsSkill(sp, skillName) ? state.speciesDie : '';
-      var tyDie = itemGrantsSkill(ty, skillName) ? state.typeDie    : '';
-      var caDie = itemGrantsSkill(ca, skillName) ? state.careerDie  : '';
-      var pool  = [spDie, tyDie, caDie].filter(Boolean);
-      var hasAny = pool.length > 0;
+      var spDie    = itemGrantsSkill(sp,     skillName) ? effSpeciesDie               : '';
+      var tyDie    = itemGrantsSkill(ty,     skillName) ? effTypeDie                  : '';
+      var caDie    = itemGrantsSkill(ca,     skillName) ? effCareerDie                : '';
+      var exCaDie  = itemGrantsSkill(extraCa,skillName) ? (effExtraCaDie || '')       : '';
+      var exTyDie  = itemGrantsSkill(extraTy,skillName) ? (effExtraTyDie || '')       : '';
+      var pool     = [spDie, tyDie, caDie, exCaDie, exTyDie].filter(Boolean);
+      var hasAny   = pool.length > 0;
+      var dieBadge = function(d) { return d ? '<span class="skill-die-badge">' + d + '</span>' : '<span class="skill-die-empty">—</span>'; };
       html += '<tr class="' + (hasAny ? 'skill-row-active' : 'skill-row-empty') + '">' +
         '<td class="skill-name-col">' + esc(skillName) + '</td>' +
-        '<td class="skill-die-col">' + (spDie ? '<span class="skill-die-badge">' + spDie + '</span>' : '<span class="skill-die-empty">—</span>') + '</td>' +
-        '<td class="skill-die-col">' + (tyDie ? '<span class="skill-die-badge">' + tyDie + '</span>' : '<span class="skill-die-empty">—</span>') + '</td>' +
-        '<td class="skill-die-col">' + (caDie ? '<span class="skill-die-badge">' + caDie + '</span>' : '<span class="skill-die-empty">—</span>') + '</td>' +
+        '<td class="skill-die-col">' + dieBadge(spDie)   + '</td>' +
+        '<td class="skill-die-col">' + dieBadge(tyDie)   + '</td>' +
+        '<td class="skill-die-col">' + dieBadge(caDie)   + '</td>' +
+        (extraCa ? '<td class="skill-die-col">' + (exCaDie ? '<span class="skill-die-badge" style="color:var(--uj-teal);border-color:var(--uj-teal);">' + exCaDie + '</span>' : '<span class="skill-die-empty">—</span>') + '</td>' : '') +
+        (extraTy ? '<td class="skill-die-col">' + (exTyDie ? '<span class="skill-die-badge" style="color:var(--uj-teal);border-color:var(--uj-teal);">' + exTyDie + '</span>' : '<span class="skill-die-empty">—</span>') + '</td>' : '') +
         '<td class="skill-total-col">' + (pool.length ? '<span style="color:var(--uj-teal);font-weight:600;">' + pool.join(' + ') + '</span>' : '<span class="skill-die-empty">—</span>') + '</td>' +
       '</tr>';
     });

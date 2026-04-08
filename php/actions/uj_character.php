@@ -48,6 +48,10 @@ function uj_ensure_characters_table(): void {
         'gift_choices TEXT DEFAULT NULL',
         'experience INT NOT NULL DEFAULT 0',
         'purchased_gifts TEXT DEFAULT NULL',
+        'extra_career_id INT DEFAULT NULL',
+        'extra_type_id INT DEFAULT NULL',
+        'extra_career_die VARCHAR(4) DEFAULT NULL',
+        'extra_type_die VARCHAR(4) DEFAULT NULL',
     ] as $colDef) {
         try {
             cg_exec("ALTER TABLE `{$p}uj_character_records` ADD COLUMN {$colDef}");
@@ -77,6 +81,7 @@ function uj_load_characters(): void {
                 ally_species_id, ally_career_id, ally_name, ally_gender,
                 ally_body_die, ally_speed_die, ally_mind_die, ally_will_die, gift_choices,
                 experience, purchased_gifts,
+                extra_career_id, extra_type_id, extra_career_die, extra_type_die,
                 created_at, updated_at
            FROM `{$p}uj_character_records`
           WHERE user_id = ?
@@ -248,14 +253,22 @@ function uj_update_development(): void {
     $allySpeedDie   = in_array($_POST['ally_speed_die'] ?? '', $validDice) ? $_POST['ally_speed_die'] : 'd6';
     $allyMindDie    = in_array($_POST['ally_mind_die']  ?? '', $validDice) ? $_POST['ally_mind_die']  : 'd6';
     $allyWillDie    = in_array($_POST['ally_will_die']  ?? '', $validDice) ? $_POST['ally_will_die']  : 'd6';
+    $rawExtraCareer = $_POST['extra_career_id'] ?? null;
+    $rawExtraType   = $_POST['extra_type_id']   ?? null;
+    $extraCareerId  = ($rawExtraCareer !== null && $rawExtraCareer !== '') ? (int) $rawExtraCareer : null;
+    $extraTypeId    = ($rawExtraType   !== null && $rawExtraType   !== '') ? (int) $rawExtraType   : null;
+    $extraCareerDie = in_array($_POST['extra_career_die'] ?? '', $validDice) ? $_POST['extra_career_die'] : null;
+    $extraTypeDie   = in_array($_POST['extra_type_die']   ?? '', $validDice) ? $_POST['extra_type_die']   : null;
     cg_exec(
         "UPDATE `{$p}uj_character_records` SET experience = ?, purchased_gifts = ?,
          ally_species_id = ?, ally_career_id = ?, ally_name = ?, ally_gender = ?,
          ally_body_die = ?, ally_speed_die = ?, ally_mind_die = ?, ally_will_die = ?,
+         extra_career_id = ?, extra_type_id = ?, extra_career_die = ?, extra_type_die = ?,
          updated_at = ? WHERE id = ? AND user_id = ?",
         [$experience, $purchasedGifts, $allySpeciesId, $allyCareerId,
          $allyName ?: null, $allyGender ?: null,
          $allyBodyDie, $allySpeedDie, $allyMindDie, $allyWillDie,
+         $extraCareerId, $extraTypeId, $extraCareerDie ?: null, $extraTypeDie ?: null,
          date('Y-m-d H:i:s'), $id, $uid]
     );
     cg_json(['success' => true, 'data' => ['id' => (string) $id]]);
