@@ -188,6 +188,13 @@ const AllyModule = {
       }, 50);
     });
 
+    // When the skills list loads (after first visiting the Skills tab),
+    // refresh the ally skills area in case it currently shows numeric IDs
+    document.addEventListener('cg:skills-list:loaded', () => {
+      const el = document.getElementById('cg-ally-skills-area');
+      if (el) el.innerHTML = this._buildSkillsHtml();
+    });
+
     // Ally identity inputs
     $(document).on('input.ally', '#cg-ally-name', e => {
       this._patch({ name: e.target.value });
@@ -609,6 +616,21 @@ const AllyModule = {
     return html;
   },
 
+  _resolveSkillName(val) {
+    if (!val) return '';
+    const s = String(val).trim();
+    // If it looks like a pure number it's an ID — look up in skills list
+    if (/^\d+$/.test(s)) {
+      const list = window.CG_SKILLS_LIST;
+      if (Array.isArray(list)) {
+        const found = list.find(x => String(x.id || x.skill_id || '') === s);
+        if (found) return String(found.name || found.ct_skill_name || s);
+      }
+      return s; // return raw ID if list not loaded yet
+    }
+    return s;
+  },
+
   _buildSkillsHtml() {
     const sp = this._speciesProfile || {};
     const cp = this._careerProfile  || {};
@@ -617,17 +639,23 @@ const AllyModule = {
     const rows = [];
     const seen = new Set();
 
-    // Species skills (text_value = skill name)
-    ['skill_one','skill_two','skill_three'].forEach(k => {
-      const name = sp[k] ? String(sp[k]).trim() : '';
+    // Species skills — sp.skill_one/two/three now returns the resolved name from PHP;
+    // fall back to JS lookup via skill_one_id if it still arrives as a numeric ID
+    const spIds = [sp.skill_one_id, sp.skill_two_id, sp.skill_three_id];
+    ['skill_one','skill_two','skill_three'].forEach((k, i) => {
+      const raw  = sp[k] ? String(sp[k]).trim() : '';
+      const name = this._resolveSkillName(raw || spIds[i]);
       if (!name || seen.has(name.toLowerCase())) return;
       seen.add(name.toLowerCase());
       rows.push({ name, die: tr.trait_species, source: 'Species' });
     });
 
-    // Career skills (skill_name_one/two/three resolved in PHP; fall back to skill_one/two/three IDs if missing)
-    ['skill_name_one','skill_name_two','skill_name_three'].forEach(k => {
-      const name = cp[k] ? String(cp[k]).trim() : '';
+    // Career skills — prefer skill_name_one/two/three (names resolved in PHP JOIN);
+    // fall back to skill_one/two/three (IDs) with JS resolution
+    ['skill_name_one','skill_name_two','skill_name_three'].forEach((k, i) => {
+      const fallbackKey = ['skill_one','skill_two','skill_three'][i];
+      const raw  = (cp[k] || cp[fallbackKey]) ? String(cp[k] || cp[fallbackKey]).trim() : '';
+      const name = this._resolveSkillName(raw);
       if (!name || seen.has(name.toLowerCase())) return;
       seen.add(name.toLowerCase());
       rows.push({ name, die: tr.trait_career, source: 'Career' });
@@ -902,17 +930,19 @@ const AllyModule = {
       ...trappings.map(t => `<li>${esc(t.name)}${t.cost_d ? ` — ${esc(t.cost_d)}d` : ''}</li>`),
     ].join('');
 
-    // Build skills rows for print
+    // Build skills rows for print (same logic as _buildSkillsHtml)
     const skillsSeen = new Set();
     const skillsRows = [];
-    ['skill_one','skill_two','skill_three'].forEach(k => {
-      const n = sp[k] ? String(sp[k]).trim() : '';
+    const spIds = [sp.skill_one_id, sp.skill_two_id, sp.skill_three_id];
+    ['skill_one','skill_two','skill_three'].forEach((k, i) => {
+      const n = this._resolveSkillName(sp[k] || spIds[i]);
       if (!n || skillsSeen.has(n.toLowerCase())) return;
       skillsSeen.add(n.toLowerCase());
       skillsRows.push(`<tr><td>${esc(n)}</td><td>${esc(tr.trait_species)}</td><td>Species</td></tr>`);
     });
-    ['skill_name_one','skill_name_two','skill_name_three'].forEach(k => {
-      const n = cp[k] ? String(cp[k]).trim() : '';
+    ['skill_name_one','skill_name_two','skill_name_three'].forEach((k, i) => {
+      const fallbackKey = ['skill_one','skill_two','skill_three'][i];
+      const n = this._resolveSkillName(cp[k] || cp[fallbackKey]);
       if (!n || skillsSeen.has(n.toLowerCase())) return;
       skillsSeen.add(n.toLowerCase());
       skillsRows.push(`<tr><td>${esc(n)}</td><td>${esc(tr.trait_career)}</td><td>Career</td></tr>`);

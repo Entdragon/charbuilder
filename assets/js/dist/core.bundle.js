@@ -10314,6 +10314,11 @@
           this._ensureGiftList().then(() => this._refreshImprovedSlots());
         }, 50);
       });
+      document.addEventListener("cg:skills-list:loaded", () => {
+        const el = document.getElementById("cg-ally-skills-area");
+        if (el)
+          el.innerHTML = this._buildSkillsHtml();
+      });
       $24(document).on("input.ally", "#cg-ally-name", (e) => {
         this._patch({ name: e.target.value });
       });
@@ -10703,21 +10708,40 @@
       html += `</div>`;
       return html;
     },
+    _resolveSkillName(val) {
+      if (!val)
+        return "";
+      const s = String(val).trim();
+      if (/^\d+$/.test(s)) {
+        const list = window.CG_SKILLS_LIST;
+        if (Array.isArray(list)) {
+          const found = list.find((x) => String(x.id || x.skill_id || "") === s);
+          if (found)
+            return String(found.name || found.ct_skill_name || s);
+        }
+        return s;
+      }
+      return s;
+    },
     _buildSkillsHtml() {
       const sp = this._speciesProfile || {};
       const cp = this._careerProfile || {};
       const tr = this._resolveAllyTraits();
       const rows = [];
       const seen = /* @__PURE__ */ new Set();
-      ["skill_one", "skill_two", "skill_three"].forEach((k) => {
-        const name = sp[k] ? String(sp[k]).trim() : "";
+      const spIds = [sp.skill_one_id, sp.skill_two_id, sp.skill_three_id];
+      ["skill_one", "skill_two", "skill_three"].forEach((k, i) => {
+        const raw = sp[k] ? String(sp[k]).trim() : "";
+        const name = this._resolveSkillName(raw || spIds[i]);
         if (!name || seen.has(name.toLowerCase()))
           return;
         seen.add(name.toLowerCase());
         rows.push({ name, die: tr.trait_species, source: "Species" });
       });
-      ["skill_name_one", "skill_name_two", "skill_name_three"].forEach((k) => {
-        const name = cp[k] ? String(cp[k]).trim() : "";
+      ["skill_name_one", "skill_name_two", "skill_name_three"].forEach((k, i) => {
+        const fallbackKey = ["skill_one", "skill_two", "skill_three"][i];
+        const raw = cp[k] || cp[fallbackKey] ? String(cp[k] || cp[fallbackKey]).trim() : "";
+        const name = this._resolveSkillName(raw);
         if (!name || seen.has(name.toLowerCase()))
           return;
         seen.add(name.toLowerCase());
@@ -10978,15 +11002,17 @@
       ].join("");
       const skillsSeen = /* @__PURE__ */ new Set();
       const skillsRows = [];
-      ["skill_one", "skill_two", "skill_three"].forEach((k) => {
-        const n = sp[k] ? String(sp[k]).trim() : "";
+      const spIds = [sp.skill_one_id, sp.skill_two_id, sp.skill_three_id];
+      ["skill_one", "skill_two", "skill_three"].forEach((k, i) => {
+        const n = this._resolveSkillName(sp[k] || spIds[i]);
         if (!n || skillsSeen.has(n.toLowerCase()))
           return;
         skillsSeen.add(n.toLowerCase());
         skillsRows.push(`<tr><td>${esc(n)}</td><td>${esc(tr.trait_species)}</td><td>Species</td></tr>`);
       });
-      ["skill_name_one", "skill_name_two", "skill_name_three"].forEach((k) => {
-        const n = cp[k] ? String(cp[k]).trim() : "";
+      ["skill_name_one", "skill_name_two", "skill_name_three"].forEach((k, i) => {
+        const fallbackKey = ["skill_one", "skill_two", "skill_three"][i];
+        const n = this._resolveSkillName(cp[k] || cp[fallbackKey]);
         if (!n || skillsSeen.has(n.toLowerCase()))
           return;
         skillsSeen.add(n.toLowerCase());
