@@ -972,7 +972,28 @@ try {
 
         <div class="app-topbar">
           <span class="app-topbar__username">Signed in as <strong id="cg-username-display"><?= $username ?></strong></span>
+          <button class="btn-ghost" id="cg-change-pw-btn" style="font-size:0.82rem;">Change Password</button>
           <button class="btn-ghost" id="cg-logout-btn">Sign Out</button>
+        </div>
+
+        <!-- Change Password Modal -->
+        <div id="cg-cpw-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;align-items:center;justify-content:center;">
+          <div style="background:#1c1a14;border:1px solid rgba(201,168,76,0.3);border-radius:10px;padding:2rem;width:100%;max-width:380px;box-shadow:0 8px 40px rgba(0,0,0,0.7);">
+            <h3 style="font-family:'Cinzel',Georgia,serif;color:#e5c97a;margin:0 0 1.25rem;font-size:1rem;letter-spacing:0.06em;text-transform:uppercase;">Change Password</h3>
+            <div style="display:flex;flex-direction:column;gap:0.75rem;">
+              <input type="password" id="cg-cpw-current" placeholder="Current password"
+                style="width:100%;background:#28231a;border:1px solid rgba(154,138,106,0.3);border-radius:5px;color:#e8dcc4;font-size:0.95rem;padding:0.5rem 0.75rem;outline:none;box-sizing:border-box;">
+              <input type="password" id="cg-cpw-new" placeholder="New password (min 8 chars)"
+                style="width:100%;background:#28231a;border:1px solid rgba(154,138,106,0.3);border-radius:5px;color:#e8dcc4;font-size:0.95rem;padding:0.5rem 0.75rem;outline:none;box-sizing:border-box;">
+              <input type="password" id="cg-cpw-confirm" placeholder="Confirm new password"
+                style="width:100%;background:#28231a;border:1px solid rgba(154,138,106,0.3);border-radius:5px;color:#e8dcc4;font-size:0.95rem;padding:0.5rem 0.75rem;outline:none;box-sizing:border-box;">
+              <div id="cg-cpw-error" style="color:#d9534f;font-size:0.82rem;min-height:1.2em;"></div>
+              <div style="display:flex;gap:0.75rem;justify-content:flex-end;margin-top:0.25rem;">
+                <button id="cg-cpw-cancel" class="btn-ghost" style="font-size:0.8rem;">Cancel</button>
+                <button id="cg-cpw-submit" class="btn-primary" style="font-size:0.8rem;">Update Password</button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- ── Character list view ──────────────────────────────────────── -->
@@ -1146,6 +1167,46 @@ try {
   document.getElementById('cg-logout-btn').addEventListener('click', () => {
     ajax('cg_logout_user', {}).then(() => showAuth());
   });
+
+  // Change Password modal
+  (function() {
+    var overlay   = document.getElementById('cg-cpw-overlay');
+    var openBtn   = document.getElementById('cg-change-pw-btn');
+    var cancelBtn = document.getElementById('cg-cpw-cancel');
+    var submitBtn = document.getElementById('cg-cpw-submit');
+    var errEl     = document.getElementById('cg-cpw-error');
+    function openModal() {
+      document.getElementById('cg-cpw-current').value = '';
+      document.getElementById('cg-cpw-new').value = '';
+      document.getElementById('cg-cpw-confirm').value = '';
+      errEl.textContent = '';
+      overlay.style.display = 'flex';
+    }
+    function closeModal() { overlay.style.display = 'none'; }
+    openBtn.addEventListener('click', openModal);
+    cancelBtn.addEventListener('click', closeModal);
+    overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
+    submitBtn.addEventListener('click', () => {
+      var cur = document.getElementById('cg-cpw-current').value;
+      var nw  = document.getElementById('cg-cpw-new').value;
+      var con = document.getElementById('cg-cpw-confirm').value;
+      errEl.textContent = '';
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Updating…';
+      ajax('cg_change_password', { current_password: cur, new_password: nw, confirm_password: con })
+        .then(res => {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Update Password';
+          if (res.success) { closeModal(); alert('Password updated successfully.'); }
+          else { errEl.textContent = res.data || 'Something went wrong.'; }
+        })
+        .catch(() => {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Update Password';
+          errEl.textContent = 'Request failed — please try again.';
+        });
+    });
+  }());
 
   let bundleLoaded = false;
   function loadBundle() {
