@@ -18,6 +18,12 @@ import Quals from '../quals/index.js';
 import QualState from '../quals/state.js';
 import TraitsService from '../traits/service.js';
 import SkillsIndex from '../skills/index.js';
+// Shared gift-filter pipeline — any new rule added here applies to both the
+// main gifts tab AND the ally improved-gift panel automatically.
+import {
+  giftIneligibleReason  as filterGiftIneligibleReason,
+  traitMinimumBlockOnly as filterTraitMinimumBlockOnly,
+} from './gift-filter.js';
 
 function cgWin() {
   if (typeof globalThis !== 'undefined') return globalThis;
@@ -518,6 +524,14 @@ function getCharacterSpecies() {
   const d = getBuilderData();
   const raw = d.species || d.cg_species || d.species_name || d.speciesName || '';
   return String(raw || '').trim().toLowerCase();
+}
+
+/** Builds the context object expected by the shared gift-filter.js functions. */
+function buildMainCharCtx() {
+  return {
+    speciesName: getCharacterSpecies(),
+    getTraitDie: getTraitDieValue,
+  };
 }
 
 function speciesAnyofMet(prereq) {
@@ -1327,10 +1341,13 @@ const FreeChoices = (Existing && Existing.__cg_singleton) ? Existing : {
         if (seen.has(id)) return;
         seen.add(id);
 
-        const reason = giftIneligibleReason(g, owned, others);
+        // Route through the shared pipeline so new rules in gift-filter.js
+        // apply here and in the ally panel simultaneously.
+        const _ctx = buildMainCharCtx();
+        const reason = filterGiftIneligibleReason(g, owned, others, _ctx, { qualPrereqsSatisfied });
         if (reason) {
           // Show trait-minimum-gated gifts as dimmed (disabled) options instead of hiding them
-          const traitReason = traitMinimumBlockOnly(g, owned, others);
+          const traitReason = filterTraitMinimumBlockOnly(g, owned, others, _ctx);
           if (traitReason) {
             optionItems.push({ id, name, gift: g, _traitGated: true, _traitReason: traitReason });
           }

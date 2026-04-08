@@ -10,6 +10,12 @@
 import FormBuilderAPI from '../formBuilder/index.js';
 import CareerAPI      from '../career/api.js';
 import SpeciesAPI     from '../species/api.js';
+// Shared gift-filter pipeline — rules added to gift-filter.js apply here AND
+// to the main gifts tab automatically (no duplicate logic to keep in sync).
+import {
+  diceToNum          as filterDiceToNum,
+  giftIneligibleReason as filterGiftIneligibleReason,
+} from '../gifts/gift-filter.js';
 
 const $ = window.jQuery;
 const LOG  = (...a) => console.log('[AllyModule]', ...a);
@@ -544,69 +550,27 @@ const AllyModule = {
     return html;
   },
 
-  /** Extract required gift IDs from the flat ct_gifts_requires* columns AND requirements array. */
-  _extractAllyRequiredGiftIds(g) {
-    if (!g || typeof g !== 'object') return [];
-    const out = [];
-    Object.keys(g).forEach(k => {
-      if (!/^ct_gifts_requires(_[a-z]+)?$/i.test(k) && !/^ct_gifts_requires_/i.test(k)) return;
-      if (k.toLowerCase() === 'ct_gifts_requires_special') return;
-      const v = g[k];
-      if (v == null) return;
-      String(v).trim().split(',').map(x => x.trim()).filter(Boolean).forEach(x => out.push(x));
-    });
-    (Array.isArray(g.requirements) ? g.requirements : []).forEach(req => {
-      if (String(req.kind || '') === 'gift_ref') {
-        const refId = String(req.ref_id || '');
-        if (refId) out.push(refId);
-      }
-    });
-    return [...new Set(out)];
-  },
-
-  /** Returns null if the gift can be offered to the ally, or a reason string if not. */
-  _allyGiftIneligibleReason(g, allyOwnedSet, otherSlotIds) {
-    const id  = String(g.id || g.ct_id || '');
-    if (!id || id === '0') return 'Invalid';
-
-    // Exclude Local Knowledge
-    if (id === '242') return 'Local Knowledge excluded';
-
-    // Exclude Natural class gifts (assigned by species — server-side already filters, but guard here)
-    const cls = String(g.giftclass || '').trim().toLowerCase();
-    if (cls === 'natural') return 'Natural gift';
-    if (cls === 'major')   return 'Major gift';
-
-    const allows = parseInt(g.ct_gifts_manifold || g.allows_multiple || 0, 10) > 0;
-
-    // Already owned by ally (species/career/other slots) — unless manifold
-    if (!allows && allyOwnedSet.has(id)) return 'Already owned';
-
-    // Selected in another improved slot
-    if (!allows && otherSlotIds.has(id)) return 'Already selected';
-
-    // Required prerequisite gifts not yet owned
-    for (const rid of this._extractAllyRequiredGiftIds(g)) {
-      if (!allyOwnedSet.has(String(rid))) {
-        const reqGift = (this._giftList || []).find(x => String(x.id || x.ct_id || '') === String(rid));
-        const reqName = reqGift ? String(reqGift.name || `#${rid}`) : `#${rid}`;
-        return `Requires: ${reqName}`;
-      }
-    }
-
-    // Check structured prereqs from the prereqs array (gift_ref kind)
-    const requirements = Array.isArray(g.requirements) ? g.requirements : [];
-    for (const req of requirements) {
-      if (String(req.kind || '') === 'gift_ref') {
-        const refId = String(req.ref_id || '');
-        if (refId && !allyOwnedSet.has(refId)) {
-          const reqName = String(req.text || `#${refId}`);
-          return `Requires: ${reqName}`;
-        }
-      }
-    }
-
-    return null;
+  /**
+   * Builds the context object required by the shared gift-filter.js pipeline.
+   * To propagate new rules to the ally: add them to gift-filter.js — no change
+   * needed here because both sides call the same giftIneligibleReason().
+   */
+  _allyGiftCtx() {
+    const sp = this._speciesProfile || {};
+    const tr = this._resolveAllyTraits();
+    // Trait key map: filter uses 'body'/'speed'/'mind'/'will'/'species';
+    // ally stores them as tr.body/speed/mind/will and tr.trait_species.
+    const traitMap = {
+      body:    tr.body,
+      speed:   tr.speed,
+      mind:    tr.mind,
+      will:    tr.will,
+      species: tr.trait_species,
+    };
+    return {
+      speciesName: String(sp.name || sp.speciesName || sp.species_name || '').trim().toLowerCase(),
+      getTraitDie: (key) => filterDiceToNum(traitMap[String(key).toLowerCase()] || null),
+    };
   },
 
   _buildGiftOptions(selectedId, slotIndex = -1) {
@@ -627,10 +591,15 @@ const AllyModule = {
       if (cur) items.push({ id: selectedId, name: String(cur.name || ''), saved: true });
     }
 
+    // Use the shared pipeline — the same giftIneligibleReason that the main
+    // gifts tab calls. New rules added to gift-filter.js propagate here for free.
+    const ctx = this._allyGiftCtx();
     for (const g of (this._giftList || [])) {
       const id = String(g.id || g.ct_id || '');
       if (!id || id === selectedId) continue; // already added as saved above
-      const reason = this._allyGiftIneligibleReason(g, owned, otherSlotIds);
+      // Extra ally-specific exclusions not in the shared filter
+      if (id === '242') continue; // Local Knowledge excluded for allies
+      const reason = filterGiftIneligibleReason(g, owned, otherSlotIds, ctx, { skipQualCheck: true });
       if (reason) continue; // hide ineligible gifts
       items.push({ id, name: String(g.name || '') });
     }

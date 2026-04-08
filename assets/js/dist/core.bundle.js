@@ -713,10 +713,10 @@
      */
     calculateBoostMap() {
       const map = /* @__PURE__ */ Object.create(null);
-      function addGift(giftId2) {
-        if (giftId2 == null)
+      function addGift(giftId3) {
+        if (giftId3 == null)
           return;
-        const id = String(giftId2).trim();
+        const id = String(giftId3).trim();
         if (!id || id === "0")
           return;
         const gift = state_default.getGiftById(id);
@@ -1985,13 +1985,13 @@
   function escapeHtml(s) {
     return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
-  function giftEffect(giftId2) {
+  function giftEffect(giftId3) {
     var _a, _b, _c;
-    if (!giftId2)
+    if (!giftId3)
       return "";
     const fc = window.CG_FreeChoices;
     const all = fc && Array.isArray(fc._allGifts) ? fc._allGifts : [];
-    const g = all.find((g2) => String(g2.ct_id || g2.id || "") === String(giftId2));
+    const g = all.find((g2) => String(g2.ct_id || g2.id || "") === String(giftId3));
     if (!g)
       return "";
     return String((_a = g.effect) != null ? _a : "").trim() || String((_c = (_b = g.effect_description) != null ? _b : g.ct_gifts_effect_description) != null ? _c : "").trim();
@@ -2136,12 +2136,12 @@
     }
     return {};
   }
-  function getGiftEffect(giftId2) {
+  function getGiftEffect(giftId3) {
     var _a, _b, _c;
-    if (!giftId2)
+    if (!giftId3)
       return "";
     const all = getAllGiftsList();
-    const g = all.find((g2) => String(g2.ct_id || g2.id || "") === String(giftId2));
+    const g = all.find((g2) => String(g2.ct_id || g2.id || "") === String(giftId3));
     if (!g)
       return "";
     return String((_a = g.effect) != null ? _a : "").trim() || String((_c = (_b = g.effect_description) != null ? _b : g.ct_gifts_effect_description) != null ? _c : "").trim();
@@ -2593,9 +2593,9 @@
       if ($8)
         $8(document).trigger("cg:extra-careers:changed", [payload]);
     },
-    _countGiftInAcquired(giftId2) {
+    _countGiftInAcquired(giftId3) {
       var _a, _b, _c;
-      const target = String(giftId2);
+      const target = String(giftId3);
       let count = 0;
       const dFB = ((_a = formBuilder_default) == null ? void 0 : _a._data) || {};
       let free = Array.isArray(state_default.selected) && state_default.selected.length ? state_default.selected : null;
@@ -4339,6 +4339,301 @@
     }
   };
 
+  // assets/js/src/core/gifts/gift-filter.js
+  function diceToNum(s) {
+    const t = String(s || "").trim().toLowerCase();
+    const m = t.match(/d\s*(4|6|8|10|12)/);
+    return m ? Number(m[1]) : null;
+  }
+  function giftId(g) {
+    var _a, _b, _c;
+    return String((_c = (_b = (_a = g == null ? void 0 : g.id) != null ? _a : g == null ? void 0 : g.ct_id) != null ? _b : g == null ? void 0 : g.gift_id) != null ? _c : "");
+  }
+  function giftName(g) {
+    var _a, _b, _c, _d;
+    return String((_d = (_c = (_b = (_a = g == null ? void 0 : g.name) != null ? _a : g == null ? void 0 : g.title) != null ? _b : g == null ? void 0 : g.gift_name) != null ? _c : g == null ? void 0 : g.ct_gift_name) != null ? _d : "");
+  }
+  function requiresSpecialText(g) {
+    var _a, _b, _c;
+    return String((_c = (_b = (_a = g == null ? void 0 : g.requires_special) != null ? _a : g == null ? void 0 : g.ct_gifts_requires_special) != null ? _b : g == null ? void 0 : g.requiresSpecial) != null ? _c : "").trim();
+  }
+  function isNaturalGift(g) {
+    var _a, _b, _c;
+    const cls = String((_c = (_b = (_a = g == null ? void 0 : g.giftclass) != null ? _a : g == null ? void 0 : g.ct_gifts_class) != null ? _b : g == null ? void 0 : g.gift_class) != null ? _c : "").trim().toLowerCase();
+    return cls === "natural";
+  }
+  function allowsMultiple(g) {
+    var _a, _b, _c;
+    if (g && (String(g.id || "") === "223" || String(g.ct_id || "") === "223"))
+      return true;
+    const v = (_c = (_b = (_a = g == null ? void 0 : g.allows_multiple) != null ? _a : g == null ? void 0 : g.ct_gifts_manifold) != null ? _b : g == null ? void 0 : g.manifold) != null ? _c : null;
+    const n = Number(v);
+    return Number.isFinite(n) && n > 0;
+  }
+  function extractRequiredGiftIds(g) {
+    if (!g || typeof g !== "object")
+      return [];
+    const out = [];
+    Object.keys(g).forEach((k) => {
+      if (!/^ct_gifts_requires(_[a-z]+)?$/i.test(k) && !/^ct_gifts_requires_/i.test(k))
+        return;
+      if (k.toLowerCase() === "ct_gifts_requires_special")
+        return;
+      const v = g[k];
+      if (v == null)
+        return;
+      String(v).trim().split(",").map((x) => x.trim()).filter(Boolean).forEach((x) => out.push(x));
+    });
+    (Array.isArray(g.requirements) ? g.requirements : []).forEach((req) => {
+      if (String(req.kind || "") === "gift_ref") {
+        const refId = String(req.ref_id || "");
+        if (refId)
+          out.push(refId);
+      }
+    });
+    return [...new Set(out)];
+  }
+  function extractTraitMinimaFromRequiresSpecial(rs) {
+    const text = String(rs || "");
+    if (!text)
+      return [];
+    const traitRes = [
+      { key: "mind", re: /\bmind\b/i },
+      { key: "body", re: /\bbody\b/i },
+      { key: "speed", re: /\bspeed\b/i },
+      { key: "will", re: /\bwill\b/i },
+      { key: "species", re: /\bspecies\b/i }
+    ];
+    const mins = [];
+    text.split(/[\n\r.;]+/).map((s) => s.trim()).filter(Boolean).forEach((p) => {
+      traitRes.forEach((t) => {
+        if (!t.re.test(p))
+          return;
+        const m = p.match(/d\s*(4|6|8|10|12)/i);
+        if (!m)
+          return;
+        const need = Number(m[1]);
+        if (Number.isFinite(need))
+          mins.push({ traitKey: t.key, need, raw: p });
+      });
+    });
+    const best = /* @__PURE__ */ new Map();
+    mins.forEach((x) => {
+      const cur = best.get(x.traitKey);
+      if (!cur || x.need > cur.need)
+        best.set(x.traitKey, x);
+    });
+    return Array.from(best.values());
+  }
+  function traitDie2(key, ctx) {
+    var _a, _b;
+    try {
+      return (_b = (_a = ctx == null ? void 0 : ctx.getTraitDie) == null ? void 0 : _a.call(ctx, key)) != null ? _b : null;
+    } catch (_) {
+      return null;
+    }
+  }
+  function speciesAnyofMet(prereq, ctx) {
+    const species = String((ctx == null ? void 0 : ctx.speciesName) || "").trim().toLowerCase();
+    if (!species)
+      return null;
+    const allowed = String(prereq.req_value || "").split(/[|,]/).map((s) => String(s || "").replace(/\bor\s+/i, "").trim().toLowerCase()).filter(Boolean);
+    if (!allowed.length)
+      return null;
+    return allowed.some((a) => species.includes(a) || a.includes(species)) ? true : false;
+  }
+  function speciesForbidMet(prereq, ctx) {
+    const species = String((ctx == null ? void 0 : ctx.speciesName) || "").trim().toLowerCase();
+    if (!species)
+      return null;
+    const forbidden = String(prereq.req_value || "").split(/[|,]/).map((s) => String(s || "").replace(/\bor\s+/i, "").trim().toLowerCase()).filter(Boolean);
+    if (!forbidden.length)
+      return null;
+    return forbidden.some((f) => species.includes(f) || f.includes(species)) ? false : true;
+  }
+  function traitMinStructuredMet(prereq, ctx) {
+    const key = String(prereq.trait_key || "").trim().toLowerCase().replace(/_trait$/, "");
+    const needed = Number(prereq.die_min);
+    if (!key || !Number.isFinite(needed))
+      return null;
+    const have = traitDie2(key, ctx);
+    if (have == null)
+      return null;
+    const cmp = String(prereq.comparator || ">=");
+    if (cmp === ">=")
+      return have >= needed;
+    if (cmp === ">")
+      return have > needed;
+    if (cmp === "=")
+      return have === needed;
+    if (cmp === "<")
+      return have < needed;
+    if (cmp === "<=")
+      return have <= needed;
+    return have >= needed;
+  }
+  function evaluateStructuredPrereqs(g, ownedSet, ctx = {}) {
+    const prereqs = Array.isArray(g == null ? void 0 : g.prereqs) ? g.prereqs : [];
+    const requirements = Array.isArray(g == null ? void 0 : g.requirements) ? g.requirements : [];
+    for (const prereq of prereqs) {
+      const kind = String(prereq.kind || "");
+      if (kind === "gm_permission")
+        continue;
+      if (kind === "species_anyof") {
+        const result = speciesAnyofMet(prereq, ctx);
+        if (result === false)
+          return String(prereq.raw_text || prereq.req_value || "Species requirement not met");
+        continue;
+      }
+      if (kind === "species_forbid") {
+        const result = speciesForbidMet(prereq, ctx);
+        if (result === false)
+          return String(prereq.raw_text || prereq.req_value || "Species forbidden");
+        continue;
+      }
+      if (kind === "trait_min") {
+        const result = traitMinStructuredMet(prereq, ctx);
+        if (result === false) {
+          const key = String(prereq.trait_key || "");
+          const needed = Number(prereq.die_min);
+          return `Requires: ${key} d${needed}+`;
+        }
+        continue;
+      }
+      if (kind === "trait_compare") {
+        if (!comparativeTraitsSatisfied(g, ctx))
+          return String(prereq.raw_text || "Trait comparison requirement not met");
+        continue;
+      }
+      if (kind === "gift_trait") {
+        const reqKey = String(prereq.req_key || prereq.req_value || "").trim();
+        if (reqKey && !ownedSet.has(reqKey))
+          return `Requires gift trait: ${reqKey}`;
+        continue;
+      }
+    }
+    for (const req of requirements) {
+      if (String(req.kind || "") === "gift_ref") {
+        const refId = String(req.ref_id || "");
+        if (refId && !ownedSet.has(refId))
+          return `Requires: ${String(req.text || `gift #${refId}`).trim()}`;
+      }
+    }
+    return null;
+  }
+  function comparativeTraitsSatisfied(g, ctx = {}) {
+    const rs = requiresSpecialText(g);
+    if (!rs)
+      return true;
+    for (const line of rs.split(/[\n\r.;]+/).map((s) => s.trim()).filter(Boolean)) {
+      const m = line.match(/\b(mind|body|speed|will|species)[^\w]*(trait)?\s+must\s+be\s+(greater|higher)\s+than\s+(your\s+)?(mind|body|speed|will|species)/i);
+      if (!m)
+        continue;
+      const lv = traitDie2(m[1].toLowerCase(), ctx);
+      const rv = traitDie2(m[5].toLowerCase(), ctx);
+      if (lv == null || rv == null)
+        continue;
+      if (lv <= rv)
+        return false;
+    }
+    return true;
+  }
+  function traitMinimaSatisfied(g, ctx = {}) {
+    const rs = requiresSpecialText(g);
+    const mins = extractTraitMinimaFromRequiresSpecial(rs);
+    if (!mins.length)
+      return true;
+    for (const m of mins) {
+      const have = traitDie2(m.traitKey, ctx);
+      if (have == null || have < m.need)
+        return false;
+    }
+    return true;
+  }
+  function traitMinimumBlockOnly(g, ownedSet, otherSelectedIds, ctx = {}) {
+    if (!g)
+      return null;
+    const id = giftId(g);
+    const name = giftName(g);
+    if (!id || !name)
+      return null;
+    if (isNaturalGift(g))
+      return null;
+    if (evaluateStructuredPrereqs(g, ownedSet, ctx))
+      return null;
+    for (const rid of extractRequiredGiftIds(g)) {
+      if (!ownedSet.has(String(rid)))
+        return null;
+    }
+    if (!comparativeTraitsSatisfied(g, ctx))
+      return null;
+    if (otherSelectedIds.has(id) && !allowsMultiple(g))
+      return null;
+    if (!traitMinimaSatisfied(g, ctx)) {
+      const rs = requiresSpecialText(g);
+      const mins = extractTraitMinimaFromRequiresSpecial(rs);
+      const parts = mins.map((m) => {
+        const have = traitDie2(m.traitKey, ctx);
+        if (have == null || have < m.need) {
+          return `${m.traitKey.charAt(0).toUpperCase() + m.traitKey.slice(1)} d${m.need}+`;
+        }
+        return null;
+      }).filter(Boolean);
+      return "Requires: " + (parts.join(", ") || "higher trait");
+    }
+    return null;
+  }
+  function giftIneligibleReason(g, ownedSet, otherSelectedIds = /* @__PURE__ */ new Set(), ctx = {}, opts = {}) {
+    if (!g)
+      return "Unknown gift";
+    const id = giftId(g);
+    const name = giftName(g);
+    if (!id || !name)
+      return "Invalid gift data";
+    if (isNaturalGift(g))
+      return "Natural gift (granted by species)";
+    const structuredReason = evaluateStructuredPrereqs(g, ownedSet, ctx);
+    if (structuredReason)
+      return structuredReason;
+    for (const rid of extractRequiredGiftIds(g)) {
+      if (!ownedSet.has(String(rid)))
+        return `Requires gift #${rid}`;
+    }
+    if (!traitMinimaSatisfied(g, ctx)) {
+      const rs = requiresSpecialText(g);
+      const mins = extractTraitMinimaFromRequiresSpecial(rs);
+      const parts = mins.map((m) => {
+        const have = traitDie2(m.traitKey, ctx);
+        if (have == null || have < m.need)
+          return `${m.traitKey} d${m.need}+`;
+        return null;
+      }).filter(Boolean);
+      return "Requires: " + (parts.join(", ") || "higher trait");
+    }
+    if (!comparativeTraitsSatisfied(g, ctx))
+      return "Trait comparison requirement not met";
+    if (!opts.skipQualCheck && typeof opts.qualPrereqsSatisfied === "function") {
+      if (!opts.qualPrereqsSatisfied(g)) {
+        const rs = requiresSpecialText(g);
+        const reqs = extractQualReqLines(rs);
+        if (reqs.length)
+          return "Requires: " + reqs.map((r) => `${r.type}: ${r.raw}`).join("; ");
+        return "Qualification prerequisite not met";
+      }
+    }
+    if (otherSelectedIds.has(id) && !allowsMultiple(g))
+      return "Already selected in another slot";
+    return null;
+  }
+  function extractQualReqLines(rs) {
+    return String(rs || "").split(/\r?\n/).map((s) => s.trim()).filter(Boolean).reduce((acc, line) => {
+      const m = line.match(/^(language|literacy|insider|mystic|piety|ordainment)\s*:\s*(.+)$/i);
+      if (m && m[1] && m[2])
+        acc.push({ type: m[1].toLowerCase(), raw: m[2].trim() });
+      return acc;
+    }, []);
+  }
+
   // assets/js/src/core/gifts/free-choices.js
   function cgWin() {
     if (typeof globalThis !== "undefined")
@@ -4515,20 +4810,20 @@
       emitFreeGiftChanged(normalized, source);
     return normalized;
   }
-  function giftId(g) {
+  function giftId2(g) {
     var _a, _b, _c, _d;
     return String((_d = (_c = (_b = (_a = g == null ? void 0 : g.id) != null ? _a : g == null ? void 0 : g.ct_id) != null ? _b : g == null ? void 0 : g.gift_id) != null ? _c : g == null ? void 0 : g.ct_gift_id) != null ? _d : "");
   }
-  function giftName(g) {
+  function giftName2(g) {
     var _a, _b, _c, _d;
     return String((_d = (_c = (_b = (_a = g == null ? void 0 : g.name) != null ? _a : g == null ? void 0 : g.title) != null ? _b : g == null ? void 0 : g.gift_name) != null ? _c : g == null ? void 0 : g.ct_gift_name) != null ? _d : "");
   }
-  function requiresSpecialText(g) {
+  function requiresSpecialText2(g) {
     var _a, _b, _c;
     const rs = (_c = (_b = (_a = g == null ? void 0 : g.requires_special) != null ? _a : g == null ? void 0 : g.ct_gifts_requires_special) != null ? _b : g == null ? void 0 : g.requiresSpecial) != null ? _c : "";
     return String(rs != null ? rs : "").trim();
   }
-  function allowsMultiple(g) {
+  function allowsMultiple2(g) {
     var _a, _b, _c;
     if (g && (String(g.id || "") === "223" || String(g.ct_id || "") === "223"))
       return true;
@@ -4538,7 +4833,7 @@
     const n = Number(v);
     return Number.isFinite(n) && n > 0;
   }
-  function extractRequiredGiftIds(g) {
+  function extractRequiredGiftIds2(g) {
     if (!g || typeof g !== "object")
       return [];
     const out = [];
@@ -4557,7 +4852,7 @@
     });
     return [...new Set(out)];
   }
-  function diceToNum(s) {
+  function diceToNum2(s) {
     const t = String(s || "").trim().toLowerCase();
     const m = t.match(/d\s*(4|6|8|10|12)/);
     return m ? Number(m[1]) : null;
@@ -4578,7 +4873,7 @@
       for (const k of keys) {
         if (!obj || !(k in obj))
           continue;
-        const n = diceToNum(obj[k]);
+        const n = diceToNum2(obj[k]);
         if (n != null) {
           rawNum = n;
           break;
@@ -4590,7 +4885,7 @@
     try {
       const boosted = service_default.getBoostedDie(traitKey);
       if (boosted) {
-        const boostedNum = diceToNum(boosted);
+        const boostedNum = diceToNum2(boosted);
         if (boostedNum != null && (rawNum == null || boostedNum > rawNum)) {
           return boostedNum;
         }
@@ -4599,7 +4894,7 @@
     }
     return rawNum;
   }
-  function extractTraitMinimaFromRequiresSpecial(rs) {
+  function extractTraitMinimaFromRequiresSpecial2(rs) {
     const text = String(rs || "");
     if (!text)
       return [];
@@ -4633,9 +4928,9 @@
     });
     return Array.from(best.values());
   }
-  function traitMinimaSatisfied(g) {
-    const rs = requiresSpecialText(g);
-    const mins = extractTraitMinimaFromRequiresSpecial(rs);
+  function traitMinimaSatisfied2(g) {
+    const rs = requiresSpecialText2(g);
+    const mins = extractTraitMinimaFromRequiresSpecial2(rs);
     if (!mins.length)
       return true;
     for (const m of mins) {
@@ -4647,45 +4942,8 @@
     }
     return true;
   }
-  function traitMinimumBlockOnly(g, ownedSet, otherSelectedIds) {
-    if (!g)
-      return null;
-    const id = giftId(g);
-    const name = giftName(g);
-    if (!id || !name)
-      return null;
-    if (isNaturalGift(g))
-      return null;
-    if (evaluateStructuredPrereqs(g, ownedSet))
-      return null;
-    const reqIds = extractRequiredGiftIds(g);
-    for (const rid of reqIds) {
-      if (!ownedSet.has(String(rid)))
-        return null;
-    }
-    if (!comparativeTraitsSatisfied(g))
-      return null;
-    if (!qualPrereqsSatisfied(g))
-      return null;
-    if (otherSelectedIds.has(id) && !allowsMultiple(g))
-      return null;
-    if (!traitMinimaSatisfied(g)) {
-      const rs = requiresSpecialText(g);
-      const mins = extractTraitMinimaFromRequiresSpecial(rs);
-      const parts = mins.map((m) => {
-        const have = getTraitDieValue(m.traitKey);
-        if (have == null || have < m.need) {
-          const label = m.traitKey.charAt(0).toUpperCase() + m.traitKey.slice(1);
-          return `${label} d${m.need}+`;
-        }
-        return null;
-      }).filter(Boolean);
-      return "Requires: " + (parts.join(", ") || "higher trait");
-    }
-    return null;
-  }
-  function comparativeTraitsSatisfied(g) {
-    const rs = requiresSpecialText(g);
+  function comparativeTraitsSatisfied2(g) {
+    const rs = requiresSpecialText2(g);
     if (!rs)
       return true;
     const TRAIT_NAMES = ["mind", "body", "speed", "will", "species"];
@@ -4717,7 +4975,7 @@
     return out;
   }
   function qualPrereqsSatisfied(g) {
-    const rs = requiresSpecialText(g);
+    const rs = requiresSpecialText2(g);
     if (!rs)
       return true;
     if (/permission\s+from\s+the\s+game\s+host/i.test(rs))
@@ -4823,7 +5081,7 @@
     const v = (_c = (_b = g.effect_description) != null ? _b : g.ct_gifts_effect_description) != null ? _c : "";
     return String(v || "").trim();
   }
-  function isNaturalGift(g) {
+  function isNaturalGift2(g) {
     var _a, _b, _c;
     if (!g)
       return false;
@@ -4835,7 +5093,13 @@
     const raw = d.species || d.cg_species || d.species_name || d.speciesName || "";
     return String(raw || "").trim().toLowerCase();
   }
-  function speciesAnyofMet(prereq) {
+  function buildMainCharCtx() {
+    return {
+      speciesName: getCharacterSpecies(),
+      getTraitDie: getTraitDieValue
+    };
+  }
+  function speciesAnyofMet2(prereq) {
     const species = getCharacterSpecies();
     if (!species)
       return null;
@@ -4848,7 +5112,7 @@
       return true;
     return false;
   }
-  function speciesForbidMet(prereq) {
+  function speciesForbidMet2(prereq) {
     const species = getCharacterSpecies();
     if (!species)
       return null;
@@ -4861,7 +5125,7 @@
       return false;
     return true;
   }
-  function traitMinStructuredMet(prereq) {
+  function traitMinStructuredMet2(prereq) {
     const traitKey = String(prereq.trait_key || "").trim().toLowerCase().replace(/_trait$/, "");
     const needed = Number(prereq.die_min);
     if (!traitKey || !Number.isFinite(needed))
@@ -4886,7 +5150,7 @@
     const prereqs = Array.isArray(g && g.prereqs) ? g.prereqs : [];
     if (prereqs.some((p) => p.kind === "gm_permission"))
       return true;
-    const rs = requiresSpecialText(g);
+    const rs = requiresSpecialText2(g);
     return /permission\s+from\s+the\s+game\s+host/i.test(rs) || /gm\s+approval/i.test(rs) || /game\s+host\s+approval/i.test(rs);
   }
   function getGmApprovalReason(g) {
@@ -4895,7 +5159,7 @@
     if (gmPrereq) {
       return String(gmPrereq.raw_text || gmPrereq.req_value || "Permission from the Game Host").trim();
     }
-    const rs = requiresSpecialText(g);
+    const rs = requiresSpecialText2(g);
     const lines = String(rs || "").split(/[\r\n]+/).map((s) => s.trim()).filter(Boolean);
     for (const line of lines) {
       if (/permission\s+from\s+the\s+game\s+host/i.test(line) || /gm\s+approval/i.test(line) || /game\s+host\s+approval/i.test(line)) {
@@ -4915,7 +5179,7 @@
     "special_text",
     "note"
   ]);
-  function evaluateStructuredPrereqs(g, ownedSet) {
+  function evaluateStructuredPrereqs2(g, ownedSet) {
     const prereqs = Array.isArray(g && g.prereqs) ? g.prereqs : [];
     const requirements = Array.isArray(g && g.requirements) ? g.requirements : [];
     for (const prereq of prereqs) {
@@ -4923,21 +5187,21 @@
       if (kind === "gm_permission")
         continue;
       if (kind === "species_anyof") {
-        const result = speciesAnyofMet(prereq);
+        const result = speciesAnyofMet2(prereq);
         if (result === false) {
           return String(prereq.raw_text || prereq.req_value || "Species requirement not met");
         }
         continue;
       }
       if (kind === "species_forbid") {
-        const result = speciesForbidMet(prereq);
+        const result = speciesForbidMet2(prereq);
         if (result === false) {
           return String(prereq.raw_text || prereq.req_value || "Species forbidden");
         }
         continue;
       }
       if (kind === "trait_min") {
-        const result = traitMinStructuredMet(prereq);
+        const result = traitMinStructuredMet2(prereq);
         if (result === false) {
           const traitKey = String(prereq.trait_key || "");
           const needed = Number(prereq.die_min);
@@ -4946,7 +5210,7 @@
         continue;
       }
       if (kind === "trait_compare") {
-        if (!comparativeTraitsSatisfied(g)) {
+        if (!comparativeTraitsSatisfied2(g)) {
           return String(prereq.raw_text || "Trait comparison requirement not met");
         }
         continue;
@@ -4994,77 +5258,32 @@
     }
     return notes;
   }
-  function giftIneligibleReason(g, ownedSet, otherSelectedIds = /* @__PURE__ */ new Set()) {
-    if (!g)
-      return "Unknown gift";
-    const id = giftId(g);
-    const name = giftName(g);
-    if (!id || !name)
-      return "Invalid gift data";
-    if (isNaturalGift(g))
-      return "Natural gift (granted by species)";
-    const structuredReason = evaluateStructuredPrereqs(g, ownedSet);
-    if (structuredReason)
-      return structuredReason;
-    const reqIds = extractRequiredGiftIds(g);
-    for (const rid of reqIds) {
-      if (!ownedSet.has(String(rid))) {
-        return `Requires gift #${rid}`;
-      }
-    }
-    if (!traitMinimaSatisfied(g)) {
-      const rs = requiresSpecialText(g);
-      const mins = extractTraitMinimaFromRequiresSpecial(rs);
-      const parts = mins.map((m) => {
-        const have = getTraitDieValue(m.traitKey);
-        if (have == null || have < m.need)
-          return `${m.traitKey} d${m.need}+`;
-        return null;
-      }).filter(Boolean);
-      return "Requires: " + (parts.join(", ") || "higher trait");
-    }
-    if (!comparativeTraitsSatisfied(g)) {
-      return "Trait comparison requirement not met";
-    }
-    if (!qualPrereqsSatisfied(g)) {
-      const rs = requiresSpecialText(g);
-      const reqs = extractQualReqLinesFromRequiresSpecial(rs);
-      if (reqs.length) {
-        const parts = reqs.map((r) => `${r.type}: ${r.raw}`);
-        return "Requires: " + parts.join("; ");
-      }
-      return "Qualification prerequisite not met";
-    }
-    if (otherSelectedIds.has(id) && !allowsMultiple(g))
-      return "Already selected in another slot";
-    return null;
-  }
   function giftEligible(g, ownedSet, otherSelectedIds = /* @__PURE__ */ new Set()) {
     if (!g)
       return false;
-    const id = giftId(g);
-    const name = giftName(g);
+    const id = giftId2(g);
+    const name = giftName2(g);
     if (!id || !name)
       return false;
-    if (isNaturalGift(g))
+    if (isNaturalGift2(g))
       return false;
-    const structuredReason = evaluateStructuredPrereqs(g, ownedSet);
+    const structuredReason = evaluateStructuredPrereqs2(g, ownedSet);
     if (structuredReason)
       return false;
-    const reqIds = extractRequiredGiftIds(g);
+    const reqIds = extractRequiredGiftIds2(g);
     for (const rid of reqIds) {
       if (!ownedSet.has(String(rid)))
         return false;
     }
-    if (!traitMinimaSatisfied(g))
+    if (!traitMinimaSatisfied2(g))
       return false;
-    if (!comparativeTraitsSatisfied(g))
+    if (!comparativeTraitsSatisfied2(g))
       return false;
     if (!qualPrereqsSatisfied(g))
       return false;
-    if (otherSelectedIds.has(id) && !allowsMultiple(g))
+    if (otherSelectedIds.has(id) && !allowsMultiple2(g))
       return false;
-    if (!allowsMultiple(g) && ownedSet.has(id))
+    if (!allowsMultiple2(g) && ownedSet.has(id))
       return false;
     return true;
   }
@@ -5107,8 +5326,8 @@
     return stripDiacritics3(String(s || "")).trim().replace(/\s+/g, " ").toLowerCase();
   }
   function detectQualTypesNeeded(g) {
-    const rs = requiresSpecialText(g);
-    const name = giftName(g).toLowerCase();
+    const rs = requiresSpecialText2(g);
+    const name = giftName2(g).toLowerCase();
     const found = /* @__PURE__ */ new Set();
     const lines = String(rs || "").split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
     lines.forEach((line) => {
@@ -5145,7 +5364,7 @@
     const keep = /* @__PURE__ */ new Map();
     const list = Array.isArray(allGifts) ? allGifts : [];
     for (const g of list) {
-      const rs = requiresSpecialText(g);
+      const rs = requiresSpecialText2(g);
       if (!rs)
         continue;
       const lines = rs.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
@@ -5304,9 +5523,9 @@
   function isUnhandledChoiceGift(g) {
     if (!g)
       return false;
-    if (!giftName(g).includes("[Choice]"))
+    if (!giftName2(g).includes("[Choice]"))
       return false;
-    if (giftId(g) === KNACK_FOR_GIFT_ID)
+    if (giftId2(g) === KNACK_FOR_GIFT_ID)
       return false;
     if (detectQualTypesNeeded(g).length > 0)
       return false;
@@ -5535,7 +5754,7 @@
           this._allGifts = list.slice();
           this._byId = /* @__PURE__ */ new Map();
           this._allGifts.forEach((g) => {
-            const id = giftId(g);
+            const id = giftId2(g);
             if (id)
               this._byId.set(id, g);
           });
@@ -5560,7 +5779,7 @@
       if (this._byId && this._byId.get(k))
         return this._byId.get(k);
       const list = Array.isArray(this._allGifts) ? this._allGifts : [];
-      return list.find((g) => giftId(g) === k) || null;
+      return list.find((g) => giftId2(g) === k) || null;
     },
     render() {
       const modal = modalRoot();
@@ -5587,23 +5806,24 @@
         const seen = /* @__PURE__ */ new Set();
         const optionItems = [];
         if (curGift) {
-          const forcedId = giftId(curGift);
+          const forcedId = giftId2(curGift);
           seen.add(forcedId);
-          optionItems.push({ id: forcedId, name: giftName(curGift), _forced: true, gift: curGift });
+          optionItems.push({ id: forcedId, name: giftName2(curGift), _forced: true, gift: curGift });
         }
         allGifts.forEach((g) => {
-          if (isNaturalGift(g))
+          if (isNaturalGift2(g))
             return;
-          const id = giftId(g);
-          const name = giftName(g);
+          const id = giftId2(g);
+          const name = giftName2(g);
           if (!id || !name)
             return;
           if (seen.has(id))
             return;
           seen.add(id);
-          const reason = giftIneligibleReason(g, owned, others);
+          const _ctx = buildMainCharCtx();
+          const reason = giftIneligibleReason(g, owned, others, _ctx, { qualPrereqsSatisfied });
           if (reason) {
-            const traitReason = traitMinimumBlockOnly(g, owned, others);
+            const traitReason = traitMinimumBlockOnly(g, owned, others, _ctx);
             if (traitReason) {
               optionItems.push({ id, name, gift: g, _traitGated: true, _traitReason: traitReason });
             }
@@ -5880,7 +6100,7 @@
             map[slotId] = {};
           const curChoiceText = String(map[slotId].choice_text || "").trim();
           const suggestions = extractGiftSuggestions(g);
-          wrap.innerHTML = renderChoiceTextInputHtml(i, curChoiceText, suggestions, giftName(g));
+          wrap.innerHTML = renderChoiceTextInputHtml(i, curChoiceText, suggestions, giftName2(g));
           setSlotQualMap(map);
           return;
         }
@@ -5960,7 +6180,7 @@
       const others = new Set(
         allSelectedIds.map((v, idx) => idx === slotIndex ? "" : String(v || "").trim()).filter(Boolean)
       );
-      return this._allGifts.filter((g) => !isNaturalGift(g) && giftEligible(g, owned, others));
+      return this._allGifts.filter((g) => !isNaturalGift2(g) && giftEligible(g, owned, others));
     },
     debug() {
       var _a, _b;
@@ -6968,45 +7188,45 @@
         const d = window.CG_GiftsDefaults;
         return d && d._personalityGift && d._personalityGift.id ? String(d._personalityGift.id) : "";
       })();
-      function _findGift(giftId2) {
-        if (!giftId2)
+      function _findGift(giftId3) {
+        if (!giftId3)
           return null;
-        const sid = String(giftId2);
+        const sid = String(giftId3);
         if (_defaultsCache[sid])
           return _defaultsCache[sid];
         const fc = window.CG_FreeChoices;
         const allGifts = fc && Array.isArray(fc._allGifts) ? fc._allGifts : [];
         return allGifts.find((g) => String(g.ct_id || g.id || "") === sid) || null;
       }
-      function giftDesc(giftId2) {
+      function giftDesc(giftId3) {
         var _a2;
-        const g = _findGift(giftId2);
+        const g = _findGift(giftId3);
         if (!g)
           return "";
         const short = String((_a2 = g.effect) != null ? _a2 : "").trim();
         return short || String(g.effect_description || g.ct_gifts_effect_description || "").trim();
       }
-      function giftName2(giftId2) {
-        const g = _findGift(giftId2);
-        return g ? String(g.ct_gift_name || g.name || giftId2) : String(giftId2);
+      function giftName3(giftId3) {
+        const g = _findGift(giftId3);
+        return g ? String(g.ct_gift_name || g.name || giftId3) : String(giftId3);
       }
       let speciesGiftsHtml = "";
       ["gift_1", "gift_2", "gift_3"].forEach((_, idx) => {
         const gift = species[`gift_${idx + 1}`];
-        const giftId2 = species[`gift_id_${idx + 1}`];
+        const giftId3 = species[`gift_id_${idx + 1}`];
         const mult = species[`manifold_${idx + 1}`] || 1;
         if (gift) {
-          const desc = giftDesc(giftId2);
+          const desc = giftDesc(giftId3);
           speciesGiftsHtml += `<li><strong>${gift}${mult > 1 ? ` \xD7 ${mult}` : ""}</strong>${desc ? `<span class="summary-gift-desc"> \u2014 ${desc}</span>` : ""}</li>`;
         }
       });
       let careerGiftsHtml = "";
       ["gift_1", "gift_2", "gift_3"].forEach((_, idx) => {
         const gift = career[`gift_${idx + 1}`];
-        const giftId2 = career[`gift_id_${idx + 1}`];
+        const giftId3 = career[`gift_id_${idx + 1}`];
         const mult = career[`manifold_${idx + 1}`] || 1;
         if (gift) {
-          const desc = giftDesc(giftId2);
+          const desc = giftDesc(giftId3);
           careerGiftsHtml += `<li><strong>${gift}${mult > 1 ? ` \xD7 ${mult}` : ""}</strong>${desc ? `<span class="summary-gift-desc"> \u2014 ${desc}</span>` : ""}</li>`;
         }
       });
@@ -7306,7 +7526,7 @@
           const sid = String(id || "").trim();
           if (!sid)
             return;
-          const name2 = giftName2(sid);
+          const name2 = giftName3(sid);
           const desc = giftDesc(sid);
           if (name2 && name2 !== sid) {
             giftItems.push(`<li><strong>${name2}</strong>${desc ? `<span class="summary-gift-desc"> \u2014 ${desc}</span>` : ""}</li>`);
@@ -7317,7 +7537,7 @@
           const sid = String(id || "").trim();
           if (!sid)
             return;
-          const name2 = giftName2(sid);
+          const name2 = giftName3(sid);
           const desc = giftDesc(sid);
           if (name2 && name2 !== sid) {
             giftItems.push(`<li><strong>${name2}</strong> <em>(XP)</em>${desc ? `<span class="summary-gift-desc"> \u2014 ${desc}</span>` : ""}</li>`);
@@ -7588,8 +7808,8 @@
     const found = Array.isArray(list) ? list.find((s) => String(s.id) === id) : null;
     return found ? String(found.name || id) : id;
   }
-  function getGiftName(giftId2) {
-    const id = String(giftId2);
+  function getGiftName(giftId3) {
+    const id = String(giftId3);
     const all = free_choices_default._allGifts || [];
     const found = all.find((g) => String(g.ct_id || g.id || "") === id);
     return found ? String(found.ct_gift_name || found.name || id) : id;
@@ -7646,25 +7866,25 @@
   }
   function retrainFreeGift(slotIndex) {
     const key = `free_gift_${slotIndex + 1}`;
-    const giftId2 = String(getData2()[key] || "").trim();
-    if (!giftId2 || giftId2 === "0")
+    const giftId3 = String(getData2()[key] || "").trim();
+    if (!giftId3 || giftId3 === "0")
       return false;
-    const giftName2 = getGiftName(giftId2);
+    const giftName3 = getGiftName(giftId3);
     const freeQuals = __spreadValues({}, getData2().free_gift_quals || {});
     delete freeQuals[String(slotIndex)];
     const earned = (parseInt(getData2().experience_points, 10) || 0) + 5;
     setData({ [key]: "", free_gift_quals: freeQuals, experience_points: earned });
-    appendRetrainLog({ type: "gift", giftId: giftId2, giftName: giftName2, source: "free", slotIndex, xpGained: 5 });
+    appendRetrainLog({ type: "gift", giftId: giftId3, giftName: giftName3, source: "free", slotIndex, xpGained: 5 });
     return true;
   }
   function retrainXpGift(slotIndex) {
     const gifts = (getData2().xpGifts || []).slice();
     if (slotIndex < 0 || slotIndex >= gifts.length)
       return false;
-    const giftId2 = String(gifts[slotIndex] || "").trim();
-    if (!giftId2)
+    const giftId3 = String(gifts[slotIndex] || "").trim();
+    if (!giftId3)
       return false;
-    const giftName2 = getGiftName(giftId2);
+    const giftName3 = getGiftName(giftId3);
     const xpQuals = __spreadValues({}, getData2().xp_gift_quals || {});
     delete xpQuals[String(slotIndex)];
     const newGifts = gifts.filter((_, i) => i !== slotIndex);
@@ -7681,7 +7901,7 @@
     const earned = (parseInt(getData2().experience_points, 10) || 0) + 5;
     const penalty = getRetrainPenalty() + 10;
     setData({ xpGifts: newGifts, xpGiftSlots: slots, xp_gift_quals: newQuals, experience_points: earned, retrainPenalty: penalty });
-    appendRetrainLog({ type: "gift", giftId: giftId2, giftName: giftName2, source: "xp", slotIndex, xpGained: 5 });
+    appendRetrainLog({ type: "gift", giftId: giftId3, giftName: giftName3, source: "xp", slotIndex, xpGained: 5 });
     return true;
   }
   function renderRetrainPanel() {
@@ -7726,12 +7946,12 @@
     const giftRows = [];
     [0, 1, 2].forEach((i) => {
       const key = `free_gift_${i + 1}`;
-      const giftId2 = String(d[key] || "").trim();
-      if (!giftId2 || giftId2 === "0")
+      const giftId3 = String(d[key] || "").trim();
+      if (!giftId3 || giftId3 === "0")
         return;
-      if (careerGiftIds.has(giftId2))
+      if (careerGiftIds.has(giftId3))
         return;
-      const name = getGiftName(giftId2);
+      const name = getGiftName(giftId3);
       giftRows.push(`
       <div class="retrain-row" data-retrain-type="gift-free" data-slot="${i}">
         <span class="retrain-item-name">${name}</span>
@@ -7743,8 +7963,8 @@
     `);
     });
     const xpGifts = Array.isArray(d.xpGifts) ? d.xpGifts : [];
-    xpGifts.forEach((giftId2, i) => {
-      const id = String(giftId2 || "").trim();
+    xpGifts.forEach((giftId3, i) => {
+      const id = String(giftId3 || "").trim();
       if (!id)
         return;
       if (careerGiftIds.has(id))
@@ -7998,11 +8218,11 @@
       }
     });
   }
-  function xpGiftEffectHtml(giftId2) {
+  function xpGiftEffectHtml(giftId3) {
     var _a, _b, _c;
-    if (!giftId2)
+    if (!giftId3)
       return "";
-    const g = (free_choices_default._allGifts || []).find((x) => String(x.ct_id || x.id || "") === String(giftId2));
+    const g = (free_choices_default._allGifts || []).find((x) => String(x.ct_id || x.id || "") === String(giftId3));
     if (!g)
       return "";
     const desc = String((_c = (_b = (_a = g.effect) != null ? _a : g.effect_description) != null ? _b : g.ct_gifts_effect_description) != null ? _c : "").trim();
@@ -8311,8 +8531,8 @@
     return DIE_MAX[String(die || "").toLowerCase()] || 0;
   }
   function buildMovementStats() {
-    const speedDie = traitDie2("speed");
-    const bodyDie = traitDie2("body");
+    const speedDie = traitDie3("speed");
+    const bodyDie = traitDie3("body");
     const maxSpeed = dieToMax(speedDie);
     const maxBody = dieToMax(bodyDie);
     const stride = 1;
@@ -8399,7 +8619,7 @@
   function escape2(val) {
     return String(val == null ? "" : val).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
-  function traitDie2(key) {
+  function traitDie3(key) {
     const dom = document.getElementById(`cg-${key}`);
     if (dom && dom.value)
       return dom.value;
@@ -8419,11 +8639,11 @@
   }
   function buildCombatPools() {
     var _a;
-    const speed = traitDie2("speed");
-    const will = traitDie2("will");
-    const body = traitDie2("body");
-    const mind = traitDie2("mind");
-    const species = traitDie2("trait_species");
+    const speed = traitDie3("speed");
+    const will = traitDie3("will");
+    const body = traitDie3("body");
+    const mind = traitDie3("mind");
+    const species = traitDie3("trait_species");
     const data = ((_a = formBuilder_default) == null ? void 0 : _a._data) || {};
     const activeGifts = collectAllGiftIds();
     const armoredFighter = activeGifts.includes(String(GIFT_ARMORED_FIGHTER));
@@ -8632,8 +8852,8 @@
     });
     let html = `<div class="cg-battle-section cg-spells-section">
     <h4 class="cg-battle-subhead">Spells</h4>`;
-    order.forEach((giftName2) => {
-      const label = giftName2 === "Common Magic" ? "Common Magic Spells" : giftName2;
+    order.forEach((giftName3) => {
+      const label = giftName3 === "Common Magic" ? "Common Magic Spells" : giftName3;
       html += `
     <div class="cg-spell-group">
       <h5 class="cg-spell-group-head">${escape2(label)}</h5>
@@ -8644,7 +8864,7 @@
           </tr>
         </thead>
         <tbody>`;
-      groups[giftName2].forEach((s) => {
+      groups[giftName3].forEach((s) => {
         html += `<tr class="cg-spell-row">
         <td class="cg-spell-name">${escape2(s.name)}</td>
         <td class="cg-spell-pool">${escape2(spellAttackPool(s))}</td>
@@ -9079,26 +9299,26 @@
       this._syncBattleArray();
     },
     // ── Gift trappings (e.g. "Cleric's Trappings", "Dilettante's Trappings") ──
-    _fetchGiftTrappingsData(giftId2) {
+    _fetchGiftTrappingsData(giftId3) {
       return __async(this, null, function* () {
-        if (this._giftTrappings[giftId2] !== void 0)
-          return this._giftTrappings[giftId2];
+        if (this._giftTrappings[giftId3] !== void 0)
+          return this._giftTrappings[giftId3];
         const { ajax_url, nonce } = ajaxEnv7();
         if (!ajax_url)
           return [];
         try {
           const res = yield postJSON4(ajax_url, {
             action: "cg_get_gift_trappings",
-            gift_id: giftId2,
+            gift_id: giftId3,
             security: nonce,
             nonce
           });
           const fetched = res && res.success && Array.isArray(res.data) ? res.data : [];
-          this._giftTrappings[giftId2] = fetched;
+          this._giftTrappings[giftId3] = fetched;
           return fetched;
         } catch (err) {
-          WARN2("Failed to fetch gift trappings for gift", giftId2, err);
-          this._giftTrappings[giftId2] = [];
+          WARN2("Failed to fetch gift trappings for gift", giftId3, err);
+          this._giftTrappings[giftId3] = [];
           return [];
         }
       });
@@ -9123,18 +9343,18 @@
           return selectedIds.has(parseInt(t.gift_id || 0, 10));
         });
         setTrappingsList(list);
-        const promises = [...selectedIds].map((giftId2) => __async(this, null, function* () {
-          const items = yield this._fetchGiftTrappingsData(giftId2);
+        const promises = [...selectedIds].map((giftId3) => __async(this, null, function* () {
+          const items = yield this._fetchGiftTrappingsData(giftId3);
           if (!items.length)
             return;
           const current = getTrappingsList();
-          const alreadyAdded = current.some((t) => t.source === "gift" && parseInt(t.gift_id, 10) === giftId2);
+          const alreadyAdded = current.some((t) => t.source === "gift" && parseInt(t.gift_id, 10) === giftId3);
           if (alreadyAdded)
             return;
           const giftItems = items.map((t) => ({
-            uid: `gift-${giftId2}-${t.map_id}`,
+            uid: `gift-${giftId3}-${t.map_id}`,
             source: "gift",
-            gift_id: giftId2,
+            gift_id: giftId3,
             gift_name: t.gift_name || "",
             kind: t.kind || "equipment",
             name: t.name || t.token || "",
@@ -10564,10 +10784,10 @@
     </div>`;
     },
     /** Return trigger/effect text for a gift by ID (from the loaded gift list). */
-    _giftTrigger(giftId2) {
-      if (!giftId2 || !this._giftList)
+    _giftTrigger(giftId3) {
+      if (!giftId3 || !this._giftList)
         return "";
-      const g = this._giftList.find((x) => String(x.id || x.ct_id || "") === String(giftId2));
+      const g = this._giftList.find((x) => String(x.id || x.ct_id || "") === String(giftId3));
       if (!g)
         return "";
       return String(g.trigger || g.effect_description || g.effect || "").trim();
@@ -10640,65 +10860,25 @@
       html += `</div>`;
       return html;
     },
-    /** Extract required gift IDs from the flat ct_gifts_requires* columns AND requirements array. */
-    _extractAllyRequiredGiftIds(g) {
-      if (!g || typeof g !== "object")
-        return [];
-      const out = [];
-      Object.keys(g).forEach((k) => {
-        if (!/^ct_gifts_requires(_[a-z]+)?$/i.test(k) && !/^ct_gifts_requires_/i.test(k))
-          return;
-        if (k.toLowerCase() === "ct_gifts_requires_special")
-          return;
-        const v = g[k];
-        if (v == null)
-          return;
-        String(v).trim().split(",").map((x) => x.trim()).filter(Boolean).forEach((x) => out.push(x));
-      });
-      (Array.isArray(g.requirements) ? g.requirements : []).forEach((req) => {
-        if (String(req.kind || "") === "gift_ref") {
-          const refId = String(req.ref_id || "");
-          if (refId)
-            out.push(refId);
-        }
-      });
-      return [...new Set(out)];
-    },
-    /** Returns null if the gift can be offered to the ally, or a reason string if not. */
-    _allyGiftIneligibleReason(g, allyOwnedSet, otherSlotIds) {
-      const id = String(g.id || g.ct_id || "");
-      if (!id || id === "0")
-        return "Invalid";
-      if (id === "242")
-        return "Local Knowledge excluded";
-      const cls = String(g.giftclass || "").trim().toLowerCase();
-      if (cls === "natural")
-        return "Natural gift";
-      if (cls === "major")
-        return "Major gift";
-      const allows = parseInt(g.ct_gifts_manifold || g.allows_multiple || 0, 10) > 0;
-      if (!allows && allyOwnedSet.has(id))
-        return "Already owned";
-      if (!allows && otherSlotIds.has(id))
-        return "Already selected";
-      for (const rid of this._extractAllyRequiredGiftIds(g)) {
-        if (!allyOwnedSet.has(String(rid))) {
-          const reqGift = (this._giftList || []).find((x) => String(x.id || x.ct_id || "") === String(rid));
-          const reqName = reqGift ? String(reqGift.name || `#${rid}`) : `#${rid}`;
-          return `Requires: ${reqName}`;
-        }
-      }
-      const requirements = Array.isArray(g.requirements) ? g.requirements : [];
-      for (const req of requirements) {
-        if (String(req.kind || "") === "gift_ref") {
-          const refId = String(req.ref_id || "");
-          if (refId && !allyOwnedSet.has(refId)) {
-            const reqName = String(req.text || `#${refId}`);
-            return `Requires: ${reqName}`;
-          }
-        }
-      }
-      return null;
+    /**
+     * Builds the context object required by the shared gift-filter.js pipeline.
+     * To propagate new rules to the ally: add them to gift-filter.js — no change
+     * needed here because both sides call the same giftIneligibleReason().
+     */
+    _allyGiftCtx() {
+      const sp = this._speciesProfile || {};
+      const tr = this._resolveAllyTraits();
+      const traitMap = {
+        body: tr.body,
+        speed: tr.speed,
+        mind: tr.mind,
+        will: tr.will,
+        species: tr.trait_species
+      };
+      return {
+        speciesName: String(sp.name || sp.speciesName || sp.species_name || "").trim().toLowerCase(),
+        getTraitDie: (key) => diceToNum(traitMap[String(key).toLowerCase()] || null)
+      };
     },
     _buildGiftOptions(selectedId, slotIndex = -1) {
       if (!this._giftList)
@@ -10714,11 +10894,14 @@
         if (cur)
           items.push({ id: selectedId, name: String(cur.name || ""), saved: true });
       }
+      const ctx = this._allyGiftCtx();
       for (const g of this._giftList || []) {
         const id = String(g.id || g.ct_id || "");
         if (!id || id === selectedId)
           continue;
-        const reason = this._allyGiftIneligibleReason(g, owned, otherSlotIds);
+        if (id === "242")
+          continue;
+        const reason = giftIneligibleReason(g, owned, otherSlotIds, ctx, { skipQualCheck: true });
         if (reason)
           continue;
         items.push({ id, name: String(g.name || "") });
