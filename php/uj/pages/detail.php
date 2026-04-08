@@ -8,6 +8,102 @@ $slug   = $slug   ?? '';
 
 $p = cg_prefix();
 
+// ── Book detail (static — UJ is a single-volume game) ────────────────────
+if ($entity === 'books') {
+    $speciesCount = (int)(cg_query_one("SELECT COUNT(*) n FROM `{$p}uj_species` WHERE published=1")['n'] ?? 0);
+    $careerCount  = (int)(cg_query_one("SELECT COUNT(*) n FROM `{$p}uj_careers` WHERE published=1")['n'] ?? 0);
+    $giftCount    = (int)(cg_query_one("SELECT COUNT(*) n FROM `{$p}uj_gifts` WHERE published=1")['n'] ?? 0);
+    $skillCount   = (int)(cg_query_one("SELECT COUNT(*) n FROM `{$p}uj_skills` WHERE published=1")['n'] ?? 0);
+
+    $allSpecies = cg_query("SELECT name, slug FROM `{$p}uj_species` WHERE published=1 ORDER BY name");
+    $allCareers = cg_query("SELECT name, slug FROM `{$p}uj_careers` WHERE published=1 ORDER BY name");
+    $allGifts   = cg_query("SELECT name, slug FROM `{$p}uj_gifts`   WHERE published=1 ORDER BY name");
+
+    $pageTitle = 'Urban Jungle';
+    $activeNav = 'books';
+    require __DIR__ . '/../layout-head.php';
+    ?>
+    <div class="breadcrumb">
+      <a href="/uj">Home</a> <span>›</span>
+      <a href="/uj/books">Books</a> <span>›</span>
+      Urban Jungle
+    </div>
+
+    <div class="detail-layout">
+      <div class="detail-body">
+        <p class="detail-name">Urban Jungle: Anthropomorphic Noir Role-Play</p>
+
+        <div class="detail-desc">
+          <p>The early 20th century of the United States was rife with fantastic change: from the rise of industry giants, to the great experiment of Prohibition, to the tragedy of the Great Depression, onto the dawn of the Atomic Age. The sky was tamed, the world was mapped, and the possibilities of science seemed limitless, all blue skies and buttered toast…</p>
+          <p>… for some folks, anyway.</p>
+          <p>A complete game in one volume, <em>Urban Jungle</em> makes you a player in an anthropomorphic world of pulp-adventure, hard-boiled crime, and film noir. You'll tangle with hardened gangsters, with jaded debutantes, with world-weary veterans, and with all kinds of shady characters.</p>
+          <p>Our simple character creation lets you build a character in minutes. A goals-and-rewards system has your character learning from their mistakes, profiting from their successes, and growing out of the minor leagues and into the big time.</p>
+          <p>Keep your hands clean, or get involved in dirty work. Don't get dizzy as the tables turn, as a friendly conversation might become an unfriendly battle in less time than it took you to read this sentence.</p>
+          <p style="font-style:italic; color:var(--uj-text-dim);">Don't let the long whiskers and the wagging tails fool you. A smile is just another way of baring teeth.</p>
+        </div>
+
+        <?php if ($allSpecies): ?>
+        <div class="detail-section">
+          <p class="detail-section-title">Species (<?= $speciesCount ?>)</p>
+          <div class="card-tags">
+            <?php foreach ($allSpecies as $sp): ?>
+              <a href="/uj/species/<?= htmlspecialchars($sp['slug']) ?>" class="tag tag-basic"><?= htmlspecialchars($sp['name']) ?></a>
+            <?php endforeach; ?>
+          </div>
+        </div>
+        <?php endif; ?>
+
+        <?php if ($allCareers): ?>
+        <div class="detail-section">
+          <p class="detail-section-title">Careers (<?= $careerCount ?>)</p>
+          <div class="card-tags">
+            <?php foreach ($allCareers as $c): ?>
+              <a href="/uj/careers/<?= htmlspecialchars($c['slug']) ?>" class="tag tag-basic"><?= htmlspecialchars($c['name']) ?></a>
+            <?php endforeach; ?>
+          </div>
+        </div>
+        <?php endif; ?>
+
+        <?php if ($allGifts): ?>
+        <div class="detail-section">
+          <p class="detail-section-title">Gifts (<?= $giftCount ?>)</p>
+          <div class="card-tags">
+            <?php foreach ($allGifts as $g): ?>
+              <a href="/uj/gifts/<?= htmlspecialchars($g['slug']) ?>" class="tag tag-basic"><?= htmlspecialchars($g['name']) ?></a>
+            <?php endforeach; ?>
+          </div>
+        </div>
+        <?php endif; ?>
+      </div>
+
+      <div class="detail-sidebar">
+        <div class="sidebar-card">
+          <h3 class="sidebar-card-title">Contents</h3>
+          <table style="width:100%; font-size:0.88rem; border-collapse:collapse;">
+            <tr><td style="color:var(--uj-text-dim); padding:0.25rem 0;">Species</td><td style="color:var(--uj-text-muted);"><?= $speciesCount ?></td></tr>
+            <tr><td style="color:var(--uj-text-dim); padding:0.25rem 0;">Careers</td><td style="color:var(--uj-text-muted);"><?= $careerCount ?></td></tr>
+            <tr><td style="color:var(--uj-text-dim); padding:0.25rem 0;">Gifts</td><td style="color:var(--uj-text-muted);"><?= $giftCount ?></td></tr>
+            <tr><td style="color:var(--uj-text-dim); padding:0.25rem 0;">Skills</td><td style="color:var(--uj-text-muted);"><?= $skillCount ?></td></tr>
+          </table>
+        </div>
+
+        <div class="sidebar-card">
+          <a href="https://www.drivethrurpg.com/en/product/194021/urban-jungle-anthropomorphic-noir-role-play"
+             target="_blank" rel="noopener"
+             style="display:block; text-align:center; background:rgba(75,191,216,0.12); border:1px solid rgba(75,191,216,0.3);
+                    color:var(--uj-teal); border-radius:var(--uj-radius); font-family:'Cinzel',serif;
+                    font-size:0.72rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase;
+                    padding:0.6rem 1rem; text-decoration:none;">
+            Buy on DriveThruRPG →
+          </a>
+        </div>
+      </div>
+    </div>
+    <?php
+    require __DIR__ . '/../layout-foot.php';
+    exit;
+}
+
 // ── Fetch the main record ─────────────────────────────────────────────────
 $record = null;
 $pageTitle = 'Not Found';
@@ -84,6 +180,50 @@ $joinedGifts  = [];
 $joinedSoaks  = [];
 
 $entityId = (int)$record['id'];
+
+// ── Cross-links for skills and gifts ──────────────────────────────────────
+$skillCareers = [];
+$skillSpecies = [];
+$giftCareers  = [];
+$giftSpecies  = [];
+
+try {
+    if ($entity === 'skills') {
+        $skillCareers = cg_query("
+            SELECT c.name, c.slug
+            FROM `{$p}uj_careers` c
+            JOIN `{$p}uj_careers_skills` cs ON cs.career_id = c.id
+            WHERE cs.skill_id = ? AND c.published=1
+            ORDER BY c.name
+        ", [$entityId]) ?: [];
+
+        $skillSpecies = cg_query("
+            SELECT s.name, s.slug
+            FROM `{$p}uj_species` s
+            JOIN `{$p}uj_species_skills` ss ON ss.species_id = s.id
+            WHERE ss.skill_id = ? AND s.published=1
+            ORDER BY s.name
+        ", [$entityId]) ?: [];
+    }
+
+    if ($entity === 'gifts') {
+        $giftCareers = cg_query("
+            SELECT c.name, c.slug
+            FROM `{$p}uj_careers` c
+            JOIN `{$p}uj_careers_gifts` cg ON cg.career_id = c.id
+            WHERE cg.gift_id = ? AND c.published=1
+            ORDER BY c.name
+        ", [$entityId]) ?: [];
+
+        $giftSpecies = cg_query("
+            SELECT s.name, s.slug
+            FROM `{$p}uj_species` s
+            JOIN `{$p}uj_species_gifts` sg ON sg.species_id = s.id
+            WHERE sg.gift_id = ? AND s.published=1
+            ORDER BY s.name
+        ", [$entityId]) ?: [];
+    }
+} catch (Throwable) {}
 
 try {
     if (in_array($entity, ['species', 'types', 'careers'])) {
@@ -223,47 +363,130 @@ $listLabel = [
       <p class="gear-text"><?= htmlspecialchars($record['gear']) ?></p>
       <?php endif; ?>
     </div><!-- .sidebar-card -->
+
+    <div class="sidebar-card">
+      <h3 class="sidebar-card-title">Source</h3>
+      <p style="font-size:0.9rem; margin:0 0 0.2rem;">
+        <a href="/uj/books/urban-jungle">Urban Jungle</a>
+      </p>
+    </div>
   </div><!-- .detail-sidebar -->
 
 </div><!-- .detail-layout -->
 
 <?php elseif ($entity === 'skills'): ?>
 <!-- ── Skill detail ──────────────────────────────────────────────────────── -->
-<h1 class="detail-name"><?= htmlspecialchars($record['name']) ?></h1>
-<?php if (!empty($record['paired_trait'])): ?>
-<p class="detail-subtitle">Paired with <?= htmlspecialchars($record['paired_trait']) ?></p>
-<?php endif; ?>
-<?php if (!empty($record['description'])): ?>
-<p class="detail-desc"><?= nl2br(htmlspecialchars($record['description'])) ?></p>
-<?php endif; ?>
-<?php if (!empty($record['sample_favorites'])): ?>
-<div class="sidebar-card" style="max-width:480px;">
-  <h3 class="sidebar-card-title">Sample Favorites</h3>
-  <p style="font-size:0.9rem; color:var(--uj-text-muted); margin:0;"><?= nl2br(htmlspecialchars($record['sample_favorites'])) ?></p>
+<div class="detail-layout">
+  <div class="detail-body">
+    <h1 class="detail-name"><?= htmlspecialchars($record['name']) ?></h1>
+    <?php if (!empty($record['paired_trait'])): ?>
+    <p class="detail-subtitle">Paired with <?= htmlspecialchars($record['paired_trait']) ?></p>
+    <?php endif; ?>
+    <?php if (!empty($record['description'])): ?>
+    <p class="detail-desc"><?= nl2br(htmlspecialchars($record['description'])) ?></p>
+    <?php endif; ?>
+    <?php if (!empty($record['sample_favorites'])): ?>
+    <div class="detail-section">
+      <h3 class="detail-section-title">Sample Favorites</h3>
+      <p style="font-size:0.9rem; color:var(--uj-text-muted); margin:0;"><?= nl2br(htmlspecialchars($record['sample_favorites'])) ?></p>
+    </div>
+    <?php endif; ?>
+    <?php if (!empty($record['gift_notes'])): ?>
+    <div class="detail-section">
+      <h3 class="detail-section-title">Gift Notes</h3>
+      <p style="font-size:0.9rem; color:var(--uj-text-muted); margin:0;"><?= nl2br(htmlspecialchars($record['gift_notes'])) ?></p>
+    </div>
+    <?php endif; ?>
+  </div>
+
+  <div class="detail-sidebar">
+    <?php if ($skillCareers): ?>
+    <div class="sidebar-card">
+      <h3 class="sidebar-card-title">Careers Using This Skill</h3>
+      <ul class="trait-list">
+        <?php foreach ($skillCareers as $c): ?>
+        <li><a href="/uj/careers/<?= htmlspecialchars($c['slug']) ?>" style="color:var(--uj-amber);"><?= htmlspecialchars($c['name']) ?></a></li>
+        <?php endforeach; ?>
+      </ul>
+    </div>
+    <?php endif; ?>
+
+    <?php if ($skillSpecies): ?>
+    <div class="sidebar-card">
+      <h3 class="sidebar-card-title">Species With This Skill</h3>
+      <ul class="trait-list">
+        <?php foreach ($skillSpecies as $sp): ?>
+        <li><a href="/uj/species/<?= htmlspecialchars($sp['slug']) ?>" style="color:var(--uj-teal);"><?= htmlspecialchars($sp['name']) ?></a></li>
+        <?php endforeach; ?>
+      </ul>
+    </div>
+    <?php endif; ?>
+
+    <div class="sidebar-card">
+      <h3 class="sidebar-card-title">Source</h3>
+      <p style="font-size:0.9rem; margin:0;">
+        <a href="/uj/books/urban-jungle">Urban Jungle</a>
+      </p>
+    </div>
+  </div>
 </div>
-<?php endif; ?>
-<?php if (!empty($record['gift_notes'])): ?>
-<div class="sidebar-card" style="max-width:480px; margin-top:1rem;">
-  <h3 class="sidebar-card-title">Gift Notes</h3>
-  <p style="font-size:0.9rem; color:var(--uj-text-muted); margin:0;"><?= nl2br(htmlspecialchars($record['gift_notes'])) ?></p>
-</div>
-<?php endif; ?>
 
 <?php elseif ($entity === 'gifts'): ?>
 <!-- ── Gift detail ───────────────────────────────────────────────────────── -->
-<div style="display:flex; align-items:flex-start; gap:0.75rem; margin-bottom:0.5rem; flex-wrap:wrap;">
-  <h1 class="detail-name" style="margin:0;"><?= htmlspecialchars($record['name']) ?></h1>
-  <span class="tag tag-<?= htmlspecialchars($record['gift_type']) ?>" style="margin-top:6px;"><?= ucfirst($record['gift_type']) ?></span>
+<div class="detail-layout">
+  <div class="detail-body">
+    <div style="display:flex; align-items:flex-start; gap:0.75rem; margin-bottom:0.5rem; flex-wrap:wrap;">
+      <h1 class="detail-name" style="margin:0;"><?= htmlspecialchars($record['name']) ?></h1>
+      <span class="tag tag-<?= htmlspecialchars($record['gift_type']) ?>" style="margin-top:6px;"><?= ucfirst($record['gift_type']) ?></span>
+    </div>
+    <?php if (!empty($record['subtitle'])): ?>
+    <p class="detail-subtitle"><?= htmlspecialchars($record['subtitle']) ?></p>
+    <?php endif; ?>
+    <?php if (!empty($record['description'])): ?>
+    <p class="detail-desc"><?= nl2br(htmlspecialchars($record['description'])) ?></p>
+    <?php endif; ?>
+    <?php if (!empty($record['requires_text'])): ?>
+    <div class="detail-section">
+      <h3 class="detail-section-title">Requirements</h3>
+      <p style="color:var(--uj-text-muted); font-size:0.95rem; margin:0;"><?= nl2br(htmlspecialchars($record['requires_text'])) ?></p>
+    </div>
+    <?php endif; ?>
+    <?php if (!empty($record['recharge'])): ?>
+    <p style="color:var(--uj-text-dim); font-size:0.9rem; margin-top:1rem;"><strong style="color:var(--uj-text-muted);">Recharge:</strong> <?= htmlspecialchars($record['recharge']) ?></p>
+    <?php endif; ?>
+  </div>
+
+  <div class="detail-sidebar">
+    <?php if ($giftCareers): ?>
+    <div class="sidebar-card">
+      <h3 class="sidebar-card-title">Careers With This Gift</h3>
+      <ul class="trait-list">
+        <?php foreach ($giftCareers as $c): ?>
+        <li><a href="/uj/careers/<?= htmlspecialchars($c['slug']) ?>" style="color:var(--uj-amber);"><?= htmlspecialchars($c['name']) ?></a></li>
+        <?php endforeach; ?>
+      </ul>
+    </div>
+    <?php endif; ?>
+
+    <?php if ($giftSpecies): ?>
+    <div class="sidebar-card">
+      <h3 class="sidebar-card-title">Species With This Gift</h3>
+      <ul class="trait-list">
+        <?php foreach ($giftSpecies as $sp): ?>
+        <li><a href="/uj/species/<?= htmlspecialchars($sp['slug']) ?>" style="color:var(--uj-teal);"><?= htmlspecialchars($sp['name']) ?></a></li>
+        <?php endforeach; ?>
+      </ul>
+    </div>
+    <?php endif; ?>
+
+    <div class="sidebar-card">
+      <h3 class="sidebar-card-title">Source</h3>
+      <p style="font-size:0.9rem; margin:0;">
+        <a href="/uj/books/urban-jungle">Urban Jungle</a>
+      </p>
+    </div>
+  </div>
 </div>
-<?php if (!empty($record['subtitle'])): ?>
-<p class="detail-subtitle"><?= htmlspecialchars($record['subtitle']) ?></p>
-<?php endif; ?>
-<?php if (!empty($record['description'])): ?>
-<p class="detail-desc"><?= nl2br(htmlspecialchars($record['description'])) ?></p>
-<?php endif; ?>
-<?php if (!empty($record['recharge'])): ?>
-<p style="color:var(--uj-text-dim); font-size:0.9rem;"><strong style="color:var(--uj-text-muted);">Recharge:</strong> <?= htmlspecialchars($record['recharge']) ?></p>
-<?php endif; ?>
 
 <?php elseif ($entity === 'soaks'): ?>
 <!-- ── Soak detail ───────────────────────────────────────────────────────── -->
