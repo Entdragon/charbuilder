@@ -139,6 +139,11 @@
     allySpeciesId:   null,
     allyCareerId:    null,
     allyName:        '',
+    allyGender:      '',
+    allyBodyDie:     'd6',
+    allySpeedDie:    'd6',
+    allyMindDie:     'd6',
+    allyWillDie:     'd6',
     giftChoices:     {},
     experience:      0,
     purchasedGifts:  [],
@@ -349,7 +354,12 @@
       state.careerId       = c.career_id  ? Number(c.career_id)  : null;
       state.allySpeciesId  = c.ally_species_id ? Number(c.ally_species_id) : null;
       state.allyCareerId   = c.ally_career_id  ? Number(c.ally_career_id)  : null;
-      state.allyName       = c.ally_name  || '';
+      state.allyName       = c.ally_name   || '';
+      state.allyGender     = c.ally_gender || '';
+      state.allyBodyDie    = c.ally_body_die  || 'd6';
+      state.allySpeedDie   = c.ally_speed_die || 'd6';
+      state.allyMindDie    = c.ally_mind_die  || 'd6';
+      state.allyWillDie    = c.ally_will_die  || 'd6';
       state.experience     = parseInt(c.experience || 0, 10);
       state.purchasedGifts = (function() {
         try { return JSON.parse(c.purchased_gifts || '[]') || []; } catch(e) { return []; }
@@ -378,7 +388,12 @@
       state.notes           = c.notes      || '';
       state.allySpeciesId   = c.ally_species_id ? Number(c.ally_species_id) : null;
       state.allyCareerId    = c.ally_career_id  ? Number(c.ally_career_id)  : null;
-      state.allyName        = c.ally_name       || '';
+      state.allyName        = c.ally_name   || '';
+      state.allyGender      = c.ally_gender || '';
+      state.allyBodyDie     = c.ally_body_die  || 'd6';
+      state.allySpeedDie    = c.ally_speed_die || 'd6';
+      state.allyMindDie     = c.ally_mind_die  || 'd6';
+      state.allyWillDie     = c.ally_will_die  || 'd6';
       state.giftChoices     = (function() {
         try { return JSON.parse(c.gift_choices || '{}') || {}; } catch(e) { return {}; }
       })();
@@ -523,16 +538,34 @@
           speciesList.map(function(s) { return '<option value="' + esc(s.id) + '"' + (state.allySpeciesId == s.id ? ' selected' : '') + '>' + esc(s.name) + '</option>'; }).join('');
         var caOpts = '<option value="">— Choose Career —</option>' +
           careerList.map(function(c) { return '<option value="' + esc(c.id) + '"' + (state.allyCareerId == c.id ? ' selected' : '') + '>' + esc(c.name) + '</option>'; }).join('');
-        return '<div class="dev-xp-panel" style="flex-direction:column;align-items:flex-start;gap:0.75rem;">' +
+        var diceOpts = ['d4','d6','d8','d10','d12'].map(function(d) {
+          return '<option value="' + d + '"' + (d === 'd6' ? ' selected' : '') + '>' + d + '</option>';
+        }).join('');
+        function diceOptsFor(current) {
+          return ['d4','d6','d8','d10','d12'].map(function(d) {
+            return '<option value="' + d + '"' + (d === current ? ' selected' : '') + '>' + d + '</option>';
+          }).join('');
+        }
+        var genderOpts = ['','Male','Female','Non-binary','Unknown'].map(function(g) {
+          return '<option value="' + g + '"' + (g === state.allyGender ? ' selected' : '') + '>' + (g || '— Gender —') + '</option>';
+        }).join('');
+        function labelDiv(lbl, content) {
+          return '<div style="flex:1;min-width:120px;"><label style="font-size:0.7rem;color:var(--uj-text-dim);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:0.35rem;">' + lbl + '</label>' + content + '</div>';
+        }
+        return '<div class="dev-xp-panel" style="flex-direction:column;align-items:flex-start;gap:0.9rem;">' +
           '<div style="font-family:\'Cinzel\',serif;font-size:0.8rem;font-weight:700;color:var(--uj-amber);letter-spacing:0.06em;text-transform:uppercase;">Ally Configuration</div>' +
-          '<div style="display:flex;gap:1rem;flex-wrap:wrap;width:100%;">' +
-            '<div style="flex:2;min-width:200px;"><label style="font-size:0.72rem;color:var(--uj-text-dim);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:0.35rem;">Ally Name</label>' +
-            '<input type="text" id="dev-ally-name" class="field-input" placeholder="Enter ally\'s name…" value="' + esc(state.allyName) + '" style="width:100%;"></div>' +
-            '<div style="flex:1;min-width:160px;"><label style="font-size:0.72rem;color:var(--uj-text-dim);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:0.35rem;">Ally Species</label>' +
-            '<select class="field-select" id="dev-ally-species" style="width:100%;">' + spOpts + '</select></div>' +
-            '<div style="flex:1;min-width:160px;"><label style="font-size:0.72rem;color:var(--uj-text-dim);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:0.35rem;">Ally Career</label>' +
-            '<select class="field-select" id="dev-ally-career" style="width:100%;">' + caOpts + '</select></div>' +
-            '<div style="display:flex;align-items:flex-end;"><button class="uj-btn uj-btn-amber" id="dev-ally-save-btn" style="font-size:0.78rem;">Save Ally</button></div>' +
+          '<div style="display:flex;gap:0.75rem;flex-wrap:wrap;width:100%;">' +
+            labelDiv('Ally Name', '<input type="text" id="dev-ally-name" class="field-input" placeholder="Name…" value="' + esc(state.allyName) + '" style="width:100%;">') +
+            labelDiv('Gender', '<select class="field-select" id="dev-ally-gender" style="width:100%;">' + genderOpts + '</select>') +
+            labelDiv('Species', '<select class="field-select" id="dev-ally-species" style="width:100%;">' + spOpts + '</select>') +
+            labelDiv('Career', '<select class="field-select" id="dev-ally-career" style="width:100%;">' + caOpts + '</select>') +
+          '</div>' +
+          '<div style="display:flex;gap:0.75rem;flex-wrap:wrap;width:100%;align-items:flex-end;">' +
+            labelDiv('Body Die', '<select class="field-select" id="dev-ally-body-die" style="width:100%;">' + diceOptsFor(state.allyBodyDie) + '</select>') +
+            labelDiv('Speed Die', '<select class="field-select" id="dev-ally-speed-die" style="width:100%;">' + diceOptsFor(state.allySpeedDie) + '</select>') +
+            labelDiv('Mind Die', '<select class="field-select" id="dev-ally-mind-die" style="width:100%;">' + diceOptsFor(state.allyMindDie) + '</select>') +
+            labelDiv('Will Die', '<select class="field-select" id="dev-ally-will-die" style="width:100%;">' + diceOptsFor(state.allyWillDie) + '</select>') +
+            '<div style="display:flex;align-items:flex-end;padding-bottom:0.05rem;"><button class="uj-btn uj-btn-amber" id="dev-ally-save-btn" style="font-size:0.78rem;white-space:nowrap;">Save Ally</button></div>' +
           '</div>' +
         '</div>';
       })() +
@@ -568,14 +601,24 @@
       saveDevelop(renderDevelop);
     });
 
-    var allyNameIn  = document.getElementById('dev-ally-name');
-    var allySpSel   = document.getElementById('dev-ally-species');
-    var allyCaSel   = document.getElementById('dev-ally-career');
-    var allySaveBtn = document.getElementById('dev-ally-save-btn');
-    if (allyNameIn)  allyNameIn.addEventListener('input',  function() { state.allyName      = allyNameIn.value; });
-    if (allySpSel)   allySpSel.addEventListener('change',  function() { state.allySpeciesId = allySpSel.value ? Number(allySpSel.value) : null; });
-    if (allyCaSel)   allyCaSel.addEventListener('change',  function() { state.allyCareerId  = allyCaSel.value ? Number(allyCaSel.value) : null; });
-    if (allySaveBtn) allySaveBtn.addEventListener('click', function() { saveDevelop(function() {
+    var allyNameIn    = document.getElementById('dev-ally-name');
+    var allyGenderSel = document.getElementById('dev-ally-gender');
+    var allySpSel     = document.getElementById('dev-ally-species');
+    var allyCaSel     = document.getElementById('dev-ally-career');
+    var allyBodySel   = document.getElementById('dev-ally-body-die');
+    var allySpeedSel  = document.getElementById('dev-ally-speed-die');
+    var allyMindSel   = document.getElementById('dev-ally-mind-die');
+    var allyWillSel   = document.getElementById('dev-ally-will-die');
+    var allySaveBtn   = document.getElementById('dev-ally-save-btn');
+    if (allyNameIn)    allyNameIn.addEventListener('input',   function() { state.allyName      = allyNameIn.value; });
+    if (allyGenderSel) allyGenderSel.addEventListener('change', function() { state.allyGender  = allyGenderSel.value; });
+    if (allySpSel)     allySpSel.addEventListener('change',   function() { state.allySpeciesId = allySpSel.value ? Number(allySpSel.value) : null; });
+    if (allyCaSel)     allyCaSel.addEventListener('change',   function() { state.allyCareerId  = allyCaSel.value ? Number(allyCaSel.value) : null; });
+    if (allyBodySel)   allyBodySel.addEventListener('change', function() { state.allyBodyDie   = allyBodySel.value; });
+    if (allySpeedSel)  allySpeedSel.addEventListener('change',function() { state.allySpeedDie  = allySpeedSel.value; });
+    if (allyMindSel)   allyMindSel.addEventListener('change', function() { state.allyMindDie   = allyMindSel.value; });
+    if (allyWillSel)   allyWillSel.addEventListener('change', function() { state.allyWillDie   = allyWillSel.value; });
+    if (allySaveBtn)   allySaveBtn.addEventListener('click',  function() { saveDevelop(function() {
       allySaveBtn.textContent = 'Saved!';
       setTimeout(function() { allySaveBtn.textContent = 'Save Ally'; }, 2000);
     }); });
@@ -609,7 +652,12 @@
       purchased_gifts:  JSON.stringify(state.purchasedGifts),
       ally_species_id:  state.allySpeciesId !== null ? state.allySpeciesId : '',
       ally_career_id:   state.allyCareerId  !== null ? state.allyCareerId  : '',
-      ally_name:        state.allyName || '',
+      ally_name:        state.allyName    || '',
+      ally_gender:      state.allyGender  || '',
+      ally_body_die:    state.allyBodyDie  || 'd6',
+      ally_speed_die:   state.allySpeedDie || 'd6',
+      ally_mind_die:    state.allyMindDie  || 'd6',
+      ally_will_die:    state.allyWillDie  || 'd6',
     }).then(function() {
       if (callback) callback();
     });
@@ -1404,7 +1452,7 @@
       html += '<div style="background:rgba(0,0,0,0.4);border-bottom:1px solid var(--uj-border);padding:1.25rem 1.5rem;display:flex;justify-content:space-between;align-items:flex-end;">' +
         '<div>' +
           '<div style="font-family:\'Cinzel\',serif;font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--uj-teal);margin-bottom:0.2rem;">Ally Character Sheet</div>' +
-          '<div style="font-family:\'Cinzel\',serif;font-size:1.5rem;font-weight:700;color:var(--uj-amber-light);">' + esc(state.allyName || 'Unnamed Ally') + '</div>' +
+          '<div style="font-family:\'Cinzel\',serif;font-size:1.5rem;font-weight:700;color:var(--uj-amber-light);">' + esc(state.allyName || 'Unnamed Ally') + (state.allyGender ? '<span style="font-size:0.9rem;font-weight:400;color:var(--uj-text-dim);margin-left:0.6rem;">(' + esc(state.allyGender) + ')</span>' : '') + '</div>' +
           '<div style="font-size:0.8rem;color:var(--uj-text-dim);margin-top:0.15rem;">' +
             [allySp ? esc(allySp.name) : null, allyCa ? esc(allyCa.name) : null].filter(Boolean).join(' &mdash; ') +
           '</div>' +
@@ -1412,50 +1460,72 @@
         '<div style="font-size:0.7rem;color:var(--uj-text-dim);text-align:right;">Ally of ' + esc(state.charName || 'unknown') + '</div>' +
       '</div>';
 
+      var aBodyDie  = state.allyBodyDie  || 'd6';
+      var aSpeedDie = state.allySpeedDie || 'd6';
+      var aMindDie  = state.allyMindDie  || 'd6';
+      var aWillDie  = state.allyWillDie  || 'd6';
+      var aSpDie    = allySp ? (allySp.die || 'd6') : '';
+      var aCaDie    = allyCa ? (allyCa.die || 'd6') : '';
+
       html += '<div style="padding:1.25rem 1.5rem;">';
 
-      // Dice
-      html += '<div style="display:flex;gap:1.5rem;flex-wrap:wrap;margin-bottom:1.25rem;">';
-      if (allySp) {
-        html += '<div style="text-align:center;background:rgba(0,0,0,0.25);border:1px solid var(--uj-border);border-radius:8px;padding:0.6rem 1rem;">' +
-          '<div style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--uj-text-dim);margin-bottom:0.2rem;">Species Die</div>' +
-          '<div style="font-family:\'Cinzel\',serif;font-size:1.3rem;color:var(--uj-amber);">' + esc(allySp.die || '—') + '</div>' +
-          '<div style="font-size:0.72rem;color:var(--uj-text-dim);">' + esc(allySp.name) + '</div>' +
+      // Trait + Source dice
+      function allyDiceBlock(label, die, improved) {
+        return '<div style="text-align:center;background:rgba(0,0,0,0.25);border:1px solid var(--uj-border);border-radius:8px;padding:0.5rem 0.8rem;">' +
+          '<div style="font-size:0.58rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--uj-text-dim);margin-bottom:0.15rem;">' + label + '</div>' +
+          '<div style="font-family:\'Cinzel\',serif;font-size:1.2rem;color:' + (improved ? 'var(--uj-teal)' : 'var(--uj-amber)') + ';">' + esc(die || '—') + '</div>' +
         '</div>';
       }
-      if (allyCa) {
-        html += '<div style="text-align:center;background:rgba(0,0,0,0.25);border:1px solid var(--uj-border);border-radius:8px;padding:0.6rem 1rem;">' +
-          '<div style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--uj-text-dim);margin-bottom:0.2rem;">Career Die</div>' +
-          '<div style="font-family:\'Cinzel\',serif;font-size:1.3rem;color:var(--uj-amber);">' + esc(allyCa.die || '—') + '</div>' +
-          '<div style="font-size:0.72rem;color:var(--uj-text-dim);">' + esc(allyCa.name) + '</div>' +
-        '</div>';
-      }
-      html += '</div>';
+      html += '<div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:1.25rem;">' +
+        allyDiceBlock('Body',  aBodyDie,  false) +
+        allyDiceBlock('Speed', aSpeedDie, false) +
+        allyDiceBlock('Mind',  aMindDie,  false) +
+        allyDiceBlock('Will',  aWillDie,  false) +
+        (allySp ? allyDiceBlock('Species · ' + esc(allySp.name), aSpDie, false) : '') +
+        (allyCa ? allyDiceBlock('Career · '  + esc(allyCa.name), aCaDie, false) : '') +
+      '</div>';
 
-      // Skills
-      var allySkills = [];
-      var allySkillSeen = {};
-      function addAllySkills(entity, dieSrc) {
-        if (!entity || !entity.skills) return;
-        entity.skills.forEach(function(sk) {
-          var key = (sk.name || sk).toLowerCase();
-          if (!allySkillSeen[key]) { allySkillSeen[key] = true; allySkills.push({ name: sk.name || sk, die: dieSrc }); }
+      // Battle Array
+      function allyGrantsSkill(entity, skillName) {
+        if (!entity || !entity.skills) return false;
+        return entity.skills.some(function(sk) {
+          return (sk.name || sk).toLowerCase() === skillName.toLowerCase();
         });
       }
-      addAllySkills(allySp, allySp ? (allySp.die || '—') : '—');
-      addAllySkills(allyCa, allyCa ? (allyCa.die || '—') : '—');
-      if (allySkills.length) {
-        html += '<div style="margin-bottom:1.25rem;"><div style="font-family:\'Cinzel\',serif;font-size:0.72rem;font-weight:700;color:var(--uj-amber);letter-spacing:0.08em;text-transform:uppercase;border-bottom:1px solid var(--uj-border);padding-bottom:0.35rem;margin-bottom:0.6rem;">Skills</div>';
-        html += '<table style="width:100%;border-collapse:collapse;font-size:0.82rem;">';
-        html += '<thead><tr><th style="text-align:left;padding:0.25rem 0.5rem 0.25rem 0;color:var(--uj-text-dim);font-weight:500;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;">Skill</th><th style="text-align:center;padding:0.25rem 0.5rem;color:var(--uj-text-dim);font-weight:500;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;">Die</th></tr></thead><tbody>';
-        allySkills.forEach(function(sk) {
-          html += '<tr style="border-top:1px solid rgba(255,255,255,0.05);">' +
-            '<td style="padding:0.3rem 0.5rem 0.3rem 0;">' + esc(sk.name) + '</td>' +
-            '<td style="text-align:center;padding:0.3rem 0.5rem;font-family:\'Cinzel\',serif;color:var(--uj-amber);">' + esc(sk.die) + '</td>' +
-          '</tr>';
-        });
-        html += '</tbody></table></div>';
-      }
+      var aInitDice  = [aMindDie].concat(allyGrantsSkill(allySp, 'Observation') ? [aSpDie] : []).concat(allyGrantsSkill(allyCa, 'Observation') ? [aCaDie] : []).filter(Boolean);
+      var aDodgeDice = [aSpeedDie].concat(allyGrantsSkill(allySp, 'Evasion') ? [aSpDie] : []).concat(allyGrantsSkill(allyCa, 'Evasion') ? [aCaDie] : []).filter(Boolean);
+      var aRallyDice = [aWillDie].concat(allyGrantsSkill(allySp, 'Tactics') ? [aSpDie] : []).concat(allyGrantsSkill(allyCa, 'Tactics') ? [aCaDie] : []).filter(Boolean);
+      html += '<div class="summary-battle-array" style="margin-bottom:1.25rem;">' +
+        '<div class="summary-section-title" style="font-size:0.72rem;">Battle Array</div>' +
+        '<div class="battle-array-grid">' +
+          '<div class="battle-stat"><div class="battle-stat-name">Initiative</div><div class="battle-stat-sub">Mind + Observation</div><div class="battle-stat-dice">' + aInitDice.join(' + ') + '</div></div>' +
+          '<div class="battle-stat"><div class="battle-stat-name">Dodge</div><div class="battle-stat-sub">Speed + Evasion</div><div class="battle-stat-dice">' + aDodgeDice.join(' + ') + '</div></div>' +
+          '<div class="battle-stat"><div class="battle-stat-name">Rally</div><div class="battle-stat-sub">Will + Tactics</div><div class="battle-stat-dice">' + aRallyDice.join(' + ') + '</div></div>' +
+        '</div>' +
+      '</div>';
+
+      // Full Skills Table
+      html += '<div class="summary-section summary-skills-section" style="margin-bottom:1.25rem;">' +
+        '<div class="summary-section-title" style="font-size:0.72rem;">Skills</div>' +
+        '<table class="skills-table"><thead><tr>' +
+          '<th class="skill-name-col">Skill</th>' +
+          '<th class="skill-die-col">Species</th>' +
+          '<th class="skill-die-col">Career</th>' +
+          '<th class="skill-total-col">Pool</th>' +
+        '</tr></thead><tbody>';
+      CORE_SKILLS.forEach(function(skillName) {
+        var spDie2 = (allySp && allyGrantsSkill(allySp, skillName)) ? aSpDie : '';
+        var caDie2 = (allyCa && allyGrantsSkill(allyCa, skillName)) ? aCaDie : '';
+        var pool2  = [spDie2, caDie2].filter(Boolean);
+        var hasAny = pool2.length > 0;
+        html += '<tr class="' + (hasAny ? 'skill-row-active' : 'skill-row-empty') + '">' +
+          '<td class="skill-name-col">' + esc(skillName) + '</td>' +
+          '<td class="skill-die-col">' + (spDie2 ? '<span class="skill-die-badge">' + spDie2 + '</span>' : '<span class="skill-die-empty">—</span>') + '</td>' +
+          '<td class="skill-die-col">' + (caDie2 ? '<span class="skill-die-badge">' + caDie2 + '</span>' : '<span class="skill-die-empty">—</span>') + '</td>' +
+          '<td class="skill-total-col">' + (pool2.length ? '<span style="color:var(--uj-teal);font-weight:600;">' + pool2.join(' + ') + '</span>' : '<span class="skill-die-empty">—</span>') + '</td>' +
+        '</tr>';
+      });
+      html += '</tbody></table></div>';
 
       // Gifts
       var allyGifts = [];
@@ -1470,8 +1540,8 @@
       addAllyGifts(allySp);
       addAllyGifts(allyCa);
       if (allyGifts.length) {
-        html += '<div style="margin-bottom:1.25rem;"><div style="font-family:\'Cinzel\',serif;font-size:0.72rem;font-weight:700;color:var(--uj-amber);letter-spacing:0.08em;text-transform:uppercase;border-bottom:1px solid var(--uj-border);padding-bottom:0.35rem;margin-bottom:0.6rem;">Gifts</div>';
-        html += '<ul style="margin:0;padding:0;list-style:none;">';
+        html += '<div style="margin-bottom:1.25rem;"><div class="summary-section-title" style="font-size:0.72rem;">Gifts</div>';
+        html += '<ul class="summary-list">';
         allyGifts.forEach(function(g) {
           html += '<li class="gift-item">' + esc(g.name) +
             (g.subtitle ? '<span style="display:block;font-size:0.78rem;color:#4ade80;font-style:italic;margin-top:0.1rem;">' + esc(g.subtitle) + '</span>' : '') +
@@ -1493,8 +1563,8 @@
       addAllySoaks(allySp);
       addAllySoaks(allyCa);
       if (allySoaks.length) {
-        html += '<div><div style="font-family:\'Cinzel\',serif;font-size:0.72rem;font-weight:700;color:var(--uj-amber);letter-spacing:0.08em;text-transform:uppercase;border-bottom:1px solid var(--uj-border);padding-bottom:0.35rem;margin-bottom:0.6rem;">Soaks</div>';
-        html += '<ul style="margin:0;padding:0;list-style:none;">';
+        html += '<div><div class="summary-section-title" style="font-size:0.72rem;">Soaks</div>';
+        html += '<ul class="summary-list">';
         allySoaks.forEach(function(s) {
           html += '<li class="soak-item">' + esc(s.name) + (s.damage_negated ? '<small>' + esc(s.damage_negated) + '</small>' : '') + '</li>';
         });

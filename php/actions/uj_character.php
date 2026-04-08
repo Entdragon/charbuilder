@@ -40,6 +40,11 @@ function uj_ensure_characters_table(): void {
         'ally_species_id INT DEFAULT NULL',
         'ally_career_id INT DEFAULT NULL',
         'ally_name VARCHAR(191) DEFAULT NULL',
+        'ally_gender VARCHAR(64) DEFAULT NULL',
+        'ally_body_die VARCHAR(4) DEFAULT NULL',
+        'ally_speed_die VARCHAR(4) DEFAULT NULL',
+        'ally_mind_die VARCHAR(4) DEFAULT NULL',
+        'ally_will_die VARCHAR(4) DEFAULT NULL',
         'gift_choices TEXT DEFAULT NULL',
         'experience INT NOT NULL DEFAULT 0',
         'purchased_gifts TEXT DEFAULT NULL',
@@ -69,7 +74,8 @@ function uj_load_characters(): void {
                 body_die, speed_die, mind_die, will_die,
                 species_die, type_die, career_die,
                 personality_word, notes,
-                ally_species_id, ally_career_id, ally_name, gift_choices,
+                ally_species_id, ally_career_id, ally_name, ally_gender,
+                ally_body_die, ally_speed_die, ally_mind_die, ally_will_die, gift_choices,
                 experience, purchased_gifts,
                 created_at, updated_at
            FROM `{$p}uj_character_records`
@@ -235,10 +241,22 @@ function uj_update_development(): void {
     $rawAllyCareer  = $_POST['ally_career_id']  ?? null;
     $allySpeciesId  = ($rawAllySpecies !== null && $rawAllySpecies !== '') ? (int) $rawAllySpecies : null;
     $allyCareerId   = ($rawAllyCareer  !== null && $rawAllyCareer  !== '') ? (int) $rawAllyCareer  : null;
-    $allyName       = isset($_POST['ally_name']) ? trim(substr($_POST['ally_name'], 0, 191)) : null;
+    $allyName       = isset($_POST['ally_name'])   ? trim(substr($_POST['ally_name'], 0, 191)) : null;
+    $allyGender     = isset($_POST['ally_gender']) ? trim(substr($_POST['ally_gender'], 0, 64)) : null;
+    $validDice      = ['d4', 'd6', 'd8', 'd10', 'd12'];
+    $allyBodyDie    = in_array($_POST['ally_body_die']  ?? '', $validDice) ? $_POST['ally_body_die']  : 'd6';
+    $allySpeedDie   = in_array($_POST['ally_speed_die'] ?? '', $validDice) ? $_POST['ally_speed_die'] : 'd6';
+    $allyMindDie    = in_array($_POST['ally_mind_die']  ?? '', $validDice) ? $_POST['ally_mind_die']  : 'd6';
+    $allyWillDie    = in_array($_POST['ally_will_die']  ?? '', $validDice) ? $_POST['ally_will_die']  : 'd6';
     cg_exec(
-        "UPDATE `{$p}uj_character_records` SET experience = ?, purchased_gifts = ?, ally_species_id = ?, ally_career_id = ?, ally_name = ?, updated_at = ? WHERE id = ? AND user_id = ?",
-        [$experience, $purchasedGifts, $allySpeciesId, $allyCareerId, $allyName ?: null, date('Y-m-d H:i:s'), $id, $uid]
+        "UPDATE `{$p}uj_character_records` SET experience = ?, purchased_gifts = ?,
+         ally_species_id = ?, ally_career_id = ?, ally_name = ?, ally_gender = ?,
+         ally_body_die = ?, ally_speed_die = ?, ally_mind_die = ?, ally_will_die = ?,
+         updated_at = ? WHERE id = ? AND user_id = ?",
+        [$experience, $purchasedGifts, $allySpeciesId, $allyCareerId,
+         $allyName ?: null, $allyGender ?: null,
+         $allyBodyDie, $allySpeedDie, $allyMindDie, $allyWillDie,
+         date('Y-m-d H:i:s'), $id, $uid]
     );
     cg_json(['success' => true, 'data' => ['id' => (string) $id]]);
 }
