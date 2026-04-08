@@ -95,6 +95,40 @@ function uj_create_tables_internal(): array {
             UNIQUE KEY `slug` (`slug`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
 
+        // Gifts
+        "CREATE TABLE IF NOT EXISTS `{$p}uj_gifts` (
+            `id`            INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `name`          VARCHAR(100) NOT NULL DEFAULT '',
+            `slug`          VARCHAR(100) NOT NULL DEFAULT '',
+            `subtitle`      VARCHAR(200) NOT NULL DEFAULT '',
+            `description`   TEXT,
+            `gift_type`     ENUM('basic','advanced') NOT NULL DEFAULT 'basic',
+            `recharge`      VARCHAR(60)  NOT NULL DEFAULT '',
+            `requires_text` TEXT,
+            `published`     TINYINT(1)   NOT NULL DEFAULT 1,
+            `created_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `updated_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `slug` (`slug`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+        // Soaks
+        "CREATE TABLE IF NOT EXISTS `{$p}uj_soaks` (
+            `id`             INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `name`           VARCHAR(100) NOT NULL DEFAULT '',
+            `slug`           VARCHAR(100) NOT NULL DEFAULT '',
+            `damage_negated` TINYINT      NOT NULL DEFAULT 0,
+            `recharge`       VARCHAR(60)  NOT NULL DEFAULT '',
+            `side_effect`    VARCHAR(200) NOT NULL DEFAULT '',
+            `description`    TEXT,
+            `soak_type`      ENUM('basic','advanced') NOT NULL DEFAULT 'basic',
+            `published`      TINYINT(1)   NOT NULL DEFAULT 1,
+            `created_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `updated_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `slug` (`slug`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
         // Skills
         "CREATE TABLE IF NOT EXISTS `{$p}uj_skills` (
             `id`               INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -141,8 +175,10 @@ function uj_install_data(): void {
     $counts['types']    = uj_install_types();
     $counts['careers']  = uj_install_careers();
     $counts['skills']   = uj_install_skills();
+    $counts['gifts']    = uj_install_gifts();
+    $counts['soaks']    = uj_install_soaks();
 
-    $msg = "Upserted: {$counts['species']} species, {$counts['types']} types, {$counts['careers']} careers, {$counts['skills']} skills.";
+    $msg = "Upserted: {$counts['species']} species, {$counts['types']} types, {$counts['careers']} careers, {$counts['skills']} skills, {$counts['gifts']} gifts, {$counts['soaks']} soaks.";
     cg_json(['success' => true, 'data' => $msg]);
 }
 
@@ -739,13 +775,35 @@ function uj_get_skills(): void {
     cg_json(['success' => true, 'data' => $rows]);
 }
 
+function uj_get_gifts(): void {
+    $rows = cg_query(
+        "SELECT id, name, slug, subtitle, description, gift_type, recharge, requires_text
+           FROM `" . uj_tbl('gifts') . "`
+          WHERE published = 1
+       ORDER BY gift_type ASC, name ASC"
+    );
+    cg_json(['success' => true, 'data' => $rows]);
+}
+
+function uj_get_soaks(): void {
+    $rows = cg_query(
+        "SELECT id, name, slug, damage_negated, recharge, side_effect, description, soak_type
+           FROM `" . uj_tbl('soaks') . "`
+          WHERE published = 1
+       ORDER BY soak_type ASC, name ASC"
+    );
+    cg_json(['success' => true, 'data' => $rows]);
+}
+
 function uj_get_all_traits(): void {
-    // Convenience: fetch all four tables in one round-trip.
+    // Convenience: fetch all six tables in one round-trip.
     $sp = cg_query("SELECT id, name, slug, description, skill_1, skill_2, skill_3, gift_1, gift_2 FROM `" . uj_tbl('species') . "` WHERE published = 1 ORDER BY name ASC");
     $ty = cg_query("SELECT id, name, slug, description, skill_1, skill_2, skill_3, gift_1, soak_1, soak_2, gear FROM `" . uj_tbl('types') . "` WHERE published = 1 ORDER BY name ASC");
     $ca = cg_query("SELECT id, name, slug, description, skill_1, skill_2, skill_3, gift_1, gift_2, gear FROM `" . uj_tbl('careers') . "` WHERE published = 1 ORDER BY name ASC");
     $sk = cg_query("SELECT id, name, slug, description, paired_trait, sample_favorites, gift_notes FROM `" . uj_tbl('skills') . "` WHERE published = 1 ORDER BY name ASC");
-    cg_json(['success' => true, 'data' => ['species' => $sp, 'types' => $ty, 'careers' => $ca, 'skills' => $sk]]);
+    $gi = cg_query("SELECT id, name, slug, subtitle, description, gift_type, recharge, requires_text FROM `" . uj_tbl('gifts') . "` WHERE published = 1 ORDER BY gift_type ASC, name ASC");
+    $so = cg_query("SELECT id, name, slug, damage_negated, recharge, side_effect, description, soak_type FROM `" . uj_tbl('soaks') . "` WHERE published = 1 ORDER BY soak_type ASC, name ASC");
+    cg_json(['success' => true, 'data' => ['species' => $sp, 'types' => $ty, 'careers' => $ca, 'skills' => $sk, 'gifts' => $gi, 'soaks' => $so]]);
 }
 
 // ── Skills data ───────────────────────────────────────────────────────────────
@@ -839,6 +897,384 @@ function uj_install_skills(): int {
                 sample_favorites=VALUES(sample_favorites),
                 gift_notes=VALUES(gift_notes)",
             [$name, $slug, $desc, $trait, $favs, $gifts]
+        );
+        $count++;
+    }
+    return $count;
+}
+
+// ── Gifts data ────────────────────────────────────────────────────────────────
+
+function uj_install_gifts(): int {
+    $t = uj_tbl('gifts');
+
+    // Each row: [name, slug, subtitle, description, gift_type, recharge, requires_text]
+    $rows = [
+        // ── Basic Gifts (alphabetical) ────────────────────────────────────────
+        ['Acrobat', 'acrobat',
+         "extra 'stand-up' action; \u{2212}2 falling damage",
+         "On your turn, you may claim an extra \"stand up\" action. (That means you can stand up and still do two other things. Characters without this Gift have to use one of their two standard actions to stand up.) If you suffer damage from falling, and you're still awake, alert, etc., you'll take 2 points less of damage, as you nimbly land on your feet. You can stand on your hands, walk on tightropes, and balance on a flagpole. You may claim a d8 assist bonus to any roll where being acrobatic might help you.",
+         'basic', '', ''],
+        ['Ally', 'ally',
+         'friend with Species, Career, Distress Soak \u{2212}4',
+         "You have a friend! Your friend is a Minor Typical character, with a Species and a Career, a d6 in all six Traits, and the four gifts they get from those two choices. Choose a Species and a Career for them to have. (Your Ally does not have a Type Trait.) Your Ally also has the Soak of Distress Soak \u{2212}4. Your friend is normally controlled by the Game Host, but the Host may let you \"take control\" and use the Ally as if it were your own character. Your Ally always has your best interest in mind. They would never betray you, but they might be deceived by villains. Or they might be captured and held hostage. If your Ally is killed, or otherwise leaves the game, you will have to retrain this gift.",
+         'basic', '', ''],
+        ['Bodyguard', 'bodyguard',
+         'defend for Near friend, 1/recover',
+         "You are closely vigilant for danger. When an enemy declares an attack on one of your friends that's Near you (within 3m), you can declare you will use this Bodyguard ability. You immediately swap places with your friend. You are now the target, not them. You defend normally, and you must immediately declare if you will counter or if you will dodge. You recharge this gift with a \"recover\" action. You can't use Bodyguard to swap places again until you recharge this gift.",
+         'basic', '1/recover', ''],
+        ['Boxing', 'boxing',
+         'can use Body Blow, Jab, Knockout, Uppercut',
+         "You can use the Boxing Attacks of \"Body Blow\", \"Jab\", \"Knockout\", and \"Uppercut\". (Note that the Jab can Counter.) Boxing Methods are described on page 87. (Characters without this Gift cannot use Boxing Attacks. They must make do with the inferior Unarmed Attacks.)",
+         'basic', '', ''],
+        ['Brawling', 'brawling',
+         'can use Grapple, Pummel, Overbear',
+         "You can use the Brawling Attacks of \"Grapple\", \"Pummel\", and \"Overbear\". Brawling Methods are described on page 87. (Characters without this Gift cannot use Brawling Attacks. They must make do with the inferior Unarmed Attacks.)",
+         'basic', '', ''],
+        ['Bribery', 'bribery',
+         'bonus d12 with incentives, no offense',
+         "You know how to grease the wheels. When convincing someone to take a monetary incentive (that is, a bribe), using Deceit, Negotiation, or Presence, etc., you may claim a d12 bonus to your roll. When offering someone a bribe that's illegal, if you fail your roll, you don't automatically offend the target (and thus gain a bad Opinion). You still suffer a bad Opinion for repeated attempts, though. (Characters without this gift must automatically offend a target when failing to make an illegal bribe.)",
+         'basic', '', ''],
+        ['Bullet Conservation', 'bullet-conservation',
+         'Increase Ammo die',
+         "You know how to fire for best effect. When you equip a fully-loaded gun, raise its Ammo die by one size. For example, where other people would have \"Ammo d4\", you would have \"Ammo d6\". Your Ammo die is reduced normally by shooting. (That is, when that die rolls a 1, it Dwindles by one size.) If you reload, the Ammo die goes back up to that bigger size. If your gun gets passed to someone who doesn't have Bullet Conservation, the Ammo die goes back to normal.",
+         'basic', '', ''],
+        ['Carousing', 'carousing',
+         'bonus d12 with intoxication',
+         "You may claim a bonus d12 to any rolls of Deceit, Negotiation, or Presence when you're in a place where intoxicants flow freely. (Such as social-drinking parties, reefer dens, speakeasies, etc.) The Game Host may give you a d12 bonus to other rolls as well, if intoxication somehow would help. You do not have to be blind drunk to use this gift to work. Social drinking is fine.",
+         'basic', '', ''],
+        ['Chemistry', 'chemistry',
+         'bonus d12 with chemicals',
+         "You may claim a bonus d12 to rolls with Academics, Craft, or Observation where chemicals are involved. The Game Host may give you a d12 bonus to other rolls as well, if your knowledge of chemical transformations somehow would help.",
+         'basic', '', ''],
+        ['Climbing', 'climbing',
+         'bonus d12 to climb',
+         "You may claim a bonus d12 to all Athletics rolls to climb or to grab onto surfaces to avoid a fall. While climbing, none of your dice are limited in any way. (Characters without this gift have their dice reduced to either their highest Athletics die or to d4.)",
+         'basic', '', ''],
+        ['Contortionist', 'contortionist',
+         'can Squirm or Wriggle; d4 cover',
+         "You may use the Contortionist Attacks of \"Squirm\" and \"Wriggle\". (These Attacks can break free of holds or restraints.) Contortionist methods are described on page 88. When dodging, you can claim a d4 Cover bonus just by contorting your body, even if there's nothing to hide behind. (Cover boosts your dodge defense. See page 97.)",
+         'basic', '', ''],
+        ['Coward', 'coward',
+         'Panicked? Bonus d12 to dodge and scramble!',
+         "Whenever you suffer the \"Panicked\" status, you may claim a bonus d12 to all dodge rolls. (There is no bonus to counter-attacks.) Also, while Panicked, you may claim a d12 bonus to any rolls to Scramble\u{2026} but only if you are moving away from danger. (That is, you must be moving away from hostiles, and you must not be moving towards something hazardous to your health.) You can become Panicked by using your \"Panic Save \u{2212}2\". You can also choose to become Panicked at any time during a combat.",
+         'basic', '', ''],
+        ['Craft Specialty', 'craft-specialty',
+         'bonus d12 to Favorite Craft',
+         "When you get this gift, choose a Favorite thing from this list: Carpentry, Electronics, Masonry, Mechanics, Painting. Whenever you use your Craft skill to work on your Favorite thing, you may claim a bonus d12. (You will want to roll this bonus d12 before you re-roll one 1 for Favorite use.) If your Game Host permits it, you can make up a different specialty from what we have listed here.",
+         'basic', '', ''],
+        ['Danger Sense', 'danger-sense',
+         'bonus d12 to initiative & hazards',
+         "You may claim a bonus d12 to any Initiative roll. (Write this d12 into your Initiative box.) You may claim a d12 bonus to Athletics, Evasion, and Observation rolls to avoid traps and hazards. (Sorry, no bonus to Craft! That's covered by the Sabotage gift.) You don't get a bonus to any rolls to see other people sneaking up on you. (That's what the Initiative bonus is for.)",
+         'basic', '', ''],
+        ['Demolitions', 'demolitions',
+         'bonus d12 with explosives',
+         "You may claim a bonus d12 to any rolls of Academics, Craft, or Observation to identify, to build, to spot, or to prepare explosives.",
+         'basic', '', ''],
+        ['Dexterity', 'dexterity',
+         'off-hand is good hand; Dual-Wield action',
+         "You're ambidextrous. Your off-hand can be used as a good hand. You can equip \"Good hand\" weapons in your off-hand, no problem. You can \"Dual-Wield\" to attack a second time, but not with the same weapon you attacked with earlier. Your target defends normally. You can only Dual-Wield if your second weapon has a Counter range. You can't \"Dual-Wield\" if you're Panicked, restrained, or otherwise unable to attack.",
+         'basic', '', ''],
+        ['Diplomacy', 'diplomacy',
+         'bonus d12 when being diplomatic',
+         "You may claim a d12 bonus to any Deceit, Negotiation or Presence when you're in any diplomatic setting where you have at least one hour (in game time) to talk with your targets. If you fail your roll in this diplomatic setting, you do not automatically offend your target. (Other characters without this gift would suffer a negative Opinion.) If you're in a hurry, consider the Fast-Talk gift, instead.",
+         'basic', '', ''],
+        ['Disguise', 'disguise',
+         'bonus d12 for imposture',
+         "You may claim a bonus d12 to any roll to Deceit to pretend to be someone that you're not. You know the finer points of dress, makeup, gesture, etc. for disguising yourself.",
+         'basic', '', ''],
+        ['Driving', 'driving',
+         'bonus d12 to operate automobiles',
+         "You may claim a bonus d12 to operate any automobile (with four or six wheels), using the Transport skill. You suffer no limits on your skills while in a moving automobile. (Characters without this gift have their dice limited to either their highest Transport die or to d4.)",
+         'basic', '', ''],
+        ['Entourage', 'entourage',
+         'roll for hangers-on, 1/episode',
+         "You have a circle of admirers, or extended family, or gang of underlings. Your entourage are minor non-player characters who follow you around, trying to help out. You can use this gift any time you're in a place where you can recruit new friends. Roll your dice vs. 3 and count the successes. You can have up to one follower, plus one for each success that you roll. This result is the maximum number of Entourage friends you can have, until the start of the next episode.",
+         'basic', '1/episode', ''],
+        ['Fast-Talk', 'fast-talk',
+         'bonus d12 with a rube for five minutes',
+         "You may claim a bonus d12 to any roll of Deceit, Negotiation, or Presence if and only if: You can get what you want in the next five minutes or less (in game time), and the target doesn't already have a negative Opinion of you. After five minutes, if the target of your Fast-Talk has reasons to think you were less than honest with them, they are automatically offended, gaining a bad Opinion of you.",
+         'basic', '', ''],
+        ['Firefighting', 'firefighting',
+         'bonus d12 with fires',
+         "You may claim a bonus d12 to any rolls of Academics, Craft, or Observation to identify the source of fires, or to attempt to put fires out. (Oh, and it's a bonus d12 to any rolls to burn a place down and make it look like an accident, if arson is your bag.)",
+         'basic', '', ''],
+        ['Flight', 'flight',
+         'you can fly while doing a Scramble stunt',
+         "You can fly. As part of any Scramble stunt, you can also move vertically, or stay in the air. (Characters without this gift do not fly so much as plummet.) The Scramble stunt is described on page 78.",
+         'basic', '', ''],
+        ['Geography', 'geography',
+         'bonus d12 to know places',
+         "You may claim a bonus d12 to rolls of Academics and Questioning when dealing with issues like state capitals, foreign countries, lists of natural resources, population censuses, and other geographical things. You can claim a bonus d12 to any Transport rolls to plan long-distance travel over such geography. The Game Host may give you a d12 bonus to other rolls as well, if your encyclopedic knowledge of the world somehow would help.",
+         'basic', '', ''],
+        ['Giant', 'giant',
+         'extend Close Attacks to Near',
+         "You buy your clothes from the big-and-tall stores. Your reach is amazing. If you have an Attack or a Counter that only works at \"Close\", you may extend that range to \"Near\". (Sadly, there's no change to any attacks or counters that have a range other than \"Close\".) You may claim a d8 assist bonus to any roll where being a giant might help you. You can't claim non-giant people as cover.",
+         'basic', '', ''],
+        ['Gossip', 'gossip',
+         'bonus d12 to gather information',
+         "You may claim a bonus d12 to Questioning when you are gossiping. Gossiping takes at least one hour and requires you to talk to lots of people. (When role-playing, gossiping often assumes 55 game-minutes of useless jabber and walking for every 5 minutes of useful information.)",
+         'basic', '', ''],
+        ['Guts', 'guts',
+         'bonus d12 to cause/resist Fright',
+         "You're scary. You may claim a bonus d12 when performing a Frighten stunt. (That is, when you roll Body, Will, & Presence to Frighten others.) And you don't scare easy. You may claim a bonus d12 to resist being Frightened. The Game Host may give you a d12 bonus to other rolls as well, if your steely-eyed determination somehow would help.",
+         'basic', '', ''],
+        ['High Society', 'high-society',
+         'd12 with upper class; extravagance',
+         "You may claim a bonus d12 to any rolls of Deceit, Negotiation, or Presence when you're among the jet set, the blue-bloods, the glitterati, and the upper class. Also, you can buy Extravagant goods at 50% of their listed price, and you can sell Extravagant goods at 20% of their listed price. (Characters without this gift must buy at 100% and sell at only 10%.)",
+         'basic', '', ''],
+        ['Jumping', 'jumping',
+         'bonus d12 to jump; use Vault attack',
+         "You may claim a bonus d12 to all Athletics rolls to jump high or long. You can use the Jumping Attack of \"Vault\". This attack lets you move through other people's spaces, even as a counter. Jumping methods are described on page 88. (Characters without this gift can't vault over others, especially when it's not their turn.)",
+         'basic', '', ''],
+        ['Leadership', 'leadership',
+         'bonus d12 to rally & oratory',
+         "You may claim a bonus d12 to any Rally action (that is, when you roll Will & Tactics to help your friends). You may claim a d12 to any Presence roll when you give a public speech to exhort a crowd to action. The Game Host may give you a d12 bonus to other rolls as well, if your superior public-speaking voice somehow would help.",
+         'basic', '', ''],
+        ['Legal Authority', 'legal-authority',
+         'power of the law',
+         "You have a badge, and that authority is recognized in a significant part of the state. You may use Proscribed items appropriate to your authority. The Game Host may give you a d12 bonus to other rolls as well, if being an officer of the law somehow would help. The Game Host may force you to retrain this gift if you become stripped of your Legal Authority, so be careful.",
+         'basic', '', ''],
+        ['Luck', 'luck',
+         're-roll any and all dice, 1/chapter',
+         "After you've made a roll of any kind, if you decide you don't like it, declare you will use this gift. Choose which of your dice you want to re-roll. Any dice that you re-roll, the new result stands\u{2026} even if it's worse. If your roll was a challenge, you may also choose that your opponent re-rolls none, one, or more of their dice, too. You must choose what dice your opponent re-rolls before you re-roll, and the new results stand, even if they're worse for you. After the re-rolling, you can still claim other bonuses\u{2026} but you'll have already tapped your Luck, so you can't re-roll any of those dice. This ability recharges at the start of the next episode.",
+         'basic', '1/chapter', ''],
+        ['Medicine', 'medicine',
+         'bonus d12; treat illness & injury',
+         "You may claim a bonus d12 to any rolls of Academics, Observation, or Questioning when making rolls about medical issues. The Game Host may give you a d12 bonus to other rolls as well, if being a physician somehow would help. You can treat long-term illness and injury. If you can spend five in-game minutes with a patient, you can reduce the effects of some statuses. See the Aftermath chapter for more details.",
+         'basic', '', ''],
+        ['Motorcycling', 'motorcycling',
+         'bonus d12 to operate cycles',
+         "You may claim a bonus d12 to operate any motorcycle (two or three wheels, with or without sidecar), using the Transport skill. You suffer no limits on your skills while in a moving motorcycle. (Characters without this gift have their dice limited to either their highest Transport die or to d4.)",
+         'basic', '', ''],
+        ['Noncombatant', 'noncombatant',
+         'passive d12 to dodge and flee; violence uses it up; 1/peace',
+         "You aren't a fighter at heart, and other people believe you. As long as you haven't been violent, you may claim a bonus d12 to all Dodge rolls. (There is no bonus to Counters.) You may also claim a d12 bonus to any Scramble rolls\u{2026} but only when you are fleeing from a combat situation. If you engage in an act of violence \u{2014} that is, if you attack or counter someone \u{2014} you immediately use this gift up. The bonus d12 goes away. After using up this gift, you have to wait at least 24 in-game hours before you can recharge it, and claim the d12 bonus again. If you engage in any violence before then, the timer resets.",
+         'basic', '1/peace', ''],
+        ['Performance', 'performance',
+         'bonus d12 on stage and screen',
+         "You may claim a bonus d12 to any rolls of Athletics, Deceit, or Presence to impress a crowd with your acting, music, or other public performance. The Game Host may give you a d12 bonus to other rolls as well, if your theatricality somehow would help.",
+         'basic', '', ''],
+        ['Personality [of choice]', 'personality',
+         'bonus d12, 1/rest',
+         "Your sense of self is so strong that you can succeed where other people would have given up. All Player Characters start with this gift. You must choose a Personality for your character to have: a one-word or short description that explains your personality. You can use your Personality ability to claim a d12 bonus to a roll you've just made. (Yes, because this is a claimed bonus, you can roll your dice first, decide if you like how it came out, and then say you'll use your d12.) You can't use this gift again until your character gets a rest. (That's 8 hours of sleep, in game time, and at least one square meal.)",
+         'basic', '1/rest', ''],
+        ['Quills', 'quills',
+         'can use Quills',
+         "You can use the Quills Attack of \"Quills\". This attack and counter will deliver sharp pains to people in close quarters. Quills methods are described on page 88.",
+         'basic', '', ''],
+        ['Research', 'research',
+         'bonus d12 with libraries and data',
+         "You may claim a bonus d12 to any rolls of Academics, Observation, or Questioning when you have a few hours to collate data by having access to a large library, dossier, or other enormous database of information. The Game Host may give you a d12 bonus to other rolls as well, if methodical investigation somehow would help.",
+         'basic', '', ''],
+        ['Romance', 'romance',
+         'bonus d12 with love & desire',
+         "You may claim a bonus d12 to any rolls of Deceit, Negotiation, or Presence against characters who have romantic intentions against you. The Game Host may give you a d12 bonus to other rolls as well, if your sly seduction somehow would help.",
+         'basic', '', ''],
+        ['Running', 'running',
+         'bonus d12 to run; use Trample attack',
+         "You may claim a bonus d12 to Athletics rolls to run at high speeds. You can use the Running Attack of \"Rush\" and \"Trample\". These attacks let you move and attack, possibly knocking people over. Running methods are described on page 88. (Characters without this gift can't move and attack in one action.)",
+         'basic', '', ''],
+        ['Sabotage', 'sabotage',
+         'bonus d12 to break down, in, or out',
+         "You may claim a bonus d12 to any Craft rolls to pick a lock, to disable an alarm, to jimmy open a window, to neutralize a trap, to cut brake lines, to crack a safe, to disarm a bomb, to attack an inanimate object, or otherwise work around some contrivance or contraption. The Game Host may give you a d12 bonus to other rolls as well, if your extensive knowledge of breaking things somehow would help.",
+         'basic', '', ''],
+        ['Singing', 'singing',
+         'bonus d12 with vocal music',
+         "You may claim a bonus d12 to any rolls of Academics or Presence when singing, either in private or on stage. The Game Host may give you a d12 bonus to other rolls as well, if your magic pipes somehow would help. (No, you can't get a d12 bonus to rally people by singing at them. This ain't West Side Story, for crying out loud.)",
+         'basic', '', ''],
+        ['Sleight of Hand', 'sleight-of-hand',
+         'use Legerdemain',
+         "You can palm small objects, picking things up while people are still watching you. Roll Speed & Deceit vs. 3. The more people watching you, and the more unusual the object, the more successes you would need. In the heat of battle, you can use the Sleight-of-Hand Attack of \"Legerdemain\". This action lets you take items from people in the middle of combat. Sleight-of-Hand methods are described on page 88. (Characters without this gift must resort to brutal methods to wrest items away from people.)",
+         'basic', '', ''],
+        ['Sneak Attack', 'sneak-attack',
+         'declare bonus 2d8 to attack, 1/hide',
+         "Before you attack, you may declare an attack to be a Sneak Attack. Declare you will use this gift. When you make your attack roll, you may roll a bonus 2d8. You may recharge this gift with a hide action. (That is, you must roll Speed, Evasion, & Stealth's d12 vs. 3 and score at least one success \u{2014} more if people are watching for you.) You can't declare this 2d8 bonus again before you recharge the gift. No, you don't actually have be hidden or in darkness to declare this bonus. You do have to hide before you can use this again.",
+         'basic', '1/hide', ''],
+        ['Spray', 'spray',
+         'declare Spray attack, 1/rest',
+         "You have a noxious spray. In a combat situation, you can declare an Attack action to use a \"Spray\" attack. Unlike other attacks, you have to use this gift up. Whether you hit or you miss, you won't be able to spray again until you can recharge this gift, which takes time and a fair amount of hydration. Spray methods are described on page 89.",
+         'basic', '1/rest', ''],
+        ['Stealth', 'stealth',
+         'bonus d12 to hide and sneak',
+         "You may claim a bonus d12 to Evasion rolls to hide and to sneak. (Sorry, there's no bonus to dodge\u{2026} but successful hiding and sneaking does make you harder to hit.) When you suffer penalties to observe things due to the concealing darkness all about, you may claim a bonus d12 to Observation to perceive what's around you. No bonuses to attack or to defend, though. The Game Host may give you a d12 bonus to other rolls as well, if being stealthy somehow would help.",
+         'basic', '', ''],
+        ['Streetwise', 'streetwise',
+         'bonus d12 with crime, fencing',
+         "You may claim a bonus d12 to any rolls of Academics or Observation, to know or to recognize the criminal element. You may claim a d12 bonus to any gossip rolls to gather information about criminals. Also, you can buy Proscribed goods at 50% of their listed price, and you can sell Proscribed goods at 10% of their listed price. (Characters without this gift must buy at 100% and sell at only 5%.)",
+         'basic', '', ''],
+        ['Survival', 'survival',
+         'bonus d12 in the wilderness',
+         "You may claim a bonus d12 to any rolls of Academics, Endurance, or Observation to make your way in the untamed wilderness. You get this bonus to forage for food, to find drinkable water, and to create shelter from the elements, among other things.",
+         'basic', '', ''],
+        ['Swimming', 'swimming',
+         'bonus d12 to swim',
+         "You may claim a bonus d12 to all Athletics rolls to swim\u{2026} or to not drown, which is the basic premise of swimming in the first place. While swimming, none of your dice are limited in any way. (Characters without this gift have their dice reduced to either their highest Athletics die or to d4.)",
+         'basic', '', ''],
+        ['Team Player', 'team-player',
+         'you assist better, and for d12 bonus',
+         "You work well with others. When you successfully assist someone else, the bonus you provide is d12. (Characters without this gift can only give a d8 bonus.) You keep your mistakes to yourself. If you botch on an assist attempt, something bad happens to you, but the task-master doesn't automatically fail, too. (Characters without this gift ruin any task that they assist, if they roll all ones and botch.)",
+         'basic', '', ''],
+        ['Tracking', 'tracking',
+         'bonus d12 to follow or not be followed',
+         "You may claim a bonus d12 to any rolls of Observation to follow someone else, or to Evasion to avoid being followed by someone else. If there's witnesses, you can gain a bonus d12 to follow somebody who was just here, by asking which way that he went (or just seeing which way people are looking).",
+         'basic', '', ''],
+        ['Wealth', 'wealth',
+         'produce lots of money, 1/episode',
+         "You're stinking rich. Use this gift to produce lots of money, as you use your checkbook, bank accounts, and good credit to just pay for stuff. Among other things, Wealth can let you buy your way out of trouble, or maybe you can pick up an Extravagant item without counting the cost. You can only use this gift once per episode. This gift recharges at the start of the next episode.",
+         'basic', '1/episode', ''],
+        ['Wrestling', 'wrestling',
+         'use Wrestling Attacks',
+         "You can use the Wrestling Attacks of \"Crush\", \"Suplex\", \"Throw\", and \"Wrestle\". (Characters without this gift must make do with the second-rate Unarmed attacks.) Wrestling methods are described on page 89.",
+         'basic', '', ''],
+
+        // ── Advanced Gifts (alphabetical) ─────────────────────────────────────
+        ['Counter-Tactics', 'counter-tactics',
+         'bonus d12 vs. Tactics',
+         "If you have the gift of Counter-Tactics, you may claim a bonus d12 to any counter or dodge when other people try to use Tactics dice to blindside you. (When you're outnumbered or attacked from surprise, you are blindsided. Blindsiding attackers can claim any Tactics dice they have as bonus attack dice\u{2026}. But if your attackers claim that gift's d12 to oppose them.)",
+         'advanced', '', ''],
+        ['Expert [of Choice]', 'expert',
+         'extra d8',
+         "Skill dice are like real estate. You want as much and as big as you can get. When you get this gift, there has to be a skill choice to go with it. If the Host gives you this gift as a reward, the Host chooses the skill. If you buy this with your own Experience, then you choose the skill. You gain a d8 in your Skill of choice. If you already have the skill, this is another d8. This d8 from Expert is a Skill die in every way, just like the ones you get from Traits. You may have this gift multiple times, choosing a different Skill each time. You can only buy Expert once per Skill.",
+         'advanced', '', ''],
+        ['Extra Career [of choice]', 'extra-career',
+         'gain d4 in a new Career Trait',
+         "You can buy a second Career Trait. Before you can get this gift, you must have all the gifts that Career starts with. Your new Career Trait starts at d4. You get a brand-spanking new column to use, to boost three more skills. You can improve this Trait with the \"Improved Trait\" gift\u{2026} but now that you have two Career Traits, you have to improve each one separately.",
+         'advanced', '', 'Requires the gifts that Career starts with'],
+        ['Extra Type [of choice]', 'extra-type',
+         'gain d4 in a new Type Trait',
+         "You can buy a second Type Trait. Before you can get this gift, you must have all the gifts and/or soaks that Type starts with. Your new Type Trait starts at d4. You get a factory-fresh new column to use, to boost three more skills. You can improve this Trait with the \"Improved Trait\" gift\u{2026} but now that you have two Type Traits, you have to improve each one separately.",
+         'advanced', '', 'Requires the gifts and soaks that Type starts with'],
+        ['Favored Hit', 'favored-hit',
+         'Have Favor? +2 damage!',
+         "You can only use this gift when you have Favor \u{2014} that is, when you get to re-roll one 1. The easiest way to get Favor is to have a Favorite use of a skill. If you roll one 1 with your attack or your counter, then if you hit your target, you may claim +2 damage. (It doesn't matter if the die you re-roll scores a success or not. If you rolled a 1 and thus can claim favor, you can also claim the +2 damage.) You don't get the +2 damage if you don't roll any ones (because you don't have any Favor).",
+         'advanced', '', ''],
+        ['Hail of Bullets', 'hail-of-bullets',
+         'burn Ammo for +2 damage',
+         "If you have this gift, you may declare the Hail of Bullets ability with any weapon that has an Ammo die. A Hail of Bullets changes your attack or counter: Don't roll your Ammo die. Your Ammo die automatically dwindles, dropping one size. (If it dwindles away, you'll have to reload to shoot again.) If your attack or counter hits, it does +2 damage, above and beyond all other damage.",
+         'advanced', '', ''],
+        ['Improved Ally [Gift or Soak of Choice]', 'improved-ally',
+         'add one gift to your Ally',
+         "When you buy this Gift, choose a different Gift or Soak to add to your Ally. Your Ally gains that Gift or Soak. Note that the new ability is for the Ally's use, not yours. As always, the Game Host has final say over what Gifts you can and cannot buy for your Ally. If your Ally is killed, you will have to retrain this Improved Ally gift. You may have this gift multiple times, choosing different improvements each time.",
+         'advanced', '', ''],
+        ['Improved Trait [of choice]', 'improved-trait',
+         'Increase chosen trait by one die size',
+         "When you first gain this gift, it has to be assigned to a Trait. You can choose one of your basic Traits (Body, Speed, Mind, or Will). You can also choose your Species, Type, or Career. Increase your Improved Trait by one size. For example, if you had a Body of d8, then Improved Trait increases it to d10. Traits have a maximum of d12. You can get this gift more than once, improving the same trait over and over. You can also get it more than once, choosing different Traits to improve.",
+         'advanced', '', ''],
+        ['Insider [with crowd of choice]', 'insider',
+         'bonus d12 with a certain crowd',
+         "When you first gain this gift, it has to have a group of people assigned to it. This could be a social organization, such as \"the Labrizio Gang\" or \"The Sunshine City Yacht Club\". You may claim a d12 bonus to rolls to Academics and Observation to know things or to recognize members of this crowd. You may claim a d12 bonus to any gossip rolls to gather information or to fence goods, but only with people in this crowd. You may claim a d12 bonus to any rolls to change the opinion that a member of this crowd has of you. You may have this gift multiple times, choosing a different crowd each time.",
+         'advanced', '', ''],
+        ['Local Knowledge [of choice]', 'local-knowledge',
+         'bonus d12 when in local area of choice',
+         "When you first gain this gift, it has to have a small geographical area of choice assigned to it. This area could be a borough of a big city, a redneck wilderness just outside of town, the Pacific Coast Highway, etc. You may claim a d12 bonus to rolls to Academics and Transport to know things or to navigate around this area. You may claim a bonus d12 to any gossip rolls to gather information or to fence goods, but only in this area. You may claim a bonus d12 when pursuing or fleeing other people in a long-distance chase, but only in this area. You may have this gift multiple times, choosing a different area each time.",
+         'advanced', '', ''],
+        ['Pistol Reflex', 'pistol-reflex',
+         '+2 Dmg w/ Pistol Counter + Guard',
+         "You may claim +2 damage vs. a target, when you counter-attack with a Pistol and if and only if you are Guarding. A Pistol is a weapon that has the \"Pistol\" descriptor. This +2 damage is only for counter-attacks. It's never for attacks. You must be Guarding to get this +2 bonus. (You can gain Guarding by taking the \"Guard\" action on your turn.)",
+         'advanced', '', ''],
+        ['Rifle Accuracy', 'rifle-accuracy',
+         '+2 Dmg with aimed Rifle attacks',
+         "You may claim +2 damage vs. a target, when you attack with a Rifle and if you have an Aiming bonus vs. that target. A Rifle is a weapon that has the \"Rifle\" descriptor. Aim is an action that gives you an aiming bonus to hit a target, when you attack in the same round that you aimed.",
+         'advanced', '', ''],
+        ['Savant', 'savant',
+         'No Skill? Claim Favor!',
+         "You're a regular Jack-of-all-Trades. If you have zero skill dice \u{2014} that is, you are just rolling a Basic Trait and maybe some bonus dice from a gift or an assist or whatnot \u{2014} then you can claim Favor on your roll. (That is, you can re-roll one \"1\".) You can't claim this ability if you have even a single d4 in the Skill. (Expert is a skill die.)",
+         'advanced', '', ''],
+        ['Shotgun Blast', 'shotgun-blast',
+         '+2 Dmg with Shotguns @Near',
+         "You may claim +2 damage vs. a target, when you attack or counter with a Shotgun and your target is at Near range (3m away from you, or closer). A Shotgun is a weapon that has the \"Shotgun\" descriptor.",
+         'advanced', '', ''],
+        ['Sniper', 'sniper',
+         'Attack with Shooting at increased range',
+         "You may extend the attack range of any Shooting weapon by one band. For example, if your Pocket Pistol only attacks up to Medium range, then in your practiced hands, you can use it up to Long range. Your Counter ranges are unaffected. Ranges with attacks that don't use Shooting Skill are not affected.",
+         'advanced', '', ''],
+        ['Veteran', 'veteran',
+         'Aim/Guard bonus is d12 (not d8)',
+         "When you Aim at a target, you may claim a d12 bonus to hit, instead of d8. When you are Guarding, you may claim a bonus d12 to all defenses, instead of d8. (Characters without this gift must make do with an aim or guard bonus of merely d8.)",
+         'advanced', '', ''],
+    ];
+
+    $count = 0;
+    foreach ($rows as [$name, $slug, $subtitle, $desc, $type, $recharge, $requires]) {
+        cg_exec(
+            "INSERT INTO `$t`
+                (name, slug, subtitle, description, gift_type, recharge, requires_text)
+             VALUES (?, ?, ?, ?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE
+                name=VALUES(name), subtitle=VALUES(subtitle),
+                description=VALUES(description), gift_type=VALUES(gift_type),
+                recharge=VALUES(recharge), requires_text=VALUES(requires_text)",
+            [$name, $slug, $subtitle, $desc, $type, $recharge, $requires]
+        );
+        $count++;
+    }
+    return $count;
+}
+
+// ── Soaks data ────────────────────────────────────────────────────────────────
+
+function uj_install_soaks(): int {
+    $t = uj_tbl('soaks');
+
+    // Each row: [name, slug, damage_negated, recharge, side_effect, description, soak_type]
+    $rows = [
+        // ── Basic Soaks ───────────────────────────────────────────────────────
+        ['Distress Soak', 'distress-soak',
+         4, '1/episode', '',
+         "You may use this Soak to negate 4 points of damage. (And you can't negate 1 point now and 3 points later, or something weird like that. It's all or nothing.) Immediately after using this, all your friends who see you take the hit or who can hear your voice are rallied with 1 success. Your personal tragedy spurs your friends onward to rescue you\u{2026} or you can beg them to just leave you, if you want to be dramatic about it. If your friends can't see or hear your distress\u{2026} well, you can still negate 4 points of damage, but there's no rally. You can use this ability once per episode. It recharges at the start of the next episode.",
+         'basic'],
+        ['Frenzy Soak', 'frenzy-soak',
+         2, '1/hit', '',
+         "You may use this Soak to negate 2 points of damage. (And you can't negate 1 point now and 1 point later, or something weird like that. It's all or nothing.) You recharge this ability if you can hit an enemy with an attack or a counter-attack. When your attack or counter is successful, immediately recharge this gift. (What does not kill you, makes you stronger.)",
+         'basic'],
+        ['Hurt Soak', 'hurt-soak',
+         3, '1/scene', '',
+         "You may use this Soak to negate 3 points of damage. (And you can't negate 1 point now and 2 points later, or something weird like that. It's all or nothing.) You can use this ability once per scene. (That is, once about every 5 game minutes.) It recharges at the start of the next scene, when you've had some time to clean yourself up. You're still battered and bruised, but now it only hurts when you laugh.",
+         'basic'],
+        ['Injury Soak', 'injury-soak',
+         4, '1/rest', '',
+         "You may use this Soak to negate 4 points of damage. (And you can't negate 1 point now and 3 points later, or something weird like that. It's all or nothing.) You can use this ability once per rest. (That is, after you get 8 hours of sleep and at least one square meal.) After the rest, you still look terrible, and other people will comment on it, until the start of the next episode. To feel better, tell people they should've seen what happened to the other guy.",
+         'basic'],
+        ['Panic Soak', 'panic-soak',
+         2, '1/rally', 'become Panicked',
+         "You may use this Soak to negate 2 points of damage. (And you can't negate 1 point now and 1 point later, or something weird like that. It's all or nothing.) Immediately after using Panic Soak, you become Panicked. Panicked is a status debuff that limits your actions. While Panicked, you cannot Attack (but you can still counter). You also cannot Rally other friends. You recharge this gift by being rallied. In game terms, a friend can rally you by using a Rally action and by succeeding on a roll of Will & Tactics vs. 3. (That Rally can also remove your Panic.) You can rally yourself if and only if you can get out of line of sight of all hostiles.",
+         'basic'],
+        ['Sneaky Soak', 'sneaky-soak',
+         2, '1/hide', '',
+         "You may use this Soak to negate 2 points of damage. (And you can't negate 1 point now and 1 point later, or something weird like that. It's all or nothing.) You may recharge this gift with a hide stunt. (That is, you must roll Speed, Evasion, & Stealth's d12 vs. 3 and score at least one success \u{2014} more if more people are watching for you.)",
+         'basic'],
+        ['Winded Soak', 'winded-soak',
+         1, '1/recover', '',
+         "You may use this Soak to negate 1 point of damage. You recover this gift by simply taking a Recover action in combat.",
+         'basic'],
+
+        // ── Advanced Soaks ────────────────────────────────────────────────────
+        ['Dazed Soak', 'dazed-soak',
+         2, '1/recover', 'become Dazed',
+         "You may use this Soak to negate 2 points of damage. (And you can't negate 1 point now and 1 point later, or something weird like that. It's all or nothing.) Immediately after using this Soak, you become Dazed. Until you can get rid of the Dazed condition, you can't counter any attacks, and your next action must be the Recover action. As soon as you take a Recover action, you may recharge this gift. (However, you can use a single Recover action to both remove Dazed and recharge this gift.)",
+         'advanced'],
+        ['Fumble Soak', 'fumble-soak',
+         4, '1/scene', 'become Disarmed',
+         "You can use Fumble Soak if you failed to counter (and thus you took damage). You can also use it if you attacked your target, but they successfully countered you (and thus you took damage.) You can also use it if you tied on an attack-vs.-counter contest. You cannot use Fumble Soak if you attempted to dodge your attacker and failed. You can only use Fumble Soak if you are using a weapon \u{2014} not if you are unarmed. If you meet all the above conditions, you may use this Soak to negate 4 points of damage. Immediately after using this Soak, you are Disarmed. The weapon you were using flies out of your hand. You may not recharge this gift until the start of the next scene.",
+         'advanced'],
+        ['Rampage Soak', 'rampage-soak',
+         2, '1/rest', 'bonus d12 to all Counters until recharged',
+         "You may use this Soak to negate 2 points of damage. (And you can't negate 1 point now and 1 point later, or something weird like that. It's all or nothing.) After you use up this Soak, you may claim a bonus d12 to all Counters until you recharge this Gift (at your next rest). You cannot claim the d12 bonus to Counters before you've used it. If it's still ready to use, there's no bonus. This Soak never gives you a bonus to Attacks. The bonus is only for Counters.",
+         'advanced'],
+    ];
+
+    $count = 0;
+    foreach ($rows as [$name, $slug, $dmg, $recharge, $side, $desc, $type]) {
+        cg_exec(
+            "INSERT INTO `$t`
+                (name, slug, damage_negated, recharge, side_effect, description, soak_type)
+             VALUES (?, ?, ?, ?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE
+                name=VALUES(name), damage_negated=VALUES(damage_negated),
+                recharge=VALUES(recharge), side_effect=VALUES(side_effect),
+                description=VALUES(description), soak_type=VALUES(soak_type)",
+            [$name, $slug, $dmg, $recharge, $side, $desc, $type]
         );
         $count++;
     }
