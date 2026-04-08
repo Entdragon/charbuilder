@@ -13,7 +13,7 @@ $where = $classFilter ? 'AND cost_class = ?' : '';
 $args  = $classFilter ? [$classFilter] : [];
 
 $rows = cg_query(
-    "SELECT id, name, slug, cost_class, price_early, price_late, description
+    "SELECT id, name, slug, cost_class, price_early, price_late
        FROM `{$p}uj_items`
       WHERE published = 1 $where
       ORDER BY cost_class, name",
@@ -71,7 +71,6 @@ require __DIR__ . '/../layout-head.php';
         <th>Item</th>
         <th>1910s / 1920s</th>
         <th>1930s / 1940s</th>
-        <th>Notes</th>
       </tr>
     </thead>
     <tbody>
@@ -82,7 +81,6 @@ require __DIR__ . '/../layout-head.php';
         </td>
         <td class="td-muted" style="white-space:nowrap;"><?= htmlspecialchars($item['price_early'] ?? '—') ?></td>
         <td class="td-muted" style="white-space:nowrap;"><?= htmlspecialchars($item['price_late']  ?? '—') ?></td>
-        <td class="td-dim" style="font-size:0.85rem;"><?= htmlspecialchars($item['description'] ?? '') ?></td>
       </tr>
     <?php endforeach; ?>
     </tbody>
