@@ -3,11 +3,12 @@
  * Urban Jungle — data layer.
  *
  * Provides:
- *   uj_install_tables — CREATE TABLE IF NOT EXISTS for the three trait tables.
- *   uj_install_data   — INSERT/UPSERT all Species, Type, and Career trait rows.
+ *   uj_install_tables — CREATE TABLE IF NOT EXISTS for all trait tables.
+ *   uj_install_data   — INSERT/UPSERT all Species, Type, Career, and Skill rows.
  *   uj_get_species    — list all published species (alphabetical).
  *   uj_get_types      — list all published type traits (alphabetical).
  *   uj_get_careers    — list all published career traits (alphabetical).
+ *   uj_get_skills     — list all published skills (alphabetical).
  *
  * Table prefix follows the same cg_prefix() / CG_DB_PREFIX convention used
  * throughout the Ironclaw generator.
@@ -93,6 +94,22 @@ function uj_install_tables(): void {
             PRIMARY KEY (`id`),
             UNIQUE KEY `slug` (`slug`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+        // Skills
+        "CREATE TABLE IF NOT EXISTS `{$p}uj_skills` (
+            `id`               INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `name`             VARCHAR(100) NOT NULL DEFAULT '',
+            `slug`             VARCHAR(100) NOT NULL DEFAULT '',
+            `description`      TEXT,
+            `paired_trait`     VARCHAR(60)  NOT NULL DEFAULT '',
+            `sample_favorites` TEXT,
+            `gift_notes`       TEXT,
+            `published`        TINYINT(1)   NOT NULL DEFAULT 1,
+            `created_at`       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `updated_at`       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `slug` (`slug`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
     ];
 
     $created = [];
@@ -114,8 +131,9 @@ function uj_install_data(): void {
     $counts['species']  = uj_install_species();
     $counts['types']    = uj_install_types();
     $counts['careers']  = uj_install_careers();
+    $counts['skills']   = uj_install_skills();
 
-    $msg = "Upserted: {$counts['species']} species, {$counts['types']} types, {$counts['careers']} careers.";
+    $msg = "Upserted: {$counts['species']} species, {$counts['types']} types, {$counts['careers']} careers, {$counts['skills']} skills.";
     cg_json(['success' => true, 'data' => $msg]);
 }
 
@@ -702,10 +720,118 @@ function uj_get_careers(): void {
     cg_json(['success' => true, 'data' => $rows]);
 }
 
+function uj_get_skills(): void {
+    $rows = cg_query(
+        "SELECT id, name, slug, description, paired_trait, sample_favorites, gift_notes
+           FROM `" . uj_tbl('skills') . "`
+          WHERE published = 1
+       ORDER BY name ASC"
+    );
+    cg_json(['success' => true, 'data' => $rows]);
+}
+
 function uj_get_all_traits(): void {
-    // Convenience: fetch all three tables in one round-trip.
+    // Convenience: fetch all four tables in one round-trip.
     $sp = cg_query("SELECT id, name, slug, description, skill_1, skill_2, skill_3, gift_1, gift_2 FROM `" . uj_tbl('species') . "` WHERE published = 1 ORDER BY name ASC");
     $ty = cg_query("SELECT id, name, slug, description, skill_1, skill_2, skill_3, gift_1, soak_1, soak_2, gear FROM `" . uj_tbl('types') . "` WHERE published = 1 ORDER BY name ASC");
     $ca = cg_query("SELECT id, name, slug, description, skill_1, skill_2, skill_3, gift_1, gift_2, gear FROM `" . uj_tbl('careers') . "` WHERE published = 1 ORDER BY name ASC");
-    cg_json(['success' => true, 'data' => ['species' => $sp, 'types' => $ty, 'careers' => $ca]]);
+    $sk = cg_query("SELECT id, name, slug, description, paired_trait, sample_favorites, gift_notes FROM `" . uj_tbl('skills') . "` WHERE published = 1 ORDER BY name ASC");
+    cg_json(['success' => true, 'data' => ['species' => $sp, 'types' => $ty, 'careers' => $ca, 'skills' => $sk]]);
+}
+
+// ── Skills data ───────────────────────────────────────────────────────────────
+
+function uj_install_skills(): int {
+    $t = uj_tbl('skills');
+
+    // Each row: [name, slug, description, paired_trait, sample_favorites, gift_notes]
+    $rows = [
+        ['Academics', 'academics',
+         'The Academics skill covers mathematics, history, geography, medicine, and all kinds of fancy book learning. It is almost always combined with the Mind trait. One Academics success will be enough for general knowledge — the types of things people would pick up just by being smart. Two Academics successes means your character can figure out some hard math problem or solve some science issue. Three or more Academics successes will let your character know some really obscure historical fact or science principle that can apply to your current situation.',
+         'Mind',
+         "Chemistry\nGeography\nHistory\nMedicine\nPhysics",
+         ''],
+        ['Athletics', 'athletics',
+         'Athletics skill helps with climbing, jumping, riding, swimming, throwing, and all kinds of outdoor sports. Athletics is often combined with Body for feats of physical strength and coordination, but when finishing first is more important than finishing well, Speed might be used instead. One Athletics success will be enough for typical physical feats, such as jumping a small gap or climbing a tree — something anyone with a Body trait could pull off. Two or more Athletics successes would be needed for difficult gymnastics and other physical feats. Athletics is a skill to perform a physical activity. To keep up the same physical activity for a long time, try Endurance skill, instead.',
+         'Body',
+         "Climbing\nJumping\nSwimming",
+         "The Gifts of Climbing, Jumping, and Swimming each give a bonus d12 to a specialty use of Athletics. Consult the Gift's descriptions for more details."],
+        ['Craft', 'craft',
+         'Craft skill is a catch-all for working with your hands. This skill can be used to repair things, to build things, to make new things, and to know about how things are made. Anyone can roll their Mind to try to make something… but only those with Mind and at least one die in Craft skill can score two successes. Crafts that need strength or brawn might include Body; crafts that need precision and hand-to-eye coordination might include Speed. One Craft success will be enough for unskilled labor — tying knots, replacing wheels, and simple repairs. Two successes will be enough for skilled labor and the more difficult repairs. Three Craft successes or more are only possible by master craftsmen.',
+         'Mind',
+         "Carpentry\nLeatherworking\nMechanics\nMetalworking\nPainting\nWhen wearing my Handy Outfit",
+         'The Gift of Craft Specialty gives a bonus d12 when using Craft to work on your Favorite thing.'],
+        ['Deceit', 'deceit',
+         'The Deceit skill covers all lying, cheating, disguise, pilfering, and anything else that uses falsehood to get what you want. For clever deception, Mind may be included. For simple bald-faced lying, told with conviction and without any tells to give it away, try including Will. To pick up unattended objects without anyone noticing, use Speed & Deceit. To see through deceit, your opponent may use their Mind Dice, and either their Questioning dice (for seeing through lies) or Observation dice (for seeing things they shouldn\'t). One success will be enough to fool most people who suspect nothing. Two successes or more will be necessary for targets with good Skills or who have a strong reason to be suspicious. Deceit is the skill used to distract people from the truth. If you want to hide, or to sneak past people without being seen, use Evasion, instead.',
+         'Mind',
+         "Cheating\nDisguise\nvs. authority figures\nStealing",
+         "The Gift of Gambling gives a bonus d12 when cheating at games of chance.\nThe Gift of Sleight of Hand makes it easier for you to pick pockets or to palm small items.\nThe Gift of Disguise gives a bonus d12 to pretend to be someone else."],
+        ['Endurance', 'endurance',
+         'The Endurance skill represents stamina, self-discipline, and the ability to work through physical hardship. When slow and steady wins the race, it\'s Endurance. Endurance usually pairs with the Body Trait. For a marathon run or a chase, Endurance may pair with Speed instead. Every character has an instant "Endurance Soak" that lets you roll your dice vs. 3, with each success removing a point of damage. One success will be enough for any long-term activity, such as walking several miles in good weather. Two successes or more can let a character work longer… or maybe "slow and sure" becomes "fast and sure", allowing you to work both faster and longer.',
+         'Body',
+         "Hiking\nWhen Soaking a Fighting attack\nWhen Soaking a Shooting attack\nWhen wearing my Rough Outfit",
+         'The Gift of Local Knowledge gives a bonus d12 to hiking, but only if you\'re in the right landscape. Consult the Local Knowledge\'s description for the details.'],
+        ['Evasion', 'evasion',
+         'A very popular skill with adventurers, Evasion is used to avoiding detection and for dodging attacks. Evasion pairs with your Speed Trait for those all-important dodge rolls, and for sneaking rolls. For staying very still in hiding spots, Will & Evasion may be used. For clever hiding spots, Mind & Evasion might come into play. In combat, a dodge is a roll of your Speed & Evasion vs. your attacker\'s dice. If your dodge dice roll higher, you avoid the attack. Also in dangerous combat situations, you may need to hide, which is a dangerous stunt that uses your Speed and Evasion dice.',
+         'Speed',
+         "Hiding and infiltrating\nvs. Fighting\nvs. Shooting\nWhen wearing my Sneaky Outfit",
+         "Another popular Gift, Stealth gives a bonus d12 on rolls of Evasion to sneak.\nAnother popular Gift with adventurers, Veteran lets you take a \"guard\" action to claim a bonus d12 to dodges."],
+        ['Fighting', 'fighting',
+         'An essential Skill for the adventurer, Fighting covers punching, kicking, clubbing, stabbing, and all hand-to-hand combat. Fighting always pairs with your Body Trait. Different weapons include more Traits — some weapons require fast strikes, precise moves, or unchecked savagery. Fighting dice may be limited. If your character is climbing, swimming, or otherwise distracted with some physical feat, none of your Fighting dice may be larger than your best Athletics die (or d4, whichever is better). If your character is in a moving vehicle, none of your Fighting dice may be larger than your best Vehicle die (or d4, whichever is better). When attacking, your Fighting dice go up against your opponent\'s defense dice. To hit your target, you\'ll have to roll higher than they did. Fighting is used for hand-to-hand combat. For bows and guns, use Shooting skill, instead.',
+         'Body',
+         "With my favorite weapon\nWith my fists\nWith grabs\nWith escapes",
+         "A very popular Gift with adventurers, Veteran lets you take a \"guard\" action to claim a bonus d12 to counters made with Fighting weapons, and it lets you take an \"aim\" action to claim a bonus d12 to attacks made with fighting weapons against a single foe."],
+        ['Negotiation', 'negotiation',
+         'When you want other people to give you something, to help you with something, or to not do something, it\'s time to use Negotiation Skill. Negotiation is all about getting along with others, and getting them to do things for you. For many negotiations, you won\'t need to roll — asking the police to help you against a mugger, asking a merchant to sell you an item at a standard price, asking a porter to take your train ticket and let you aboard, etc. Use Negotiation when you want a minor advantage in a transaction or when your request is dubious or when you want someone to break the rules to help you. Negotiation almost always pairs with the Mind trait. You might try negotiating dishonestly by including your Deceit dice. If the target doesn\'t have any Deceit dice, you\'re probably better off with the truth! And if the target doesn\'t have any Questioning dice, they\'re an easy target for such trickery.',
+         'Mind',
+         "With criminals\nWith royalty\nWith merchants\nWith the authorities",
+         "The gift of Fast Talk can give you a bonus d12 to a Negotiation that takes less than five minutes (and assuming they don\'t already dislike you).\nThe gift of Diplomacy gives you a bonus d12 to any Negotiation that lasts more than five minutes, with people who are willing to hear you out.\nMany social gifts give a d12 bonus to negotiate in certain social situations."],
+        ['Observation', 'observation',
+         'A very popular skill with adventurers, Observation is the skill of knowing what\'s in your environment that\'s useful to you… and what isn\'t useful. Seeing things in plain sight, or hearing loud noises, don\'t require rolls of Observation. It\'s the hidden things, or the things lost in noise and clutter, that you have to make rolls to find. You can also use Observation to search for clues, such as tracks. Observation pairs with your Mind Trait for those all-important rolls to find out useful information. If you\'re in a hurry, you might pair Observation with Speed to quickly toss a room for clues. In a combat situation, you will roll Mind and Observation to see how ready you are, when a fight starts. Observation is used to resist Deceit when someone attempts to pick a pocket or palm an object while you\'re around.',
+         'Mind',
+         "Tracking\nSearching for clues\nInitiative\non my home turf",
+         "The Gift of Danger Sense gives a bonus d12 to your Initiative rolls.\nThe Gift of Local Knowledge gives a bonus d12 to spot if anyone is sneaking up on you, but only if you\'re in the right landscape. Consult the Local Knowledge\'s description for the details."],
+        ['Presence', 'presence',
+         'The Presence skill is for making an impression on others — to make them remember you, to make them respect you, to make them fear you, to make them take you seriously. Presence is popular with actors, politicians, and crime lords. When trying to scare people, you use your Body & Will Traits with your Presence dice. When giving a public speech, use Mind & Presence to make people pay attention to what you\'re talking about. For a performance, roll Will & Presence vs. 3. If you score one success, your performance is good. More successes will give a better performance and a stronger impression. You may attempt to scare someone by contesting your Body, Will, & Presence vs. their Body, Will & Presence.',
+         'Body & Will',
+         "on my home turf\nwhen I have a gun\non stage\non screen\nwith people who have never heard of me before\nwith anyone who already has a negative opinion of me\nwith anyone who already has a positive opinion of me\nWhen wearing my Uniform Outfit",
+         'The gift of Guts gives a bonus d12 on rolls to use Presence to Frighten people and to resist being Frightened.'],
+        ['Questioning', 'questioning',
+         'Questioning is the skill of gossiping to find rumors, to separate rumor from fact, to interrogate people for correct answers, and to piece together multiple stories to find the big picture. One success on a Questioning roll will get you the same rumors and information that the locals would know. Two successes would get you information that only people "in the know" would be able to figure out. Three successes or more will dig up some serious secrets.',
+         'Mind',
+         "with criminals\nwith aristocrats\nwith intellectuals\nwith the working class",
+         "The Gift of Gossip gives you a bonus d12 to gossip — that is, asking people informal questions in social situations. Gossip takes a long time — at least an hour to get maybe five minutes of useful information.\nThe gift of Local Knowledge gives you a bonus d12 when gossiping inside a specific area.\nMany social gifts give a d12 bonus to gossip with people in certain social situations: Carousing works in bars and at parties, Romance helps with amorous partners, High Society is for the upper crust, Streetwise assists with criminals and the underclass, and an Insider gift gives a d12 bonus, but only with a specific crowd."],
+        ['Shooting', 'shooting',
+         'An essential Skill for the adventurer, Shooting is used with bows, crossbows, guns, slings, and all ranged weapons. Shooting always pairs with your Speed Trait. Different weapons include more Traits — some weapons require a strong grip, keen awareness, or unflinching violence. Consult the Equipment chapter to see what other Traits might be used. Shooting dice may be limited. If your character is climbing, swimming, or otherwise distracted with some physical feat, none of your Shooting dice may be larger than your best Athletics die (or d4, whichever is better). If your character is in a moving vehicle, none of your Shooting dice may be larger than your best Vehicle die (or d4, whichever is better). Shooting is used for ranged combat. For thrown weapons, use Fighting skill, instead.',
+         'Speed',
+         "With my favorite gun\nWith aimed shots only",
+         "Gifts such as Pistol Reflex, Shotgun Blast, and Rifle Accuracy improve your damage output with key weapons.\nA very popular Gift with adventurers, Veteran lets you take a \"guard\" action to claim a bonus d12 to counters made with Fighting weapons, and it lets you take an \"aim\" action to claim a bonus d12 to attacks made with fighting weapons against a single foe."],
+        ['Tactics', 'tactics',
+         'When a mob fights, they are an uncoordinated mess, tripping over each other and getting in one another\'s way. When trained warriors fight, they use skill in Tactics. When you attack a target that is threatened by one of your allies, you may claim your Tactics Dice as extra dice with your Fighting or Shooting to hit the target. When a nearby ally is Dazed or Panicked, you may attempt to help them with a Rally action. Roll your Will & Tactics dice vs. 3. For each success you score, you can remove one bad effect.',
+         'Will',
+         "Rallying\nwith Fighting\nwith Shooting\nwhen outnumbered",
+         "The gift of Leadership gives you a bonus d12 when using Tactics to rally others.\nThe gift of Counter-Tactics gives you a bonus d12 to counter or any dodge when others try to claim Tactics dice as bonus blindside dice, against you."],
+        ['Transport', 'transport',
+         'The Transport skill is used to operate any vehicle — automobile, boat, locomotive, steamship, airplane, zeppelin, etc. Transport skill usually pairs with your Speed Trait. Muscle-powered Transport, such as rowboats, may use Body & Transport instead. Having Transport skill will let you attack from a moving vehicle better. Your Fighting & Shooting skills are limited to the size of your best Transport die. For example, if your best Transport die is d6, all your combat dice that are d8, d10, or d12 become d6.',
+         'Speed',
+         "With my favorite vehicle\nWhen driving on my home turf",
+         "Driving gives a bonus d12 to operate automobiles (4 or 6 wheels).\nMotorcycling gives a bonus d12 for cycles (2 or 3 wheels)."],
+    ];
+
+    $count = 0;
+    foreach ($rows as [$name, $slug, $desc, $trait, $favs, $gifts]) {
+        cg_exec(
+            "INSERT INTO `$t`
+                (name, slug, description, paired_trait, sample_favorites, gift_notes)
+             VALUES (?, ?, ?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE
+                name=VALUES(name), description=VALUES(description),
+                paired_trait=VALUES(paired_trait),
+                sample_favorites=VALUES(sample_favorites),
+                gift_notes=VALUES(gift_notes)",
+            [$name, $slug, $desc, $trait, $favs, $gifts]
+        );
+        $count++;
+    }
+    return $count;
 }

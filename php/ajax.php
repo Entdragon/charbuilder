@@ -139,6 +139,7 @@ $actionFiles = [
     'uj_get_species'     => 'actions/uj.php',
     'uj_get_types'       => 'actions/uj.php',
     'uj_get_careers'     => 'actions/uj.php',
+    'uj_get_skills'      => 'actions/uj.php',
     'uj_get_all_traits'  => 'actions/uj.php',
 ];
 

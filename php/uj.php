@@ -16,7 +16,7 @@ $counts  = [];
 $hasData = false;
 try {
     $p  = cg_prefix();
-    foreach (['uj_species' => 'species', 'uj_types' => 'types', 'uj_careers' => 'careers'] as $tbl => $label) {
+    foreach (['uj_species' => 'species', 'uj_types' => 'types', 'uj_careers' => 'careers', 'uj_skills' => 'skills'] as $tbl => $label) {
         $row = cg_query_one("SELECT COUNT(*) AS n FROM `{$p}{$tbl}`");
         $counts[$label] = (int)($row['n'] ?? 0);
     }
@@ -75,11 +75,15 @@ try {
           <div class="uj-count-n"><?= $counts['careers'] ?></div>
           <div class="uj-count-l">Careers</div>
         </div>
+        <div class="uj-count">
+          <div class="uj-count-n"><?= $counts['skills'] ?></div>
+          <div class="uj-count-l">Skills</div>
+        </div>
       </div>
     <?php else: ?>
       <p class="uj-missing">
         No data found. Visit the Admin panel and click <strong>UJ: Install Data</strong>
-        to create the tables and load all Species, Type, and Career traits.
+        to create the tables and load all Species, Types, Careers, and Skills.
       </p>
     <?php endif; ?>
   </div>
@@ -87,9 +91,9 @@ try {
   <div class="uj-roadmap">
     <h2>Build Roadmap</h2>
     <ol>
-      <li class="done">Schema design — uj_species, uj_types, uj_careers tables</li>
-      <li class="done">Data extraction — all traits from book screenshots</li>
-      <li class="done">AJAX endpoints — get/install for all three trait tables</li>
+      <li class="done">Schema design — uj_species, uj_types, uj_careers, uj_skills tables</li>
+      <li class="done">Data extraction — all traits &amp; skills from book screenshots</li>
+      <li class="done">AJAX endpoints — get/install for all four tables</li>
       <li class="done">Admin install button — one-click table creation + data load</li>
       <li>Character builder UI — trait picker (Species → Type → Career)</li>
       <li>Trait die assignment — pick 2 best (d8), 1 worst (d4), rest d6</li>
