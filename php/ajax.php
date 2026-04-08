@@ -72,7 +72,12 @@ if (!$action) {
 }
 
 // ── Public actions (no auth required) ────────────────────────────────────────
-$publicActions = ['cg_login_user', 'cg_logout_user', 'cg_register_user', 'cg_get_current_user', 'cg_sso_login', 'cg_ping'];
+$publicActions = [
+    'cg_login_user', 'cg_logout_user', 'cg_register_user',
+    'cg_get_current_user', 'cg_sso_login', 'cg_ping',
+    // Read-only reference data — safe without auth
+    'uj_get_all_full', 'cg_get_personality_list',
+];
 
 // ── Action map ────────────────────────────────────────────────────────────────
 $actionFiles = [

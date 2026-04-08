@@ -37,7 +37,11 @@ function uj_load_characters(): void {
     }
     $uid = cg_current_user_id();
     $p   = cg_prefix();
-    uj_ensure_characters_table();
+    try { uj_ensure_characters_table(); } catch (Throwable $e) {
+        error_log('[UJ] uj_ensure_characters_table failed: ' . $e->getMessage());
+        cg_json(['success' => true, 'data' => []]);
+        return;
+    }
 
     $rows = cg_query(
         "SELECT id, name, species_id, type_id, career_id,
