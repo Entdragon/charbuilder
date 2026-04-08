@@ -94,15 +94,26 @@ function uj_save_character(): void {
     $id = (int) ($data['id'] ?? 0);
     uj_ensure_characters_table();
 
+    static $ALLOWED_DICE = ['d4', 'd6', 'd8', 'd10', 'd12'];
+
+    $rawSpecies  = $data['species_id'] ?? null;
+    $rawType     = $data['type_id']    ?? null;
+    $rawCareer   = $data['career_id']  ?? null;
+
+    $bodyDie   = in_array($data['body_die']  ?? '', $ALLOWED_DICE, true) ? $data['body_die']  : '';
+    $speedDie  = in_array($data['speed_die'] ?? '', $ALLOWED_DICE, true) ? $data['speed_die'] : '';
+    $mindDie   = in_array($data['mind_die']  ?? '', $ALLOWED_DICE, true) ? $data['mind_die']  : '';
+    $willDie   = in_array($data['will_die']  ?? '', $ALLOWED_DICE, true) ? $data['will_die']  : '';
+
     $fields = [
         'name'             => substr((string) ($data['name']             ?? ''), 0, 100),
-        'species_id'       => ($data['species_id'] !== null && $data['species_id'] !== '') ? (int) $data['species_id'] : null,
-        'type_id'          => ($data['type_id']    !== null && $data['type_id']    !== '') ? (int) $data['type_id']    : null,
-        'career_id'        => ($data['career_id']  !== null && $data['career_id']  !== '') ? (int) $data['career_id']  : null,
-        'body_die'         => substr((string) ($data['body_die']         ?? ''), 0, 4),
-        'speed_die'        => substr((string) ($data['speed_die']        ?? ''), 0, 4),
-        'mind_die'         => substr((string) ($data['mind_die']         ?? ''), 0, 4),
-        'will_die'         => substr((string) ($data['will_die']         ?? ''), 0, 4),
+        'species_id'       => ($rawSpecies !== null && $rawSpecies !== '') ? (int) $rawSpecies : null,
+        'type_id'          => ($rawType    !== null && $rawType    !== '') ? (int) $rawType    : null,
+        'career_id'        => ($rawCareer  !== null && $rawCareer  !== '') ? (int) $rawCareer  : null,
+        'body_die'         => $bodyDie,
+        'speed_die'        => $speedDie,
+        'mind_die'         => $mindDie,
+        'will_die'         => $willDie,
         'personality_word' => substr((string) ($data['personality_word'] ?? ''), 0, 100),
         'notes'            => (string) ($data['notes'] ?? ''),
         'updated_at'       => date('Y-m-d H:i:s'),
