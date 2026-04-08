@@ -36,8 +36,13 @@ function uj_ensure_characters_table(): void {
                      ADD COLUMN `{$col}` VARCHAR(4) NOT NULL DEFAULT ''");
         } catch (Throwable $e) {}
     }
-    foreach (['ally_species_id INT DEFAULT NULL', 'ally_career_id INT DEFAULT NULL', 'gift_choices TEXT DEFAULT NULL'] as $colDef) {
-        $colName = explode(' ', $colDef)[0];
+    foreach ([
+        'ally_species_id INT DEFAULT NULL',
+        'ally_career_id INT DEFAULT NULL',
+        'gift_choices TEXT DEFAULT NULL',
+        'experience INT NOT NULL DEFAULT 0',
+        'purchased_gifts TEXT DEFAULT NULL',
+    ] as $colDef) {
         try {
             cg_exec("ALTER TABLE `{$p}uj_character_records` ADD COLUMN {$colDef}");
         } catch (Throwable $e) {}
@@ -64,6 +69,7 @@ function uj_load_characters(): void {
                 species_die, type_die, career_die,
                 personality_word, notes,
                 ally_species_id, ally_career_id, gift_choices,
+                experience, purchased_gifts,
                 created_at, updated_at
            FROM `{$p}uj_character_records`
           WHERE user_id = ?
@@ -130,13 +136,21 @@ function uj_save_character(): void {
     $typeDie    = in_array($data['type_die']    ?? '', $ALLOWED_DICE, true) ? $data['type_die']    : '';
     $careerDie  = in_array($data['career_die']  ?? '', $ALLOWED_DICE, true) ? $data['career_die']  : '';
 
-    $rawAllySpecies = $data['ally_species_id'] ?? null;
-    $rawAllyCareer  = $data['ally_career_id']  ?? null;
-    $rawGiftChoices = $data['gift_choices']    ?? null;
+    $rawAllySpecies    = $data['ally_species_id'] ?? null;
+    $rawAllyCareer     = $data['ally_career_id']  ?? null;
+    $rawGiftChoices    = $data['gift_choices']     ?? null;
+    $rawExperience     = $data['experience']       ?? null;
+    $rawPurchasedGifts = $data['purchased_gifts']  ?? null;
+
     if (is_array($rawGiftChoices)) {
         $rawGiftChoices = json_encode($rawGiftChoices);
     } elseif (!is_string($rawGiftChoices)) {
         $rawGiftChoices = null;
+    }
+    if (is_array($rawPurchasedGifts)) {
+        $rawPurchasedGifts = json_encode($rawPurchasedGifts);
+    } elseif (!is_string($rawPurchasedGifts)) {
+        $rawPurchasedGifts = null;
     }
 
     $fields = [
@@ -156,6 +170,8 @@ function uj_save_character(): void {
         'ally_species_id'  => ($rawAllySpecies !== null && $rawAllySpecies !== '') ? (int) $rawAllySpecies : null,
         'ally_career_id'   => ($rawAllyCareer  !== null && $rawAllyCareer  !== '') ? (int) $rawAllyCareer  : null,
         'gift_choices'     => $rawGiftChoices,
+        'experience'       => ($rawExperience !== null) ? max(0, (int) $rawExperience) : 0,
+        'purchased_gifts'  => $rawPurchasedGifts,
         'updated_at'       => date('Y-m-d H:i:s'),
     ];
 
