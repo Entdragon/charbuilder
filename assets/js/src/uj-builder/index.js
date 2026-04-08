@@ -147,6 +147,20 @@
   var DICE_POOL   = ['d4', 'd6', 'd6', 'd6', 'd6', 'd8', 'd8'];
   var STEP_LABELS = ['Species', 'Type', 'Career', 'Traits', 'Personality', 'Gifts', 'Summary'];
   var UJ_TRAITS   = ['Body', 'Speed', 'Mind', 'Will', 'Type', 'Species', 'Career'];
+  var DIE_STEPS   = ['d4', 'd6', 'd8', 'd10', 'd12'];
+
+  function stepDieUp(die, steps) {
+    var idx = DIE_STEPS.indexOf(die);
+    if (idx < 0) return die;
+    return DIE_STEPS[Math.min(idx + steps, DIE_STEPS.length - 1)];
+  }
+
+  function effectiveDie(baseDie, traitLabel) {
+    if (!state.purchasedGifts || !state.purchasedGifts.length) return baseDie;
+    var slug  = 'improved-trait-' + traitLabel.toLowerCase();
+    var count = state.purchasedGifts.filter(function(p) { return p.slug === slug; }).length;
+    return count ? stepDieUp(baseDie, count) : baseDie;
+  }
 
   /* ── DOM refs ───────────────────────────────────────────── */
   var loadingEl     = document.getElementById('uj-builder-loading');
@@ -413,7 +427,7 @@
       var btnDisabled = alreadyOwned || !canAfford ? ' disabled' : '';
       var btnLabel    = alreadyOwned ? 'Already owned' : (!canAfford ? 'Need 10 XP' : 'Buy — 10 XP');
 
-      return '<div class="dev-shop-card">' +
+      return '<div class="dev-shop-card" style="' + (alreadyOwned ? 'opacity:0.45;pointer-events:none;' : '') + '">' +
         '<div class="dev-shop-card-header">' +
           '<div class="dev-shop-card-name">' + esc(item.name) + '</div>' +
           '<div>' + cardBadges(item, kind) + '</div>' +
@@ -1202,35 +1216,40 @@
 
     // ── Trait dice ───────────────────────────────────────────
     var traitRows = [
-      { label: 'Body',  die: state.bodyDie  },
-      { label: 'Speed', die: state.speedDie },
-      { label: 'Mind',  die: state.mindDie  },
-      { label: 'Will',  die: state.willDie  },
+      { label: 'Body',  die: effectiveDie(state.bodyDie,  'Body')  },
+      { label: 'Speed', die: effectiveDie(state.speedDie, 'Speed') },
+      { label: 'Mind',  die: effectiveDie(state.mindDie,  'Mind')  },
+      { label: 'Will',  die: effectiveDie(state.willDie,  'Will')  },
     ];
     html += '<div class="summary-traits">';
     traitRows.forEach(function(t) {
+      var base     = state[t.label.toLowerCase() + 'Die'];
+      var improved = t.die !== base;
       html += '<div class="summary-trait">' +
-        '<div class="summary-trait-name">' + t.label + '</div>' +
-        '<div class="summary-trait-die">' + (t.die || '—') + '</div>' +
+        '<div class="summary-trait-name">' + t.label + (improved ? ' <span style="color:var(--uj-teal);font-size:0.65rem;vertical-align:middle;" title="Improved via development">&#9650;</span>' : '') + '</div>' +
+        '<div class="summary-trait-die" style="' + (improved ? 'color:var(--uj-teal);' : '') + '">' + (t.die || '—') + '</div>' +
       '</div>';
     });
     html += '</div>';
 
     // ── Source dice (Species / Type / Career die) ────────────
+    var effSpeciesDie = effectiveDie(state.speciesDie, 'Species');
+    var effTypeDie    = effectiveDie(state.typeDie,    'Type');
+    var effCareerDie  = effectiveDie(state.careerDie,  'Career');
     html += '<div class="summary-source-dice">' +
       '<div class="summary-source-die-item">' +
         '<span class="source-die-label">Species Die</span>' +
-        '<span class="summary-trait-die" style="font-size:1.1rem;">' + (sp ? (state.speciesDie || '—') : '—') + '</span>' +
+        '<span class="summary-trait-die" style="font-size:1.1rem;' + (effSpeciesDie !== state.speciesDie ? 'color:var(--uj-teal);' : '') + '">' + (sp ? (effSpeciesDie || '—') : '—') + '</span>' +
         (sp ? '<span style="font-size:0.78rem;color:var(--uj-text-dim);">' + esc(sp.name) + '</span>' : '') +
       '</div>' +
       '<div class="summary-source-die-item">' +
         '<span class="source-die-label">Type Die</span>' +
-        '<span class="summary-trait-die" style="font-size:1.1rem;">' + (ty ? (state.typeDie || '—') : '—') + '</span>' +
+        '<span class="summary-trait-die" style="font-size:1.1rem;' + (effTypeDie !== state.typeDie ? 'color:var(--uj-teal);' : '') + '">' + (ty ? (effTypeDie || '—') : '—') + '</span>' +
         (ty ? '<span style="font-size:0.78rem;color:var(--uj-text-dim);">' + esc(ty.name) + '</span>' : '') +
       '</div>' +
       '<div class="summary-source-die-item">' +
         '<span class="source-die-label">Career Die</span>' +
-        '<span class="summary-trait-die" style="font-size:1.1rem;">' + (ca ? (state.careerDie || '—') : '—') + '</span>' +
+        '<span class="summary-trait-die" style="font-size:1.1rem;' + (effCareerDie !== state.careerDie ? 'color:var(--uj-teal);' : '') + '">' + (ca ? (effCareerDie || '—') : '—') + '</span>' +
         (ca ? '<span style="font-size:0.78rem;color:var(--uj-text-dim);">' + esc(ca.name) + '</span>' : '') +
       '</div>' +
     '</div>';

@@ -153,6 +153,22 @@
     var DICE_POOL = ["d4", "d6", "d6", "d6", "d6", "d8", "d8"];
     var STEP_LABELS = ["Species", "Type", "Career", "Traits", "Personality", "Gifts", "Summary"];
     var UJ_TRAITS = ["Body", "Speed", "Mind", "Will", "Type", "Species", "Career"];
+    var DIE_STEPS = ["d4", "d6", "d8", "d10", "d12"];
+    function stepDieUp(die, steps) {
+      var idx = DIE_STEPS.indexOf(die);
+      if (idx < 0)
+        return die;
+      return DIE_STEPS[Math.min(idx + steps, DIE_STEPS.length - 1)];
+    }
+    function effectiveDie(baseDie, traitLabel) {
+      if (!state.purchasedGifts || !state.purchasedGifts.length)
+        return baseDie;
+      var slug = "improved-trait-" + traitLabel.toLowerCase();
+      var count = state.purchasedGifts.filter(function(p) {
+        return p.slug === slug;
+      }).length;
+      return count ? stepDieUp(baseDie, count) : baseDie;
+    }
     var loadingEl = document.getElementById("uj-builder-loading");
     var listScreen = document.getElementById("uj-char-list-screen");
     var wizardScreen = document.getElementById("uj-wizard-screen");
@@ -448,7 +464,7 @@
         var canAfford = xpAvail >= 10;
         var btnDisabled = alreadyOwned || !canAfford ? " disabled" : "";
         var btnLabel = alreadyOwned ? "Already owned" : !canAfford ? "Need 10 XP" : "Buy \u2014 10 XP";
-        return '<div class="dev-shop-card"><div class="dev-shop-card-header"><div class="dev-shop-card-name">' + esc(item.name) + "</div><div>" + cardBadges(item, kind) + "</div></div>" + (item.subtitle ? '<div style="font-size:0.78rem;color:var(--uj-amber-light);font-style:italic;margin-bottom:0.15rem;">' + esc(item.subtitle) + "</div>" : "") + (item.description ? '<p class="dev-shop-card-desc">' + esc(item.description) + "</p>" : "") + (item.side_effect ? '<p class="dev-shop-card-desc" style="color:var(--uj-text-dim);"><em>Side effect:</em> ' + esc(item.side_effect) + "</p>" : "") + (item.requires_text ? '<div class="dev-shop-requires"><strong>Requires/Notes:</strong> ' + esc(item.requires_text) + "</div>" : "") + '<div class="dev-shop-card-footer"><button class="uj-btn uj-btn-teal" style="font-size:0.75rem;padding:0.3rem 0.85rem;" data-buy-slug="' + esc(item.slug) + '" data-buy-name="' + esc(item.name) + '" data-buy-kind="' + esc(kind) + '"' + btnDisabled + ">" + btnLabel + "</button></div></div>";
+        return '<div class="dev-shop-card" style="' + (alreadyOwned ? "opacity:0.45;pointer-events:none;" : "") + '"><div class="dev-shop-card-header"><div class="dev-shop-card-name">' + esc(item.name) + "</div><div>" + cardBadges(item, kind) + "</div></div>" + (item.subtitle ? '<div style="font-size:0.78rem;color:var(--uj-amber-light);font-style:italic;margin-bottom:0.15rem;">' + esc(item.subtitle) + "</div>" : "") + (item.description ? '<p class="dev-shop-card-desc">' + esc(item.description) + "</p>" : "") + (item.side_effect ? '<p class="dev-shop-card-desc" style="color:var(--uj-text-dim);"><em>Side effect:</em> ' + esc(item.side_effect) + "</p>" : "") + (item.requires_text ? '<div class="dev-shop-requires"><strong>Requires/Notes:</strong> ' + esc(item.requires_text) + "</div>" : "") + '<div class="dev-shop-card-footer"><button class="uj-btn uj-btn-teal" style="font-size:0.75rem;padding:0.3rem 0.85rem;" data-buy-slug="' + esc(item.slug) + '" data-buy-name="' + esc(item.name) + '" data-buy-kind="' + esc(kind) + '"' + btnDisabled + ">" + btnLabel + "</button></div></div>";
       }
       var IMPROVED_TRAITS = ["Body", "Speed", "Mind", "Will", "Career", "Species", "Type"];
       var expandedGifts = [];
@@ -1168,17 +1184,22 @@
         html += '<div class="summary-personality"><span class="summary-personality-label">Personality</span><span class="summary-personality-word">' + esc(state.personalityWord) + "</span></div>";
       }
       var traitRows = [
-        { label: "Body", die: state.bodyDie },
-        { label: "Speed", die: state.speedDie },
-        { label: "Mind", die: state.mindDie },
-        { label: "Will", die: state.willDie }
+        { label: "Body", die: effectiveDie(state.bodyDie, "Body") },
+        { label: "Speed", die: effectiveDie(state.speedDie, "Speed") },
+        { label: "Mind", die: effectiveDie(state.mindDie, "Mind") },
+        { label: "Will", die: effectiveDie(state.willDie, "Will") }
       ];
       html += '<div class="summary-traits">';
       traitRows.forEach(function(t) {
-        html += '<div class="summary-trait"><div class="summary-trait-name">' + t.label + '</div><div class="summary-trait-die">' + (t.die || "\u2014") + "</div></div>";
+        var base = state[t.label.toLowerCase() + "Die"];
+        var improved = t.die !== base;
+        html += '<div class="summary-trait"><div class="summary-trait-name">' + t.label + (improved ? ' <span style="color:var(--uj-teal);font-size:0.65rem;vertical-align:middle;" title="Improved via development">&#9650;</span>' : "") + '</div><div class="summary-trait-die" style="' + (improved ? "color:var(--uj-teal);" : "") + '">' + (t.die || "\u2014") + "</div></div>";
       });
       html += "</div>";
-      html += '<div class="summary-source-dice"><div class="summary-source-die-item"><span class="source-die-label">Species Die</span><span class="summary-trait-die" style="font-size:1.1rem;">' + (sp ? state.speciesDie || "\u2014" : "\u2014") + "</span>" + (sp ? '<span style="font-size:0.78rem;color:var(--uj-text-dim);">' + esc(sp.name) + "</span>" : "") + '</div><div class="summary-source-die-item"><span class="source-die-label">Type Die</span><span class="summary-trait-die" style="font-size:1.1rem;">' + (ty ? state.typeDie || "\u2014" : "\u2014") + "</span>" + (ty ? '<span style="font-size:0.78rem;color:var(--uj-text-dim);">' + esc(ty.name) + "</span>" : "") + '</div><div class="summary-source-die-item"><span class="source-die-label">Career Die</span><span class="summary-trait-die" style="font-size:1.1rem;">' + (ca ? state.careerDie || "\u2014" : "\u2014") + "</span>" + (ca ? '<span style="font-size:0.78rem;color:var(--uj-text-dim);">' + esc(ca.name) + "</span>" : "") + "</div></div>";
+      var effSpeciesDie = effectiveDie(state.speciesDie, "Species");
+      var effTypeDie = effectiveDie(state.typeDie, "Type");
+      var effCareerDie = effectiveDie(state.careerDie, "Career");
+      html += '<div class="summary-source-dice"><div class="summary-source-die-item"><span class="source-die-label">Species Die</span><span class="summary-trait-die" style="font-size:1.1rem;' + (effSpeciesDie !== state.speciesDie ? "color:var(--uj-teal);" : "") + '">' + (sp ? effSpeciesDie || "\u2014" : "\u2014") + "</span>" + (sp ? '<span style="font-size:0.78rem;color:var(--uj-text-dim);">' + esc(sp.name) + "</span>" : "") + '</div><div class="summary-source-die-item"><span class="source-die-label">Type Die</span><span class="summary-trait-die" style="font-size:1.1rem;' + (effTypeDie !== state.typeDie ? "color:var(--uj-teal);" : "") + '">' + (ty ? effTypeDie || "\u2014" : "\u2014") + "</span>" + (ty ? '<span style="font-size:0.78rem;color:var(--uj-text-dim);">' + esc(ty.name) + "</span>" : "") + '</div><div class="summary-source-die-item"><span class="source-die-label">Career Die</span><span class="summary-trait-die" style="font-size:1.1rem;' + (effCareerDie !== state.careerDie ? "color:var(--uj-teal);" : "") + '">' + (ca ? effCareerDie || "\u2014" : "\u2014") + "</span>" + (ca ? '<span style="font-size:0.78rem;color:var(--uj-text-dim);">' + esc(ca.name) + "</span>" : "") + "</div></div>";
       html += '<div class="summary-section summary-skills-section"><div class="summary-section-title">Skills</div><table class="skills-table"><thead><tr><th class="skill-name-col">Skill</th><th class="skill-die-col" title="Species die">Species</th><th class="skill-die-col" title="Type die">Type</th><th class="skill-die-col" title="Career die">Career</th><th class="skill-total-col">Dice Pool</th></tr></thead><tbody>';
       CORE_SKILLS.forEach(function(skillName) {
         var spDie = itemGrantsSkill(sp, skillName) ? state.speciesDie : "";
