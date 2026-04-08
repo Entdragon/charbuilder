@@ -406,6 +406,14 @@ try {
     <a href="/builder" class="builder-cta">✦ &nbsp;Open Builder</a>
   </div>
 
+  <div class="builder-strip" style="border-color:rgba(75,191,216,0.2); margin-top:-1.5rem;">
+    <div class="builder-strip-text">
+      <h3 style="color:var(--teal);">Urban Jungle Builder</h3>
+      <p>Build and save Urban Jungle characters — species, type, career, skills, and battle stats.</p>
+    </div>
+    <a href="/uj/builder" class="builder-cta" style="background:linear-gradient(135deg,#1a6a7a,#2bb8d4 50%,#1a6a7a);">⚙ &nbsp;Open Builder</a>
+  </div>
+
   <section class="blog-section">
     <p class="section-heading">
       Updates

@@ -485,6 +485,93 @@ require __DIR__ . '/../layout-head.php';
   .save-status.saved  { color: var(--uj-success); }
   .save-status.error  { color: var(--uj-error); }
 
+  /* ── Source die picker (Steps 1-3) ───────────────────────── */
+  .source-die-row {
+    display: flex; align-items: center; gap: 0.75rem;
+    background: rgba(75,191,216,0.06); border: 1px solid rgba(75,191,216,0.15);
+    border-radius: 8px; padding: 0.6rem 1rem; margin-bottom: 1rem;
+  }
+  .source-die-label {
+    font-family: 'Cinzel', serif; font-size: 0.7rem; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--uj-teal);
+    white-space: nowrap;
+  }
+  .source-die-options { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .die-pill {
+    cursor: pointer; padding: 0.3rem 0.7rem;
+    border: 1px solid rgba(255,255,255,0.15); border-radius: 5px;
+    font-family: 'Cinzel', serif; font-size: 0.78rem; font-weight: 700;
+    color: var(--uj-text-muted); background: rgba(255,255,255,0.04);
+    user-select: none; transition: all 0.15s;
+  }
+  .die-pill:hover { border-color: var(--uj-teal); color: var(--uj-teal); }
+  .die-pill-active {
+    background: var(--uj-teal); color: #0a1a1e;
+    border-color: var(--uj-teal); font-weight: 700;
+  }
+
+  /* ── Summary source dice ──────────────────────────────────── */
+  .summary-source-dice {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;
+    margin-bottom: 1.25rem;
+  }
+  .summary-source-die-item {
+    display: flex; flex-direction: column; align-items: center; gap: 0.15rem;
+    background: rgba(75,191,216,0.06); border: 1px solid rgba(75,191,216,0.15);
+    border-radius: 8px; padding: 0.6rem 0.5rem;
+  }
+
+  /* ── Skills table ─────────────────────────────────────────── */
+  .summary-skills-section { margin-bottom: 1.25rem; }
+  .skills-table {
+    width: 100%; border-collapse: collapse; font-size: 0.88rem;
+  }
+  .skills-table thead th {
+    font-family: 'Cinzel', serif; font-size: 0.68rem; font-weight: 700;
+    letter-spacing: 0.07em; text-transform: uppercase;
+    color: var(--uj-text-dim); padding: 0.35rem 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.1);
+    text-align: center;
+  }
+  .skills-table thead th.skill-name-col { text-align: left; }
+  .skills-table tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .skills-table tbody tr:hover { background: rgba(255,255,255,0.03); }
+  .skill-name-col { padding: 0.3rem 0.5rem; color: var(--uj-text); font-weight: 500; }
+  .skill-die-col  { padding: 0.3rem 0.4rem; text-align: center; }
+  .skill-total-col { padding: 0.3rem 0.5rem; font-size: 0.82rem; }
+  .skill-row-active .skill-name-col { color: var(--uj-amber-light); font-weight: 600; }
+  .skill-die-badge {
+    display: inline-block; padding: 0.15rem 0.45rem;
+    background: rgba(43,184,212,0.15); border: 1px solid rgba(43,184,212,0.3);
+    border-radius: 4px; color: var(--uj-teal); font-family: 'Cinzel', serif;
+    font-size: 0.75rem; font-weight: 700;
+  }
+  .skill-die-empty { color: rgba(255,255,255,0.15); font-size: 0.8rem; }
+
+  /* ── Battle array ─────────────────────────────────────────── */
+  .summary-battle-array { margin-bottom: 1.25rem; }
+  .battle-array-grid {
+    display: grid; grid-template-columns: repeat(3,1fr); gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+  .battle-stat {
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px; padding: 0.75rem 1rem; text-align: center;
+  }
+  .battle-stat-name {
+    font-family: 'Cinzel', serif; font-size: 0.85rem; font-weight: 700;
+    color: var(--uj-amber-light); margin-bottom: 0.15rem;
+  }
+  .battle-stat-sub { font-size: 0.72rem; color: var(--uj-text-dim); margin-bottom: 0.4rem; }
+  .battle-stat-dice {
+    font-family: 'Cinzel', serif; font-size: 1rem; font-weight: 700;
+    color: var(--uj-teal);
+  }
+  @media (max-width: 600px) {
+    .summary-source-dice { grid-template-columns: 1fr; }
+    .battle-array-grid   { grid-template-columns: 1fr; }
+    .skills-table { font-size: 0.8rem; }
+  }
+
   /* ── Print ────────────────────────────────────────────────── */
   @media print {
     #uj-nav, .builder-topbar, .wizard-header, .wizard-progress,

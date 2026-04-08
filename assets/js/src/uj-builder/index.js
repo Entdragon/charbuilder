@@ -21,6 +21,18 @@
   // Map singular type name → key in allData response
   var COLLECTION_KEY = { species: 'species', type: 'types', career: 'careers' };
 
+  // Map entity type → state die key
+  var SOURCE_DIE_KEY = { species: 'speciesDie', type: 'typeDie', career: 'careerDie' };
+
+  // The 14 canonical UJ core skills (character sheet order)
+  var CORE_SKILLS = [
+    'Academics','Athletics','Craft','Deceit','Endurance','Evasion',
+    'Fighting','Negotiation','Observation','Presence','Questioning',
+    'Shooting','Tactics','Transport'
+  ];
+
+  var ALLOWED_DICE_JS = ['d4','d6','d8','d10','d12'];
+
   function ajaxPost(action, data) {
     return new Promise(function(resolve, reject) {
       var fd = new FormData();
@@ -118,6 +130,9 @@
     speedDie:        'd6',
     mindDie:         'd6',
     willDie:         'd4',
+    speciesDie:      'd8',
+    typeDie:         'd8',
+    careerDie:       'd8',
     personalityWord: '',
     charName:        '',
     notes:           '',
@@ -222,6 +237,9 @@
     state.speedDie       = 'd8';
     state.mindDie        = 'd6';
     state.willDie        = 'd4';
+    state.speciesDie     = 'd8';
+    state.typeDie        = 'd8';
+    state.careerDie      = 'd8';
     state.personalityWord= '';
     state.charName       = '';
     state.notes          = '';
@@ -241,6 +259,9 @@
       state.speedDie       = c.speed_die  || 'd8';
       state.mindDie        = c.mind_die   || 'd6';
       state.willDie        = c.will_die   || 'd4';
+      state.speciesDie     = c.species_die || 'd8';
+      state.typeDie        = c.type_die   || 'd8';
+      state.careerDie      = c.career_die || 'd8';
       state.personalityWord= c.personality_word || '';
       state.charName       = c.name       || '';
       state.notes          = c.notes      || '';
@@ -359,12 +380,31 @@
      STEP BUILDERS
   ════════════════════════════════════════════════════════════ */
 
+  /* ── Die picker for source die (Species / Type / Career) ── */
+  function buildSourceDiePicker(entityType) {
+    var dieKey   = SOURCE_DIE_KEY[entityType];
+    var current  = state[dieKey] || 'd8';
+    var label    = entityType.charAt(0).toUpperCase() + entityType.slice(1) + ' Die';
+    var html = '<div class="source-die-row" id="source-die-row-' + entityType + '">' +
+      '<span class="source-die-label">' + label + '</span>' +
+      '<div class="source-die-options">';
+    ALLOWED_DICE_JS.forEach(function(d) {
+      html += '<label class="die-pill' + (current === d ? ' die-pill-active' : '') + '">' +
+        '<input type="radio" name="source-die-' + entityType + '" value="' + d + '"' +
+        (current === d ? ' checked' : '') + ' style="display:none;">' +
+        d + '</label>';
+    });
+    html += '</div></div>';
+    return html;
+  }
+
   /* ── Generic selection step (Species / Type / Career) ──── */
   function buildSelectionStep(entityType, heading, stateKey) {
     var collKey = COLLECTION_KEY[entityType];
     var items   = (state.allData && state.allData[collKey]) || [];
     var html    = '<div class="step-heading">' + heading + '</div>';
     html += buildDetailPanel(entityType, state[stateKey]);
+    if (state[stateKey]) html += buildSourceDiePicker(entityType);
     html += '<div class="select-grid">';
     items.forEach(function(item) {
       var sel  = state[stateKey] == item.id ? ' selected' : '';
@@ -425,10 +465,29 @@
     return html;
   }
 
+  /* ── Bind die-pill radio buttons ────────────────────────── */
+  function bindDiePills(entityType) {
+    var container = document.getElementById('wiz-step-container');
+    if (!container) return;
+    var dieKey = SOURCE_DIE_KEY[entityType];
+    container.querySelectorAll('input[name="source-die-' + entityType + '"]').forEach(function(radio) {
+      radio.addEventListener('change', function() {
+        state[dieKey] = radio.value;
+        container.querySelectorAll('.die-pill').forEach(function(lbl) {
+          var inp = lbl.querySelector('input');
+          if (inp && inp.name === 'source-die-' + entityType) {
+            lbl.classList.toggle('die-pill-active', inp.value === radio.value);
+          }
+        });
+      });
+    });
+  }
+
   /* ── Bind selection cards ────────────────────────────────── */
   function bindSelectionCards(entityType, stateKey) {
     var container = document.getElementById('wiz-step-container');
     if (!container) return;
+    bindDiePills(entityType);
     container.querySelectorAll('.select-card').forEach(function(card) {
       card.addEventListener('click', function() {
         state[stateKey] = Number(card.dataset.id);
@@ -442,6 +501,18 @@
           tmp.innerHTML = buildDetailPanel(entityType, state[stateKey]);
           oldPanel.parentNode.replaceChild(tmp.firstChild, oldPanel);
         }
+        // Show/replace die picker
+        var oldPicker = document.getElementById('source-die-row-' + entityType);
+        var grid = container.querySelector('.select-grid');
+        var tmp2 = document.createElement('div');
+        tmp2.innerHTML = buildSourceDiePicker(entityType);
+        var newPicker = tmp2.firstChild;
+        if (oldPicker) {
+          oldPicker.parentNode.replaceChild(newPicker, oldPicker);
+        } else if (grid) {
+          grid.parentNode.insertBefore(newPicker, grid);
+        }
+        bindDiePills(entityType);
       });
     });
   }
@@ -538,17 +609,22 @@
     var ty = (d.types    || []).find(function(x) { return x.id == state.typeId;    }) || null;
     var ca = (d.careers  || []).find(function(x) { return x.id == state.careerId;  }) || null;
 
-    // Merge & deduplicate skills by id
-    var skillMap = {};
-    function addSkills(arr, src) {
-      (arr || []).forEach(function(s) {
-        if (!skillMap[s.id]) skillMap[s.id] = { name: s.name, sources: [] };
-        skillMap[s.id].sources.push(src);
+    /* Helper: does item grant a skill by name? */
+    function itemGrantsSkill(item, skillName) {
+      if (!item || !item.skills) return false;
+      return item.skills.some(function(s) {
+        return s.name.toLowerCase() === skillName.toLowerCase();
       });
     }
-    if (sp) addSkills(sp.skills, sp.name);
-    if (ty) addSkills(ty.skills, ty.name);
-    if (ca) addSkills(ca.skills, ca.name);
+
+    /* Helper: collect all dice granted for a skill name */
+    function skillDiceFor(skillName) {
+      var dice = [];
+      if (itemGrantsSkill(sp, skillName) && state.speciesDie) dice.push({ die: state.speciesDie, src: 'Species' });
+      if (itemGrantsSkill(ty, skillName) && state.typeDie)    dice.push({ die: state.typeDie,    src: 'Type'    });
+      if (itemGrantsSkill(ca, skillName) && state.careerDie)  dice.push({ die: state.careerDie,  src: 'Career'  });
+      return dice;
+    }
 
     // Merge & deduplicate gifts by id
     var giftMap = {};
@@ -561,13 +637,12 @@
     if (sp) addGifts(sp.gifts, sp.name);
     if (ty) addGifts(ty.gifts, ty.name);
     if (ca) addGifts(ca.gifts, ca.name);
-    // Personality gift — always included
     giftMap['_personality'] = {
       name:    'Personality [' + (state.personalityWord || 'of choice') + ']',
       sources: ['All characters'],
     };
 
-    // Merge & deduplicate soaks by id (Types only in UJ)
+    // Merge & deduplicate soaks
     var soakMap = {};
     if (ty && ty.soaks) {
       ty.soaks.forEach(function(s) {
@@ -575,7 +650,7 @@
       });
     }
 
-    // Starting gear — deduplicate by normalised text
+    // Starting gear
     var gearSeen = {};
     var gearLines = [];
     function addGear(obj, src) {
@@ -590,13 +665,6 @@
     addGear(ty, ty ? ty.name : '');
     addGear(ca, ca ? ca.name : '');
 
-    var traits = [
-      { label: 'Body',  die: state.bodyDie  },
-      { label: 'Speed', die: state.speedDie },
-      { label: 'Mind',  die: state.mindDie  },
-      { label: 'Will',  die: state.willDie  },
-    ];
-
     var html = '';
 
     // Header
@@ -605,7 +673,6 @@
     var subtitle = [sp ? sp.name : '', ty ? ty.name : '', ca ? ca.name : ''].filter(Boolean).join(' · ');
     if (subtitle) html += '<div class="summary-subtitle">' + esc(subtitle) + '</div>';
 
-    // Personality
     if (state.personalityWord) {
       html += '<div class="summary-personality">' +
         '<span class="summary-personality-label">Personality</span>' +
@@ -613,9 +680,15 @@
       '</div>';
     }
 
-    // Trait dice
+    // ── Trait dice ───────────────────────────────────────────
+    var traitRows = [
+      { label: 'Body',  die: state.bodyDie  },
+      { label: 'Speed', die: state.speedDie },
+      { label: 'Mind',  die: state.mindDie  },
+      { label: 'Will',  die: state.willDie  },
+    ];
     html += '<div class="summary-traits">';
-    traits.forEach(function(t) {
+    traitRows.forEach(function(t) {
       html += '<div class="summary-trait">' +
         '<div class="summary-trait-name">' + t.label + '</div>' +
         '<div class="summary-trait-die">' + (t.die || '—') + '</div>' +
@@ -623,29 +696,87 @@
     });
     html += '</div>';
 
-    // 2×2 grid
+    // ── Source dice (Species / Type / Career die) ────────────
+    html += '<div class="summary-source-dice">' +
+      '<div class="summary-source-die-item">' +
+        '<span class="source-die-label">Species Die</span>' +
+        '<span class="summary-trait-die" style="font-size:1.1rem;">' + (sp ? (state.speciesDie || '—') : '—') + '</span>' +
+        (sp ? '<span style="font-size:0.78rem;color:var(--uj-text-dim);">' + esc(sp.name) + '</span>' : '') +
+      '</div>' +
+      '<div class="summary-source-die-item">' +
+        '<span class="source-die-label">Type Die</span>' +
+        '<span class="summary-trait-die" style="font-size:1.1rem;">' + (ty ? (state.typeDie || '—') : '—') + '</span>' +
+        (ty ? '<span style="font-size:0.78rem;color:var(--uj-text-dim);">' + esc(ty.name) + '</span>' : '') +
+      '</div>' +
+      '<div class="summary-source-die-item">' +
+        '<span class="source-die-label">Career Die</span>' +
+        '<span class="summary-trait-die" style="font-size:1.1rem;">' + (ca ? (state.careerDie || '—') : '—') + '</span>' +
+        (ca ? '<span style="font-size:0.78rem;color:var(--uj-text-dim);">' + esc(ca.name) + '</span>' : '') +
+      '</div>' +
+    '</div>';
+
+    // ── Complete Skills Table ────────────────────────────────
+    html += '<div class="summary-section summary-skills-section">' +
+      '<div class="summary-section-title">Skills</div>' +
+      '<table class="skills-table">' +
+        '<thead><tr>' +
+          '<th class="skill-name-col">Skill</th>' +
+          '<th class="skill-die-col" title="Species die">Species</th>' +
+          '<th class="skill-die-col" title="Type die">Type</th>' +
+          '<th class="skill-die-col" title="Career die">Career</th>' +
+          '<th class="skill-total-col">Dice Pool</th>' +
+        '</tr></thead><tbody>';
+    CORE_SKILLS.forEach(function(skillName) {
+      var spDie = itemGrantsSkill(sp, skillName) ? state.speciesDie : '';
+      var tyDie = itemGrantsSkill(ty, skillName) ? state.typeDie    : '';
+      var caDie = itemGrantsSkill(ca, skillName) ? state.careerDie  : '';
+      var pool  = [spDie, tyDie, caDie].filter(Boolean);
+      var hasAny = pool.length > 0;
+      html += '<tr class="' + (hasAny ? 'skill-row-active' : 'skill-row-empty') + '">' +
+        '<td class="skill-name-col">' + esc(skillName) + '</td>' +
+        '<td class="skill-die-col">' + (spDie ? '<span class="skill-die-badge">' + spDie + '</span>' : '<span class="skill-die-empty">—</span>') + '</td>' +
+        '<td class="skill-die-col">' + (tyDie ? '<span class="skill-die-badge">' + tyDie + '</span>' : '<span class="skill-die-empty">—</span>') + '</td>' +
+        '<td class="skill-die-col">' + (caDie ? '<span class="skill-die-badge">' + caDie + '</span>' : '<span class="skill-die-empty">—</span>') + '</td>' +
+        '<td class="skill-total-col">' + (pool.length ? '<span style="color:var(--uj-teal);font-weight:600;">' + pool.join(' + ') + '</span>' : '<span class="skill-die-empty">—</span>') + '</td>' +
+      '</tr>';
+    });
+    html += '</tbody></table></div>';
+
+    // ── Battle Array ─────────────────────────────────────────
+    var initDice  = [state.mindDie].concat(skillDiceFor('Observation').map(function(x) { return x.die; })).filter(Boolean);
+    var dodgeDice = [state.speedDie].concat(skillDiceFor('Evasion').map(function(x) { return x.die; })).filter(Boolean);
+    var rallyDice = [state.willDie].concat(skillDiceFor('Tactics').map(function(x) { return x.die; })).filter(Boolean);
+
+    html += '<div class="summary-battle-array">' +
+      '<div class="summary-section-title">Battle Array</div>' +
+      '<div class="battle-array-grid">' +
+        '<div class="battle-stat">' +
+          '<div class="battle-stat-name">Initiative</div>' +
+          '<div class="battle-stat-sub">Mind + Observation</div>' +
+          '<div class="battle-stat-dice">' + initDice.join(' + ') + '</div>' +
+        '</div>' +
+        '<div class="battle-stat">' +
+          '<div class="battle-stat-name">Dodge</div>' +
+          '<div class="battle-stat-sub">Speed + Evasion</div>' +
+          '<div class="battle-stat-dice">' + dodgeDice.join(' + ') + '</div>' +
+        '</div>' +
+        '<div class="battle-stat">' +
+          '<div class="battle-stat-name">Rally</div>' +
+          '<div class="battle-stat-sub">Will + Tactics</div>' +
+          '<div class="battle-stat-dice">' + rallyDice.join(' + ') + '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+    // ── Gifts / Soaks / Gear ─────────────────────────────────
     html += '<div class="summary-grid">';
 
-    // Skills
-    html += '<div class="summary-section"><div class="summary-section-title">Skills</div><ul class="summary-list">';
-    var skills = Object.values(skillMap);
-    if (skills.length) {
-      skills.forEach(function(s) {
-        html += '<li>' + esc(s.name) + '<small>' + esc(s.sources.join(', ')) + '</small></li>';
-      });
-    } else {
-      html += '<li style="color:var(--uj-text-dim);border-left-color:var(--uj-text-dim);">None selected</li>';
-    }
-    html += '</ul></div>';
-
-    // Gifts
     html += '<div class="summary-section"><div class="summary-section-title">Gifts</div><ul class="summary-list">';
     Object.values(giftMap).forEach(function(g) {
       html += '<li class="gift-item">' + esc(g.name) + '<small>' + esc(g.sources.join(', ')) + '</small></li>';
     });
     html += '</ul></div>';
 
-    // Soaks
     html += '<div class="summary-section"><div class="summary-section-title">Soaks</div><ul class="summary-list">';
     var soaks = Object.values(soakMap);
     if (soaks.length) {
@@ -657,7 +788,6 @@
     }
     html += '</ul></div>';
 
-    // Gear
     html += '<div class="summary-section"><div class="summary-section-title">Starting Gear</div><ul class="summary-list">';
     if (gearLines.length) {
       gearLines.forEach(function(g) {
@@ -697,6 +827,9 @@
       speed_die:        state.speedDie,
       mind_die:         state.mindDie,
       will_die:         state.willDie,
+      species_die:      state.speciesDie,
+      type_die:         state.typeDie,
+      career_die:       state.careerDie,
       personality_word: state.personalityWord,
       notes:            state.notes,
     };

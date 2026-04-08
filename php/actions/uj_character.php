@@ -20,6 +20,9 @@ function uj_ensure_characters_table(): void {
           speed_die    VARCHAR(4)   NOT NULL DEFAULT '',
           mind_die     VARCHAR(4)   NOT NULL DEFAULT '',
           will_die     VARCHAR(4)   NOT NULL DEFAULT '',
+          species_die  VARCHAR(4)   NOT NULL DEFAULT '',
+          type_die     VARCHAR(4)   NOT NULL DEFAULT '',
+          career_die   VARCHAR(4)   NOT NULL DEFAULT '',
           personality_word VARCHAR(100) NOT NULL DEFAULT '',
           notes        TEXT         DEFAULT NULL,
           created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -27,6 +30,14 @@ function uj_ensure_characters_table(): void {
           INDEX idx_user (user_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     ");
+    foreach (['species_die','type_die','career_die'] as $col) {
+        try {
+            cg_exec("ALTER TABLE `{$p}uj_character_records`
+                     ADD COLUMN `{$col}` VARCHAR(4) NOT NULL DEFAULT ''");
+        } catch (Throwable $e) {
+            // column already exists — ignore
+        }
+    }
 }
 
 function uj_load_characters(): void {
@@ -46,6 +57,7 @@ function uj_load_characters(): void {
     $rows = cg_query(
         "SELECT id, name, species_id, type_id, career_id,
                 body_die, speed_die, mind_die, will_die,
+                species_die, type_die, career_die,
                 personality_word, created_at, updated_at
            FROM `{$p}uj_character_records`
           WHERE user_id = ?
@@ -104,10 +116,13 @@ function uj_save_character(): void {
     $rawType     = $data['type_id']    ?? null;
     $rawCareer   = $data['career_id']  ?? null;
 
-    $bodyDie   = in_array($data['body_die']  ?? '', $ALLOWED_DICE, true) ? $data['body_die']  : '';
-    $speedDie  = in_array($data['speed_die'] ?? '', $ALLOWED_DICE, true) ? $data['speed_die'] : '';
-    $mindDie   = in_array($data['mind_die']  ?? '', $ALLOWED_DICE, true) ? $data['mind_die']  : '';
-    $willDie   = in_array($data['will_die']  ?? '', $ALLOWED_DICE, true) ? $data['will_die']  : '';
+    $bodyDie    = in_array($data['body_die']    ?? '', $ALLOWED_DICE, true) ? $data['body_die']    : '';
+    $speedDie   = in_array($data['speed_die']   ?? '', $ALLOWED_DICE, true) ? $data['speed_die']   : '';
+    $mindDie    = in_array($data['mind_die']    ?? '', $ALLOWED_DICE, true) ? $data['mind_die']    : '';
+    $willDie    = in_array($data['will_die']    ?? '', $ALLOWED_DICE, true) ? $data['will_die']    : '';
+    $speciesDie = in_array($data['species_die'] ?? '', $ALLOWED_DICE, true) ? $data['species_die'] : '';
+    $typeDie    = in_array($data['type_die']    ?? '', $ALLOWED_DICE, true) ? $data['type_die']    : '';
+    $careerDie  = in_array($data['career_die']  ?? '', $ALLOWED_DICE, true) ? $data['career_die']  : '';
 
     $fields = [
         'name'             => substr((string) ($data['name']             ?? ''), 0, 100),
@@ -118,6 +133,9 @@ function uj_save_character(): void {
         'speed_die'        => $speedDie,
         'mind_die'         => $mindDie,
         'will_die'         => $willDie,
+        'species_die'      => $speciesDie,
+        'type_die'         => $typeDie,
+        'career_die'       => $careerDie,
         'personality_word' => substr((string) ($data['personality_word'] ?? ''), 0, 100),
         'notes'            => (string) ($data['notes'] ?? ''),
         'updated_at'       => date('Y-m-d H:i:s'),
