@@ -10419,6 +10419,16 @@
     _catalogData: null,
     // equipment catalog (shared with main trappings)
     _catalogOpen: false,
+    _allyGiftTrappings: {},
+    // giftId → fetched items[] (G1)
+    _allySpells: [],
+    // cached spell list (G3)
+    _lastAllySpellKey: "",
+    // sorted gift IDs key for spell cache (G3)
+    _currencyList: [],
+    // from cg_get_money_list (G4)
+    _currencyBySlug: {},
+    // slug → currency object (G4)
     // ── Data helpers ────────────────────────────────────────────────────────────
     _getData() {
       return formBuilder_default._data && formBuilder_default._data.ally ? formBuilder_default._data.ally : {};
@@ -10468,6 +10478,7 @@
     init() {
       this._bindOnce();
       this._syncTabVisibility();
+      this._fetchCurrency();
       if (this._hasAllyGift()) {
         this._render();
         const ally = this._getData();
@@ -10477,6 +10488,8 @@
             this._refreshGiftsArea();
             this._refreshBattleArea();
             this._refreshTrappingsArea();
+            this._fetchAllyGiftTrappings();
+            this._fetchAllySpells();
           });
         }
         if (ally.career_id) {
@@ -10494,6 +10507,10 @@
         setTimeout(() => {
           this._careerProfile = null;
           this._speciesProfile = null;
+          this._allyGiftTrappings = {};
+          this._allySpells = [];
+          this._lastAllySpellKey = "";
+          this._fetchCurrency();
           this._syncTabVisibility();
           if (this._hasAllyGift()) {
             this._render();
@@ -10504,6 +10521,8 @@
                 this._refreshGiftsArea();
                 this._refreshBattleArea();
                 this._refreshTrappingsArea();
+                this._fetchAllyGiftTrappings();
+                this._fetchAllySpells();
               });
             }
             if (ally.career_id)
@@ -10623,13 +10642,18 @@
       this._refreshGiftsArea();
       this._refreshBattleArea();
       this._refreshTrappingsArea();
-      if (!speciesId)
+      if (!speciesId) {
+        this._fetchAllyGiftTrappings();
+        this._fetchAllySpells();
         return;
+      }
       api_default.fetchProfile(speciesId).then((p) => {
         this._speciesProfile = p;
         this._refreshGiftsArea();
         this._refreshBattleArea();
         this._refreshTrappingsArea();
+        this._fetchAllyGiftTrappings();
+        this._fetchAllySpells();
       });
     },
     _onCareerChange(careerId) {
@@ -10659,6 +10683,8 @@
         this._refreshBattleArea();
         this._refreshTrappingsArea();
         this._refreshMoneyArea();
+        this._fetchAllyGiftTrappings();
+        this._fetchAllySpells();
       });
     },
     _onImprovedGiftChange() {
@@ -10670,6 +10696,8 @@
       this._patch({ improved_gift_ids: ids });
       this._refreshGiftsArea();
       this._refreshBattleArea();
+      this._fetchAllyGiftTrappings();
+      this._fetchAllySpells();
     },
     // ── Main render ──────────────────────────────────────────────────────────────
     _render() {
@@ -11073,6 +11101,28 @@
         ).join("")}</tbody>
       </table>`;
       }
+      const spells = Array.isArray(this._allySpells) ? this._allySpells : [];
+      if (spells.length) {
+        const spellGroups = {};
+        const spellOrder = [];
+        spells.forEach((s) => {
+          const g = s.gift_name || "Spells";
+          if (!spellGroups[g]) {
+            spellGroups[g] = [];
+            spellOrder.push(g);
+          }
+          spellGroups[g].push(s);
+        });
+        spellOrder.forEach((giftName3) => {
+          html += `<h5 class="cg-ally-table-head">Spells \u2014 ${esc(giftName3)}</h5>
+        <table class="cg-ally-table">
+          <thead><tr><th>Name</th><th>Attack Pool</th><th>Equip</th><th>Range</th><th>Effect</th></tr></thead>
+          <tbody>${spellGroups[giftName3].map(
+            (s) => `<tr><td>${esc(s.name)}</td><td>${esc(s.attack_dice || "\u2014")}</td><td>${esc(s.equip || "")}</td><td>${esc(s.range || "")}</td><td>${esc(s.effect || "")}</td></tr>`
+          ).join("")}</tbody>
+        </table>`;
+        });
+      }
       html += `</div>`;
       return html;
     },
@@ -11209,24 +11259,50 @@
       const autoWeps = this._deriveAllyWeapons(sp, cp);
       const autoArm = this._deriveAllyArmor(sp, cp);
       const autoItems = [...autoWeps, ...autoArm].map((t) => `<li class="cg-ally-trapping-auto">${esc(t.name)}</li>`).join("");
+      const giftTrappingItems = this._collectAllyGiftIds();
+      let giftItems = "";
+      giftTrappingItems.forEach((giftId3) => {
+        const items = this._allyGiftTrappings[giftId3];
+        if (!Array.isArray(items))
+          return;
+        items.forEach((t) => {
+          giftItems += `<li class="cg-ally-trapping-auto">${esc(t.name || t.token || "")} <em>(gift)</em></li>`;
+        });
+      });
       const purchItems = list.map(
         (t, i) => `<li class="cg-ally-trapping-item">
         ${esc(t.name)}
         <button type="button" class="cg-ally-trapping-remove cg-btn-tiny" data-idx="${i}" title="Remove">\u2715</button>
       </li>`
       ).join("");
+      const hasAny = autoItems || giftItems || purchItems;
       return `
     <div class="cg-ally-box">
       <h4 class="cg-ally-subhead">Trappings</h4>
-      ${autoItems || purchItems ? `
+      ${hasAny ? `
       <ul class="cg-ally-trappings-list">
-        ${autoItems}${purchItems}
+        ${autoItems}${giftItems}${purchItems}
       </ul>` : '<p class="cg-ally-empty">No trappings yet.</p>'}
     </div>`;
     },
     _buildMoneyHtml() {
       const ally = this._getData();
       const holdings = ally.money_holdings && typeof ally.money_holdings === "object" ? ally.money_holdings : {};
+      if (this._currencyList.length) {
+        const rows = this._currencyList.map((c) => {
+          const val = parseFloat(holdings[c.slug] || 0);
+          return `<div class="cg-ally-money">
+          <span class="cg-ally-money-label">${esc(c.name)}</span>
+          <input type="number" class="cg-ally-money-input cg-ally-denom-input"
+                 data-slug="${esc(c.slug)}" value="${val}" min="0" step="any" />
+        </div>`;
+        }).join("");
+        return `
+      <div class="cg-ally-box">
+        <h4 class="cg-ally-subhead">Money</h4>
+        ${rows}
+      </div>`;
+      }
       const denar = parseInt(holdings.denar || 0, 10);
       return `
     <div class="cg-ally-box">
@@ -11319,6 +11395,120 @@
         }
       }
       return dice.filter(Boolean).join(" + ");
+    },
+    // ── Gift trappings (G1) ───────────────────────────────────────────────────────
+    _fetchAllyGiftTrappings() {
+      return __async(this, null, function* () {
+        const giftIds = [...this._collectAllyGiftIds()];
+        if (!giftIds.length) {
+          this._refreshTrappingsArea();
+          return;
+        }
+        const { ajax_url, nonce } = ajaxEnv8();
+        if (!ajax_url)
+          return;
+        const newIds = giftIds.filter((id) => this._allyGiftTrappings[id] === void 0);
+        yield Promise.all(newIds.map((giftId3) => __async(this, null, function* () {
+          try {
+            const res = yield $24.post(ajax_url, {
+              action: "cg_get_gift_trappings",
+              gift_id: giftId3,
+              security: nonce,
+              nonce,
+              _ajax_nonce: nonce
+            });
+            this._allyGiftTrappings[giftId3] = res && res.success && Array.isArray(res.data) ? res.data : [];
+          } catch (_) {
+            this._allyGiftTrappings[giftId3] = [];
+          }
+        })));
+        this._refreshTrappingsArea();
+      });
+    },
+    // ── Spells (G3) ───────────────────────────────────────────────────────────────
+    _fetchAllySpells() {
+      const giftIds = [...this._collectAllyGiftIds()];
+      const key = giftIds.slice().sort().join(",");
+      if (key === this._lastAllySpellKey)
+        return;
+      this._lastAllySpellKey = key;
+      if (!giftIds.length) {
+        this._allySpells = [];
+        this._refreshBattleArea();
+        return;
+      }
+      const { ajax_url, nonce } = ajaxEnv8();
+      if (!ajax_url)
+        return;
+      const postData = { action: "cg_get_spells_for_gifts", security: nonce, nonce, _ajax_nonce: nonce };
+      giftIds.forEach((id, i) => {
+        postData[`gift_ids[${i}]`] = id;
+      });
+      $24.post(ajax_url, postData).then((res) => {
+        let spells = [];
+        if (res && res.success && Array.isArray(res.data))
+          spells = res.data;
+        if (key === this._lastAllySpellKey) {
+          this._allySpells = spells;
+          this._refreshBattleArea();
+        }
+      }).catch(() => {
+      });
+    },
+    // ── Currency / money (G4) ────────────────────────────────────────────────────
+    _fetchCurrency() {
+      if (this._currencyList.length)
+        return;
+      const { ajax_url, nonce } = ajaxEnv8();
+      if (!ajax_url)
+        return;
+      $24.post(ajax_url, { action: "cg_get_money_list", security: nonce, nonce, _ajax_nonce: nonce }).then((res) => {
+        const list = res && res.success && Array.isArray(res.data) ? res.data : [];
+        if (list.length) {
+          this._currencyList = list;
+          this._currencyBySlug = {};
+          list.forEach((c) => {
+            this._currencyBySlug[c.slug] = c;
+          });
+          this._refreshMoneyArea();
+        }
+      }).catch(() => {
+      });
+    },
+    _allyTotalDenarii() {
+      const ally = this._getData();
+      const holdings = ally.money_holdings && typeof ally.money_holdings === "object" ? ally.money_holdings : {};
+      return this._currencyList.reduce((sum, c) => {
+        const count = parseFloat(holdings[c.slug] || 0);
+        const rate = parseFloat(c.value_denarii || 0);
+        return sum + count * rate;
+      }, 0);
+    },
+    _allyDeductCost(costD) {
+      if (costD <= 0)
+        return true;
+      const ally = this._getData();
+      const holdings = Object.assign({}, ally.money_holdings && typeof ally.money_holdings === "object" ? ally.money_holdings : {});
+      const totalVal = this._allyTotalDenarii();
+      if (totalVal < costD - 1e-3)
+        return false;
+      let remaining = costD;
+      const sorted = this._currencyList.filter((c) => parseFloat(c.value_denarii || 0) > 0).sort((a, b) => parseFloat(a.value_denarii) - parseFloat(b.value_denarii));
+      for (const c of sorted) {
+        if (remaining <= 1e-3)
+          break;
+        const rate = parseFloat(c.value_denarii || 0);
+        if (rate <= 0)
+          continue;
+        const have = parseFloat(holdings[c.slug] || 0);
+        if (have <= 0)
+          continue;
+        const needed = Math.min(have, Math.ceil(remaining / rate * 1e3) / 1e3);
+        holdings[c.slug] = Math.max(0, have - needed);
+        remaining -= needed * rate;
+      }
+      this._patch({ money_holdings: holdings });
+      return true;
     },
     // ── Gift list (for Improved Ally slots) ─────────────────────────────────────
     _ensureGiftList() {
@@ -11428,10 +11618,25 @@
       const hqCircles = Array.from({ length: hqCount }, () => `<span class="cg-hq-circle"></span>`).join("");
       const trappings = Array.isArray(ally.trappings_list) ? ally.trappings_list : [];
       const autoTrappings = [...weapons, ...armor];
-      const denar = (() => {
-        const h = ally.money_holdings && typeof ally.money_holdings === "object" ? ally.money_holdings : {};
-        return parseInt(h.denar || 0, 10);
-      })();
+      const _holdings = ally.money_holdings && typeof ally.money_holdings === "object" ? ally.money_holdings : {};
+      const printGiftTrappings = [];
+      this._collectAllyGiftIds().forEach((giftId3) => {
+        const items = this._allyGiftTrappings[giftId3];
+        if (!Array.isArray(items))
+          return;
+        items.forEach((t) => printGiftTrappings.push(t));
+      });
+      const printSpells = Array.isArray(this._allySpells) ? this._allySpells : [];
+      const printSpellGroups = {};
+      const printSpellOrder = [];
+      printSpells.forEach((s) => {
+        const g = s.gift_name || "Spells";
+        if (!printSpellGroups[g]) {
+          printSpellGroups[g] = [];
+          printSpellOrder.push(g);
+        }
+        printSpellGroups[g].push(s);
+      });
       const spSkillNamesP = this._allySpSkillNames(sp);
       const cpSkillNamesP = this._allyCpSkillNames(cp);
       const allSkillsP = Array.isArray(window.CG_SKILLS_LIST) ? window.CG_SKILLS_LIST : [];
@@ -11461,6 +11666,7 @@
       ).join("");
       const trappingRows = [
         ...autoTrappings.map((t) => `<li>${esc(t.name)} <em>(auto)</em></li>`),
+        ...printGiftTrappings.map((t) => `<li>${esc(t.name || t.token || "")} <em>(gift)</em></li>`),
         ...trappings.map((t) => `<li>${esc(t.name)}${t.cost_d ? ` \u2014 ${esc(t.cost_d)}d` : ""}</li>`)
       ].join("");
       let speciesGiftsHtml = "";
@@ -11629,6 +11835,15 @@
           <tbody>${armorRows}</tbody>
         </table>` : ""}
 
+        ${printSpellOrder.map((gName) => `
+        <h4 class="summary-sub-heading">Spells \u2014 ${esc(gName)}</h4>
+        <table class="cg-battle-summary-table">
+          <thead><tr><th>Name</th><th>Attack Pool</th><th>Equip</th><th>Range</th><th>Effect</th></tr></thead>
+          <tbody>${printSpellGroups[gName].map(
+        (s) => `<tr><td>${esc(s.name)}</td><td>${esc(s.attack_dice || "\u2014")}</td><td>${esc(s.equip || "")}</td><td>${esc(s.range || "")}</td><td>${esc(s.effect || "")}</td></tr>`
+      ).join("")}</tbody>
+        </table>`).join("")}
+
       </div><!-- /summary-battle -->
 
     </div><!-- /col-right -->
@@ -11655,11 +11870,25 @@
       <ul>${trappingRows}</ul>
     </div>` : ""}
 
-    ${denar > 0 ? `
-    <div class="summary-section summary-money">
-      <h3>Money</h3>
-      <div class="summary-money-row"><span><strong>Denar:</strong> ${denar}</span></div>
-    </div>` : ""}
+    ${(() => {
+        if (this._currencyList.length) {
+          const denomRows = this._currencyList.map((c) => {
+            const val = parseFloat(_holdings[c.slug] || 0);
+            return val > 0 ? `<span><strong>${esc(c.name)}:</strong> ${val}</span>` : "";
+          }).filter(Boolean).join(" &nbsp;|&nbsp; ");
+          return denomRows ? `
+        <div class="summary-section summary-money">
+          <h3>Money</h3>
+          <div class="summary-money-row">${denomRows}</div>
+        </div>` : "";
+        }
+        const denar = parseInt(_holdings.denar || 0, 10);
+        return denar > 0 ? `
+      <div class="summary-section summary-money">
+        <h3>Money</h3>
+        <div class="summary-money-row"><span><strong>Denar:</strong> ${denar}</span></div>
+      </div>` : "";
+      })()}
 
     ${desc ? `
     <div class="summary-section summary-description">
@@ -11736,22 +11965,45 @@
       const cost = parseInt(dataset.cost || 0, 10);
       if (!name)
         return;
-      const ally = this._getData();
-      const holdings = ally.money_holdings && typeof ally.money_holdings === "object" ? __spreadValues({}, ally.money_holdings) : {};
-      const denarEl = document.getElementById("cg-ally-money-denar");
-      const current = parseInt((denarEl == null ? void 0 : denarEl.value) || holdings.denar || 0, 10);
-      if (cost > 0 && current < cost) {
-        alert(`Not enough money. Need ${cost} denar, have ${current}.`);
-        return;
+      if (cost > 0) {
+        if (this._currencyList.length) {
+          this._syncMoneyFromDom();
+          const totalD = this._allyTotalDenarii();
+          if (totalD < cost - 1e-3) {
+            alert(`Not enough funds. Need ${cost}D, have ${totalD.toFixed(2)}D total.`);
+            return;
+          }
+          if (!this._allyDeductCost(cost)) {
+            alert(`Could not deduct ${cost}D from holdings.`);
+            return;
+          }
+        } else {
+          const ally = this._getData();
+          const holdings = ally.money_holdings && typeof ally.money_holdings === "object" ? __spreadValues({}, ally.money_holdings) : {};
+          const denarEl = document.getElementById("cg-ally-money-denar");
+          const current = parseInt((denarEl == null ? void 0 : denarEl.value) || holdings.denar || 0, 10);
+          if (current < cost) {
+            alert(`Not enough money. Need ${cost} denar, have ${current}.`);
+            return;
+          }
+          holdings.denar = Math.max(0, current - cost);
+          if (denarEl)
+            denarEl.value = holdings.denar;
+          const ally2 = this._getData();
+          const trappings2 = Array.isArray(ally2.trappings_list) ? [...ally2.trappings_list] : [];
+          trappings2.push({ name, cost_d: cost });
+          this._patch({ trappings_list: trappings2, money_holdings: holdings });
+          this._refreshTrappingsArea();
+          this._refreshMoneyArea();
+          return;
+        }
       }
-      const newDenar = Math.max(0, current - cost);
-      holdings.denar = newDenar;
-      if (denarEl)
-        denarEl.value = newDenar;
-      const trappings = Array.isArray(ally.trappings_list) ? [...ally.trappings_list] : [];
-      trappings.push({ name, cost_d: cost });
-      this._patch({ trappings_list: trappings, money_holdings: holdings });
+      const ally3 = this._getData();
+      const trappings3 = Array.isArray(ally3.trappings_list) ? [...ally3.trappings_list] : [];
+      trappings3.push({ name, cost_d: cost });
+      this._patch({ trappings_list: trappings3 });
       this._refreshTrappingsArea();
+      this._refreshMoneyArea();
     },
     _removeItem(idx) {
       const ally = this._getData();
@@ -11762,16 +12014,20 @@
     },
     // ── Money input sync ─────────────────────────────────────────────────────────
     _syncMoneyFromDom() {
-      const el = document.getElementById("cg-ally-money-denar");
-      if (!el)
-        return;
       const ally = this._getData();
       const holdings = ally.money_holdings && typeof ally.money_holdings === "object" ? __spreadValues({}, ally.money_holdings) : {};
-      holdings.denar = parseInt(el.value || 0, 10);
+      document.querySelectorAll(".cg-ally-denom-input[data-slug]").forEach((inp) => {
+        const slug = inp.dataset.slug;
+        if (slug)
+          holdings[slug] = parseFloat(inp.value) || 0;
+      });
+      const denarEl = document.getElementById("cg-ally-money-denar");
+      if (denarEl)
+        holdings.denar = parseInt(denarEl.value || 0, 10);
       this._patch({ money_holdings: holdings });
     }
   };
-  $24(document).on("input.ally-money", "#cg-ally-money-denar", () => {
+  $24(document).on("input.ally-money", "#cg-ally-money-denar, .cg-ally-denom-input", () => {
     AllyModule._syncMoneyFromDom();
   });
   window.CG_AllyModule = AllyModule;

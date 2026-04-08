@@ -61,6 +61,11 @@ const AllyModule = {
   _giftListLoading: false,
   _catalogData: null,   // equipment catalog (shared with main trappings)
   _catalogOpen: false,
+  _allyGiftTrappings: {},  // giftId → fetched items[] (G1)
+  _allySpells: [],          // cached spell list (G3)
+  _lastAllySpellKey: '',    // sorted gift IDs key for spell cache (G3)
+  _currencyList: [],        // from cg_get_money_list (G4)
+  _currencyBySlug: {},      // slug → currency object (G4)
 
   // ── Data helpers ────────────────────────────────────────────────────────────
 
@@ -115,6 +120,7 @@ const AllyModule = {
   init() {
     this._bindOnce();
     this._syncTabVisibility();
+    this._fetchCurrency();
     if (this._hasAllyGift()) {
       this._render();
       const ally = this._getData();
@@ -124,6 +130,8 @@ const AllyModule = {
           this._refreshGiftsArea();
           this._refreshBattleArea();
           this._refreshTrappingsArea();
+          this._fetchAllyGiftTrappings();
+          this._fetchAllySpells();
         });
       }
       if (ally.career_id) {
@@ -142,8 +150,12 @@ const AllyModule = {
     document.addEventListener('cg:builder:opened', () => {
       // Allow FormBuilderAPI._data to be seeded before we inspect gifts
       setTimeout(() => {
-        this._careerProfile  = null;
-        this._speciesProfile = null;
+        this._careerProfile      = null;
+        this._speciesProfile     = null;
+        this._allyGiftTrappings  = {};
+        this._allySpells         = [];
+        this._lastAllySpellKey   = '';
+        this._fetchCurrency();
         this._syncTabVisibility();
         if (this._hasAllyGift()) {
           this._render();
@@ -154,6 +166,8 @@ const AllyModule = {
               this._refreshGiftsArea();
               this._refreshBattleArea();
               this._refreshTrappingsArea();
+              this._fetchAllyGiftTrappings();
+              this._fetchAllySpells();
             });
           }
           if (ally.career_id) this._loadCareerProfile(ally.career_id);
@@ -300,12 +314,18 @@ const AllyModule = {
     this._refreshGiftsArea();
     this._refreshBattleArea();
     this._refreshTrappingsArea();
-    if (!speciesId) return;
+    if (!speciesId) {
+      this._fetchAllyGiftTrappings();
+      this._fetchAllySpells();
+      return;
+    }
     SpeciesAPI.fetchProfile(speciesId).then(p => {
       this._speciesProfile = p;
       this._refreshGiftsArea();
       this._refreshBattleArea();
       this._refreshTrappingsArea();
+      this._fetchAllyGiftTrappings();
+      this._fetchAllySpells();
     });
   },
 
@@ -346,6 +366,8 @@ const AllyModule = {
       this._refreshBattleArea();
       this._refreshTrappingsArea();
       this._refreshMoneyArea();
+      this._fetchAllyGiftTrappings();
+      this._fetchAllySpells();
     });
   },
 
@@ -357,8 +379,8 @@ const AllyModule = {
     this._patch({ improved_gift_ids: ids });
     this._refreshGiftsArea();
     this._refreshBattleArea();
-    // Trappings don't change with gift selection, but passive soak effects do
-    // — _refreshBattleArea above handles that.
+    this._fetchAllyGiftTrappings();
+    this._fetchAllySpells();
   },
 
   // ── Main render ──────────────────────────────────────────────────────────────
@@ -788,6 +810,27 @@ const AllyModule = {
       </table>`;
     }
 
+    // Spells (cached from last _fetchAllySpells call)
+    const spells = Array.isArray(this._allySpells) ? this._allySpells : [];
+    if (spells.length) {
+      const spellGroups = {};
+      const spellOrder  = [];
+      spells.forEach(s => {
+        const g = s.gift_name || 'Spells';
+        if (!spellGroups[g]) { spellGroups[g] = []; spellOrder.push(g); }
+        spellGroups[g].push(s);
+      });
+      spellOrder.forEach(giftName => {
+        html += `<h5 class="cg-ally-table-head">Spells — ${esc(giftName)}</h5>
+        <table class="cg-ally-table">
+          <thead><tr><th>Name</th><th>Attack Pool</th><th>Equip</th><th>Range</th><th>Effect</th></tr></thead>
+          <tbody>${spellGroups[giftName].map(s =>
+            `<tr><td>${esc(s.name)}</td><td>${esc(s.attack_dice || '—')}</td><td>${esc(s.equip || '')}</td><td>${esc(s.range || '')}</td><td>${esc(s.effect || '')}</td></tr>`
+          ).join('')}</tbody>
+        </table>`;
+      });
+    }
+
     html += `</div>`;
     return html;
   },
@@ -931,6 +974,17 @@ const AllyModule = {
     // Auto trappings (from career/species)
     const autoItems = [...autoWeps, ...autoArm].map(t => `<li class="cg-ally-trapping-auto">${esc(t.name)}</li>`).join('');
 
+    // Gift trappings (from active gifts — G1)
+    const giftTrappingItems = this._collectAllyGiftIds();
+    let giftItems = '';
+    giftTrappingItems.forEach(giftId => {
+      const items = this._allyGiftTrappings[giftId];
+      if (!Array.isArray(items)) return;
+      items.forEach(t => {
+        giftItems += `<li class="cg-ally-trapping-auto">${esc(t.name || t.token || '')} <em>(gift)</em></li>`;
+      });
+    });
+
     // Purchased items
     const purchItems = list.map((t, i) =>
       `<li class="cg-ally-trapping-item">
@@ -939,12 +993,13 @@ const AllyModule = {
       </li>`
     ).join('');
 
+    const hasAny = autoItems || giftItems || purchItems;
     return `
     <div class="cg-ally-box">
       <h4 class="cg-ally-subhead">Trappings</h4>
-      ${autoItems || purchItems ? `
+      ${hasAny ? `
       <ul class="cg-ally-trappings-list">
-        ${autoItems}${purchItems}
+        ${autoItems}${giftItems}${purchItems}
       </ul>` : '<p class="cg-ally-empty">No trappings yet.</p>'}
     </div>`;
   },
@@ -953,8 +1008,26 @@ const AllyModule = {
     const ally     = this._getData();
     const holdings = (ally.money_holdings && typeof ally.money_holdings === 'object')
       ? ally.money_holdings : {};
+
+    // Full denomination list (G4) — fall back to denar-only if not yet loaded
+    if (this._currencyList.length) {
+      const rows = this._currencyList.map(c => {
+        const val = parseFloat(holdings[c.slug] || 0);
+        return `<div class="cg-ally-money">
+          <span class="cg-ally-money-label">${esc(c.name)}</span>
+          <input type="number" class="cg-ally-money-input cg-ally-denom-input"
+                 data-slug="${esc(c.slug)}" value="${val}" min="0" step="any" />
+        </div>`;
+      }).join('');
+      return `
+      <div class="cg-ally-box">
+        <h4 class="cg-ally-subhead">Money</h4>
+        ${rows}
+      </div>`;
+    }
+
+    // Fallback: denar only
     const denar = parseInt(holdings.denar || 0, 10);
-    // Ally career die = d6 → starting money = 6 denar (same as career/trappings logic)
     return `
     <div class="cg-ally-box">
       <h4 class="cg-ally-subhead">Money</h4>
@@ -1048,6 +1121,132 @@ const AllyModule = {
       else { dice.push(p); }
     }
     return dice.filter(Boolean).join(' + ');
+  },
+
+  // ── Gift trappings (G1) ───────────────────────────────────────────────────────
+
+  async _fetchAllyGiftTrappings() {
+    const giftIds = [...this._collectAllyGiftIds()];
+    if (!giftIds.length) {
+      this._refreshTrappingsArea();
+      return;
+    }
+
+    const { ajax_url, nonce } = ajaxEnv();
+    if (!ajax_url) return;
+
+    // Fetch only gift IDs not yet cached
+    const newIds = giftIds.filter(id => this._allyGiftTrappings[id] === undefined);
+    await Promise.all(newIds.map(async giftId => {
+      try {
+        const res = await $.post(ajax_url, {
+          action:   'cg_get_gift_trappings',
+          gift_id:  giftId,
+          security: nonce,
+          nonce,
+          _ajax_nonce: nonce,
+        });
+        this._allyGiftTrappings[giftId] =
+          (res && res.success && Array.isArray(res.data)) ? res.data : [];
+      } catch (_) {
+        this._allyGiftTrappings[giftId] = [];
+      }
+    }));
+
+    this._refreshTrappingsArea();
+  },
+
+  // ── Spells (G3) ───────────────────────────────────────────────────────────────
+
+  _fetchAllySpells() {
+    const giftIds = [...this._collectAllyGiftIds()];
+    const key     = giftIds.slice().sort().join(',');
+
+    if (key === this._lastAllySpellKey) return;
+    this._lastAllySpellKey = key;
+
+    if (!giftIds.length) {
+      this._allySpells = [];
+      this._refreshBattleArea();
+      return;
+    }
+
+    const { ajax_url, nonce } = ajaxEnv();
+    if (!ajax_url) return;
+
+    const postData = { action: 'cg_get_spells_for_gifts', security: nonce, nonce, _ajax_nonce: nonce };
+    giftIds.forEach((id, i) => { postData[`gift_ids[${i}]`] = id; });
+
+    $.post(ajax_url, postData)
+      .then(res => {
+        let spells = [];
+        if (res && res.success && Array.isArray(res.data)) spells = res.data;
+        // Only update if gift set hasn't changed while fetching
+        if (key === this._lastAllySpellKey) {
+          this._allySpells = spells;
+          this._refreshBattleArea();
+        }
+      })
+      .catch(() => {});
+  },
+
+  // ── Currency / money (G4) ────────────────────────────────────────────────────
+
+  _fetchCurrency() {
+    if (this._currencyList.length) return; // already loaded
+
+    const { ajax_url, nonce } = ajaxEnv();
+    if (!ajax_url) return;
+
+    $.post(ajax_url, { action: 'cg_get_money_list', security: nonce, nonce, _ajax_nonce: nonce })
+      .then(res => {
+        const list = (res && res.success && Array.isArray(res.data)) ? res.data : [];
+        if (list.length) {
+          this._currencyList = list;
+          // Rebuild the currency list indexed by slug for quick lookups
+          this._currencyBySlug = {};
+          list.forEach(c => { this._currencyBySlug[c.slug] = c; });
+          this._refreshMoneyArea();
+        }
+      })
+      .catch(() => {});
+  },
+
+  _allyTotalDenarii() {
+    const ally     = this._getData();
+    const holdings = (ally.money_holdings && typeof ally.money_holdings === 'object') ? ally.money_holdings : {};
+    return this._currencyList.reduce((sum, c) => {
+      const count = parseFloat(holdings[c.slug] || 0);
+      const rate  = parseFloat(c.value_denarii || 0);
+      return sum + (count * rate);
+    }, 0);
+  },
+
+  _allyDeductCost(costD) {
+    if (costD <= 0) return true;
+    const ally     = this._getData();
+    const holdings = Object.assign({}, (ally.money_holdings && typeof ally.money_holdings === 'object') ? ally.money_holdings : {});
+    const totalVal = this._allyTotalDenarii();
+    if (totalVal < costD - 0.001) return false;
+
+    let remaining = costD;
+    const sorted  = this._currencyList
+      .filter(c => parseFloat(c.value_denarii || 0) > 0)
+      .sort((a, b) => parseFloat(a.value_denarii) - parseFloat(b.value_denarii));
+
+    for (const c of sorted) {
+      if (remaining <= 0.001) break;
+      const rate  = parseFloat(c.value_denarii || 0);
+      if (rate <= 0) continue;
+      const have  = parseFloat(holdings[c.slug] || 0);
+      if (have <= 0) continue;
+      const needed = Math.min(have, Math.ceil((remaining / rate) * 1000) / 1000);
+      holdings[c.slug] = Math.max(0, have - needed);
+      remaining -= needed * rate;
+    }
+
+    this._patch({ money_holdings: holdings });
+    return true;
   },
 
   // ── Gift list (for Improved Ally slots) ─────────────────────────────────────
@@ -1166,10 +1365,25 @@ const AllyModule = {
     // ── Trappings + money ─────────────────────────────────────────────────────
     const trappings     = Array.isArray(ally.trappings_list) ? ally.trappings_list : [];
     const autoTrappings = [...weapons, ...armor];
-    const denar = (() => {
-      const h = (ally.money_holdings && typeof ally.money_holdings === 'object') ? ally.money_holdings : {};
-      return parseInt(h.denar || 0, 10);
-    })();
+    const _holdings = (ally.money_holdings && typeof ally.money_holdings === 'object') ? ally.money_holdings : {};
+
+    // Gift trappings from cached fetch (G1)
+    const printGiftTrappings = [];
+    this._collectAllyGiftIds().forEach(giftId => {
+      const items = this._allyGiftTrappings[giftId];
+      if (!Array.isArray(items)) return;
+      items.forEach(t => printGiftTrappings.push(t));
+    });
+
+    // Spells (G3)
+    const printSpells = Array.isArray(this._allySpells) ? this._allySpells : [];
+    const printSpellGroups = {};
+    const printSpellOrder  = [];
+    printSpells.forEach(s => {
+      const g = s.gift_name || 'Spells';
+      if (!printSpellGroups[g]) { printSpellGroups[g] = []; printSpellOrder.push(g); }
+      printSpellGroups[g].push(s);
+    });
 
     // ── Skills (4-col: Skill | Species | Career | Pool) ───────────────────────
     const spSkillNamesP = this._allySpSkillNames(sp);
@@ -1202,6 +1416,7 @@ const AllyModule = {
     // ── Trapping equipment list rows ──────────────────────────────────────────
     const trappingRows = [
       ...autoTrappings.map(t => `<li>${esc(t.name)} <em>(auto)</em></li>`),
+      ...printGiftTrappings.map(t => `<li>${esc(t.name || t.token || '')} <em>(gift)</em></li>`),
       ...trappings.map(t => `<li>${esc(t.name)}${t.cost_d ? ` — ${esc(t.cost_d)}d` : ''}</li>`),
     ].join('');
 
@@ -1373,6 +1588,15 @@ const AllyModule = {
           <tbody>${armorRows}</tbody>
         </table>` : ''}
 
+        ${printSpellOrder.map(gName => `
+        <h4 class="summary-sub-heading">Spells — ${esc(gName)}</h4>
+        <table class="cg-battle-summary-table">
+          <thead><tr><th>Name</th><th>Attack Pool</th><th>Equip</th><th>Range</th><th>Effect</th></tr></thead>
+          <tbody>${printSpellGroups[gName].map(s =>
+            `<tr><td>${esc(s.name)}</td><td>${esc(s.attack_dice || '—')}</td><td>${esc(s.equip || '')}</td><td>${esc(s.range || '')}</td><td>${esc(s.effect || '')}</td></tr>`
+          ).join('')}</tbody>
+        </table>`).join('')}
+
       </div><!-- /summary-battle -->
 
     </div><!-- /col-right -->
@@ -1399,11 +1623,28 @@ const AllyModule = {
       <ul>${trappingRows}</ul>
     </div>` : ''}
 
-    ${denar > 0 ? `
-    <div class="summary-section summary-money">
-      <h3>Money</h3>
-      <div class="summary-money-row"><span><strong>Denar:</strong> ${denar}</span></div>
-    </div>` : ''}
+    ${(() => {
+      if (this._currencyList.length) {
+        const denomRows = this._currencyList
+          .map(c => {
+            const val = parseFloat(_holdings[c.slug] || 0);
+            return val > 0 ? `<span><strong>${esc(c.name)}:</strong> ${val}</span>` : '';
+          })
+          .filter(Boolean)
+          .join(' &nbsp;|&nbsp; ');
+        return denomRows ? `
+        <div class="summary-section summary-money">
+          <h3>Money</h3>
+          <div class="summary-money-row">${denomRows}</div>
+        </div>` : '';
+      }
+      const denar = parseInt(_holdings.denar || 0, 10);
+      return denar > 0 ? `
+      <div class="summary-section summary-money">
+        <h3>Money</h3>
+        <div class="summary-money-row"><span><strong>Denar:</strong> ${denar}</span></div>
+      </div>` : '';
+    })()}
 
     ${desc ? `
     <div class="summary-section summary-description">
@@ -1485,25 +1726,48 @@ const AllyModule = {
     const cost = parseInt(dataset.cost || 0, 10);
     if (!name) return;
 
-    const ally     = this._getData();
-    const holdings = (ally.money_holdings && typeof ally.money_holdings === 'object')
-      ? { ...ally.money_holdings } : {};
-    const denarEl = document.getElementById('cg-ally-money-denar');
-    const current = parseInt(denarEl?.value || holdings.denar || 0, 10);
-
-    if (cost > 0 && current < cost) {
-      alert(`Not enough money. Need ${cost} denar, have ${current}.`);
-      return;
+    if (cost > 0) {
+      if (this._currencyList.length) {
+        // Multi-denomination path (G4): sync DOM → holdings first, then deduct
+        this._syncMoneyFromDom();
+        const totalD = this._allyTotalDenarii();
+        if (totalD < cost - 0.001) {
+          alert(`Not enough funds. Need ${cost}D, have ${totalD.toFixed(2)}D total.`);
+          return;
+        }
+        if (!this._allyDeductCost(cost)) {
+          alert(`Could not deduct ${cost}D from holdings.`);
+          return;
+        }
+      } else {
+        // Legacy denar-only path
+        const ally     = this._getData();
+        const holdings = (ally.money_holdings && typeof ally.money_holdings === 'object')
+          ? { ...ally.money_holdings } : {};
+        const denarEl = document.getElementById('cg-ally-money-denar');
+        const current = parseInt(denarEl?.value || holdings.denar || 0, 10);
+        if (current < cost) {
+          alert(`Not enough money. Need ${cost} denar, have ${current}.`);
+          return;
+        }
+        holdings.denar = Math.max(0, current - cost);
+        if (denarEl) denarEl.value = holdings.denar;
+        const ally2 = this._getData();
+        const trappings2 = Array.isArray(ally2.trappings_list) ? [...ally2.trappings_list] : [];
+        trappings2.push({ name, cost_d: cost });
+        this._patch({ trappings_list: trappings2, money_holdings: holdings });
+        this._refreshTrappingsArea();
+        this._refreshMoneyArea();
+        return;
+      }
     }
 
-    const newDenar = Math.max(0, current - cost);
-    holdings.denar = newDenar;
-    if (denarEl) denarEl.value = newDenar;
-
-    const trappings = Array.isArray(ally.trappings_list) ? [...ally.trappings_list] : [];
-    trappings.push({ name, cost_d: cost });
-    this._patch({ trappings_list: trappings, money_holdings: holdings });
+    const ally3 = this._getData();
+    const trappings3 = Array.isArray(ally3.trappings_list) ? [...ally3.trappings_list] : [];
+    trappings3.push({ name, cost_d: cost });
+    this._patch({ trappings_list: trappings3 });
     this._refreshTrappingsArea();
+    this._refreshMoneyArea();
   },
 
   _removeItem(idx) {
@@ -1517,19 +1781,27 @@ const AllyModule = {
   // ── Money input sync ─────────────────────────────────────────────────────────
 
   _syncMoneyFromDom() {
-    const el = document.getElementById('cg-ally-money-denar');
-    if (!el) return;
     const ally     = this._getData();
     const holdings = (ally.money_holdings && typeof ally.money_holdings === 'object')
       ? { ...ally.money_holdings } : {};
-    holdings.denar = parseInt(el.value || 0, 10);
+
+    // Multi-denomination inputs (G4)
+    document.querySelectorAll('.cg-ally-denom-input[data-slug]').forEach(inp => {
+      const slug = inp.dataset.slug;
+      if (slug) holdings[slug] = parseFloat(inp.value) || 0;
+    });
+
+    // Legacy denar-only fallback
+    const denarEl = document.getElementById('cg-ally-money-denar');
+    if (denarEl) holdings.denar = parseInt(denarEl.value || 0, 10);
+
     this._patch({ money_holdings: holdings });
   },
 };
 
 // ── Module export & global handle ────────────────────────────────────────────
 
-$(document).on('input.ally-money', '#cg-ally-money-denar', () => {
+$(document).on('input.ally-money', '#cg-ally-money-denar, .cg-ally-denom-input', () => {
   AllyModule._syncMoneyFromDom();
 });
 

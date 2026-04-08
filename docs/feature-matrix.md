@@ -4,7 +4,7 @@
 > session to understand what is already built, where parity gaps exist between the
 > main character and ally flows, and which PHP backend endpoints are available.
 >
-> **Last updated:** 2026-04-08  
+> **Last updated:** 2026-04-08 (Task #21)  
 > **Key JS entry points:** `assets/js/src/core/main/index.js` (main char),
 > `assets/js/src/core/ally/index.js` (ally)  
 > **Backend router:** `php/ajax.php`
@@ -46,13 +46,13 @@ in that flow. "Partial" means some subset is present but not the full feature.
 | **Movement table** (Stride/Dash/Sprint/Run) | ✅ | ✅ | — | Both derive from Speed+Body dice maxima |
 | **Damage track + Healing Quota circles** | ✅ | ✅ | — | |
 | **Status conditions** (Burdened/Knockdown/Unconscious etc.) | ✅ | ✅ | — | |
-| **Spells tied to gifts** | ✅ | ❌ | `cg_get_spells_for_gifts` | **G3** — never called for ally |
+| **Spells tied to gifts** | ✅ | ✅ | `cg_get_spells_for_gifts` | Implemented in Task #21 |
 | **Skills display** (species + career dice pools) | ✅ | ✅ | `cg_get_skills_list` | |
 | **Skill detail** (individual skill lookup) | ❌ | ❌ | `cg_get_skill_detail` | **G6** — endpoint exists; unused in both flows |
 | **Career trappings** (weapons/armour auto-loaded) | ✅ | ✅ | `cg_get_career_trappings` | |
-| **Gift trappings** (equipment auto-loaded from gifts) | ✅ | ❌ | `cg_get_gift_trappings` | **G1** — never called for ally |
+| **Gift trappings** (equipment auto-loaded from gifts) | ✅ | ✅ | `cg_get_gift_trappings` | Implemented in Task #21 |
 | **Equipment shop** (catalog browse + purchase) | ✅ | ✅ | `cg_get_equipment_catalog` | |
-| **Money/Denar tracking** | ✅ | Partial | `cg_get_money_list` | **G4** — ally tracks denar only; full denomination list not loaded |
+| **Money/Denar tracking** | ✅ | ✅ | `cg_get_money_list` | Implemented in Task #21 — full denomination list loaded |
 | **Experience/XP pool** | ✅ | ❌ | `cg_get_free_gifts` (XP gift options) | **G8** — intentional; allies don't earn XP |
 | **XP — skill marks** | ✅ | ❌ | — | **G8** |
 | **XP — gift slots** | ✅ | ❌ | `cg_get_free_gifts` | **G8** |
@@ -101,9 +101,9 @@ authenticated session.
 | Action | Caller(s) | Returns | Notes |
 |---|---|---|---|
 | `cg_get_career_trappings` | `trappings/index.js` (main), `ally/index.js` | `[{ id, name, type, … }]` | Weapons + armour for a career |
-| `cg_get_gift_trappings` | `trappings/index.js` (main only) | `[{ id, name, type, … }]` | **Ally gap** — never called for ally |
+| `cg_get_gift_trappings` | `trappings/index.js` (main), `ally/index.js` | `[{ id, name, type, … }]` | Both flows — ally added Task #21 |
 | `cg_get_equipment_catalog` | `trappings/index.js` (main), `ally/index.js` | `[{ id, name, cost_d, … }]` | Full purchasable catalog |
-| `cg_get_money_list` | `trappings/index.js` (main only) | `[{ id, name, value_in_denar }]` | **Ally gap** — ally tracks only denar manually |
+| `cg_get_money_list` | `trappings/index.js` (main), `ally/index.js` | `[{ id, name, value_in_denar }]` | Both flows — ally added Task #21 |
 
 ### gifts.php — Gift & Qualification Data
 
@@ -135,7 +135,7 @@ authenticated session.
 
 | Action | Caller(s) | Returns | Notes |
 |---|---|---|---|
-| `cg_get_spells_for_gifts` | `battle/index.js` (main only) | `[{ id, name, gift_id, … }]` | **Ally gap** — spells not wired into ally |
+| `cg_get_spells_for_gifts` | `battle/index.js` (main), `ally/index.js` | `[{ id, name, gift_id, … }]` | Both flows — ally added Task #21 |
 | `cg_install_spells` | (admin/migration only) | — | One-time data migration; not called by character UI |
 
 ### diagnostics.php — Developer Tools
@@ -173,16 +173,16 @@ All actions are admin-role only and called only from `php/admin.php` (inline JS)
 These are features present in the main character flow that are **not yet implemented**
 for the ally. They are listed here to inform future planning — not as bugs.
 
-| # | Gap | Missing Endpoint(s) | Impact |
+| # | Status | Gap | Impact |
 |---|---|---|---|
-| G1 | **Gift trappings** — equipment auto-granted by a gift (e.g. a gift that includes a specific weapon) is never loaded for ally | `cg_get_gift_trappings` | Ally's trappings list and print sheet will be missing gift-granted items |
-| G2 | **Default gifts** — Local Knowledge, Language (as a stored gift record), Combat Save, Personality are not fetched or stored for ally | `cg_get_local_knowledge`, `cg_get_language_gift`, `cg_get_combat_save`, `cg_get_personality_gift`, `cg_get_personality_list` | These gifts are absent from ally's battle array gift list and print sheet |
-| G3 | **Spells** — ally gifts can unlock spells but the spell lookup never runs | `cg_get_spells_for_gifts` | Ally sheet shows no spell block even if the ally holds a spell-granting gift |
-| G4 | **Full money denominations** — ally tracks only denar; the denomination list is not loaded | `cg_get_money_list` | Minor UX gap; denar is the main currency used in play |
-| G5 | **Qualifications** — ally has no Language/Literacy/Insider/Mystic/Piety panel | `cg_get_language_list` | Ally's language qualification is read only from the main char, not independently set |
-| G6 | **Skill detail** — neither flow calls `cg_get_skill_detail`; individual skill descriptions are never displayed | `cg_get_skill_detail` | Not user-facing yet; endpoint is available for future tooltip/detail use |
-| G7 | **Extra careers** — ally supports only one species + one career | — | Intentional design choice, but noted here for clarity |
-| G8 | **XP / Experience** — ally has no experience panel | — | Intentional — allies don't earn XP; noted for clarity |
+| G1 | ✅ **Done** (Task #21) | **Gift trappings** — `cg_get_gift_trappings` now called for ally; items shown in trappings list and print sheet | Resolved |
+| G2 | ✅ **By design** | **Default gifts** — Local Knowledge, Language, Combat Save, Personality intentionally excluded from ally | No impact; these are character-level only |
+| G3 | ✅ **Done** (Task #21) | **Spells** — `cg_get_spells_for_gifts` now called for ally; spell block shown in battle array and print sheet | Resolved |
+| G4 | ✅ **Done** (Task #21) | **Full money denominations** — `cg_get_money_list` now loaded; all denominations shown with input fields | Resolved |
+| G5 | ✅ **By design** | **Qualifications panel** — Language/Literacy/Insider/Mystic/Piety not needed for ally; language read from main char | No impact |
+| G6 | Future | **Skill detail** — neither flow calls `cg_get_skill_detail`; individual skill descriptions never displayed | Low priority; endpoint available when needed |
+| G7 | ✅ **By design** | **Extra careers** — ally has one career only | Intentional |
+| G8 | ✅ **By design** | **XP / Experience** — allies don't earn XP | Intentional |
 
 ---
 
