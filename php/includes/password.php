@@ -53,8 +53,9 @@ function cg_phpass_crypt(string $password, string $setting): string {
  */
 function cg_check_password(string $password, string $hash): bool {
     // $wp$ prefix (wp-passwords-bcrypt plugin)
+    // Format: $wp$$2y$... — strip the 4-char "$wp$" prefix to get the real bcrypt hash
     if (str_starts_with($hash, '$wp$')) {
-        $real = '$' . substr($hash, 4);
+        $real = substr($hash, 4);
         return password_verify($password, $real);
     }
 
