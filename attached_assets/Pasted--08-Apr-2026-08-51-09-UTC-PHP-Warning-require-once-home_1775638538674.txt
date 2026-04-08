@@ -1,0 +1,103 @@
+[08-Apr-2026 08:51:09 UTC] PHP Warning:  require_once(/home/libraryo/public_html/includes/config.php): Failed to open stream: No such file or directory in /home/libraryo/public_html/includes/db.php on line 14
+[08-Apr-2026 08:51:09 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/libraryo/public_html/includes/config.php' (include_path='.:/opt/cpanel/ea-php81/root/usr/share/pear') in /home/libraryo/public_html/includes/db.php:14
+Stack trace:
+#0 /home/libraryo/public_html/home.php(7): require_once()
+#1 {main}
+  thrown in /home/libraryo/public_html/includes/db.php on line 14
+[08-Apr-2026 08:51:54 UTC] PHP Warning:  Undefined property: stdClass::$ct_habiitat_name in /home/libraryo/public_html/wp-content/themes/twentytwentyfour-child/page-species-habitat-detail.php on line 25
+[08-Apr-2026 08:51:54 UTC] WordPress database error Unknown column 'ct_species_habitat' in 'WHERE' for query 
+      SELECT ct_species_name, ct_slug
+        FROM DcVnchxg4_customtables_table_species
+       WHERE ct_species_habitat = 1
+       ORDER BY ct_species_name ASC
+   made by require('wp-blog-header.php'), require_once('wp-includes/template-loader.php'), include('/themes/twentytwentyfour-child/page-species-habitat-detail.php')
+[08-Apr-2026 08:51:55 UTC] PHP Warning:  require_once(/home/libraryo/public_html/includes/config.php): Failed to open stream: No such file or directory in /home/libraryo/public_html/includes/db.php on line 14
+[08-Apr-2026 08:51:55 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/libraryo/public_html/includes/config.php' (include_path='.:/opt/cpanel/ea-php81/root/usr/share/pear') in /home/libraryo/public_html/includes/db.php:14
+Stack trace:
+#0 /home/libraryo/public_html/home.php(7): require_once()
+#1 {main}
+  thrown in /home/libraryo/public_html/includes/db.php on line 14
+[08-Apr-2026 08:51:57 UTC] WordPress database error Unknown column 'ct_species_senses_one' in 'WHERE' for query 
+    SELECT ct_species_name, ct_slug
+      FROM DcVnchxg4_customtables_table_species
+     WHERE ct_species_senses_one = 3
+        OR ct_species_senses_two = 3
+        OR ct_species_senses_three = 3
+     ORDER BY ct_species_name ASC
+ made by require('wp-blog-header.php'), require_once('wp-includes/template-loader.php'), include('/themes/twentytwentyfour-child/page-species-senses-detail.php')
+[08-Apr-2026 08:51:57 UTC] PHP Warning:  require_once(/home/libraryo/public_html/includes/config.php): Failed to open stream: No such file or directory in /home/libraryo/public_html/includes/db.php on line 14
+[08-Apr-2026 08:51:57 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/libraryo/public_html/includes/config.php' (include_path='.:/opt/cpanel/ea-php81/root/usr/share/pear') in /home/libraryo/public_html/includes/db.php:14
+Stack trace:
+#0 /home/libraryo/public_html/home.php(7): require_once()
+#1 {main}
+  thrown in /home/libraryo/public_html/includes/db.php on line 14
+[08-Apr-2026 08:51:59 UTC] WordPress database error Unknown column 'ct_species_skill_one' in 'WHERE' for query 
+  SELECT ct_species_name, ct_slug FROM DcVnchxg4_customtables_table_species
+  WHERE ct_species_skill_one = 3 OR ct_species_skill_two = 3 OR ct_species_skill_three = 3
+  ORDER BY ct_species_name ASC
+ made by require('wp-blog-header.php'), require_once('wp-includes/template-loader.php'), include('/themes/twentytwentyfour-child/page-skill.php')
+[08-Apr-2026 08:51:59 UTC] WordPress database error Unknown column 'ct_career_skill_one' in 'WHERE' for query 
+  SELECT ct_career_name, ct_slug FROM DcVnchxg4_customtables_table_careers
+  WHERE published = 1 AND (
+    ct_career_skill_one = 3 OR
+    ct_career_skill_two = 3 OR
+    ct_career_skill_three = 3 )
+  ORDER BY ct_career_name ASC
+ made by require('wp-blog-header.php'), require_once('wp-includes/template-loader.php'), include('/themes/twentytwentyfour-child/page-skill.php')
+[08-Apr-2026 08:52:04 UTC] WordPress database error Unknown column 'ct_species_skill_one' in 'WHERE' for query 
+  SELECT ct_species_name, ct_slug FROM DcVnchxg4_customtables_table_species
+  WHERE ct_species_skill_one = 4 OR ct_species_skill_two = 4 OR ct_species_skill_three = 4
+  ORDER BY ct_species_name ASC
+ made by require('wp-blog-header.php'), require_once('wp-includes/template-loader.php'), include('/themes/twentytwentyfour-child/page-skill.php')
+[08-Apr-2026 08:52:04 UTC] WordPress database error Unknown column 'ct_career_skill_one' in 'WHERE' for query 
+  SELECT ct_career_name, ct_slug FROM DcVnchxg4_customtables_table_careers
+  WHERE published = 1 AND (
+    ct_career_skill_one = 4 OR
+    ct_career_skill_two = 4 OR
+    ct_career_skill_three = 4 )
+  ORDER BY ct_career_name ASC
+ made by require('wp-blog-header.php'), require_once('wp-includes/template-loader.php'), include('/themes/twentytwentyfour-child/page-skill.php')
+[08-Apr-2026 08:52:07 UTC] PHP Warning:  require_once(/home/libraryo/public_html/includes/config.php): Failed to open stream: No such file or directory in /home/libraryo/public_html/includes/db.php on line 14
+[08-Apr-2026 08:52:07 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/libraryo/public_html/includes/config.php' (include_path='.:/opt/cpanel/ea-php81/root/usr/share/pear') in /home/libraryo/public_html/includes/db.php:14
+Stack trace:
+#0 /home/libraryo/public_html/home.php(7): require_once()
+#1 {main}
+  thrown in /home/libraryo/public_html/includes/db.php on line 14
+[08-Apr-2026 08:52:07 UTC] PHP Warning:  require_once(/home/libraryo/public_html/includes/config.php): Failed to open stream: No such file or directory in /home/libraryo/public_html/includes/db.php on line 14
+[08-Apr-2026 08:52:07 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/libraryo/public_html/includes/config.php' (include_path='.:/opt/cpanel/ea-php81/root/usr/share/pear') in /home/libraryo/public_html/includes/db.php:14
+Stack trace:
+#0 /home/libraryo/public_html/home.php(7): require_once()
+#1 {main}
+  thrown in /home/libraryo/public_html/includes/db.php on line 14
+[08-Apr-2026 08:52:13 UTC] WordPress database error Unknown column 'ct_species_senses_one' in 'WHERE' for query 
+    SELECT ct_species_name, ct_slug
+      FROM DcVnchxg4_customtables_table_species
+     WHERE ct_species_senses_one = 2
+        OR ct_species_senses_two = 2
+        OR ct_species_senses_three = 2
+     ORDER BY ct_species_name ASC
+ made by require('wp-blog-header.php'), require_once('wp-includes/template-loader.php'), include('/themes/twentytwentyfour-child/page-species-senses-detail.php')
+[08-Apr-2026 08:52:35 UTC] PHP Warning:  require_once(/home/libraryo/public_html/includes/config.php): Failed to open stream: No such file or directory in /home/libraryo/public_html/includes/db.php on line 14
+[08-Apr-2026 08:52:35 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/libraryo/public_html/includes/config.php' (include_path='.:/opt/cpanel/ea-php81/root/usr/share/pear') in /home/libraryo/public_html/includes/db.php:14
+Stack trace:
+#0 /home/libraryo/public_html/home.php(7): require_once()
+#1 {main}
+  thrown in /home/libraryo/public_html/includes/db.php on line 14
+[08-Apr-2026 08:54:04 UTC] PHP Warning:  require_once(/home/libraryo/public_html/includes/config.php): Failed to open stream: No such file or directory in /home/libraryo/public_html/includes/db.php on line 14
+[08-Apr-2026 08:54:04 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/libraryo/public_html/includes/config.php' (include_path='.:/opt/cpanel/ea-php81/root/usr/share/pear') in /home/libraryo/public_html/includes/db.php:14
+Stack trace:
+#0 /home/libraryo/public_html/home.php(7): require_once()
+#1 {main}
+  thrown in /home/libraryo/public_html/includes/db.php on line 14
+[08-Apr-2026 08:54:04 UTC] PHP Warning:  require_once(/home/libraryo/public_html/includes/config.php): Failed to open stream: No such file or directory in /home/libraryo/public_html/includes/db.php on line 14
+[08-Apr-2026 08:54:04 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/libraryo/public_html/includes/config.php' (include_path='.:/opt/cpanel/ea-php81/root/usr/share/pear') in /home/libraryo/public_html/includes/db.php:14
+Stack trace:
+#0 /home/libraryo/public_html/home.php(7): require_once()
+#1 {main}
+  thrown in /home/libraryo/public_html/includes/db.php on line 14
+[08-Apr-2026 08:55:01 UTC] PHP Warning:  require_once(/home/libraryo/public_html/includes/config.php): Failed to open stream: No such file or directory in /home/libraryo/public_html/includes/db.php on line 14
+[08-Apr-2026 08:55:01 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/libraryo/public_html/includes/config.php' (include_path='.:/opt/cpanel/ea-php81/root/usr/share/pear') in /home/libraryo/public_html/includes/db.php:14
+Stack trace:
+#0 /home/libraryo/public_html/home.php(7): require_once()
+#1 {main}
+  thrown in /home/libraryo/public_html/includes/db.php on line 14
