@@ -762,6 +762,9 @@ try {
 
     #cg-modal {
       position:     static !important;
+      transform:    none !important;
+      top:          auto !important;
+      left:         auto !important;
       width:        100% !important;
       max-width:    none !important;
       height:       100% !important;
