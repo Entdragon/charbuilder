@@ -1153,8 +1153,47 @@ function uj_get_careers_full(): void {
     cg_json(['success' => true, 'data' => $careers]);
 }
 
+function uj_ensure_special_gifts(): void {
+    $t = uj_tbl('gifts');
+    $specials = [
+        [
+            'name'         => 'Extra Career [of choice]',
+            'slug'         => 'extra-career',
+            'subtitle'     => 'gain d4 in a new Career Trait',
+            'description'  => "You can buy a second Career Trait. Before you can get this gift, you must have all the gifts that Career starts with. Your new Career Trait starts at d4. You get a brand-spanking new column to use, to boost three more skills. You can improve this Trait with the \"Improved Trait\" gift\u{2026} but now that you have two Career Traits, you have to improve each one separately.",
+            'gift_type'    => 'advanced',
+            'recharge'     => '',
+            'requires_text'=> 'Requires the gifts that Career starts with',
+        ],
+        [
+            'name'         => 'Extra Type [of choice]',
+            'slug'         => 'extra-type',
+            'subtitle'     => 'gain d4 in a new Type Trait',
+            'description'  => "You can buy a second Type Trait. Before you can get this gift, you must have all the gifts and/or soaks that Type starts with. Your new Type Trait starts at d4. You get a factory-fresh new column to use, to boost three more skills. You can improve this Trait with the \"Improved Trait\" gift\u{2026} but now that you have two Type Traits, you have to improve each one separately.",
+            'gift_type'    => 'advanced',
+            'recharge'     => '',
+            'requires_text'=> 'Requires the gifts and soaks that Type starts with',
+        ],
+    ];
+    foreach ($specials as $g) {
+        cg_exec(
+            "INSERT INTO `{$t}` (name, slug, subtitle, description, gift_type, recharge, requires_text, published)
+             VALUES (?,?,?,?,?,?,?,1)
+             ON DUPLICATE KEY UPDATE
+               name=VALUES(name), subtitle=VALUES(subtitle),
+               description=VALUES(description), gift_type=VALUES(gift_type),
+               requires_text=VALUES(requires_text), published=1",
+            [$g['name'], $g['slug'], $g['subtitle'], $g['description'],
+             $g['gift_type'], $g['recharge'], $g['requires_text']]
+        );
+    }
+}
+
 function uj_get_all_full(): void {
     $p = cg_prefix();
+
+    // Ensure special development gifts exist (auto-migration for older DBs)
+    uj_ensure_special_gifts();
 
     // Fetch all base tables
     $species  = cg_query("SELECT id, name, slug, description FROM `{$p}uj_species` WHERE published=1 ORDER BY name ASC");
