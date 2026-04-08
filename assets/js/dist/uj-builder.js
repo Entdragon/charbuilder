@@ -145,6 +145,7 @@
       notes: "",
       allySpeciesId: null,
       allyCareerId: null,
+      allyName: "",
       giftChoices: {},
       experience: 0,
       purchasedGifts: [],
@@ -364,6 +365,9 @@
         state.speciesId = c.species_id ? Number(c.species_id) : null;
         state.typeId = c.type_id ? Number(c.type_id) : null;
         state.careerId = c.career_id ? Number(c.career_id) : null;
+        state.allySpeciesId = c.ally_species_id ? Number(c.ally_species_id) : null;
+        state.allyCareerId = c.ally_career_id ? Number(c.ally_career_id) : null;
+        state.allyName = c.ally_name || "";
         state.experience = parseInt(c.experience || 0, 10);
         state.purchasedGifts = function() {
           try {
@@ -396,6 +400,7 @@
         state.notes = c.notes || "";
         state.allySpeciesId = c.ally_species_id ? Number(c.ally_species_id) : null;
         state.allyCareerId = c.ally_career_id ? Number(c.ally_career_id) : null;
+        state.allyName = c.ally_name || "";
         state.giftChoices = function() {
           try {
             return JSON.parse(c.gift_choices || "{}") || {};
@@ -525,7 +530,7 @@
         var caOpts = '<option value="">\u2014 Choose Career \u2014</option>' + careerList.map(function(c) {
           return '<option value="' + esc(c.id) + '"' + (state.allyCareerId == c.id ? " selected" : "") + ">" + esc(c.name) + "</option>";
         }).join("");
-        return `<div class="dev-xp-panel" style="flex-direction:column;align-items:flex-start;gap:0.75rem;"><div style="font-family:'Cinzel',serif;font-size:0.8rem;font-weight:700;color:var(--uj-amber);letter-spacing:0.06em;text-transform:uppercase;">Ally Configuration</div><div style="display:flex;gap:1rem;flex-wrap:wrap;width:100%;"><div style="flex:1;min-width:160px;"><label style="font-size:0.72rem;color:var(--uj-text-dim);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:0.35rem;">Ally Species</label><select class="field-select" id="dev-ally-species" style="width:100%;">` + spOpts + '</select></div><div style="flex:1;min-width:160px;"><label style="font-size:0.72rem;color:var(--uj-text-dim);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:0.35rem;">Ally Career</label><select class="field-select" id="dev-ally-career" style="width:100%;">' + caOpts + '</select></div><div style="display:flex;align-items:flex-end;"><button class="uj-btn uj-btn-amber" id="dev-ally-save-btn" style="font-size:0.78rem;">Save Ally</button></div></div></div>';
+        return `<div class="dev-xp-panel" style="flex-direction:column;align-items:flex-start;gap:0.75rem;"><div style="font-family:'Cinzel',serif;font-size:0.8rem;font-weight:700;color:var(--uj-amber);letter-spacing:0.06em;text-transform:uppercase;">Ally Configuration</div><div style="display:flex;gap:1rem;flex-wrap:wrap;width:100%;"><div style="flex:2;min-width:200px;"><label style="font-size:0.72rem;color:var(--uj-text-dim);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:0.35rem;">Ally Name</label><input type="text" id="dev-ally-name" class="field-input" placeholder="Enter ally's name\u2026" value="` + esc(state.allyName) + '" style="width:100%;"></div><div style="flex:1;min-width:160px;"><label style="font-size:0.72rem;color:var(--uj-text-dim);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:0.35rem;">Ally Species</label><select class="field-select" id="dev-ally-species" style="width:100%;">' + spOpts + '</select></div><div style="flex:1;min-width:160px;"><label style="font-size:0.72rem;color:var(--uj-text-dim);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:0.35rem;">Ally Career</label><select class="field-select" id="dev-ally-career" style="width:100%;">' + caOpts + '</select></div><div style="display:flex;align-items:flex-end;"><button class="uj-btn uj-btn-amber" id="dev-ally-save-btn" style="font-size:0.78rem;">Save Ally</button></div></div></div>';
       }() + '<div class="dev-rule-box"><strong>Development rules:</strong> Spend <strong>10 XP</strong> to buy a new Gift or Soak. Gifts may only be purchased multiple times if their description specifically says so.</div><div class="dev-tabs"><button class="dev-tab active" data-tab="gifts">Gifts</button><button class="dev-tab" data-tab="soaks">Soaks</button><button class="dev-tab" data-tab="history">Purchase History (' + state.purchasedGifts.length + ')</button></div><div class="dev-panel active" data-panel="gifts"><div class="dev-shop-grid">' + giftsHtml + '</div></div><div class="dev-panel" data-panel="soaks"><div class="dev-shop-grid">' + soaksHtml + '</div></div><div class="dev-panel" data-panel="history"><div class="dev-history-list">' + historyHtml + "</div></div>";
       document.getElementById("dev-back-btn").addEventListener("click", showCharList);
       document.getElementById("dev-xp-award-btn").addEventListener("click", function() {
@@ -538,9 +543,14 @@
         state.experience += amt;
         saveDevelop(renderDevelop);
       });
+      var allyNameIn = document.getElementById("dev-ally-name");
       var allySpSel = document.getElementById("dev-ally-species");
       var allyCaSel = document.getElementById("dev-ally-career");
       var allySaveBtn = document.getElementById("dev-ally-save-btn");
+      if (allyNameIn)
+        allyNameIn.addEventListener("input", function() {
+          state.allyName = allyNameIn.value;
+        });
       if (allySpSel)
         allySpSel.addEventListener("change", function() {
           state.allySpeciesId = allySpSel.value ? Number(allySpSel.value) : null;
@@ -589,7 +599,8 @@
         experience: state.experience,
         purchased_gifts: JSON.stringify(state.purchasedGifts),
         ally_species_id: state.allySpeciesId !== null ? state.allySpeciesId : "",
-        ally_career_id: state.allyCareerId !== null ? state.allyCareerId : ""
+        ally_career_id: state.allyCareerId !== null ? state.allyCareerId : "",
+        ally_name: state.allyName || ""
       }).then(function() {
         if (callback)
           callback();
@@ -1283,6 +1294,100 @@
       html += "</div>";
       if (state.notes) {
         html += '<div class="summary-section" style="margin-top:1.25rem;"><div class="summary-section-title">Notes</div><p style="font-size:0.92rem;color:var(--uj-text-muted);white-space:pre-wrap;margin:0;">' + esc(state.notes) + "</p></div>";
+      }
+      var hasAllyFromCreation = !!(giftMap["_ally"] || Object.values(giftMap).some(function(g) {
+        return g.slug === "ally";
+      }));
+      var hasDevAlly = state.purchasedGifts && state.purchasedGifts.some(function(p) {
+        return p.slug === "ally";
+      });
+      if ((hasAllyFromCreation || hasDevAlly) && (state.allySpeciesId || state.allyCareerId || state.allyName)) {
+        let addAllySkills = function(entity, dieSrc) {
+          if (!entity || !entity.skills)
+            return;
+          entity.skills.forEach(function(sk) {
+            var key = (sk.name || sk).toLowerCase();
+            if (!allySkillSeen[key]) {
+              allySkillSeen[key] = true;
+              allySkills.push({ name: sk.name || sk, die: dieSrc });
+            }
+          });
+        }, addAllyGifts = function(entity) {
+          if (!entity || !entity.gifts)
+            return;
+          entity.gifts.forEach(function(g) {
+            var key = g.slug || String(g.id);
+            if (!allyGiftSeen[key]) {
+              allyGiftSeen[key] = true;
+              allyGifts.push(g);
+            }
+          });
+        }, addAllySoaks = function(entity) {
+          if (!entity || !entity.soaks)
+            return;
+          entity.soaks.forEach(function(s) {
+            var key = s.slug || String(s.id);
+            if (!allySoakSeen[key]) {
+              allySoakSeen[key] = true;
+              allySoaks.push(s);
+            }
+          });
+        };
+        var allySp = state.allySpeciesId ? (d.species || []).find(function(x) {
+          return x.id == state.allySpeciesId;
+        }) : null;
+        var allyCa = state.allyCareerId ? (d.careers || []).find(function(x) {
+          return x.id == state.allyCareerId;
+        }) : null;
+        html += '<div class="summary-ally-sheet" style="page-break-before:always;margin-top:2.5rem;border:1px solid var(--uj-border);border-radius:var(--uj-radius-lg);overflow:hidden;">';
+        html += `<div style="background:rgba(0,0,0,0.4);border-bottom:1px solid var(--uj-border);padding:1.25rem 1.5rem;display:flex;justify-content:space-between;align-items:flex-end;"><div><div style="font-family:'Cinzel',serif;font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--uj-teal);margin-bottom:0.2rem;">Ally Character Sheet</div><div style="font-family:'Cinzel',serif;font-size:1.5rem;font-weight:700;color:var(--uj-amber-light);">` + esc(state.allyName || "Unnamed Ally") + '</div><div style="font-size:0.8rem;color:var(--uj-text-dim);margin-top:0.15rem;">' + [allySp ? esc(allySp.name) : null, allyCa ? esc(allyCa.name) : null].filter(Boolean).join(" &mdash; ") + '</div></div><div style="font-size:0.7rem;color:var(--uj-text-dim);text-align:right;">Ally of ' + esc(state.charName || "unknown") + "</div></div>";
+        html += '<div style="padding:1.25rem 1.5rem;">';
+        html += '<div style="display:flex;gap:1.5rem;flex-wrap:wrap;margin-bottom:1.25rem;">';
+        if (allySp) {
+          html += `<div style="text-align:center;background:rgba(0,0,0,0.25);border:1px solid var(--uj-border);border-radius:8px;padding:0.6rem 1rem;"><div style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--uj-text-dim);margin-bottom:0.2rem;">Species Die</div><div style="font-family:'Cinzel',serif;font-size:1.3rem;color:var(--uj-amber);">` + esc(allySp.die || "\u2014") + '</div><div style="font-size:0.72rem;color:var(--uj-text-dim);">' + esc(allySp.name) + "</div></div>";
+        }
+        if (allyCa) {
+          html += `<div style="text-align:center;background:rgba(0,0,0,0.25);border:1px solid var(--uj-border);border-radius:8px;padding:0.6rem 1rem;"><div style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--uj-text-dim);margin-bottom:0.2rem;">Career Die</div><div style="font-family:'Cinzel',serif;font-size:1.3rem;color:var(--uj-amber);">` + esc(allyCa.die || "\u2014") + '</div><div style="font-size:0.72rem;color:var(--uj-text-dim);">' + esc(allyCa.name) + "</div></div>";
+        }
+        html += "</div>";
+        var allySkills = [];
+        var allySkillSeen = {};
+        addAllySkills(allySp, allySp ? allySp.die || "\u2014" : "\u2014");
+        addAllySkills(allyCa, allyCa ? allyCa.die || "\u2014" : "\u2014");
+        if (allySkills.length) {
+          html += `<div style="margin-bottom:1.25rem;"><div style="font-family:'Cinzel',serif;font-size:0.72rem;font-weight:700;color:var(--uj-amber);letter-spacing:0.08em;text-transform:uppercase;border-bottom:1px solid var(--uj-border);padding-bottom:0.35rem;margin-bottom:0.6rem;">Skills</div>`;
+          html += '<table style="width:100%;border-collapse:collapse;font-size:0.82rem;">';
+          html += '<thead><tr><th style="text-align:left;padding:0.25rem 0.5rem 0.25rem 0;color:var(--uj-text-dim);font-weight:500;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;">Skill</th><th style="text-align:center;padding:0.25rem 0.5rem;color:var(--uj-text-dim);font-weight:500;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;">Die</th></tr></thead><tbody>';
+          allySkills.forEach(function(sk) {
+            html += '<tr style="border-top:1px solid rgba(255,255,255,0.05);"><td style="padding:0.3rem 0.5rem 0.3rem 0;">' + esc(sk.name) + `</td><td style="text-align:center;padding:0.3rem 0.5rem;font-family:'Cinzel',serif;color:var(--uj-amber);">` + esc(sk.die) + "</td></tr>";
+          });
+          html += "</tbody></table></div>";
+        }
+        var allyGifts = [];
+        var allyGiftSeen = {};
+        addAllyGifts(allySp);
+        addAllyGifts(allyCa);
+        if (allyGifts.length) {
+          html += `<div style="margin-bottom:1.25rem;"><div style="font-family:'Cinzel',serif;font-size:0.72rem;font-weight:700;color:var(--uj-amber);letter-spacing:0.08em;text-transform:uppercase;border-bottom:1px solid var(--uj-border);padding-bottom:0.35rem;margin-bottom:0.6rem;">Gifts</div>`;
+          html += '<ul style="margin:0;padding:0;list-style:none;">';
+          allyGifts.forEach(function(g) {
+            html += '<li class="gift-item">' + esc(g.name) + (g.subtitle ? '<span style="display:block;font-size:0.78rem;color:#4ade80;font-style:italic;margin-top:0.1rem;">' + esc(g.subtitle) + "</span>" : "") + "</li>";
+          });
+          html += "</ul></div>";
+        }
+        var allySoaks = [];
+        var allySoakSeen = {};
+        addAllySoaks(allySp);
+        addAllySoaks(allyCa);
+        if (allySoaks.length) {
+          html += `<div><div style="font-family:'Cinzel',serif;font-size:0.72rem;font-weight:700;color:var(--uj-amber);letter-spacing:0.08em;text-transform:uppercase;border-bottom:1px solid var(--uj-border);padding-bottom:0.35rem;margin-bottom:0.6rem;">Soaks</div>`;
+          html += '<ul style="margin:0;padding:0;list-style:none;">';
+          allySoaks.forEach(function(s) {
+            html += '<li class="soak-item">' + esc(s.name) + (s.damage_negated ? "<small>" + esc(s.damage_negated) + "</small>" : "") + "</li>";
+          });
+          html += "</ul></div>";
+        }
+        html += "</div></div>";
       }
       return html;
     }

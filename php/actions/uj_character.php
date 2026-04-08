@@ -39,6 +39,7 @@ function uj_ensure_characters_table(): void {
     foreach ([
         'ally_species_id INT DEFAULT NULL',
         'ally_career_id INT DEFAULT NULL',
+        'ally_name VARCHAR(191) DEFAULT NULL',
         'gift_choices TEXT DEFAULT NULL',
         'experience INT NOT NULL DEFAULT 0',
         'purchased_gifts TEXT DEFAULT NULL',
@@ -68,7 +69,7 @@ function uj_load_characters(): void {
                 body_die, speed_die, mind_die, will_die,
                 species_die, type_die, career_die,
                 personality_word, notes,
-                ally_species_id, ally_career_id, gift_choices,
+                ally_species_id, ally_career_id, ally_name, gift_choices,
                 experience, purchased_gifts,
                 created_at, updated_at
            FROM `{$p}uj_character_records`
@@ -233,10 +234,11 @@ function uj_update_development(): void {
     $rawAllySpecies = $_POST['ally_species_id'] ?? null;
     $rawAllyCareer  = $_POST['ally_career_id']  ?? null;
     $allySpeciesId  = ($rawAllySpecies !== null && $rawAllySpecies !== '') ? (int) $rawAllySpecies : null;
-    $allyCareerI  = ($rawAllyCareer  !== null && $rawAllyCareer  !== '') ? (int) $rawAllyCareer  : null;
+    $allyCareerId   = ($rawAllyCareer  !== null && $rawAllyCareer  !== '') ? (int) $rawAllyCareer  : null;
+    $allyName       = isset($_POST['ally_name']) ? trim(substr($_POST['ally_name'], 0, 191)) : null;
     cg_exec(
-        "UPDATE `{$p}uj_character_records` SET experience = ?, purchased_gifts = ?, ally_species_id = ?, ally_career_id = ?, updated_at = ? WHERE id = ? AND user_id = ?",
-        [$experience, $purchasedGifts, $allySpeciesId, $allyCareerI, date('Y-m-d H:i:s'), $id, $uid]
+        "UPDATE `{$p}uj_character_records` SET experience = ?, purchased_gifts = ?, ally_species_id = ?, ally_career_id = ?, ally_name = ?, updated_at = ? WHERE id = ? AND user_id = ?",
+        [$experience, $purchasedGifts, $allySpeciesId, $allyCareerId, $allyName ?: null, date('Y-m-d H:i:s'), $id, $uid]
     );
     cg_json(['success' => true, 'data' => ['id' => (string) $id]]);
 }
