@@ -132,6 +132,14 @@ $actionFiles = [
 
     'cg_admin_preview_batch_fix'        => 'actions/admin.php',
     'cg_admin_apply_batch_fix'          => 'actions/admin.php',
+
+    // ── Urban Jungle ─────────────────────────────────────────────────────
+    'uj_install_tables'  => 'actions/uj.php',
+    'uj_install_data'    => 'actions/uj.php',
+    'uj_get_species'     => 'actions/uj.php',
+    'uj_get_types'       => 'actions/uj.php',
+    'uj_get_careers'     => 'actions/uj.php',
+    'uj_get_all_traits'  => 'actions/uj.php',
 ];
 
 if (!isset($actionFiles[$action])) {

@@ -32,5 +32,11 @@ if ($uri !== '/' && file_exists($disk) && is_file($disk)) {
     return false;
 }
 
+// ── Urban Jungle character generator ──────────────────────────────────────────
+if (str_starts_with($uri, '/uj') && ($uri === '/uj' || $uri === '/uj/' || str_starts_with($uri, '/uj/'))) {
+    require __DIR__ . '/uj.php';
+    exit;
+}
+
 // ── SPA catch-all → main PHP template ─────────────────────────────────────────
 require __DIR__ . '/index.php';

@@ -260,6 +260,7 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
     <button class="cga-tool-btn" onclick="openQualityReport()">Data Quality</button>
     <button class="cga-tool-btn" id="cga-batchfix-btn" onclick="openBatchFix()">Batch @@ Fix</button>
     <button class="cga-tool-btn" onclick="runInstallSpells(this)">Install Spells</button>
+    <button class="cga-tool-btn" onclick="runUjInstall(this)" title="Create UJ tables + load all Species/Type/Career trait data">UJ: Install Data</button>
     <a class="cga-logout" href="/ajax.php?action=cg_logout_user" onclick="return doLogout(event)">Log out</a>
   </div>
 
@@ -1150,6 +1151,21 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
 
     // If the currently-loaded record was one of the fixed gifts, reload it
     if (currentId && patches.some(p => p.id === currentId)) loadRecord(currentId);
+  };
+
+  // ── Urban Jungle install ──────────────────────────────────────────────────
+
+  window.runUjInstall = async function (btn) {
+    if (!confirm('This will CREATE the UJ trait tables (if not exists) and UPSERT all Species, Type, and Career trait data from the book. Continue?')) return;
+    btn.disabled    = true;
+    btn.textContent = 'Installing…';
+    const r1 = await post('uj_install_tables');
+    if (!r1.success) { status(r1.data, 'err'); btn.disabled = false; btn.textContent = 'UJ: Install Data'; return; }
+    const r2 = await post('uj_install_data');
+    btn.disabled    = false;
+    btn.textContent = 'UJ: Install Data';
+    if (!r2.success) { status(r2.data, 'err'); return; }
+    status(r2.data, 'ok');
   };
 
   // ── Boot ──────────────────────────────────────────────────────────────────

@@ -1206,7 +1206,7 @@ function cg_extract_requires_from_passive(string $firstLine, string $body): ?arr
  */
 function cg_admin_preview_batch_fix(): void {
     cg_admin_require();
-    $t     = cg_table('gifts');
+    $t     = cg_prefix() . 'customtables_table_gifts';
     $after = trim($_POST['after'] ?? '');
 
     if ($after !== '') {
@@ -1252,7 +1252,7 @@ function cg_admin_apply_batch_fix(): void {
     $patches = json_decode($raw, true);
     if (!is_array($patches)) { cg_json(['success' => false, 'data' => 'Invalid patches JSON.']); return; }
 
-    $t       = cg_table('gifts');
+    $t       = cg_prefix() . 'customtables_table_gifts';
     $applied = 0;
 
     foreach ($patches as $patch) {
