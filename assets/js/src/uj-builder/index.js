@@ -182,8 +182,8 @@
     if (developScreen) developScreen.style.display = 'none';
     if (wizardScreen)  wizardScreen.style.display  = 'none';
     if (listScreen)    listScreen.style.display    = 'none';
-    ajaxPost('uj_list_characters', {}).then(function(res) {
-      state.characters = (res && res.data) ? res.data : [];
+    ajaxPost('uj_load_characters', {}).then(function(res) {
+      state.characters = (res && res.success && Array.isArray(res.data)) ? res.data : [];
       renderCharList();
       if (listScreen) listScreen.style.display = 'block';
     });
