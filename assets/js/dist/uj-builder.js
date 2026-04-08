@@ -553,6 +553,12 @@
       var ca = (d.careers || []).find(function(x) {
         return x.id == state.careerId;
       });
+      var extraCa = state.extraCareerId ? (d.careers || []).find(function(x) {
+        return x.id == state.extraCareerId;
+      }) || null : null;
+      var extraTy = state.extraTypeId ? (d.types || []).find(function(x) {
+        return x.id == state.extraTypeId;
+      }) || null : null;
       var subtitle = [sp ? sp.name : "", ty ? ty.name : "", ca ? ca.name : ""].filter(Boolean).join(" / ");
       var creationGrantedSlugs = {};
       function addCreationSlugs(arr) {
@@ -680,12 +686,25 @@
         IMPROVED_TRAITS.push("Extra Career");
       if (state.extraTypeId !== null)
         IMPROVED_TRAITS.push("Extra Type");
+      function improvedTraitDisplayName(trait) {
+        if (trait === "Species" && sp)
+          return "Improved Species: " + sp.name;
+        if (trait === "Type" && ty)
+          return "Improved Type: " + ty.name;
+        if (trait === "Career" && ca)
+          return "Improved Career: " + ca.name;
+        if (trait === "Extra Career" && extraCa)
+          return "Improved Career: " + extraCa.name;
+        if (trait === "Extra Type" && extraTy)
+          return "Improved Type: " + extraTy.name;
+        return "Improved " + trait;
+      }
       var expandedGifts = [];
       allGifts.forEach(function(g) {
         if (g.slug === "improved-trait") {
           IMPROVED_TRAITS.forEach(function(trait) {
             expandedGifts.push(Object.assign({}, g, {
-              name: "Improved " + trait,
+              name: improvedTraitDisplayName(trait),
               slug: "improved-trait-" + trait.toLowerCase().replace(/\s+/g, "-"),
               subtitle: "Improved Trait [" + trait + "]",
               requires_text: null,
@@ -1504,7 +1523,7 @@
       var effTypeDie = effectiveDie(state.typeDie, "Type");
       var effCareerDie = effectiveDie(state.careerDie, "Career");
       html += '<div class="summary-source-dice"><div class="summary-source-die-item"><span class="source-die-label">Species Die</span><span class="summary-trait-die" style="font-size:1.1rem;' + (effSpeciesDie !== state.speciesDie ? "color:var(--uj-teal);" : "") + '">' + (sp ? effSpeciesDie || "\u2014" : "\u2014") + "</span>" + (sp ? '<span style="font-size:0.78rem;color:var(--uj-text-dim);">' + esc(sp.name) + "</span>" : "") + '</div><div class="summary-source-die-item"><span class="source-die-label">Type Die</span><span class="summary-trait-die" style="font-size:1.1rem;' + (effTypeDie !== state.typeDie ? "color:var(--uj-teal);" : "") + '">' + (ty ? effTypeDie || "\u2014" : "\u2014") + "</span>" + (ty ? '<span style="font-size:0.78rem;color:var(--uj-text-dim);">' + esc(ty.name) + "</span>" : "") + '</div><div class="summary-source-die-item"><span class="source-die-label">Career Die</span><span class="summary-trait-die" style="font-size:1.1rem;' + (effCareerDie !== state.careerDie ? "color:var(--uj-teal);" : "") + '">' + (ca ? effCareerDie || "\u2014" : "\u2014") + "</span>" + (ca ? '<span style="font-size:0.78rem;color:var(--uj-text-dim);">' + esc(ca.name) + "</span>" : "") + "</div>" + (extraCa && effExtraCaDie ? '<div class="summary-source-die-item" style="border-color:var(--uj-teal);"><span class="source-die-label" style="color:var(--uj-teal);">Extra Career Die</span><span class="summary-trait-die" style="font-size:1.1rem;color:var(--uj-teal);">' + esc(effExtraCaDie) + '</span><span style="font-size:0.78rem;color:var(--uj-text-dim);">' + esc(extraCa.name) + "</span></div>" : "") + (extraTy && effExtraTyDie ? '<div class="summary-source-die-item" style="border-color:var(--uj-teal);"><span class="source-die-label" style="color:var(--uj-teal);">Extra Type Die</span><span class="summary-trait-die" style="font-size:1.1rem;color:var(--uj-teal);">' + esc(effExtraTyDie) + '</span><span style="font-size:0.78rem;color:var(--uj-text-dim);">' + esc(extraTy.name) + "</span></div>" : "") + "</div>";
-      html += '<div class="summary-section summary-skills-section"><div class="summary-section-title">Skills</div><table class="skills-table"><thead><tr><th class="skill-name-col">Skill</th><th class="skill-die-col" title="Species die">Species</th><th class="skill-die-col" title="Type die">Type</th><th class="skill-die-col" title="Career die">Career</th>' + (extraCa ? '<th class="skill-die-col" title="Extra Career die" style="color:var(--uj-teal);">+Career<br><span style="font-size:0.68rem;font-weight:400;">' + esc(extraCa.name) + "</span></th>" : "") + (extraTy ? '<th class="skill-die-col" title="Extra Type die" style="color:var(--uj-teal);">+Type<br><span style="font-size:0.68rem;font-weight:400;">' + esc(extraTy.name) + "</span></th>" : "") + '<th class="skill-total-col">Dice Pool</th></tr></thead><tbody>';
+      html += '<div class="summary-section summary-skills-section"><div class="summary-section-title">Skills</div><table class="skills-table"><thead><tr><th class="skill-name-col">Skill</th><th class="skill-die-col" title="Species die">Species' + (sp ? '<br><span style="font-size:0.68rem;font-weight:400;">' + esc(sp.name) + "</span>" : "") + '</th><th class="skill-die-col" title="Type die">Type' + (ty ? '<br><span style="font-size:0.68rem;font-weight:400;">' + esc(ty.name) + "</span>" : "") + '</th><th class="skill-die-col" title="Career die">Career' + (ca ? '<br><span style="font-size:0.68rem;font-weight:400;">' + esc(ca.name) + "</span>" : "") + "</th>" + (extraCa ? '<th class="skill-die-col" title="Extra Career die" style="color:var(--uj-teal);">+Career<br><span style="font-size:0.68rem;font-weight:400;">' + esc(extraCa.name) + "</span></th>" : "") + (extraTy ? '<th class="skill-die-col" title="Extra Type die" style="color:var(--uj-teal);">+Type<br><span style="font-size:0.68rem;font-weight:400;">' + esc(extraTy.name) + "</span></th>" : "") + '<th class="skill-total-col">Dice Pool</th></tr></thead><tbody>';
       CORE_SKILLS.forEach(function(skillName) {
         var spDie = itemGrantsSkill(sp, skillName) ? effSpeciesDie : "";
         var tyDie = itemGrantsSkill(ty, skillName) ? effTypeDie : "";

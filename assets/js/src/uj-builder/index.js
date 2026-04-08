@@ -501,9 +501,11 @@
     var xpSpent  = state.purchasedGifts.reduce(function(s, p) { return s + (p.xp_cost || 10); }, 0);
     var xpAvail  = xpTotal - xpSpent;
 
-    var sp = (d.species || []).find(function(x) { return x.id == state.speciesId; });
-    var ty = (d.types   || []).find(function(x) { return x.id == state.typeId;   });
-    var ca = (d.careers || []).find(function(x) { return x.id == state.careerId; });
+    var sp      = (d.species  || []).find(function(x) { return x.id == state.speciesId;      });
+    var ty      = (d.types    || []).find(function(x) { return x.id == state.typeId;         });
+    var ca      = (d.careers  || []).find(function(x) { return x.id == state.careerId;       });
+    var extraCa = state.extraCareerId ? ((d.careers || []).find(function(x) { return x.id == state.extraCareerId; }) || null) : null;
+    var extraTy = state.extraTypeId   ? ((d.types   || []).find(function(x) { return x.id == state.extraTypeId;   }) || null) : null;
     var subtitle = [sp ? sp.name : '', ty ? ty.name : '', ca ? ca.name : ''].filter(Boolean).join(' / ');
 
     // Build set of slugs already granted through species / type / career at creation
@@ -647,12 +649,21 @@
     if (state.extraCareerId !== null) IMPROVED_TRAITS.push('Extra Career');
     if (state.extraTypeId   !== null) IMPROVED_TRAITS.push('Extra Type');
 
+    function improvedTraitDisplayName(trait) {
+      if (trait === 'Species'       && sp)      return 'Improved Species: '       + sp.name;
+      if (trait === 'Type'          && ty)      return 'Improved Type: '          + ty.name;
+      if (trait === 'Career'        && ca)      return 'Improved Career: '        + ca.name;
+      if (trait === 'Extra Career'  && extraCa) return 'Improved Career: '        + extraCa.name;
+      if (trait === 'Extra Type'    && extraTy) return 'Improved Type: '          + extraTy.name;
+      return 'Improved ' + trait;
+    }
+
     var expandedGifts = [];
     allGifts.forEach(function(g) {
       if (g.slug === 'improved-trait') {
         IMPROVED_TRAITS.forEach(function(trait) {
           expandedGifts.push(Object.assign({}, g, {
-            name:            'Improved ' + trait,
+            name:            improvedTraitDisplayName(trait),
             slug:            'improved-trait-' + trait.toLowerCase().replace(/\s+/g, '-'),
             subtitle:        'Improved Trait [' + trait + ']',
             requires_text:   null,
@@ -1555,9 +1566,9 @@
       '<table class="skills-table">' +
         '<thead><tr>' +
           '<th class="skill-name-col">Skill</th>' +
-          '<th class="skill-die-col" title="Species die">Species</th>' +
-          '<th class="skill-die-col" title="Type die">Type</th>' +
-          '<th class="skill-die-col" title="Career die">Career</th>' +
+          '<th class="skill-die-col" title="Species die">Species' + (sp ? '<br><span style="font-size:0.68rem;font-weight:400;">' + esc(sp.name) + '</span>' : '') + '</th>' +
+          '<th class="skill-die-col" title="Type die">Type' + (ty ? '<br><span style="font-size:0.68rem;font-weight:400;">' + esc(ty.name) + '</span>' : '') + '</th>' +
+          '<th class="skill-die-col" title="Career die">Career' + (ca ? '<br><span style="font-size:0.68rem;font-weight:400;">' + esc(ca.name) + '</span>' : '') + '</th>' +
           (extraCa ? '<th class="skill-die-col" title="Extra Career die" style="color:var(--uj-teal);">+Career<br><span style="font-size:0.68rem;font-weight:400;">' + esc(extraCa.name) + '</span></th>' : '') +
           (extraTy ? '<th class="skill-die-col" title="Extra Type die" style="color:var(--uj-teal);">+Type<br><span style="font-size:0.68rem;font-weight:400;">' + esc(extraTy.name) + '</span></th>' : '') +
           '<th class="skill-total-col">Dice Pool</th>' +
