@@ -3301,6 +3301,41 @@ body.cg-print-window .cg-summary-skills tr:nth-child(odd) td {
 body.cg-print-window .cg-summary-skills tr {
   break-inside: avoid;
 }
+body.cg-print-window .summary-skills-full {
+  margin-top: 10pt;
+  border-top: 0.7pt solid #d4c89a;
+  padding-top: 6pt;
+  break-inside: auto;
+}
+body.cg-print-window .summary-skills-full .cg-summary-skills {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9pt;
+  margin-bottom: 5pt;
+  break-inside: avoid;
+  width: 100%;
+}
+body.cg-print-window .summary-skills-full .cg-summary-skills th {
+  background: #f5f0e8;
+  font-family: Georgia, serif;
+  font-size: 7.5pt;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #1a1410;
+  border: 0.5pt solid #c9a84c;
+  padding: 3pt 5pt;
+  text-align: left;
+}
+body.cg-print-window .summary-skills-full .cg-summary-skills td {
+  border: 0.5pt solid #d4c89a;
+  padding: 2pt 5pt;
+  font-size: 9pt;
+  color: #2c2316;
+}
+body.cg-print-window .summary-skills-full .cg-summary-skills tr:nth-child(odd) td {
+  background: #faf7f0;
+}
 body.cg-print-window .summary-equipment {
   break-inside: avoid;
   margin-top: 8pt;

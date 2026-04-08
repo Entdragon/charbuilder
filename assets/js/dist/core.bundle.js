@@ -10476,6 +10476,7 @@
             this._speciesProfile = p;
             this._refreshGiftsArea();
             this._refreshBattleArea();
+            this._refreshTrappingsArea();
           });
         }
         if (ally.career_id) {
@@ -10502,6 +10503,7 @@
                 this._speciesProfile = p;
                 this._refreshGiftsArea();
                 this._refreshBattleArea();
+                this._refreshTrappingsArea();
               });
             }
             if (ally.career_id)
@@ -10614,12 +10616,14 @@
       this._speciesProfile = null;
       this._refreshGiftsArea();
       this._refreshBattleArea();
+      this._refreshTrappingsArea();
       if (!speciesId)
         return;
       api_default.fetchProfile(speciesId).then((p) => {
         this._speciesProfile = p;
         this._refreshGiftsArea();
         this._refreshBattleArea();
+        this._refreshTrappingsArea();
       });
     },
     _onCareerChange(careerId) {
@@ -10627,6 +10631,7 @@
       this._careerProfile = null;
       this._refreshGiftsArea();
       this._refreshBattleArea();
+      this._refreshTrappingsArea();
       this._refreshMoneyArea();
       if (!careerId)
         return;
@@ -10637,6 +10642,7 @@
         this._careerProfile = p;
         this._refreshGiftsArea();
         this._refreshBattleArea();
+        this._refreshTrappingsArea();
         this._refreshMoneyArea();
       });
     },
@@ -10933,18 +10939,67 @@
       });
       return ids;
     },
+    /**
+     * Collects every gift ID the ally currently has as a Set of strings.
+     * Used to check passive effects (Resolve → Will in Soak, Natural Armor → Species in Soak, etc.)
+     */
+    _collectAllyGiftIds() {
+      const sp = this._speciesProfile || {};
+      const cp = this._careerProfile || {};
+      const ally = this._getData();
+      const ids = /* @__PURE__ */ new Set();
+      ["gift_id_1", "gift_id_2", "gift_id_3"].forEach((k) => {
+        if (sp[k] && String(sp[k]) !== "0")
+          ids.add(String(sp[k]));
+        if (cp[k] && String(cp[k]) !== "0")
+          ids.add(String(cp[k]));
+      });
+      (Array.isArray(ally.improved_gift_ids) ? ally.improved_gift_ids : []).forEach((id) => {
+        if (id)
+          ids.add(String(id));
+      });
+      return ids;
+    },
+    /**
+     * Build the soak parts array and note text from traits + armor + passive gifts.
+     * Mirrors the main character logic in battle/index.js.
+     *  - Gift 21 (Resolve):      add Will die
+     *  - Gift 79 (Natural Armor): add Species die
+     *  - Gift 133 (Armored Fighter): raise each armour soak die one step
+     */
+    _buildAllysoakParts(tr, armor) {
+      const DIE_STEPS2 = ["d4", "d6", "d8", "d10", "d12"];
+      const raiseDie2 = (d) => {
+        const idx = DIE_STEPS2.indexOf((d || "").toLowerCase());
+        return idx >= 0 && idx < DIE_STEPS2.length - 1 ? DIE_STEPS2[idx + 1] : d;
+      };
+      const giftIds = this._collectAllyGiftIds();
+      const armoredFighter = giftIds.has("133");
+      const parts = [tr.body];
+      const noteExtra = [];
+      armor.forEach((a) => {
+        if (a.soak)
+          parts.push(armoredFighter ? raiseDie2(a.soak) : a.soak);
+      });
+      if (giftIds.has("21") && tr.will) {
+        parts.push(tr.will);
+        noteExtra.push("Will");
+      }
+      if (giftIds.has("79") && tr.trait_species) {
+        parts.push(tr.trait_species);
+        noteExtra.push("Species");
+      }
+      const noteBase = "Body" + (armor.length ? " + Armour" : "");
+      const note = noteExtra.length ? `${noteBase} + ${noteExtra.join(" + ")}` : noteBase;
+      return { soakPool: parts.join(" + "), soakNote: note };
+    },
     _buildBattleHtml() {
       const sp = this._speciesProfile || {};
       const cp = this._careerProfile || {};
       const tr = this._resolveAllyTraits();
       const weapons = this._deriveAllyWeapons(sp, cp, tr);
       const armor = this._deriveAllyArmor(sp, cp);
-      let soakParts = [tr.body];
-      armor.forEach((a) => {
-        if (a.soak)
-          soakParts.push(a.soak);
-      });
-      const soak = soakParts.join(" + ");
+      const { soakPool, soakNote } = this._buildAllysoakParts(tr, armor);
       const initP = `${tr.speed} + ${tr.mind}`;
       const dodgeP = tr.speed;
       let html = `
@@ -10963,8 +11018,8 @@
         </div>
         <div class="cg-ally-pool">
           <span class="cg-ally-pool-label">Soak</span>
-          <strong class="cg-ally-pool-dice">${esc(soak)}</strong>
-          <span class="cg-ally-pool-note">(Body + Armour)</span>
+          <strong class="cg-ally-pool-dice">${esc(soakPool)}</strong>
+          <span class="cg-ally-pool-note">(${esc(soakNote)})</span>
         </div>
       </div>`;
       if (weapons.length) {
@@ -11321,12 +11376,7 @@
       const tr = this._resolveAllyTraits();
       const weapons = this._deriveAllyWeapons(sp, cp, tr);
       const armor = this._deriveAllyArmor(sp, cp);
-      let soakParts = [tr.body];
-      armor.forEach((a) => {
-        if (a.soak)
-          soakParts.push(a.soak);
-      });
-      const soak = soakParts.join(" + ");
+      const { soakPool: soak, soakNote } = this._buildAllysoakParts(tr, armor);
       const initP = `${tr.speed} + ${tr.mind}`;
       const dodgeP = tr.speed;
       const trappings = Array.isArray(ally.trappings_list) ? ally.trappings_list : [];
@@ -11407,7 +11457,7 @@
           <tbody>
             <tr><td>Initiative</td><td>${esc(initP)}</td><td>Speed + Mind</td></tr>
             <tr><td>Dodge</td><td>${esc(dodgeP)}</td><td>Speed</td></tr>
-            <tr><td>Soak</td><td>${esc(soak)}</td><td>Body + Armour</td></tr>
+            <tr><td>Soak</td><td>${esc(soak)}</td><td>${esc(soakNote)}</td></tr>
           </tbody>
         </table>
         ${weaponRows ? `
@@ -11423,15 +11473,6 @@
           <tbody>${armorRows}</tbody>
         </table>` : ""}
       </div>
-
-      ${skillsRows.length ? `
-      <div class="summary-section">
-        <h3>Skills</h3>
-        <table class="cg-battle-summary-table">
-          <thead><tr><th>Skill</th><th>${printSpLabel}</th><th>${printCpLabel}</th><th>Dice Pool</th></tr></thead>
-          <tbody>${skillsRows.join("")}</tbody>
-        </table>
-      </div>` : ""}
 
     </div>
     <div class="summary-col-right">
@@ -11450,6 +11491,16 @@
 
     </div>
   </div>
+
+  ${skillsRows.length ? `
+  <div class="summary-section summary-skills-full">
+    <h3>Skills</h3>
+    <table class="cg-summary-skills">
+      <thead><tr><th>Skill</th><th>${printSpLabel}</th><th>${printCpLabel}</th><th>Dice Pool</th></tr></thead>
+      <tbody>${skillsRows.join("")}</tbody>
+    </table>
+  </div>` : ""}
+
 </div>`;
     },
     // ── Language helper ──────────────────────────────────────────────────────────

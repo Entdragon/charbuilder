@@ -407,6 +407,15 @@ body.cg-print-window {
     tr { break-inside: avoid; }
   }
 
+  // Full-width Skills section (below the two-column layout)
+  .summary-skills-full {
+    margin-top: 10pt;
+    border-top: 0.7pt solid #d4c89a;
+    padding-top: 6pt;
+    break-inside: auto;
+    .cg-summary-skills { @include battle-table-base; width: 100%; }
+  }
+
   // Equipment & Trappings
   .summary-equipment { break-inside: avoid; margin-top: 8pt; }
   .summary-equipment ul { margin: 2pt 0; }
