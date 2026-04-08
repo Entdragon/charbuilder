@@ -22,13 +22,19 @@ require __DIR__ . '/../layout-head.php';
 
   <div style="background:var(--ic-surface); border:1px solid var(--ic-border-warm); border-radius:var(--ic-radius-lg); padding:1.5rem;">
     <h2 style="font-family:'Cinzel',serif; font-size:0.9rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--ic-gold); margin:0 0 0.75rem;">Building a Character</h2>
-    <ol style="margin:0; padding-left:1.3rem; line-height:2; color:var(--ic-text-muted); font-size:0.95rem;">
-      <li>Choose a <a href="/ic/species">Species</a> — grants trait dice &amp; starting traits</li>
-      <li>Choose a <a href="/ic/careers">Career</a> — major or minor, grants skills &amp; gifts</li>
-      <li>Choose additional <a href="/ic/gifts">Gifts</a> based on career allowances</li>
-      <li>Allocate trait dice among Body, Speed, Mind &amp; Will</li>
-      <li>Record starting <a href="/ic/equipment">Equipment</a> and <a href="/ic/weapons">Weapons</a></li>
-      <li>Open the <a href="/builder">Character Builder</a> to save your character</li>
+    <ol style="margin:0; padding-left:1.3rem; line-height:1.85; color:var(--ic-text-muted); font-size:0.92rem;">
+      <li>Choose your <strong style="color:var(--ic-text);">Traits</strong> — two d8s, three d6s, one d4</li>
+      <li>Choose a <a href="/ic/species">Species</a> — fill in your Species <a href="/ic/gifts">Gifts</a></li>
+      <li>Choose a <a href="/ic/careers">Career</a> — fill in your Career <a href="/ic/gifts">Gifts</a></li>
+      <li>Choose your <strong style="color:var(--ic-text);">Personality</strong> — grants a bonus d12</li>
+      <li>Choose your <strong style="color:var(--ic-text);">Local Knowledge</strong> — ask your Game Host</li>
+      <li>Add <strong style="color:var(--ic-text);">thirteen Marks</strong> to <a href="/ic/skills">Skills</a> — up to 3 per skill</li>
+      <li>Choose your <a href="/ic/gifts">Gifts</a> — 3 Species, 3 Career, 3 of your choice</li>
+      <li>Choose a <strong style="color:var(--ic-text);">Name</strong></li>
+      <li>Choose a <strong style="color:var(--ic-text);">Motto</strong></li>
+      <li>Choose a <strong style="color:var(--ic-text);">Goal</strong></li>
+      <li>Choose your <a href="/ic/equipment">Equipment</a> — Career starting gear, plus additions</li>
+      <li>Fill out the <strong style="color:var(--ic-text);">Battle Array</strong> — Initiative, Stride, Attacks, Defenses &amp; Soaks</li>
     </ol>
   </div>
 

@@ -31,7 +31,7 @@ require __DIR__ . '/../layout-head.php';
       <li>Choose a <a href="/uj/types">Type</a> — grants 3 skills, 1 gift, soaks &amp; gear</li>
       <li>Choose a <a href="/uj/careers">Career</a> — grants 3 skills, 2 gifts &amp; gear</li>
       <li>Assign trait dice: 2 best → d8, 1 worst → d4, rest → d6</li>
-      <li>Pick a <a href="/uj/gifts">Personality gift</a> (any basic gift)</li>
+      <li>Pick a <a href="/uj/gifts">Personality gift</a></li>
       <li>Note your <a href="/uj/soaks">Soaks</a> and starting gear</li>
     </ol>
   </div>
