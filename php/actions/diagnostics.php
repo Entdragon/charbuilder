@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/password.php';
 
 function cg_ping(): void {
     cg_json(['success' => true, 'data' => 'pong']);
@@ -110,6 +111,60 @@ function cg_run_diagnostics(): void {
     } catch (Throwable $e) {
         $results['probe_species_traits'] = 'error: ' . $e->getMessage();
     }
+
+    // ── Auth diagnostics ──────────────────────────────────────────────────────
+    // Check users table is reachable and report the hash format of a sample user.
+    // This helps diagnose "can't log in" issues on production without exposing
+    // any actual credentials or passwords.
+    try {
+        $uRow = cg_query_one("SELECT COUNT(*) AS cnt FROM `{$p}users`");
+        $results['auth_users_count'] = (int)($uRow['cnt'] ?? 0);
+    } catch (Throwable $e) {
+        $results['auth_users_count'] = 'error: ' . $e->getMessage();
+    }
+
+    try {
+        $sample = cg_query_one("SELECT ID, user_pass FROM `{$p}users` ORDER BY ID LIMIT 1");
+        if ($sample) {
+            $hash   = $sample['user_pass'] ?? '';
+            $prefix = substr($hash, 0, 4);
+            // Classify the hash format without exposing any credentials
+            if ($prefix === '$wp$') {
+                $fmt = 'wp-bcrypt ($wp$)';
+            } elseif ($prefix === '$2y$' || $prefix === '$2a$' || $prefix === '$2b$') {
+                $fmt = 'native-bcrypt (' . $prefix . ')';
+            } elseif ($prefix === '$P$' || $prefix === '$H$') {
+                $fmt = 'phpass (' . $prefix . ')';
+            } elseif (strlen($hash) === 32 && ctype_xdigit($hash)) {
+                $fmt = 'legacy-md5';
+            } else {
+                $fmt = 'unknown prefix: ' . $prefix;
+            }
+            $results['auth_sample_hash_format'] = $fmt;
+            $results['auth_can_verify_phpass']   = function_exists('cg_check_password') ? 'yes' : 'no';
+        } else {
+            $results['auth_sample_hash_format'] = 'no users found';
+        }
+    } catch (Throwable $e) {
+        $results['auth_sample_hash_format'] = 'error: ' . $e->getMessage();
+    }
+
+    // Check PHP's password_verify is available (required for bcrypt hashes)
+    $results['auth_password_verify_available'] = function_exists('password_verify') ? 'yes' : 'no';
+
+    // Check PHP version — password_hash bcrypt requires >= 5.5
+    $results['auth_php_version'] = PHP_VERSION;
+
+    // Check session is working
+    $results['auth_session_status'] = match(session_status()) {
+        PHP_SESSION_DISABLED => 'disabled',
+        PHP_SESSION_NONE     => 'not started',
+        PHP_SESSION_ACTIVE   => 'active',
+        default              => 'unknown',
+    };
+
+    // Check proxy config (without revealing the secret)
+    $results['auth_proxy_configured'] = (CG_PROXY_URL && CG_PROXY_SECRET) ? 'yes' : 'no';
 
     cg_json(['success' => true, 'data' => $results]);
 }

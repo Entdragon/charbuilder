@@ -49,18 +49,37 @@ function cg_login_user(): void {
         [$username, $username]
     );
 
-    $authenticated = $row && cg_check_password($password, $row['user_pass']);
-
-    // Fallback: if local check fails for a $wp$ hash, ask WordPress directly.
-    // Mirrors the Node.js verifyViaProxy() behaviour.
-    if (!$authenticated && $row && str_starts_with($row['user_pass'] ?? '', '$wp$')) {
-        $authenticated = cg_wp_auth_check($username, $password);
-    }
-
-    if (!$authenticated) {
+    if (!$row) {
+        error_log("[CG auth] login failed — user not found: '{$username}'");
         cg_json(['success' => false, 'data' => 'Invalid username or password.']);
         return;
     }
+
+    $hash   = $row['user_pass'] ?? '';
+    $prefix = substr($hash, 0, 4);
+    error_log("[CG auth] login attempt — user ID={$row['ID']} hash_prefix='{$prefix}'");
+
+    $authenticated = cg_check_password($password, $hash);
+
+    // Fallback: if the local check fails for any reason, ask WordPress directly
+    // via the proxy.  This handles future hash format changes automatically and
+    // mirrors the Node.js verifyViaProxy() behaviour.  cg_wp_auth_check() is a
+    // no-op when CG_PROXY_URL / CG_PROXY_SECRET are not configured.
+    if (!$authenticated) {
+        error_log("[CG auth] local password check failed for user ID={$row['ID']}, trying proxy");
+        $authenticated = cg_wp_auth_check($username, $password);
+        if ($authenticated) {
+            error_log("[CG auth] proxy auth succeeded for user ID={$row['ID']}");
+        }
+    }
+
+    if (!$authenticated) {
+        error_log("[CG auth] all auth methods failed for user ID={$row['ID']} hash_prefix='{$prefix}'");
+        cg_json(['success' => false, 'data' => 'Invalid username or password.']);
+        return;
+    }
+
+    error_log("[CG auth] login succeeded for user ID={$row['ID']} login='{$row['user_login']}'");
 
     $meta = cg_query_one(
         "SELECT meta_value FROM {$p}usermeta
