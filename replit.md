@@ -90,22 +90,25 @@ Direct MySQL (used automatically on the live server where firewall is not an iss
 - `npm run watch:core` / `npm run watch:css` – Watch modes
 
 ## Deploy to Live
+
+Production `.htaccess` routes:
+- `/builder` → `builder.php`  (not index.php — builder.php is the IC builder page)
+- `/` → `home.php`
+- `/ic/*` → `ic.php`, `/uj/*` → `uj.php`, `/ajax.php` → `ajax.php`
+- `php/router.php` is **Replit-only** — do NOT copy to live
+
 ```bash
 cd ~/charbuilder && git pull
 
-# PHP backend
-cp php/ajax.php              ~/public_html/characters/ajax.php
-cp php/includes/db.php       ~/public_html/characters/includes/db.php
-cp php/includes/auth.php     ~/public_html/characters/includes/auth.php
-cp php/includes/config.php   ~/public_html/characters/includes/config.php
-cp php/includes/password.php ~/public_html/characters/includes/password.php
-cp php/actions/*.php         ~/public_html/characters/actions/
+# PHP pages & backend
+cp php/ajax.php   ~/public_html/ajax.php
+cp php/home.php   ~/public_html/home.php
+cp php/index.php  ~/public_html/builder.php   # NOTE: index.php → builder.php on live
+cp -r php/uj php/actions php/includes ~/public_html/
 
 # Frontend assets (only if JS/CSS changed)
-cp assets/js/dist/core.bundle.js ~/public_html/characters/assets/js/dist/
-cp assets/css/dist/core.css      ~/public_html/characters/assets/css/dist/
-
-# php/router.php is Replit-only — do NOT copy to live
+cp -r assets/js/dist ~/public_html/assets/js/dist
+cp assets/css/dist/core.css ~/public_html/assets/css/dist/core.css
 ```
 
 ## Spells Table
