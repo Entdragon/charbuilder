@@ -1,0 +1,40 @@
+[libraryo@silberhorn charbuilder]$
+[libraryo@silberhorn charbuilder]$ cp php/uj/pages/builder.php     ~/public_html/uj/pages/builder.php
+[libraryo@silberhorn charbuilder]$ cp assets/js/dist/uj-builder.js ~/public_html/assets/js/dist/uj-builder.js
+[libraryo@silberhorn charbuilder]$ cd ~/charbuilder && git pull
+remote: Enumerating objects: 26, done.
+remote: Counting objects: 100% (26/26), done.
+remote: Compressing objects: 100% (5/5), done.
+remote: Total 16 (delta 9), reused 16 (delta 9), pack-reused 0 (from 0)
+Unpacking objects: 100% (16/16), 124.38 KiB | 1.83 MiB/s, done.
+From https://github.com/Entdragon/charbuilder
+   b611a954..ec301ea4  master     -> origin/master
+Updating b611a954..ec301ea4
+Fast-forward
+ assets/css/dist/core.css                |  3743 -----------------------------
+ assets/js/dist/core.bundle.js           | 12398 ----------------------------------------------------------------------------------------------
+ assets/js/dist/core.bundle.js.map       |     7 -
+ assets/js/dist/uj-builder.js            |   792 ------
+ assets/js/dist/uj-builder.js.map        |     7 -
+ attached_assets/image_1775646871847.png |   Bin 0 -> 130205 bytes
+ php/actions/character.php               |    38 +-
+ php/ajax.php                            |     1 +
+ php/index.php                           |   652 ++++-
+ 9 files changed, 627 insertions(+), 17011 deletions(-)
+ delete mode 100644 assets/css/dist/core.css
+ delete mode 100644 assets/js/dist/core.bundle.js
+ delete mode 100644 assets/js/dist/core.bundle.js.map
+ delete mode 100644 assets/js/dist/uj-builder.js
+ delete mode 100644 assets/js/dist/uj-builder.js.map
+ create mode 100644 attached_assets/image_1775646871847.png
+[libraryo@silberhorn charbuilder]$ cp php/ajax.php ~/public_html/ajax.php
+[libraryo@silberhorn charbuilder]$ cp php/index.php ~/public_html/index.php
+[libraryo@silberhorn charbuilder]$ cp -r php/actions php/includes ~/public_html/
+[libraryo@silberhorn charbuilder]$ cd ~/charbuilder && git pull && \
+> cp php/ajax.php ~/public_html/ajax.php && \
+> cp php/index.php ~/public_html/index.php && \
+> cp -r php/actions php/includes ~/public_html/ && \
+> echo "Deploy complete"
+Already up to date.
+Deploy complete
+[libraryo@silberhorn charbuilder]$
