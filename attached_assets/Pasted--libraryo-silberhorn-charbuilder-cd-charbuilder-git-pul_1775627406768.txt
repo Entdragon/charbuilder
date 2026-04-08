@@ -1,0 +1,32 @@
+[libraryo@silberhorn charbuilder]$ cd ~/charbuilder && git pull && cp assets/js/dist/core.bundle.js ~/public_html/characters/assets/js/dist/ &&cp assets/css/dist/core.css ~/public_html/characters/assets/css/dist/
+remote: Enumerating objects: 17, done.
+remote: Counting objects: 100% (17/17), done.
+remote: Compressing objects: 100% (3/3), done.
+remote: Total 10 (delta 7), reused 10 (delta 7), pack-reused 0 (from 0)
+Unpacking objects: 100% (10/10), 14.42 KiB | 196.00 KiB/s, done.
+From https://github.com/Entdragon/charbuilder
+   d102019c..5cc71935  master     -> origin/master
+Updating d102019c..5cc71935
+Fast-forward
+ php/actions/admin.php |   4 +-
+ php/actions/uj.php    | 585 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ php/admin.php         |  16 ++++
+ php/ajax.php          |   8 ++
+ php/router.php        |   6 ++
+ php/uj.php            | 107 +++++++++++++++++++++
+ 6 files changed, 724 insertions(+), 2 deletions(-)
+ create mode 100644 php/actions/uj.php
+ create mode 100644 php/uj.php
+[libraryo@silberhorn charbuilder]$ cp assets/js/dist/core.bundle.js ~/public_html/characters/assets/js/dist/[libraryo@silberhorn charbuilder]$ cp assets/css/dist/core.css ~/public_html/characters/assets/css/dist/[libraryo@silberhorn charbuilder]$ cd ~/charbuilder && git pull
+Already up to date.
+[libraryo@silberhorn charbuilder]$ cp php/admin.php ~/public_html/characters/php/
+cp: cannot create regular file '/home/libraryo/public_html/characters/php/': Not a directory
+[libraryo@silberhorn charbuilder]$ cp php/actions/admin.php ~/public_html/characters/php/actions/
+cp: cannot create regular file '/home/libraryo/public_html/characters/php/actions/': No such file or directory
+[libraryo@silberhorn charbuilder]$ cp php/actions/uj.php ~/public_html/characters/php/actions/
+cp: cannot create regular file '/home/libraryo/public_html/characters/php/actions/': No such file or directory
+[libraryo@silberhorn charbuilder]$ cp php/ajax.php ~/public_html/characters/php/
+cp: cannot create regular file '/home/libraryo/public_html/characters/php/': Not a directory
+[libraryo@silberhorn charbuilder]$ cp php/uj.php ~/public_html/characters/php/
+cp: cannot create regular file '/home/libraryo/public_html/characters/php/': Not a directory
+[libraryo@silberhorn charbuilder]$
