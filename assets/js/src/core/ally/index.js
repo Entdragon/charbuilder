@@ -621,15 +621,27 @@ const AllyModule = {
     const seen = new Set();
 
     for (const profile of [sp, cp]) {
-      const list = Array.isArray(profile.trappings) ? profile.trappings : [];
+      // Species weapons are stored as weapon_1/weapon_2/weapon_3; career as trappings[]
+      const spWeapons = [profile.weapon_1, profile.weapon_2, profile.weapon_3]
+        .filter(w => w && typeof w === 'object' && w.name)
+        .map(w => ({ kind: 'weapon', name: w.name, attack_dice: w.attack_dice || '',
+                     damage_mod: w.damage_mod, range_band: w.range_band || 'Close', effect: w.effect || '' }));
+      const trappingWeapons = Array.isArray(profile.trappings)
+        ? profile.trappings.filter(t => (t.kind || t.type) === 'weapon')
+        : [];
+      const list = [...spWeapons, ...trappingWeapons];
+
       for (const t of list) {
-        if ((t.kind || t.type) !== 'weapon') continue;
         if (seen.has(t.name)) continue;
         seen.add(t.name);
-        const dmg = t.damage_mod != null ? `+${t.damage_mod}` : '';
-        // Ally has d6 for all traits; resolve attack pool simply
-        const attack = this._resolveAllyPool(t.attack_dice || '');
-        weapons.push({ name: t.name || '', attack, damage: dmg, range: t.range_band || 'Melee' });
+        const dmgMod = (t.damage_mod != null ? Number(t.damage_mod) : null);
+        // Fallback: parse "Damage +N" from effect when damage_mod is null
+        const effectM   = dmgMod === null ? (t.effect || '').match(/\b(?:Damage|Dmg)\s*\+(-?\d+)/i) : null;
+        const effectDmg = effectM ? parseInt(effectM[1], 10) : null;
+        const resolved  = dmgMod !== null ? dmgMod : effectDmg;
+        const dmg       = resolved !== null ? (resolved >= 0 ? `+${resolved}` : `${resolved}`) : '';
+        const attack    = this._resolveAllyPool(t.attack_dice || '');
+        weapons.push({ name: t.name || '', attack, damage: dmg, range: t.range_band || 'Close' });
       }
     }
     return weapons;

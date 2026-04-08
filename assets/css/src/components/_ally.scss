@@ -39,28 +39,29 @@
 // ── Dark info boxes ──────────────────────────────────────────────────────────
 // These boxes sit on the parchment modal background but have their own
 // dark surface — all text inside must be light-coloured.
+// !important is required to win over WordPress theme selectors that set
+// a global dark color on descendant elements.
 .cg-ally-box {
-  background: var(--cg-surface, #242019);
-  border: 1px solid var(--cg-border, rgba(201,168,76,0.22));
+  background: #242019 !important;
+  border: 1px solid rgba(201,168,76,0.22) !important;
   border-radius: 6px;
   padding: 1em 1.2em;
-  // Base colour for all text inside dark boxes:
-  color: var(--cg-text-light, #e8dcc4);
+  color: #e8dcc4 !important;
 }
 
 .cg-ally-subhead {
-  font-size: 1em;
-  font-weight: 700;
-  color: var(--cg-gold, #c9a84c);
-  margin: 0 0 0.8em 0;
-  display: flex;
+  font-size: 1em !important;
+  font-weight: 700 !important;
+  color: #c9a84c !important;
+  margin: 0 0 0.8em 0 !important;
+  display: flex !important;
   align-items: baseline;
   gap: 0.5em;
 }
 
 .cg-ally-note {
   font-size: 0.85em;
-  color: var(--cg-text-dim, #9a8a6a);
+  color: #9a8a6a !important;
   font-style: italic;
   margin: 0;
 }
@@ -76,7 +77,7 @@
 
 .cg-ally-label {
   font-size: 0.82em;
-  color: var(--cg-text-dim, #9a8a6a);
+  color: #9a8a6a !important;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -86,10 +87,10 @@
 .cg-ally-select,
 .cg-ally-money-input {
   width: 100%;
-  background: rgba(0,0,0,0.35);
-  border: 1px solid var(--cg-border, rgba(201,168,76,0.22));
+  background: rgba(0,0,0,0.45) !important;
+  border: 1px solid rgba(201,168,76,0.22) !important;
   border-radius: 4px;
-  color: var(--cg-text-light, #e8dcc4);
+  color: #e8dcc4 !important;
   padding: 0.4em 0.6em;
   font-size: 0.93em;
   box-sizing: border-box;
@@ -98,7 +99,7 @@
 
   &:focus {
     outline: none;
-    border-color: var(--cg-gold, #c9a84c);
+    border-color: #c9a84c !important;
   }
 }
 
@@ -110,20 +111,20 @@
   width: 100%;
   min-height: 80px;
   resize: vertical;
-  background: rgba(0,0,0,0.35);
-  border: 1px solid var(--cg-border, rgba(201,168,76,0.22));
+  background: rgba(0,0,0,0.45) !important;
+  border: 1px solid rgba(201,168,76,0.22) !important;
   border-radius: 4px;
-  color: var(--cg-text-light, #e8dcc4);
+  color: #e8dcc4 !important;
   padding: 0.4em 0.6em;
   font-size: 0.93em;
   box-sizing: border-box;
   font-family: inherit;
 
-  &::placeholder { color: var(--cg-text-dim, #9a8a6a); }
+  &::placeholder { color: #9a8a6a; }
 
   &:focus {
     outline: none;
-    border-color: var(--cg-gold, #c9a84c);
+    border-color: #c9a84c !important;
   }
 }
 
@@ -143,7 +144,7 @@
 
 .cg-ally-trait-label {
   font-size: 0.78em;
-  color: var(--cg-text-dim, #9a8a6a);
+  color: #9a8a6a !important;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -151,7 +152,7 @@
 .cg-ally-trait-die {
   font-size: 1.05em;
   font-weight: 700;
-  color: var(--cg-gold, #c9a84c);
+  color: #c9a84c !important;
 }
 
 // Gifts
@@ -163,7 +164,7 @@
 
 .cg-ally-gift-label {
   font-size: 0.82em;
-  color: var(--cg-text-dim, #9a8a6a);
+  color: #9a8a6a !important;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -172,14 +173,14 @@
 
 .cg-ally-gift-item {
   font-size: 0.93em;
-  color: var(--cg-text-light, #e8dcc4);
+  color: #e8dcc4 !important;
 }
 
 .cg-ally-gift-list {
   margin: 0;
   padding-left: 1.4em;
   font-size: 0.93em;
-  color: var(--cg-text-light, #e8dcc4);
+  color: #e8dcc4 !important;
 
   li {
     margin-bottom: 0.2em;
@@ -207,26 +208,26 @@
 
 .cg-ally-pool-label {
   font-size: 0.78em;
-  color: var(--cg-text-dim, #9a8a6a);
+  color: #9a8a6a !important;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
 .cg-ally-pool-dice {
   font-size: 1.05em;
-  color: var(--cg-gold, #c9a84c);
+  color: #c9a84c !important;
 }
 
 .cg-ally-pool-note {
   font-size: 0.75em;
-  color: var(--cg-text-dim, #9a8a6a);
+  color: #9a8a6a !important;
   font-style: italic;
 }
 
 .cg-ally-table-head {
   font-size: 0.85em;
   font-weight: 600;
-  color: var(--cg-text-dim, #9a8a6a);
+  color: #9a8a6a !important;
   margin: 0.8em 0 0.3em 0;
 }
 
@@ -239,8 +240,8 @@
   th {
     text-align: left;
     padding: 0.3em 0.5em;
-    color: var(--cg-text-dim, #9a8a6a);
-    border-bottom: 1px solid var(--cg-border, rgba(201,168,76,0.22));
+    color: #9a8a6a !important;
+    border-bottom: 1px solid rgba(201,168,76,0.22);
     font-weight: 600;
     font-size: 0.85em;
     text-transform: uppercase;
@@ -250,7 +251,7 @@
   td {
     padding: 0.3em 0.5em;
     border-bottom: 1px solid rgba(201,168,76,0.10);
-    color: var(--cg-text-light, #e8dcc4);
+    color: #e8dcc4 !important;
   }
 
   tr:last-child td {
@@ -271,14 +272,14 @@
     padding: 0.25em 0;
     border-bottom: 1px solid rgba(201,168,76,0.10);
     font-size: 0.93em;
-    color: var(--cg-text-light, #e8dcc4);
+    color: #e8dcc4 !important;
 
     &:last-child { border-bottom: none; }
   }
 }
 
 .cg-ally-trapping-auto {
-  color: var(--cg-text-dim, #9a8a6a) !important;
+  color: #9a8a6a !important;
   font-style: italic;
 }
 
@@ -291,7 +292,7 @@
 
 .cg-ally-money-label {
   font-size: 0.85em;
-  color: var(--cg-text-dim, #9a8a6a);
+  color: #9a8a6a !important;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -320,13 +321,13 @@
 }
 
 .cg-ally-loading {
-  color: var(--cg-text-dim, #9a8a6a);
+  color: #9a8a6a !important;
   font-style: italic;
   font-size: 0.9em;
 }
 
 .cg-ally-empty {
-  color: var(--cg-text-dim, #9a8a6a);
+  color: #9a8a6a !important;
   font-style: italic;
   font-size: 0.9em;
   margin: 0.5em 0;

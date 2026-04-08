@@ -253,7 +253,7 @@ const TrappingsAPI = {
         armor_dice:  t.armor_dice  || '',
         cover_dice:  t.cover_dice  || '',
         attack_dice: t.attack_dice || '',
-        damage_mod:  t.damage_mod  || 0,
+        damage_mod:  t.damage_mod != null ? Number(t.damage_mod) : null,
         range_band:  t.range_band  || 'Melee',
         parry_die:   t.parry_die   || '',
         effect:      t.effect      || '',
@@ -349,7 +349,7 @@ const TrappingsAPI = {
         armor_dice:  t.armor_dice  || '',
         cover_dice:  t.cover_dice  || '',
         attack_dice: t.attack_dice || '',
-        damage_mod:  t.damage_mod  || 0,
+        damage_mod:  t.damage_mod != null ? Number(t.damage_mod) : null,
         range_band:  t.range_band  || 'Melee',
         parry_die:   t.parry_die   || '',
         effect:      t.effect      || '',
@@ -386,7 +386,7 @@ const TrappingsAPI = {
         const name        = isObj ? (w.name        || '') : String(w);
         const attack_dice = isObj ? (w.attack_dice || '') : '';
         const range_band  = isObj ? (w.range_band  || 'Close') : 'Close';
-        const damage_mod  = isObj ? (w.damage_mod  != null ? Number(w.damage_mod) : 0) : 0;
+        const damage_mod  = isObj ? (w.damage_mod  != null ? Number(w.damage_mod) : null) : null;
         const effect      = isObj ? (w.effect      || '') : '';
         return {
           uid:        `species-weapon-${i}`,
@@ -545,10 +545,18 @@ const TrappingsAPI = {
       const range = t.range_band || 'Close';
       const isClaw = /claw/i.test(t.name || '');
       const dmgMod = (t.damage_mod != null ? parseInt(t.damage_mod, 10) : null);
+      // Fallback: parse "Damage +N" / "Dmg +N" from effect text when damage_mod is null
+      // (some DB entries store the bonus in ct_effect rather than ct_damage_mod)
+      const effectDmgM  = dmgMod === null
+        ? (t.effect || '').match(/\b(?:Damage|Dmg)\s*\+(-?\d+)/i)
+        : null;
+      const effectDmg   = effectDmgM ? parseInt(effectDmgM[1], 10) : null;
+      const resolvedDmg = dmgMod !== null ? dmgMod : effectDmg;
+
       let damageStr = '';
-      if (dmgMod !== null) {
-        const bonus = (clawsOfIronActive && isClaw) ? dmgMod + 1 : dmgMod;
-        damageStr = `+${bonus}`;
+      if (resolvedDmg !== null) {
+        const bonus = (clawsOfIronActive && isClaw) ? resolvedDmg + 1 : resolvedDmg;
+        damageStr = bonus >= 0 ? `+${bonus}` : `${bonus}`;
       }
       return {
         _from_trappings:  true,
