@@ -1196,12 +1196,12 @@ try {
   /* ── Wizard step navigation ─────────────────────────────────────────────── */
 
   const WIZARD_STEPS = [
-    { tab: 'tab-details',     label: 'Details' },
-    { tab: 'tab-traits',      label: 'Traits & Species & Career' },
+    { tab: 'tab-traits',      label: 'Species & Career' },
     { tab: 'tab-gifts',       label: 'Gifts' },
     { tab: 'tab-skills',      label: 'Skills' },
     { tab: 'tab-trappings',   label: 'Battle & Equipment' },
     { tab: 'tab-description', label: 'Description' },
+    { tab: 'tab-details',     label: 'Details' },
     { tab: 'tab-summary',     label: 'Character Sheet' },
   ];
 
@@ -1234,6 +1234,19 @@ try {
     const tabId  = WIZARD_STEPS[idx].tab;
     const hidden = document.querySelector('.cg-tabs li[data-tab="' + tabId + '"]');
     if (hidden) hidden.click();
+
+    /* Species/career lists load via AJAX. If we land on the traits tab and the
+       selects are still empty, trigger a second hydration pass after a short
+       delay to catch the case where the first AJAX call is still in flight. */
+    if (tabId === 'tab-traits') {
+      setTimeout(() => {
+        const speciesSel = document.getElementById('cg-species');
+        if (speciesSel && speciesSel.options.length <= 1) {
+          const h2 = document.querySelector('.cg-tabs li[data-tab="tab-traits"]');
+          if (h2) h2.click();
+        }
+      }, 800);
+    }
   }
 
   document.getElementById('cg-wizard-back').addEventListener('click', () => {
@@ -1241,7 +1254,7 @@ try {
   });
 
   document.getElementById('cg-wizard-next').addEventListener('click', () => {
-    if (currentStep === 1) {
+    if (WIZARD_STEPS[currentStep].tab === 'tab-traits') {
       const speciesSel = document.getElementById('cg-species');
       if (speciesSel && !speciesSel.value) {
         alert('Please select a Species before continuing.');
@@ -1288,7 +1301,9 @@ try {
   /* ── Listen for builder opened/closed events ────────────────────────────── */
 
   document.addEventListener('cg:builder:opened', () => {
-    wizardGoToStep(0);
+    /* Small delay so species/career AJAX calls are already in flight
+       before the wizard clicks into the traits tab for hydration. */
+    setTimeout(() => wizardGoToStep(0), 200);
   });
 
   document.addEventListener('cg:builder:closed', () => {
