@@ -626,7 +626,7 @@
         var kindLabel = isCareer ? "Career" : "Type";
         var eligibleItems = candidateList.filter(function(item) {
           var required = (item.gifts || []).concat(isCareer ? [] : item.soaks || []);
-          return required.length > 0 && required.every(function(gift) {
+          return required.every(function(gift) {
             return ownedSlugSet[gift.slug || String(gift.id)];
           });
         });
@@ -1626,8 +1626,8 @@
         var aSpeedDie = state.allySpeedDie || "d6";
         var aMindDie = state.allyMindDie || "d6";
         var aWillDie = state.allyWillDie || "d6";
-        var aSpDie = allySp ? allySp.die || "d6" : "";
-        var aCaDie = allyCa ? allyCa.die || "d6" : "";
+        var aSpDie = allySp ? "d6" : "";
+        var aCaDie = allyCa ? "d6" : "";
         html += '<div style="padding:1.25rem 1.5rem;">';
         html += '<div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:1.25rem;">' + allyDiceBlock("Body", aBodyDie, false) + allyDiceBlock("Speed", aSpeedDie, false) + allyDiceBlock("Mind", aMindDie, false) + allyDiceBlock("Will", aWillDie, false) + (allySp ? allyDiceBlock("Species \xB7 " + esc(allySp.name), aSpDie, false) : "") + (allyCa ? allyDiceBlock("Career \xB7 " + esc(allyCa.name), aCaDie, false) : "") + "</div>";
         var aInitDice = [aMindDie].concat(allyGrantsSkill(allySp, "Observation") ? [aSpDie] : []).concat(allyGrantsSkill(allyCa, "Observation") ? [aCaDie] : []).filter(Boolean);

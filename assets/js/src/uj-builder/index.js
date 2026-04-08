@@ -585,10 +585,11 @@
       var candidateList    = isCareer ? (d.careers || []) : (d.types || []);
       var kindLabel        = isCareer ? 'Career' : 'Type';
 
-      // Eligible: every creation gift (and for type: soaks too) must be owned
+      // Eligible: every creation gift (and for type: soaks too) must be owned.
+      // A career/type with zero creation gifts is vacuously eligible.
       var eligibleItems = candidateList.filter(function(item) {
         var required = (item.gifts || []).concat(isCareer ? [] : (item.soaks || []));
-        return required.length > 0 && required.every(function(gift) {
+        return required.every(function(gift) {
           return ownedSlugSet[gift.slug || String(gift.id)];
         });
       });
@@ -1696,8 +1697,8 @@
       var aSpeedDie = state.allySpeedDie || 'd6';
       var aMindDie  = state.allyMindDie  || 'd6';
       var aWillDie  = state.allyWillDie  || 'd6';
-      var aSpDie    = allySp ? (allySp.die || 'd6') : '';
-      var aCaDie    = allyCa ? (allyCa.die || 'd6') : '';
+      var aSpDie    = allySp ? 'd6' : '';
+      var aCaDie    = allyCa ? 'd6' : '';
 
       html += '<div style="padding:1.25rem 1.5rem;">';
 
