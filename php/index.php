@@ -1195,13 +1195,21 @@ try {
 
   /* ── Wizard step navigation ─────────────────────────────────────────────── */
 
+  /* Official IC character creation order (rulebook steps 1-13):
+     1-3  Traits / Species / Career  → tab-traits
+     4,7  Personality / Gifts        → tab-gifts
+     5-6  Local Knowledge / Skills   → tab-skills
+     8-10 Name / Motto / Goal        → tab-details  (XP tracker = step 13, not required)
+     11-12 Equipment / Battle Array  → tab-trappings
+     optional: Description           → tab-description
+     final: Character Sheet          → tab-summary  */
   const WIZARD_STEPS = [
-    { tab: 'tab-traits',      label: 'Species & Career' },
-    { tab: 'tab-gifts',       label: 'Gifts' },
-    { tab: 'tab-skills',      label: 'Skills' },
-    { tab: 'tab-trappings',   label: 'Battle & Equipment' },
+    { tab: 'tab-traits',      label: 'Traits, Species & Career' },
+    { tab: 'tab-gifts',       label: 'Gifts & Personality' },
+    { tab: 'tab-skills',      label: 'Skills & Knowledge' },
+    { tab: 'tab-details',     label: 'Name, Goals & XP' },
+    { tab: 'tab-trappings',   label: 'Equipment & Battle Array' },
     { tab: 'tab-description', label: 'Description' },
-    { tab: 'tab-details',     label: 'Details' },
     { tab: 'tab-summary',     label: 'Character Sheet' },
   ];
 
