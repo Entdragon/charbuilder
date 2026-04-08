@@ -143,10 +143,14 @@
       personalityWord: "",
       charName: "",
       notes: "",
+      allySpeciesId: null,
+      allyCareerId: null,
+      giftChoices: {},
       currentStep: 0
     };
     var DICE_POOL = ["d4", "d6", "d6", "d6", "d6", "d8", "d8"];
-    var STEP_LABELS = ["Species", "Type", "Career", "Traits", "Personality", "Summary"];
+    var STEP_LABELS = ["Species", "Type", "Career", "Traits", "Personality", "Gifts", "Summary"];
+    var UJ_TRAITS = ["Body", "Speed", "Mind", "Will", "Type", "Species", "Career"];
     var loadingEl = document.getElementById("uj-builder-loading");
     var listScreen = document.getElementById("uj-char-list-screen");
     var wizardScreen = document.getElementById("uj-wizard-screen");
@@ -242,6 +246,9 @@
       state.personalityWord = "";
       state.charName = "";
       state.notes = "";
+      state.allySpeciesId = null;
+      state.allyCareerId = null;
+      state.giftChoices = {};
       state.currentStep = 0;
       showWizard();
     }
@@ -266,6 +273,15 @@
         state.personalityWord = c.personality_word || "";
         state.charName = c.name || "";
         state.notes = c.notes || "";
+        state.allySpeciesId = c.ally_species_id ? Number(c.ally_species_id) : null;
+        state.allyCareerId = c.ally_career_id ? Number(c.ally_career_id) : null;
+        state.giftChoices = function() {
+          try {
+            return JSON.parse(c.gift_choices || "{}") || {};
+          } catch (e) {
+            return {};
+          }
+        }();
         state.currentStep = 0;
         showWizard();
       });
@@ -331,6 +347,10 @@
           bindPersonalityStep();
           break;
         case 5:
+          container.innerHTML = buildGiftsStep();
+          bindGiftsStep();
+          break;
+        case 6:
           container.innerHTML = buildSummaryStep();
           break;
       }
@@ -451,7 +471,11 @@
       if (item.gifts && item.gifts.length) {
         html += '<div class="detail-grant-group"><div class="detail-grant-label">Gifts</div><ul class="detail-grant-list">';
         item.gifts.forEach(function(g) {
-          html += '<li class="gift-item">' + esc(g.name) + "</li>";
+          html += '<li class="gift-item">' + esc(g.name);
+          if (g.subtitle) {
+            html += '<em style="display:block;font-style:italic;color:#4ade80;font-size:0.8rem;font-weight:400;margin-top:0.1rem;">' + esc(g.subtitle) + "</em>";
+          }
+          html += "</li>";
         });
         html += "</ul></div>";
       }
@@ -595,6 +619,147 @@
           state.notes = notesEl.value;
         });
     }
+    function collectAllGifts() {
+      var d = state.allData || {};
+      var sp = (d.species || []).find(function(x) {
+        return x.id == state.speciesId;
+      }) || null;
+      var ty = (d.types || []).find(function(x) {
+        return x.id == state.typeId;
+      }) || null;
+      var ca = (d.careers || []).find(function(x) {
+        return x.id == state.careerId;
+      }) || null;
+      var result = [];
+      var slugCount = {};
+      function addGifts(arr, src) {
+        (arr || []).forEach(function(g) {
+          var slug = g.slug || String(g.id);
+          if (!slugCount[slug])
+            slugCount[slug] = 0;
+          result.push({
+            id: g.id,
+            name: g.name,
+            slug,
+            subtitle: g.subtitle || "",
+            description: g.description || "",
+            requires_text: g.requires_text || "",
+            source: src,
+            occurrence: slugCount[slug]++
+          });
+        });
+      }
+      if (sp)
+        addGifts(sp.gifts, sp.name);
+      if (ty)
+        addGifts(ty.gifts, ty.name);
+      if (ca)
+        addGifts(ca.gifts, ca.name);
+      return result;
+    }
+    function buildGiftsStep() {
+      var gifts = collectAllGifts();
+      var d = state.allData || {};
+      var html = '<div class="step-heading">Step 6 \u2014 Your Gifts</div>';
+      html += '<p style="font-size:0.88rem;color:var(--uj-text-dim);margin:0 0 1.25rem;">These gifts come with your Species, Type, and Career. Gifts marked with a choice require your input below.</p>';
+      if (gifts.length === 0) {
+        html += '<p style="color:var(--uj-text-dim);font-style:italic;">No gifts from your current selections.</p>';
+        return html;
+      }
+      gifts.forEach(function(g) {
+        var choiceKey = g.slug + "_" + g.occurrence;
+        var isImproved = g.slug === "improved-trait";
+        var isAlly = g.slug === "ally";
+        var needsChoice = isImproved || isAlly;
+        var borderColor = needsChoice ? "var(--uj-amber-border,#7c5c1e)" : "var(--uj-border-cool)";
+        html += '<div style="background:var(--uj-surface);border:1px solid ' + borderColor + ';border-radius:var(--uj-radius-lg,8px);padding:1rem 1.25rem;margin-bottom:0.75rem;">';
+        html += '<div style="display:flex;align-items:baseline;gap:0.75rem;flex-wrap:wrap;margin-bottom:0.25rem;">';
+        html += `<span style="font-family:'Cinzel',Georgia,serif;font-size:1rem;font-weight:700;color:var(--uj-amber-light);">` + esc(g.name) + "</span>";
+        html += '<span style="font-size:0.73rem;color:var(--uj-text-dim);text-transform:uppercase;letter-spacing:0.06em;">' + esc(g.source) + "</span>";
+        html += "</div>";
+        if (g.subtitle) {
+          html += '<div style="font-style:italic;color:#4ade80;font-size:0.9rem;margin-bottom:0.5rem;">' + esc(g.subtitle) + "</div>";
+        }
+        if (isAlly) {
+          var allyDesc = "You have a friend! Your friend is a Minor Typical character, with a Species and a Career, a d6 in all six Traits, and the four gifts they get from those two choices. (Your Ally does not have a Type Trait.) Your Ally also has the Soak of Distress Soak \u22124. Your friend is normally controlled by the Game Host, but the Host may let you \u201Ctake control\u201D and use the Ally as if it were your own character. Your Ally always has your best interest in mind. They would never betray you, but they might be deceived by villains. Or they might be captured and held hostage. If your Ally is killed, or otherwise leaves the game, you will have to retrain this gift.";
+          html += '<p style="font-size:0.88rem;color:var(--uj-text-muted);margin:0 0 0.9rem;line-height:1.5;">' + esc(allyDesc) + "</p>";
+          var speciesList = d.species || [];
+          var careerList = d.careers || [];
+          html += '<div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:0.5rem;">';
+          html += '<div style="flex:1;min-width:160px;">';
+          html += `<label style="font-family:'Cinzel',Georgia,serif;font-size:0.7rem;color:var(--uj-text-dim);text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:0.35rem;">Ally Species</label>`;
+          html += '<select class="field-select" id="uj-ally-species-select" style="width:100%;">';
+          html += '<option value="">\u2014 Choose Species \u2014</option>';
+          speciesList.forEach(function(sp) {
+            html += '<option value="' + esc(sp.id) + '"' + (state.allySpeciesId == sp.id ? " selected" : "") + ">" + esc(sp.name) + "</option>";
+          });
+          html += "</select></div>";
+          html += '<div style="flex:1;min-width:160px;">';
+          html += `<label style="font-family:'Cinzel',Georgia,serif;font-size:0.7rem;color:var(--uj-text-dim);text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:0.35rem;">Ally Career</label>`;
+          html += '<select class="field-select" id="uj-ally-career-select" style="width:100%;">';
+          html += '<option value="">\u2014 Choose Career \u2014</option>';
+          careerList.forEach(function(ca) {
+            html += '<option value="' + esc(ca.id) + '"' + (state.allyCareerId == ca.id ? " selected" : "") + ">" + esc(ca.name) + "</option>";
+          });
+          html += "</select></div>";
+          html += "</div>";
+        } else if (isImproved) {
+          var currentChoice = state.giftChoices[choiceKey] || "";
+          if (g.description) {
+            var desc = g.description.length > 300 ? g.description.slice(0, 297) + "\u2026" : g.description;
+            html += '<p style="font-size:0.88rem;color:var(--uj-text-muted);margin:0 0 0.75rem;line-height:1.5;">' + esc(desc) + "</p>";
+          }
+          html += '<div style="margin-top:0.25rem;">';
+          html += '<div style="font-size:0.76rem;color:var(--uj-text-dim);margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:0.08em;">Choose a trait to improve:</div>';
+          html += '<div class="uj-trait-picker" data-choice-key="' + esc(choiceKey) + '" style="display:flex;flex-wrap:wrap;gap:0.4rem;">';
+          UJ_TRAITS.forEach(function(trait) {
+            var active = currentChoice === trait;
+            html += '<label class="uj-trait-pill" data-trait="' + esc(trait) + '" style="cursor:pointer;padding:0.35rem 0.9rem;border-radius:999px;font-size:0.82rem;user-select:none;border:1px solid ' + (active ? "var(--uj-amber)" : "var(--uj-border-cool)") + ";color:" + (active ? "var(--uj-amber-light)" : "var(--uj-text-muted)") + ";background:" + (active ? "rgba(180,120,30,0.18)" : "transparent") + ';"><input type="radio" name="imptrait-' + esc(choiceKey) + '" value="' + esc(trait) + '"' + (active ? " checked" : "") + ' style="display:none;">' + esc(trait) + "</label>";
+          });
+          html += "</div></div>";
+        } else {
+          if (g.description) {
+            var desc2 = g.description.length > 280 ? g.description.slice(0, 277) + "\u2026" : g.description;
+            html += '<p style="font-size:0.88rem;color:var(--uj-text-muted);margin:0;line-height:1.5;">' + esc(desc2) + "</p>";
+          }
+        }
+        html += "</div>";
+      });
+      return html;
+    }
+    function bindGiftsStep() {
+      var container = document.getElementById("wiz-step-container");
+      if (!container)
+        return;
+      container.querySelectorAll(".uj-trait-picker").forEach(function(picker) {
+        var choiceKey = picker.dataset.choiceKey;
+        picker.querySelectorAll(".uj-trait-pill").forEach(function(pill) {
+          pill.addEventListener("click", function() {
+            var radio = pill.querySelector('input[type="radio"]');
+            if (!radio)
+              return;
+            var trait = radio.value;
+            state.giftChoices[choiceKey] = trait;
+            picker.querySelectorAll(".uj-trait-pill").forEach(function(p) {
+              var active = p.dataset.trait === trait;
+              p.style.borderColor = active ? "var(--uj-amber)" : "var(--uj-border-cool)";
+              p.style.color = active ? "var(--uj-amber-light)" : "var(--uj-text-muted)";
+              p.style.background = active ? "rgba(180,120,30,0.18)" : "transparent";
+            });
+          });
+        });
+      });
+      var allySpSel = container.querySelector("#uj-ally-species-select");
+      var allyCaSel = container.querySelector("#uj-ally-career-select");
+      if (allySpSel)
+        allySpSel.addEventListener("change", function() {
+          state.allySpeciesId = allySpSel.value ? Number(allySpSel.value) : null;
+        });
+      if (allyCaSel)
+        allyCaSel.addEventListener("change", function() {
+          state.allyCareerId = allyCaSel.value ? Number(allyCaSel.value) : null;
+        });
+    }
     function buildSummaryStep() {
       var d = state.allData || {};
       var sp = (d.species || []).find(function(x) {
@@ -624,10 +789,16 @@
         return dice;
       }
       var giftMap = {};
+      var summarySlugCount = {};
       function addGifts(arr, src) {
         (arr || []).forEach(function(g) {
-          if (!giftMap[g.id])
-            giftMap[g.id] = { name: g.name, sources: [] };
+          if (!giftMap[g.id]) {
+            var slug = g.slug || String(g.id);
+            if (!summarySlugCount[slug])
+              summarySlugCount[slug] = 0;
+            var occ = summarySlugCount[slug]++;
+            giftMap[g.id] = { name: g.name, slug, occurrence: occ, sources: [], note: "" };
+          }
           giftMap[g.id].sources.push(src);
         });
       }
@@ -639,8 +810,31 @@
         addGifts(ca.gifts, ca.name);
       giftMap["_personality"] = {
         name: "Personality [" + (state.personalityWord || "of choice") + "]",
-        sources: ["All characters"]
+        slug: "_personality",
+        occurrence: 0,
+        sources: ["All characters"],
+        note: ""
       };
+      Object.values(giftMap).forEach(function(g) {
+        var choiceKey = g.slug + "_" + g.occurrence;
+        if (g.slug === "improved-trait") {
+          var choice = state.giftChoices[choiceKey] || "";
+          g.note = choice ? "Trait: " + choice : "(no trait chosen)";
+        } else if (g.slug === "ally") {
+          var allySp2 = state.allySpeciesId ? (d.species || []).find(function(x) {
+            return x.id == state.allySpeciesId;
+          }) : null;
+          var allyCa2 = state.allyCareerId ? (d.careers || []).find(function(x) {
+            return x.id == state.allyCareerId;
+          }) : null;
+          var allyParts = [];
+          if (allySp2)
+            allyParts.push("Species: " + allySp2.name);
+          if (allyCa2)
+            allyParts.push("Career: " + allyCa2.name);
+          g.note = allyParts.length ? allyParts.join(" \xB7 ") : "(ally choices not set)";
+        }
+      });
       var soakMap = {};
       if (ty && ty.soaks) {
         ty.soaks.forEach(function(s) {
@@ -667,7 +861,7 @@
       addGear(ty, ty ? ty.name : "");
       addGear(ca, ca ? ca.name : "");
       var html = "";
-      html += '<div class="step-heading">Step 6 \u2014 Summary</div>';
+      html += '<div class="step-heading">Step 7 \u2014 Summary</div>';
       html += '<div class="summary-char-name">' + esc(state.charName || "(Unnamed)") + "</div>";
       var subtitle = [sp ? sp.name : "", ty ? ty.name : "", ca ? ca.name : ""].filter(Boolean).join(" \xB7 ");
       if (subtitle)
@@ -710,7 +904,7 @@
       html += '<div class="summary-grid">';
       html += '<div class="summary-section"><div class="summary-section-title">Gifts</div><ul class="summary-list">';
       Object.values(giftMap).forEach(function(g) {
-        html += '<li class="gift-item">' + esc(g.name) + "<small>" + esc(g.sources.join(", ")) + "</small></li>";
+        html += '<li class="gift-item">' + esc(g.name) + "<small>" + esc((g.sources || []).join(", ")) + (g.note ? " \u2014 " + g.note : "") + "</small></li>";
       });
       html += "</ul></div>";
       html += '<div class="summary-section"><div class="summary-section-title">Soaks</div><ul class="summary-list">';
@@ -758,7 +952,10 @@
         type_die: state.typeDie,
         career_die: state.careerDie,
         personality_word: state.personalityWord,
-        notes: state.notes
+        notes: state.notes,
+        ally_species_id: state.allySpeciesId !== null ? state.allySpeciesId : "",
+        ally_career_id: state.allyCareerId !== null ? state.allyCareerId : "",
+        gift_choices: JSON.stringify(state.giftChoices || {})
       };
       ajaxPost("uj_save_character", { character: payload }).then(function(res) {
         if (res.success) {

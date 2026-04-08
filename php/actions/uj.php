@@ -1166,12 +1166,12 @@ function uj_get_all_full(): void {
 
     // Fetch all junction rows
     $spSkills = uj_index_by_parent(cg_query("SELECT ss.species_id AS parent_id, sk.id, sk.name, sk.slug, sk.paired_trait, ss.sort_order FROM `{$p}uj_species_skills` ss JOIN `{$p}uj_skills` sk ON sk.id=ss.skill_id ORDER BY ss.species_id, ss.sort_order"), 'parent_id');
-    $spGifts  = uj_index_by_parent(cg_query("SELECT sg.species_id AS parent_id, g.id, g.name, g.slug, g.subtitle, g.gift_type, g.recharge, sg.sort_order FROM `{$p}uj_species_gifts` sg JOIN `{$p}uj_gifts` g ON g.id=sg.gift_id ORDER BY sg.species_id, sg.sort_order"), 'parent_id');
+    $spGifts  = uj_index_by_parent(cg_query("SELECT sg.species_id AS parent_id, g.id, g.name, g.slug, g.subtitle, g.description, g.requires_text, g.gift_type, g.recharge, sg.sort_order FROM `{$p}uj_species_gifts` sg JOIN `{$p}uj_gifts` g ON g.id=sg.gift_id ORDER BY sg.species_id, sg.sort_order"), 'parent_id');
     $tySkills = uj_index_by_parent(cg_query("SELECT ts.type_id AS parent_id, sk.id, sk.name, sk.slug, sk.paired_trait, ts.sort_order FROM `{$p}uj_types_skills` ts JOIN `{$p}uj_skills` sk ON sk.id=ts.skill_id ORDER BY ts.type_id, ts.sort_order"), 'parent_id');
-    $tyGifts  = uj_index_by_parent(cg_query("SELECT tg.type_id AS parent_id, g.id, g.name, g.slug, g.subtitle, g.gift_type, g.recharge, tg.sort_order FROM `{$p}uj_types_gifts` tg JOIN `{$p}uj_gifts` g ON g.id=tg.gift_id ORDER BY tg.type_id, tg.sort_order"), 'parent_id');
+    $tyGifts  = uj_index_by_parent(cg_query("SELECT tg.type_id AS parent_id, g.id, g.name, g.slug, g.subtitle, g.description, g.requires_text, g.gift_type, g.recharge, tg.sort_order FROM `{$p}uj_types_gifts` tg JOIN `{$p}uj_gifts` g ON g.id=tg.gift_id ORDER BY tg.type_id, tg.sort_order"), 'parent_id');
     $tysoaks  = uj_index_by_parent(cg_query("SELECT tso.type_id AS parent_id, so.id, so.name, so.slug, so.damage_negated, so.recharge, so.side_effect, so.soak_type, tso.sort_order FROM `{$p}uj_types_soaks` tso JOIN `{$p}uj_soaks` so ON so.id=tso.soak_id ORDER BY tso.type_id, tso.sort_order"), 'parent_id');
     $caSkills = uj_index_by_parent(cg_query("SELECT cs.career_id AS parent_id, sk.id, sk.name, sk.slug, sk.paired_trait, cs.sort_order FROM `{$p}uj_careers_skills` cs JOIN `{$p}uj_skills` sk ON sk.id=cs.skill_id ORDER BY cs.career_id, cs.sort_order"), 'parent_id');
-    $caGifts  = uj_index_by_parent(cg_query("SELECT cg2.career_id AS parent_id, g.id, g.name, g.slug, g.subtitle, g.gift_type, g.recharge, cg2.sort_order FROM `{$p}uj_careers_gifts` cg2 JOIN `{$p}uj_gifts` g ON g.id=cg2.gift_id ORDER BY cg2.career_id, cg2.sort_order"), 'parent_id');
+    $caGifts  = uj_index_by_parent(cg_query("SELECT cg2.career_id AS parent_id, g.id, g.name, g.slug, g.subtitle, g.description, g.requires_text, g.gift_type, g.recharge, cg2.sort_order FROM `{$p}uj_careers_gifts` cg2 JOIN `{$p}uj_gifts` g ON g.id=cg2.gift_id ORDER BY cg2.career_id, cg2.sort_order"), 'parent_id');
 
     foreach ($species as &$sp) {
         $id = (int)$sp['id'];

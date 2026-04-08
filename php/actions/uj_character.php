@@ -34,9 +34,13 @@ function uj_ensure_characters_table(): void {
         try {
             cg_exec("ALTER TABLE `{$p}uj_character_records`
                      ADD COLUMN `{$col}` VARCHAR(4) NOT NULL DEFAULT ''");
-        } catch (Throwable $e) {
-            // column already exists — ignore
-        }
+        } catch (Throwable $e) {}
+    }
+    foreach (['ally_species_id INT DEFAULT NULL', 'ally_career_id INT DEFAULT NULL', 'gift_choices TEXT DEFAULT NULL'] as $colDef) {
+        $colName = explode(' ', $colDef)[0];
+        try {
+            cg_exec("ALTER TABLE `{$p}uj_character_records` ADD COLUMN {$colDef}");
+        } catch (Throwable $e) {}
     }
 }
 
@@ -58,7 +62,9 @@ function uj_load_characters(): void {
         "SELECT id, name, species_id, type_id, career_id,
                 body_die, speed_die, mind_die, will_die,
                 species_die, type_die, career_die,
-                personality_word, created_at, updated_at
+                personality_word, notes,
+                ally_species_id, ally_career_id, gift_choices,
+                created_at, updated_at
            FROM `{$p}uj_character_records`
           WHERE user_id = ?
           ORDER BY updated_at DESC",
@@ -124,6 +130,15 @@ function uj_save_character(): void {
     $typeDie    = in_array($data['type_die']    ?? '', $ALLOWED_DICE, true) ? $data['type_die']    : '';
     $careerDie  = in_array($data['career_die']  ?? '', $ALLOWED_DICE, true) ? $data['career_die']  : '';
 
+    $rawAllySpecies = $data['ally_species_id'] ?? null;
+    $rawAllyCareer  = $data['ally_career_id']  ?? null;
+    $rawGiftChoices = $data['gift_choices']    ?? null;
+    if (is_array($rawGiftChoices)) {
+        $rawGiftChoices = json_encode($rawGiftChoices);
+    } elseif (!is_string($rawGiftChoices)) {
+        $rawGiftChoices = null;
+    }
+
     $fields = [
         'name'             => substr((string) ($data['name']             ?? ''), 0, 100),
         'species_id'       => ($rawSpecies !== null && $rawSpecies !== '') ? (int) $rawSpecies : null,
@@ -138,6 +153,9 @@ function uj_save_character(): void {
         'career_die'       => $careerDie,
         'personality_word' => substr((string) ($data['personality_word'] ?? ''), 0, 100),
         'notes'            => (string) ($data['notes'] ?? ''),
+        'ally_species_id'  => ($rawAllySpecies !== null && $rawAllySpecies !== '') ? (int) $rawAllySpecies : null,
+        'ally_career_id'   => ($rawAllyCareer  !== null && $rawAllyCareer  !== '') ? (int) $rawAllyCareer  : null,
+        'gift_choices'     => $rawGiftChoices,
         'updated_at'       => date('Y-m-d H:i:s'),
     ];
 
