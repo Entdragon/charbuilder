@@ -137,15 +137,15 @@
       speedDie: "d6",
       mindDie: "d6",
       willDie: "d4",
-      speciesDie: "d8",
-      typeDie: "d8",
-      careerDie: "d8",
+      speciesDie: "d6",
+      typeDie: "d6",
+      careerDie: "d6",
       personalityWord: "",
       charName: "",
       notes: "",
       currentStep: 0
     };
-    var DICE_POOL = ["d4", "d6", "d8", "d8"];
+    var DICE_POOL = ["d4", "d6", "d6", "d6", "d6", "d8", "d8"];
     var STEP_LABELS = ["Species", "Type", "Career", "Traits", "Personality", "Summary"];
     var loadingEl = document.getElementById("uj-builder-loading");
     var listScreen = document.getElementById("uj-char-list-screen");
@@ -236,9 +236,9 @@
       state.speedDie = "d8";
       state.mindDie = "d6";
       state.willDie = "d4";
-      state.speciesDie = "d8";
-      state.typeDie = "d8";
-      state.careerDie = "d8";
+      state.speciesDie = "d6";
+      state.typeDie = "d6";
+      state.careerDie = "d6";
       state.personalityWord = "";
       state.charName = "";
       state.notes = "";
@@ -390,8 +390,16 @@
       return true;
     }
     function validateDice() {
-      var pool = [state.bodyDie, state.speedDie, state.mindDie, state.willDie].sort().join(",");
-      return pool === DICE_POOL.sort().join(",");
+      var pool = [
+        state.bodyDie,
+        state.speedDie,
+        state.mindDie,
+        state.willDie,
+        state.speciesDie,
+        state.typeDie,
+        state.careerDie
+      ].sort().join(",");
+      return pool === DICE_POOL.slice().sort().join(",");
     }
     function buildSourceDiePicker(entityType) {
       var dieKey = SOURCE_DIE_KEY[entityType];
@@ -409,8 +417,6 @@
       var items = state.allData && state.allData[collKey] || [];
       var html = '<div class="step-heading">' + heading + "</div>";
       html += buildDetailPanel(entityType, state[stateKey]);
-      if (state[stateKey])
-        html += buildSourceDiePicker(entityType);
       html += '<div class="select-grid">';
       items.forEach(function(item) {
         var sel = state[stateKey] == item.id ? " selected" : "";
@@ -506,36 +512,38 @@
             tmp.innerHTML = buildDetailPanel(entityType, state[stateKey]);
             oldPanel.parentNode.replaceChild(tmp.firstChild, oldPanel);
           }
-          var oldPicker = document.getElementById("source-die-row-" + entityType);
-          var grid = container.querySelector(".select-grid");
-          var tmp2 = document.createElement("div");
-          tmp2.innerHTML = buildSourceDiePicker(entityType);
-          var newPicker = tmp2.firstChild;
-          if (oldPicker) {
-            oldPicker.parentNode.replaceChild(newPicker, oldPicker);
-          } else if (grid) {
-            grid.parentNode.insertBefore(newPicker, grid);
-          }
-          bindDiePills(entityType);
         });
       });
     }
     function buildDiceStep() {
-      var traits = [
-        { key: "bodyDie", label: "Body" },
-        { key: "speedDie", label: "Speed" },
-        { key: "mindDie", label: "Mind" },
-        { key: "willDie", label: "Will" }
+      var d = state.allData || {};
+      var sp = (d.species || []).find(function(x) {
+        return x.id == state.speciesId;
+      });
+      var ty = (d.types || []).find(function(x) {
+        return x.id == state.typeId;
+      });
+      var ca = (d.careers || []).find(function(x) {
+        return x.id == state.careerId;
+      });
+      var slots = [
+        { key: "bodyDie", label: "Body", sub: "Trait" },
+        { key: "speedDie", label: "Speed", sub: "Trait" },
+        { key: "mindDie", label: "Mind", sub: "Trait" },
+        { key: "willDie", label: "Will", sub: "Trait" },
+        { key: "speciesDie", label: "Species", sub: sp ? sp.name : "Species" },
+        { key: "typeDie", label: "Type", sub: ty ? ty.name : "Type" },
+        { key: "careerDie", label: "Career", sub: ca ? ca.name : "Career" }
       ];
-      var html = '<div class="step-heading">Step 4 \u2014 Assign Trait Dice</div><p style="color:var(--uj-text-muted);font-size:0.9rem;margin:0 0 1rem;">Assign the pool <strong style="color:var(--uj-amber);">d8, d8, d6, d4</strong> across your four traits. Two d8s for best traits, one d4 for worst.</p><div class="dice-grid">';
-      traits.forEach(function(t) {
-        html += '<div class="dice-trait"><div class="dice-trait-name">' + t.label + '</div><select class="dice-select" data-trait="' + t.key + '">' + ["d4", "d6", "d8"].map(function(d) {
-          return '<option value="' + d + '"' + (state[t.key] === d ? " selected" : "") + ">" + d + "</option>";
+      var html = '<div class="step-heading">Step 4 \u2014 Assign Dice</div><p style="color:var(--uj-text-muted);font-size:0.9rem;margin:0 0 1rem;">Distribute the pool <strong style="color:var(--uj-amber);">d8, d8, d6, d6, d6, d6, d4</strong> across all seven slots \u2014 your four traits and your three source dice.</p><div class="dice-grid dice-grid-7">';
+      slots.forEach(function(t) {
+        html += '<div class="dice-trait"><div class="dice-trait-name">' + t.label + '</div><div class="dice-trait-sub">' + esc(t.sub) + '</div><select class="dice-select" data-trait="' + t.key + '">' + ALLOWED_DICE_JS.map(function(d2) {
+          return '<option value="' + d2 + '"' + (state[t.key] === d2 ? " selected" : "") + ">" + d2.toUpperCase() + "</option>";
         }).join("") + "</select></div>";
       });
       html += "</div>";
-      html += '<p class="dice-hint">Current pool: <span id="dice-pool-display"></span></p>';
-      html += '<p class="dice-error" id="dice-pool-error">Pool must be exactly d8 + d8 + d6 + d4.</p>';
+      html += '<p class="dice-hint">Assigned: <span id="dice-pool-display"></span></p>';
+      html += '<p class="dice-error" id="dice-pool-error">Pool must be exactly d8 + d8 + d6 + d6 + d6 + d6 + d4 (7 dice total).</p>';
       return html;
     }
     function bindDiceStep() {
@@ -548,7 +556,15 @@
       });
     }
     function updateDiceDisplay() {
-      var pool = [state.bodyDie, state.speedDie, state.mindDie, state.willDie];
+      var pool = [
+        state.bodyDie,
+        state.speedDie,
+        state.mindDie,
+        state.willDie,
+        state.speciesDie,
+        state.typeDie,
+        state.careerDie
+      ];
       var disp = document.getElementById("dice-pool-display");
       var errEl = document.getElementById("dice-pool-error");
       if (disp)

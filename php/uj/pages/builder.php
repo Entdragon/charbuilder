@@ -351,9 +351,18 @@ require __DIR__ . '/../layout-head.php';
   .detail-grant-list li.gear-item { border-left-color: #fbbf24; font-size: 0.82rem; color: var(--uj-text-muted); }
 
   /* ── Dice step ────────────────────────────────────────────── */
-  .dice-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; max-width: 600px; }
+  .dice-grid   { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; max-width: 600px; }
+  .dice-grid-7 { grid-template-columns: repeat(7, 1fr); max-width: 100%; }
+  @media (max-width: 700px) { .dice-grid-7 { grid-template-columns: repeat(4, 1fr); } }
+  @media (max-width: 480px) { .dice-grid-7 { grid-template-columns: repeat(2, 1fr); } }
 
   .dice-trait { background: var(--uj-surface); border: 1px solid var(--uj-border-cool); border-radius: var(--uj-radius-lg); padding: 1rem; text-align: center; }
+  .dice-grid-7 .dice-trait { padding: 0.7rem 0.5rem; }
+
+  .dice-trait-sub {
+    font-size:  0.68rem; color: var(--uj-text-dim); margin: -0.4rem 0 0.55rem;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
 
   .dice-trait-name {
     font-family:    'Cinzel', Georgia, serif;
