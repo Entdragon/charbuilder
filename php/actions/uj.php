@@ -33,8 +33,8 @@ function uj_tbl(string $suffix): string {
 
 // ── CREATE TABLES ─────────────────────────────────────────────────────────────
 
-function uj_install_tables(): void {
-    uj_admin_require();
+// Internal — runs all CREATE TABLE IF NOT EXISTS statements; no auth, no JSON output.
+function uj_create_tables_internal(): array {
     $p = cg_prefix();
 
     $sqls = [
@@ -118,14 +118,23 @@ function uj_install_tables(): void {
         preg_match('/CREATE TABLE IF NOT EXISTS `([^`]+)`/', $sql, $m);
         $created[] = $m[1] ?? '?';
     }
+    return $created;
+}
 
-    cg_json(['success' => true, 'data' => 'Tables created: ' . implode(', ', $created)]);
+// AJAX handler — auth-gated, returns JSON.
+function uj_install_tables(): void {
+    uj_admin_require();
+    $created = uj_create_tables_internal();
+    cg_json(['success' => true, 'data' => 'Tables ensured: ' . implode(', ', $created)]);
 }
 
 // ── INSERT / UPSERT DATA ──────────────────────────────────────────────────────
 
 function uj_install_data(): void {
     uj_admin_require();
+
+    // Always ensure tables exist before inserting — safe to run repeatedly.
+    uj_create_tables_internal();
 
     $counts = [];
     $counts['species']  = uj_install_species();
