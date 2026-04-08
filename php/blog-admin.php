@@ -7,10 +7,11 @@ declare(strict_types=1);
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/db.php';
 
+cg_session_start();
+
 // Require login
-$user = cg_current_user();
-if (!$user) {
-    header('Location: /?login=1');
+if (!cg_is_logged_in()) {
+    header('Location: /builder');
     exit;
 }
 

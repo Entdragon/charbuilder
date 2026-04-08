@@ -4,7 +4,10 @@
  * Served at / (root)
  */
 declare(strict_types=1);
+require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/db.php';
+
+cg_session_start();
 
 $p = cg_prefix();
 
@@ -406,7 +409,7 @@ try {
   <section class="blog-section">
     <p class="section-heading">
       Updates
-      <?php if (!empty($_SESSION['is_admin'])): ?>
+      <?php if (cg_is_logged_in()): ?>
         <a href="/blog-admin" style="font-size:0.75rem; color:var(--gold-dark); font-weight:600;">+ New Post</a>
       <?php endif; ?>
     </p>
