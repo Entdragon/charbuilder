@@ -10170,6 +10170,15 @@
   var $24 = window.jQuery;
   var ALLY_GIFT_ID = "126";
   var IMPROVED_ALLY_GIFT_ID = "218";
+  var ALLY_DIE_ORDER = ["d4", "d6", "d8", "d10", "d12"];
+  var ALLY_TRAIT_BOOSTS = {
+    "78": "will",
+    "89": "speed",
+    "85": "body",
+    "100": "mind",
+    "224": "trait_species",
+    "223": "trait_career"
+  };
   function esc(v) {
     return String(v == null ? "" : v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
@@ -10414,6 +10423,7 @@
       });
       this._patch({ improved_gift_ids: ids });
       this._refreshGiftsArea();
+      this._refreshBattleArea();
     },
     // ── Main render ──────────────────────────────────────────────────────────────
     _render() {
@@ -10424,7 +10434,7 @@
       panel.dataset.rendered = "1";
       panel.innerHTML = `<div class="cg-ally-export-bar">
            <button type="button" id="cg-ally-export-pdf" class="cg-ally-export-btn">\u{1F5A8} Print Ally Sheet</button>
-         </div>` + this._buildIdentityHtml(ally) + this._buildProfileHtml(ally) + this._buildTraitsHtml() + `<div id="cg-ally-gifts-area">${this._buildGiftsHtml()}</div><div id="cg-ally-battle-area">${this._buildBattleHtml()}</div><div id="cg-ally-trappings-area">${this._buildTrappingsHtml()}</div><div id="cg-ally-money-area">${this._buildMoneyHtml()}</div>` + this._buildShopHtml();
+         </div>` + this._buildIdentityHtml(ally) + this._buildProfileHtml(ally) + `<div id="cg-ally-traits-area">${this._buildTraitsHtml()}</div><div id="cg-ally-gifts-area">${this._buildGiftsHtml()}</div><div id="cg-ally-skills-area">${this._buildSkillsHtml()}</div><div id="cg-ally-battle-area">${this._buildBattleHtml()}</div><div id="cg-ally-trappings-area">${this._buildTrappingsHtml()}</div><div id="cg-ally-money-area">${this._buildMoneyHtml()}</div>` + this._buildShopHtml();
     },
     _refreshGiftsArea() {
       const el = document.getElementById("cg-ally-gifts-area");
@@ -10432,9 +10442,15 @@
         el.innerHTML = this._buildGiftsHtml();
     },
     _refreshBattleArea() {
+      const elT = document.getElementById("cg-ally-traits-area");
+      if (elT)
+        elT.innerHTML = this._buildTraitsHtml();
       const el = document.getElementById("cg-ally-battle-area");
       if (el)
         el.innerHTML = this._buildBattleHtml();
+      const elS = document.getElementById("cg-ally-skills-area");
+      if (elS)
+        elS.innerHTML = this._buildSkillsHtml();
     },
     _refreshMoneyArea() {
       const el = document.getElementById("cg-ally-money-area");
@@ -10490,21 +10506,53 @@
       </div>
     </div>`;
     },
+    _resolveAllyTraits() {
+      const base = { body: "d6", speed: "d6", will: "d6", mind: "d6", trait_species: "d6", trait_career: "d6" };
+      const sp = this._speciesProfile || {};
+      const cp = this._careerProfile || {};
+      const ally = this._getData();
+      const giftIds = /* @__PURE__ */ new Set();
+      ["gift_id_1", "gift_id_2", "gift_id_3"].forEach((k) => {
+        if (sp[k])
+          giftIds.add(String(sp[k]));
+        if (cp[k])
+          giftIds.add(String(cp[k]));
+      });
+      const improvedIds = Array.isArray(ally.improved_gift_ids) ? ally.improved_gift_ids : [];
+      improvedIds.forEach((id) => {
+        if (id)
+          giftIds.add(String(id));
+      });
+      for (const id of giftIds) {
+        const key = ALLY_TRAIT_BOOSTS[id];
+        if (!key)
+          continue;
+        const curr = base[key] || "d6";
+        const idx = ALLY_DIE_ORDER.indexOf(curr);
+        if (idx !== -1 && idx < ALLY_DIE_ORDER.length - 1) {
+          base[key] = ALLY_DIE_ORDER[idx + 1];
+        }
+      }
+      return base;
+    },
     _buildTraitsHtml() {
+      const t = this._resolveAllyTraits();
+      const allBase = Object.values(t).every((v) => v === "d6");
       const traits = [
-        ["Body", "d6"],
-        ["Speed", "d6"],
-        ["Will", "d6"],
-        ["Mind", "d6"],
-        ["Species", "d6"],
-        ["Career", "d6"]
+        ["Body", t.body],
+        ["Speed", t.speed],
+        ["Will", t.will],
+        ["Mind", t.mind],
+        ["Species", t.trait_species],
+        ["Career", t.trait_career]
       ];
+      const note = allBase ? "(all d6)" : "";
       return `
     <div class="cg-ally-box">
-      <h4 class="cg-ally-subhead">Traits <span class="cg-ally-note">(all d6)</span></h4>
+      <h4 class="cg-ally-subhead">Traits${note ? ` <span class="cg-ally-note">${note}</span>` : ""}</h4>
       <div class="cg-ally-traits-grid">
         ${traits.map(
-        ([label, die]) => `<div class="cg-ally-trait"><span class="cg-ally-trait-label">${label}</span><span class="cg-ally-trait-die">${die}</span></div>`
+        ([label, die]) => `<div class="cg-ally-trait"><span class="cg-ally-trait-label">${label}</span><span class="cg-ally-trait-die">${esc(die)}</span></div>`
       ).join("")}
       </div>
     </div>`;
@@ -10603,26 +10651,29 @@
     _buildBattleHtml() {
       const sp = this._speciesProfile || {};
       const cp = this._careerProfile || {};
-      const weapons = this._deriveAllyWeapons(sp, cp);
+      const tr = this._resolveAllyTraits();
+      const weapons = this._deriveAllyWeapons(sp, cp, tr);
       const armor = this._deriveAllyArmor(sp, cp);
-      let soakParts = ["d6"];
+      let soakParts = [tr.body];
       armor.forEach((a) => {
         if (a.soak)
           soakParts.push(a.soak);
       });
       const soak = soakParts.join(" + ");
+      const initP = `${tr.speed} + ${tr.mind}`;
+      const dodgeP = tr.speed;
       let html = `
     <div class="cg-ally-box">
       <h4 class="cg-ally-subhead">Battle Array</h4>
       <div class="cg-ally-pools">
         <div class="cg-ally-pool">
           <span class="cg-ally-pool-label">Initiative</span>
-          <strong class="cg-ally-pool-dice">d6 + d6</strong>
+          <strong class="cg-ally-pool-dice">${esc(initP)}</strong>
           <span class="cg-ally-pool-note">(Speed + Mind)</span>
         </div>
         <div class="cg-ally-pool">
           <span class="cg-ally-pool-label">Dodge</span>
-          <strong class="cg-ally-pool-dice">d6</strong>
+          <strong class="cg-ally-pool-dice">${esc(dodgeP)}</strong>
           <span class="cg-ally-pool-note">(Speed)</span>
         </div>
         <div class="cg-ally-pool">
@@ -10651,6 +10702,41 @@
       }
       html += `</div>`;
       return html;
+    },
+    _buildSkillsHtml() {
+      const sp = this._speciesProfile || {};
+      const cp = this._careerProfile || {};
+      const tr = this._resolveAllyTraits();
+      const rows = [];
+      const seen = /* @__PURE__ */ new Set();
+      ["skill_one", "skill_two", "skill_three"].forEach((k) => {
+        const name = sp[k] ? String(sp[k]).trim() : "";
+        if (!name || seen.has(name.toLowerCase()))
+          return;
+        seen.add(name.toLowerCase());
+        rows.push({ name, die: tr.trait_species, source: "Species" });
+      });
+      ["skill_name_one", "skill_name_two", "skill_name_three"].forEach((k) => {
+        const name = cp[k] ? String(cp[k]).trim() : "";
+        if (!name || seen.has(name.toLowerCase()))
+          return;
+        seen.add(name.toLowerCase());
+        rows.push({ name, die: tr.trait_career, source: "Career" });
+      });
+      if (!rows.length)
+        return "";
+      return `
+    <div class="cg-ally-box">
+      <h4 class="cg-ally-subhead">Skills</h4>
+      <table class="cg-ally-table">
+        <thead><tr><th>Skill</th><th>Pool</th><th>Source</th></tr></thead>
+        <tbody>
+          ${rows.map(
+        (r) => `<tr><td>${esc(r.name)}</td><td>${esc(r.die)}</td><td>${esc(r.source)}</td></tr>`
+      ).join("")}
+        </tbody>
+      </table>
+    </div>`;
     },
     _buildTrappingsHtml() {
       const ally = this._getData();
@@ -10699,7 +10785,7 @@
     </div>`;
     },
     // ── Trapping derivation ──────────────────────────────────────────────────────
-    _deriveAllyWeapons(sp, cp) {
+    _deriveAllyWeapons(sp, cp, traitMap) {
       const weapons = [];
       const seen = /* @__PURE__ */ new Set();
       for (const profile of [sp, cp]) {
@@ -10722,7 +10808,7 @@
           const effectDmg = effectM ? parseInt(effectM[1], 10) : null;
           const resolved = dmgMod !== null ? dmgMod : effectDmg;
           const dmg = resolved !== null ? resolved >= 0 ? `+${resolved}` : `${resolved}` : "";
-          const attack = this._resolveAllyPool(t.attack_dice || "");
+          const attack = this._resolveAllyPool(t.attack_dice || "", traitMap);
           weapons.push({ name: t.name || "", attack, damage: dmg, range: t.range_band || "Close" });
         }
       }
@@ -10744,19 +10830,27 @@
       }
       return armor;
     },
-    /** Resolve an attack pool string for an ally (all traits = d6, no skill marks). */
-    _resolveAllyPool(raw) {
+    /** Resolve an attack pool string for an ally using the provided trait map. */
+    _resolveAllyPool(raw, traitMap) {
       if (!raw)
         return "";
-      const TRAIT = { body: "d6", speed: "d6", will: "d6", mind: "d6", species: "d6", career: "d6" };
+      const t = traitMap || { body: "d6", speed: "d6", will: "d6", mind: "d6", species: "d6", career: "d6" };
+      const lookup = {
+        body: t.body || "d6",
+        speed: t.speed || "d6",
+        will: t.will || "d6",
+        mind: t.mind || "d6",
+        species: t.trait_species || t.species || "d6",
+        career: t.trait_career || t.career || "d6"
+      };
       const vsIdx = raw.toLowerCase().indexOf(" vs.");
       const part = vsIdx > -1 ? raw.slice(0, vsIdx) : raw;
       const parts = part.split(",").map((s) => s.trim()).filter(Boolean);
       const dice = [];
       for (const p of parts) {
         const k = p.toLowerCase();
-        if (TRAIT[k]) {
-          dice.push(TRAIT[k]);
+        if (lookup[k]) {
+          dice.push(lookup[k]);
         } else {
           dice.push(p);
         }
@@ -10849,14 +10943,17 @@
         const g = this._giftList.find((x) => String(x.id || x.ct_id || "") === String(id));
         return g ? String(g.name || g.ct_gifts_name || id) : id;
       }).filter(Boolean);
-      const weapons = this._deriveAllyWeapons(sp, cp);
+      const tr = this._resolveAllyTraits();
+      const weapons = this._deriveAllyWeapons(sp, cp, tr);
       const armor = this._deriveAllyArmor(sp, cp);
-      let soakParts = ["d6"];
+      let soakParts = [tr.body];
       armor.forEach((a) => {
         if (a.soak)
           soakParts.push(a.soak);
       });
       const soak = soakParts.join(" + ");
+      const initP = `${tr.speed} + ${tr.mind}`;
+      const dodgeP = tr.speed;
       const trappings = Array.isArray(ally.trappings_list) ? ally.trappings_list : [];
       const autoTrappings = [...weapons, ...armor];
       const denar = (() => {
@@ -10879,6 +10976,24 @@
         ...autoTrappings.map((t) => `<li>${esc(t.name)} <em>(auto)</em></li>`),
         ...trappings.map((t) => `<li>${esc(t.name)}${t.cost_d ? ` \u2014 ${esc(t.cost_d)}d` : ""}</li>`)
       ].join("");
+      const skillsSeen = /* @__PURE__ */ new Set();
+      const skillsRows = [];
+      ["skill_one", "skill_two", "skill_three"].forEach((k) => {
+        const n = sp[k] ? String(sp[k]).trim() : "";
+        if (!n || skillsSeen.has(n.toLowerCase()))
+          return;
+        skillsSeen.add(n.toLowerCase());
+        skillsRows.push(`<tr><td>${esc(n)}</td><td>${esc(tr.trait_species)}</td><td>Species</td></tr>`);
+      });
+      ["skill_name_one", "skill_name_two", "skill_name_three"].forEach((k) => {
+        const n = cp[k] ? String(cp[k]).trim() : "";
+        if (!n || skillsSeen.has(n.toLowerCase()))
+          return;
+        skillsSeen.add(n.toLowerCase());
+        skillsRows.push(`<tr><td>${esc(n)}</td><td>${esc(tr.trait_career)}</td><td>Career</td></tr>`);
+      });
+      const allBase = Object.values(tr).every((v) => v === "d6");
+      const traitsNote = allBase ? " (all d6)" : "";
       return `
 <div id="cg-summary-sheet">
   <div class="summary-header-block">
@@ -10895,10 +11010,13 @@
     <div class="summary-col-left">
 
       <div class="summary-section">
-        <h3>Traits (all d6)</h3>
+        <h3>Traits${traitsNote}</h3>
         <table class="cg-battle-summary-table">
           <thead><tr><th>Body</th><th>Speed</th><th>Will</th><th>Mind</th><th>Species</th><th>Career</th></tr></thead>
-          <tbody><tr><td>d6</td><td>d6</td><td>d6</td><td>d6</td><td>d6</td><td>d6</td></tr></tbody>
+          <tbody><tr>
+            <td>${esc(tr.body)}</td><td>${esc(tr.speed)}</td><td>${esc(tr.will)}</td>
+            <td>${esc(tr.mind)}</td><td>${esc(tr.trait_species)}</td><td>${esc(tr.trait_career)}</td>
+          </tr></tbody>
         </table>
       </div>
 
@@ -10907,8 +11025,8 @@
         <table class="cg-battle-summary-table">
           <thead><tr><th>Pool</th><th>Dice</th><th>Notes</th></tr></thead>
           <tbody>
-            <tr><td>Initiative</td><td>d6 + d6</td><td>Speed + Mind</td></tr>
-            <tr><td>Dodge</td><td>d6</td><td>Speed</td></tr>
+            <tr><td>Initiative</td><td>${esc(initP)}</td><td>Speed + Mind</td></tr>
+            <tr><td>Dodge</td><td>${esc(dodgeP)}</td><td>Speed</td></tr>
             <tr><td>Soak</td><td>${esc(soak)}</td><td>Body + Armour</td></tr>
           </tbody>
         </table>
@@ -10925,6 +11043,15 @@
           <tbody>${armorRows}</tbody>
         </table>` : ""}
       </div>
+
+      ${skillsRows.length ? `
+      <div class="summary-section">
+        <h3>Skills</h3>
+        <table class="cg-battle-summary-table">
+          <thead><tr><th>Skill</th><th>Pool</th><th>Source</th></tr></thead>
+          <tbody>${skillsRows.join("")}</tbody>
+        </table>
+      </div>` : ""}
 
     </div>
     <div class="summary-col-right">
