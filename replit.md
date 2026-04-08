@@ -5,6 +5,15 @@ A PHP web application serving a character creation system for the Library of Cal
 
 - **Production URL**: https://characters.libraryofcalbria.com/
 
+## Feature Reference
+See **`docs/feature-matrix.md`** for a full inventory of:
+- Every feature in the main character and ally build flows, with parity status (✅/❌)
+- Every PHP backend endpoint, which JS flow calls it, and what it returns
+- Known gaps between the ally and main character flows
+- JS module map and CSS architecture reference
+
+Read this at the start of each session before planning new features.
+
 ## Technology Stack
 - **PHP 8.2** – Web server (`php -S` in dev, Apache on live) and all API logic
 - **JavaScript (ES6 + esbuild)** – Frontend UI modules (built bundle)
