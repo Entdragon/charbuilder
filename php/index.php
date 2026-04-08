@@ -775,6 +775,46 @@ try {
       background:   transparent !important;
       overflow:     auto;
       padding:      0 !important;
+
+      /* Re-map the bundle's parchment palette → wizard dark palette */
+      --cg-text:           var(--text, #e8dcc4);
+      --cg-text-muted:     var(--text-muted, #9a8a6a);
+      --cg-parchment:      var(--surface, #242019);
+      --cg-parchment-2:    var(--surface-2, #2d2820);
+      --cg-parchment-3:    rgba(201,168,76,0.18);
+      --cg-modal-bg:       var(--surface, #242019);
+      --cg-gray:           var(--surface-2, #2d2820);
+      --cg-gray-light:     var(--surface, #242019);
+    }
+
+    /* Skills table: fix text + row contrast in dark wizard theme */
+    .cg-skills-table th,
+    .cg-skills-table td {
+      color:        var(--text, #e8dcc4) !important;
+      border-color: rgba(201,168,76,0.12) !important;
+    }
+    .cg-skills-table th {
+      background: var(--surface-2, #2d2820) !important;
+      color:      var(--gold-light, #e5c97a) !important;
+    }
+    .cg-skills-table tr:nth-child(even) td {
+      background: rgba(255,255,255,0.04) !important;
+    }
+
+    /* Misc bundle elements that need dark-theme text */
+    .cg-details-panel,
+    .cg-profile-box,
+    .cg-traits-box,
+    .cg-text-box,
+    .cg-xp-tracker,
+    .cg-details-box {
+      color: var(--text, #e8dcc4);
+    }
+    .cg-details-panel label,
+    .cg-profile-box label,
+    .cg-details-box label,
+    .cg-text-box label {
+      color: var(--text-muted, #9a8a6a) !important;
     }
 
     #cg-modal-close { display: none !important; }
@@ -785,6 +825,20 @@ try {
     /* Only show active tab panel */
     .cg-tab-wrap .tab-panel { display: none !important; }
     .cg-tab-wrap .tab-panel.active { display: block !important; }
+
+    /* Progress bar: fade edges to hint at scrollability */
+    .wizard-progress-wrap {
+      position: relative;
+      overflow: hidden;
+    }
+    .wizard-progress-wrap::after {
+      content:  '';
+      position: absolute;
+      top: 0; right: 0; bottom: 0;
+      width:    3rem;
+      background: linear-gradient(to right, transparent, var(--surface, #242019));
+      pointer-events: none;
+    }
 
     .button,
     .button.primary,
@@ -941,8 +995,10 @@ try {
               <h2 class="wizard-title" id="cg-wizard-title">New Character</h2>
               <button class="wizard-close-btn" id="cg-wizard-close-btn">✕ Close</button>
             </div>
-            <div class="wizard-progress" id="cg-wizard-progress">
-              <!-- steps rendered by JS -->
+            <div class="wizard-progress-wrap">
+              <div class="wizard-progress" id="cg-wizard-progress">
+                <!-- steps rendered by JS -->
+              </div>
             </div>
           </div>
 
@@ -1237,6 +1293,12 @@ try {
       el.classList.toggle('active', i === idx);
       el.classList.toggle('done',   i <  idx);
     });
+
+    /* Scroll the active step into view in the progress bar */
+    const activeStepEl = document.getElementById('wstep-' + idx);
+    if (activeStepEl) {
+      activeStepEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
 
     document.getElementById('cg-wizard-back').disabled = (idx === 0);
     const nextBtn = document.getElementById('cg-wizard-next');
