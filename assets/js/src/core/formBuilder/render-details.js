@@ -29,6 +29,7 @@ export default {
           <li data-tab="tab-gifts">Gifts</li>
           <li data-tab="tab-skills">Skills</li>
           <li data-tab="tab-trappings">Battle &amp; Equipment</li>
+          <li data-tab="tab-ally" style="display:none">Ally</li>
           <li data-tab="tab-description">Description</li>
           <li data-tab="tab-summary">Character Sheet</li>
         </ul>

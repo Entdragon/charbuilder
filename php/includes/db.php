@@ -228,3 +228,27 @@ function cg_ensure_battle_columns(): void {
         error_log('[CG] ensureBattleColumns: ' . $e->getMessage());
     }
 }
+
+function cg_ensure_ally_column(): void {
+    static $done = false;
+    if ($done) return;
+    $done = true;
+
+    $p     = cg_prefix();
+    $table = $p . 'character_records';
+
+    try {
+        $cols = cg_query(
+            "SELECT COLUMN_NAME FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?
+               AND COLUMN_NAME = 'ally'",
+            [$table]
+        );
+        $existing = array_column($cols, 'COLUMN_NAME');
+        if (!in_array('ally', $existing)) {
+            cg_exec("ALTER TABLE `{$table}` ADD COLUMN `ally` TEXT DEFAULT NULL");
+        }
+    } catch (Throwable $e) {
+        error_log('[CG] ensureAllyColumn: ' . $e->getMessage());
+    }
+}

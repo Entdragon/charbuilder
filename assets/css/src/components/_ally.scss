@@ -1,0 +1,300 @@
+// _ally.scss — Ally mini-character sheet
+
+.cg-ally-intro {
+  color: var(--cg-muted, #888);
+  font-size: 0.93em;
+  margin-bottom: 1em;
+}
+
+.cg-ally-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2em;
+}
+
+.cg-ally-box {
+  background: var(--cg-surface, #1a1a2e);
+  border: 1px solid var(--cg-border, #333);
+  border-radius: 6px;
+  padding: 1em 1.2em;
+}
+
+.cg-ally-subhead {
+  font-size: 1em;
+  font-weight: 700;
+  color: var(--cg-gold, #c9a34d);
+  margin: 0 0 0.8em 0;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5em;
+}
+
+.cg-ally-note {
+  font-size: 0.85em;
+  color: var(--cg-muted, #888);
+  font-style: italic;
+  margin: 0;
+}
+
+.cg-ally-field-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25em;
+  margin-bottom: 0.75em;
+
+  &:last-child { margin-bottom: 0; }
+}
+
+.cg-ally-label {
+  font-size: 0.82em;
+  color: var(--cg-muted, #aaa);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cg-ally-input,
+.cg-ally-select,
+.cg-ally-money-input {
+  width: 100%;
+  background: var(--cg-input-bg, #111);
+  border: 1px solid var(--cg-border, #444);
+  border-radius: 4px;
+  color: var(--cg-text, #eee);
+  padding: 0.4em 0.6em;
+  font-size: 0.93em;
+  box-sizing: border-box;
+
+  &:focus {
+    outline: none;
+    border-color: var(--cg-gold, #c9a34d);
+  }
+}
+
+.cg-ally-money-input {
+  width: 10em;
+}
+
+.cg-ally-textarea {
+  width: 100%;
+  min-height: 80px;
+  resize: vertical;
+  background: var(--cg-input-bg, #111);
+  border: 1px solid var(--cg-border, #444);
+  border-radius: 4px;
+  color: var(--cg-text, #eee);
+  padding: 0.4em 0.6em;
+  font-size: 0.93em;
+  box-sizing: border-box;
+  font-family: inherit;
+
+  &:focus {
+    outline: none;
+    border-color: var(--cg-gold, #c9a34d);
+  }
+}
+
+// Traits row
+.cg-ally-traits-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em 1.5em;
+}
+
+.cg-ally-trait {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 4em;
+}
+
+.cg-ally-trait-label {
+  font-size: 0.78em;
+  color: var(--cg-muted, #aaa);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.cg-ally-trait-die {
+  font-size: 1.05em;
+  font-weight: 700;
+  color: var(--cg-gold, #c9a34d);
+}
+
+// Gifts
+.cg-ally-gift-group {
+  margin-bottom: 0.8em;
+
+  &:last-child { margin-bottom: 0; }
+}
+
+.cg-ally-gift-label {
+  font-size: 0.82em;
+  color: var(--cg-muted, #aaa);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.3em;
+}
+
+.cg-ally-gift-item {
+  font-size: 0.93em;
+  color: var(--cg-text, #eee);
+}
+
+.cg-ally-gift-list {
+  margin: 0;
+  padding-left: 1.4em;
+  font-size: 0.93em;
+  color: var(--cg-text, #eee);
+
+  li {
+    margin-bottom: 0.2em;
+  }
+}
+
+.cg-ally-improved-slot {
+  margin-top: 0.4em;
+}
+
+// Battle array
+.cg-ally-pools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1em 2em;
+  margin-bottom: 0.8em;
+}
+
+.cg-ally-pool {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1em;
+}
+
+.cg-ally-pool-label {
+  font-size: 0.78em;
+  color: var(--cg-muted, #aaa);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cg-ally-pool-dice {
+  font-size: 1.05em;
+  color: var(--cg-gold, #c9a34d);
+}
+
+.cg-ally-pool-note {
+  font-size: 0.75em;
+  color: var(--cg-muted, #888);
+  font-style: italic;
+}
+
+.cg-ally-table-head {
+  font-size: 0.85em;
+  font-weight: 600;
+  color: var(--cg-muted, #aaa);
+  margin: 0.8em 0 0.3em 0;
+}
+
+// Shared table styles  
+.cg-ally-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.87em;
+
+  th {
+    text-align: left;
+    padding: 0.3em 0.5em;
+    color: var(--cg-muted, #aaa);
+    border-bottom: 1px solid var(--cg-border, #333);
+    font-weight: 600;
+    font-size: 0.85em;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  td {
+    padding: 0.3em 0.5em;
+    border-bottom: 1px solid var(--cg-border-light, #222);
+    color: var(--cg-text, #eee);
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+}
+
+// Trappings list
+.cg-ally-trappings-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.25em 0;
+    border-bottom: 1px solid var(--cg-border-light, #222);
+    font-size: 0.93em;
+    color: var(--cg-text, #eee);
+
+    &:last-child { border-bottom: none; }
+  }
+}
+
+.cg-ally-trapping-auto {
+  color: var(--cg-muted, #aaa) !important;
+  font-style: italic;
+}
+
+// Money
+.cg-ally-money {
+  display: flex;
+  align-items: center;
+  gap: 0.75em;
+}
+
+.cg-ally-money-label {
+  font-size: 0.85em;
+  color: var(--cg-muted, #aaa);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  min-width: 4em;
+}
+
+// Equipment catalog
+.cg-ally-catalog-wrap {
+  border: 1px solid var(--cg-border, #444);
+  border-radius: 6px;
+  padding: 0.8em;
+  margin-top: 0.75em;
+}
+
+.cg-ally-catalog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.6em;
+
+  h5 {
+    margin: 0;
+    font-size: 0.95em;
+    color: var(--cg-gold, #c9a34d);
+  }
+}
+
+.cg-ally-loading {
+  color: var(--cg-muted, #888);
+  font-style: italic;
+  font-size: 0.9em;
+}
+
+.cg-ally-empty {
+  color: var(--cg-muted, #888);
+  font-style: italic;
+  font-size: 0.9em;
+  margin: 0.5em 0;
+}

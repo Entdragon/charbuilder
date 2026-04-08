@@ -749,15 +749,15 @@
       return map;
     },
     enforceCounts() {
-      const $25 = window.jQuery;
+      const $26 = window.jQuery;
       const freq = { d8: 0, d6: 0, d4: 0 };
-      $25(".cg-trait-select").each(function() {
-        const v = $25(this).val();
+      $26(".cg-trait-select").each(function() {
+        const v = $26(this).val();
         if (v && v in freq)
           freq[v]++;
       });
-      $25(".cg-trait-select").each(function() {
-        const $sel = $25(this);
+      $26(".cg-trait-select").each(function() {
+        const $sel = $26(this);
         const current = $sel.val() || "";
         let options = '<option value="">\u2014 Select \u2014</option>';
         DICE_TYPES.forEach((die) => {
@@ -770,13 +770,13 @@
       });
     },
     updateAdjustedDisplays() {
-      const $25 = window.jQuery;
+      const $26 = window.jQuery;
       const boosts = this.calculateBoostMap();
       const totalCareerBoosts = boosts.trait_career || 0;
       const careerCounts = computeCareerBoostCounts(totalCareerBoosts);
       const careerMainBoosts = careerCounts.main || 0;
       TRAITS.forEach((traitKey) => {
-        const $sel = $25(`#cg-${traitKey}`);
+        const $sel = $26(`#cg-${traitKey}`);
         if (!$sel.length)
           return;
         const rawBase = String($sel.val() || "").trim();
@@ -788,11 +788,11 @@
         if (rawBase) {
           badgeText = count > 0 ? boostedDie(rawBase, count) : rawBase;
         }
-        const $badge = $25(`#cg-${traitKey}-badge`);
+        const $badge = $26(`#cg-${traitKey}-badge`);
         if ($badge.length)
           $badge.text(badgeText);
         if (traitKey === "trait_career") {
-          const $pb = $25("#cg-profile-trait_career-badge");
+          const $pb = $26("#cg-profile-trait_career-badge");
           if ($pb.length)
             $pb.text(badgeText);
         }
@@ -807,11 +807,11 @@
             note = origBoosts === 1 ? "Increased by gift" : `Increased by gift \xD7${origBoosts}`;
           }
         }
-        const $note = $25(`#cg-${traitKey}-adjusted`);
+        const $note = $26(`#cg-${traitKey}-adjusted`);
         if ($note.length)
           $note.text(note);
         if (traitKey === "trait_career") {
-          const $pn = $25("#cg-profile-trait_career-note");
+          const $pn = $26("#cg-profile-trait_career-note");
           if ($pn.length)
             $pn.text(note);
         }
@@ -857,6 +857,7 @@
           <li data-tab="tab-gifts">Gifts</li>
           <li data-tab="tab-skills">Skills</li>
           <li data-tab="tab-trappings">Battle &amp; Equipment</li>
+          <li data-tab="tab-ally" style="display:none">Ally</li>
           <li data-tab="tab-description">Description</li>
           <li data-tab="tab-summary">Character Sheet</li>
         </ul>
@@ -1132,6 +1133,18 @@
           <h3>Equipment Shop</h3>
           <p class="cg-catalog-intro">Purchase additional equipment. Career and gift trappings above are free \u2014 only shop purchases deduct money.</p>
           <button type="button" id="cg-equip-open-btn" class="cg-btn cg-btn-gold">Open Equipment Shop</button>
+        </div>
+      </div>
+
+      <div id="tab-ally" class="tab-panel" style="display:none">
+        <div class="cg-profile-box">
+          <h3>Ally</h3>
+          <p class="cg-ally-intro">
+            Your ally is a companion character. Select a gift below to take your ally \u2014 the sheet will auto-populate from their species and career.
+          </p>
+          <div id="cg-ally-inner" class="cg-ally-inner">
+            <p class="cg-ally-loading"><em>Loading ally sheet\u2026</em></p>
+          </div>
         </div>
       </div>
     `;
@@ -1524,6 +1537,7 @@
     character.free_gift_quals = rawFGQ && typeof rawFGQ === "object" && !Array.isArray(rawFGQ) ? rawFGQ : {};
     character.trappings_list = Array.isArray(raw.trappings_list) ? raw.trappings_list : [];
     character.money_holdings = raw.money_holdings && typeof raw.money_holdings === "object" ? raw.money_holdings : {};
+    character.ally = raw.ally && typeof raw.ally === "object" && !Array.isArray(raw.ally) ? raw.ally : {};
     flat.character = character;
     flat.character_json = JSON.stringify(__spreadValues({}, core));
     return flat;
@@ -1546,6 +1560,9 @@
         this._data.skill_notes = recovered;
       } else if (!this._data.skill_notes || typeof this._data.skill_notes !== "object") {
         this._data.skill_notes = {};
+      }
+      if (Array.isArray(this._data.ally) || !this._data.ally || typeof this._data.ally !== "object") {
+        this._data.ally = {};
       }
       this._data.favUseOriginal = __spreadValues({}, this._data.skill_notes);
       this._data.favUsePaid = {};
@@ -1854,6 +1871,7 @@
       d.money_holdings = this._data.money_holdings && typeof this._data.money_holdings === "object" ? this._data.money_holdings : {};
       this._data.trappings_list = d.trappings_list;
       this._data.money_holdings = d.money_holdings;
+      d.ally = this._data.ally && typeof this._data.ally === "object" && !Array.isArray(this._data.ally) ? this._data.ally : {};
       return d;
     },
     /**
@@ -3730,9 +3748,9 @@
         src.qualifications = payload;
       }
       document.dispatchEvent(new CustomEvent("cg:quals:changed", { detail: { qualifications: payload } }));
-      const $25 = window.jQuery;
-      if ($25)
-        $25(document).trigger("cg:quals:changed", [{ qualifications: payload }]);
+      const $26 = window.jQuery;
+      if ($26)
+        $26(document).trigger("cg:quals:changed", [{ qualifications: payload }]);
     },
     getAll() {
       return JSON.parse(JSON.stringify(this.data || emptyData()));
@@ -5249,7 +5267,7 @@
       }).filter(Boolean)
     );
     const isCustomValue = !!(value && !knownCanon.has(canon3(value)));
-    const esc = (s) => String(s || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const esc2 = (s) => String(s || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     const opts = (Array.isArray(items) ? items : []).map((it) => {
       var _a, _b;
       const label = String((_b = (_a = it == null ? void 0 : it.label) != null ? _a : it == null ? void 0 : it.key) != null ? _b : "").trim();
@@ -5259,16 +5277,16 @@
       if (!isCurrent && excluded.has(canon3(label)))
         return "";
       const sel = isCurrent ? " selected" : "";
-      return `<option value="${esc(label)}"${sel}>${esc(label)}</option>`;
+      return `<option value="${esc2(label)}"${sel}>${esc2(label)}</option>`;
     }).filter(Boolean).join("\n");
     const nice = type.charAt(0).toUpperCase() + type.slice(1);
     const otherSel = isCustomValue ? " selected" : "";
     const inputDisp = isCustomValue ? "" : "none";
     return `
     <label style="display:flex; flex-direction:column; gap:4px; margin-top:8px; min-width:220px;">
-      <span style="font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:var(--cg-text-muted);">${esc(nice)}</span>
+      <span style="font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:var(--cg-text-muted);">${esc2(nice)}</span>
       <select class="cg-free-qual-select" data-slot="${slot}" data-qtype="${type}">
-        <option value="">\u2014 Select ${esc(nice)} \u2014</option>
+        <option value="">\u2014 Select ${esc2(nice)} \u2014</option>
         ${opts}
         <option value="__other__"${otherSel}>Other (type below)\u2026</option>
       </select>
@@ -5276,8 +5294,8 @@
         class="cg-qual-custom-input cg-free-select"
         data-slot="${slot}"
         data-qtype="${type}"
-        value="${esc(isCustomValue ? value : "")}"
-        placeholder="Enter custom ${esc(nice.toLowerCase())}\u2026"
+        value="${esc2(isCustomValue ? value : "")}"
+        placeholder="Enter custom ${esc2(nice.toLowerCase())}\u2026"
         autocomplete="off"
         style="display:${inputDisp}; margin-top:4px;" />
     </label>
@@ -5353,19 +5371,19 @@
   }
   function renderChoiceTextInputHtml(slot, currentValue, suggestions, giftLabel) {
     const listId = `cg-gift-choice-list-${slot}`;
-    const esc = (s) => String(s || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const esc2 = (s) => String(s || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     const baseName = giftLabel ? String(giftLabel).replace(/\s*[:\-–]\s*\[Choice\]/i, "").replace(/\[Choice\]/i, "").trim() : "";
     const labelText = baseName ? `Choice: ${baseName}` : "Your Choice";
     const placeholder = baseName ? `Enter your ${baseName.toLowerCase()}\u2026` : "Enter your choice\u2026";
-    const datalist = suggestions.length ? `<datalist id="${listId}">${suggestions.map((s) => `<option value="${esc(s)}">`).join("")}</datalist>` : "";
+    const datalist = suggestions.length ? `<datalist id="${listId}">${suggestions.map((s) => `<option value="${esc2(s)}">`).join("")}</datalist>` : "";
     return `
     <label style="display:flex; flex-direction:column; gap:4px; margin-top:8px; min-width:180px;">
-      <span style="font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:var(--cg-text-muted);">${esc(labelText)}</span>
+      <span style="font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:var(--cg-text-muted);">${esc2(labelText)}</span>
       <input type="text"
         class="cg-gift-choice-input cg-free-select"
         data-slot="${slot}"
-        value="${esc(currentValue)}"
-        placeholder="${esc(placeholder)}"
+        value="${esc2(currentValue)}"
+        placeholder="${esc2(placeholder)}"
         autocomplete="off"
         ${suggestions.length ? `list="${listId}"` : ""} />
       ${datalist}
@@ -10145,16 +10163,732 @@
     });
   }
 
-  // assets/js/src/core/main/builder-events.js
+  // assets/js/src/core/ally/index.js
   var $24 = window.jQuery;
+  var ALLY_GIFT_ID = "126";
+  var IMPROVED_ALLY_GIFT_ID = "218";
+  function esc(v) {
+    return String(v == null ? "" : v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  function ajaxEnv8() {
+    var _a, _b;
+    const env = window.CG_AJAX || window.CG_Ajax || window.cgAjax || {};
+    const base = typeof window.CG_API_BASE === "string" && window.CG_API_BASE ? window.CG_API_BASE.replace(/\/+$/, "") : "";
+    const ajax_url = (base ? base + "/api/ajax" : "") || env.ajax_url || window.ajaxurl || ((_b = (_a = document.body) == null ? void 0 : _a.dataset) == null ? void 0 : _b.ajaxUrl) || "/wp-admin/admin-ajax.php";
+    const nonce = env.nonce || env.security || window.CG_NONCE || null;
+    return { ajax_url, nonce };
+  }
+  var AllyModule = {
+    _bound: false,
+    _careerProfile: null,
+    _speciesProfile: null,
+    _giftList: null,
+    _giftListLoading: false,
+    _catalogData: null,
+    // equipment catalog (shared with main trappings)
+    _catalogOpen: false,
+    // ── Data helpers ────────────────────────────────────────────────────────────
+    _getData() {
+      return formBuilder_default._data && formBuilder_default._data.ally ? formBuilder_default._data.ally : {};
+    },
+    _patch(obj) {
+      formBuilder_default._data = formBuilder_default._data || {};
+      formBuilder_default._data.ally = __spreadValues(__spreadValues({}, this._getData()), obj);
+    },
+    // ── Gift detection ───────────────────────────────────────────────────────────
+    _allMainGiftIds() {
+      const d = formBuilder_default._data || {};
+      const ids = [];
+      ["free_gift_1", "free_gift_2", "free_gift_3"].forEach((k) => {
+        if (d[k] && String(d[k]) !== "0")
+          ids.push(String(d[k]));
+      });
+      (Array.isArray(d.free_gifts) ? d.free_gifts : []).forEach((id) => {
+        if (id && String(id) !== "0")
+          ids.push(String(id));
+      });
+      (Array.isArray(d.xpGifts) ? d.xpGifts : []).forEach((id) => {
+        if (id && String(id) !== "0")
+          ids.push(String(id));
+      });
+      const repl = d.career_gift_replacements || {};
+      Object.values(repl).forEach((id) => {
+        if (id && String(id) !== "0")
+          ids.push(String(id));
+      });
+      const cp = api_default2 && api_default2.currentProfile || {};
+      const sp = api_default && api_default.currentProfile || {};
+      ["gift_id_1", "gift_id_2", "gift_id_3"].forEach((k) => {
+        if (cp[k] && String(cp[k]) !== "0")
+          ids.push(String(cp[k]));
+        if (sp[k] && String(sp[k]) !== "0")
+          ids.push(String(sp[k]));
+      });
+      return ids;
+    },
+    _hasAllyGift() {
+      return this._allMainGiftIds().includes(ALLY_GIFT_ID);
+    },
+    _improvedAllyCount() {
+      return this._allMainGiftIds().filter((id) => id === IMPROVED_ALLY_GIFT_ID).length;
+    },
+    // ── Initialisation ───────────────────────────────────────────────────────────
+    init() {
+      this._bindOnce();
+      this._syncTabVisibility();
+      if (this._hasAllyGift()) {
+        this._render();
+        const ally = this._getData();
+        if (ally.species_id) {
+          api_default.fetchProfile(ally.species_id).then((p) => {
+            this._speciesProfile = p;
+            this._refreshGiftsArea();
+            this._refreshBattleArea();
+          });
+        }
+        if (ally.career_id) {
+          this._loadCareerProfile(ally.career_id);
+        }
+        this._ensureGiftList();
+        this._populateSelects();
+      }
+    },
+    _bindOnce() {
+      if (this._bound)
+        return;
+      this._bound = true;
+      document.addEventListener("cg:builder:opened", () => {
+        setTimeout(() => {
+          this._careerProfile = null;
+          this._speciesProfile = null;
+          this._syncTabVisibility();
+          if (this._hasAllyGift()) {
+            this._render();
+            const ally = this._getData();
+            if (ally.species_id) {
+              api_default.fetchProfile(ally.species_id).then((p) => {
+                this._speciesProfile = p;
+                this._refreshGiftsArea();
+                this._refreshBattleArea();
+              });
+            }
+            if (ally.career_id)
+              this._loadCareerProfile(ally.career_id);
+            this._ensureGiftList();
+            this._populateSelects();
+          }
+        }, 0);
+      });
+      $24(document).on(
+        "cg:free-gift:changed cg:xp-gift:changed change.cg-ally-gifts",
+        () => {
+          this._syncTabVisibility();
+          if (this._hasAllyGift()) {
+            const panel = document.getElementById("cg-ally-inner");
+            if (!panel || !panel.dataset.rendered) {
+              this._render();
+              this._populateSelects();
+            } else {
+              this._refreshImprovedSlots();
+            }
+          }
+        }
+      );
+      $24(document).on("click", '[data-tab="tab-ally"]', () => {
+        setTimeout(() => {
+          this._populateSelects();
+          this._ensureGiftList().then(() => this._refreshImprovedSlots());
+        }, 50);
+      });
+      $24(document).on("input.ally", "#cg-ally-name", (e) => {
+        this._patch({ name: e.target.value });
+      });
+      $24(document).on("input.ally", "#cg-ally-description", (e) => {
+        this._patch({ description: e.target.value });
+      });
+      $24(document).on("change.ally", "#cg-ally-species", (e) => {
+        this._onSpeciesChange(e.target.value);
+      });
+      $24(document).on("change.ally", "#cg-ally-career", (e) => {
+        this._onCareerChange(e.target.value);
+      });
+      $24(document).on("change.ally", ".cg-ally-improved-gift-select", () => {
+        this._onImprovedGiftChange();
+      });
+      $24(document).on("click.ally", "#cg-ally-shop-btn", () => {
+        this._openCatalog();
+      });
+      $24(document).on("click.ally", ".cg-ally-catalog-buy", (e) => {
+        this._buyItem(e.currentTarget.dataset);
+      });
+      $24(document).on("click.ally", ".cg-ally-trapping-remove", (e) => {
+        this._removeItem(parseInt(e.currentTarget.dataset.idx, 10));
+      });
+      $24(document).on("click.ally", "#cg-ally-catalog-close", () => {
+        this._closeCatalog();
+      });
+    },
+    // ── Tab visibility ───────────────────────────────────────────────────────────
+    _syncTabVisibility() {
+      const tab = document.querySelector('[data-tab="tab-ally"]');
+      const panel = document.getElementById("tab-ally");
+      const show = this._hasAllyGift();
+      if (tab)
+        tab.style.display = show ? "" : "none";
+      if (panel)
+        panel.style.display = show ? "" : "none";
+    },
+    // ── Populate species/career selects ─────────────────────────────────────────
+    _populateSelects() {
+      const allySp = document.getElementById("cg-ally-species");
+      const allyCr = document.getElementById("cg-ally-career");
+      if (!allySp && !allyCr)
+        return;
+      const ally = this._getData();
+      if (allySp) {
+        api_default.getList().then((list) => {
+          const prior = allySp.value || ally.species_id || "";
+          allySp.innerHTML = '<option value="">\u2014 Select Species \u2014</option>' + (list || []).map(
+            ({ id, name }) => `<option value="${esc(id)}"${String(id) === String(prior) ? " selected" : ""}>${esc(name)}</option>`
+          ).join("");
+          if (prior)
+            allySp.value = prior;
+        });
+      }
+      if (allyCr) {
+        api_default2.getList().then((list) => {
+          const prior = allyCr.value || ally.career_id || "";
+          allyCr.innerHTML = '<option value="">\u2014 Select Career \u2014</option>' + (list || []).map(
+            ({ id, name }) => `<option value="${esc(id)}"${String(id) === String(prior) ? " selected" : ""}>${esc(name)}</option>`
+          ).join("");
+          if (prior)
+            allyCr.value = prior;
+        });
+      }
+    },
+    // ── Profile loading ──────────────────────────────────────────────────────────
+    _onSpeciesChange(speciesId) {
+      this._patch({ species_id: speciesId });
+      this._speciesProfile = null;
+      this._refreshGiftsArea();
+      this._refreshBattleArea();
+      if (!speciesId)
+        return;
+      api_default.fetchProfile(speciesId).then((p) => {
+        this._speciesProfile = p;
+        this._refreshGiftsArea();
+        this._refreshBattleArea();
+      });
+    },
+    _onCareerChange(careerId) {
+      this._patch({ career_id: careerId });
+      this._careerProfile = null;
+      this._refreshGiftsArea();
+      this._refreshBattleArea();
+      this._refreshMoneyArea();
+      if (!careerId)
+        return;
+      this._loadCareerProfile(careerId);
+    },
+    _loadCareerProfile(careerId) {
+      api_default2.fetchProfile(careerId).then((p) => {
+        this._careerProfile = p;
+        this._refreshGiftsArea();
+        this._refreshBattleArea();
+        this._refreshMoneyArea();
+      });
+    },
+    _onImprovedGiftChange() {
+      const ids = [];
+      document.querySelectorAll(".cg-ally-improved-gift-select").forEach((sel) => {
+        if (sel.value)
+          ids.push(sel.value);
+      });
+      this._patch({ improved_gift_ids: ids });
+      this._refreshGiftsArea();
+    },
+    // ── Main render ──────────────────────────────────────────────────────────────
+    _render() {
+      const panel = document.getElementById("cg-ally-inner");
+      if (!panel)
+        return;
+      const ally = this._getData();
+      panel.dataset.rendered = "1";
+      panel.innerHTML = this._buildIdentityHtml(ally) + this._buildProfileHtml(ally) + this._buildTraitsHtml() + `<div id="cg-ally-gifts-area">${this._buildGiftsHtml()}</div><div id="cg-ally-battle-area">${this._buildBattleHtml()}</div><div id="cg-ally-trappings-area">${this._buildTrappingsHtml()}</div><div id="cg-ally-money-area">${this._buildMoneyHtml()}</div>` + this._buildShopHtml();
+    },
+    _refreshGiftsArea() {
+      const el = document.getElementById("cg-ally-gifts-area");
+      if (el)
+        el.innerHTML = this._buildGiftsHtml();
+    },
+    _refreshBattleArea() {
+      const el = document.getElementById("cg-ally-battle-area");
+      if (el)
+        el.innerHTML = this._buildBattleHtml();
+    },
+    _refreshMoneyArea() {
+      const el = document.getElementById("cg-ally-money-area");
+      if (el)
+        el.innerHTML = this._buildMoneyHtml();
+    },
+    _refreshTrappingsArea() {
+      const el = document.getElementById("cg-ally-trappings-area");
+      if (el)
+        el.innerHTML = this._buildTrappingsHtml();
+    },
+    _refreshImprovedSlots() {
+      const el = document.getElementById("cg-ally-improved-slots");
+      if (!el)
+        return;
+      const ally = this._getData();
+      const count = this._improvedAllyCount();
+      const ids = Array.isArray(ally.improved_gift_ids) ? ally.improved_gift_ids : [];
+      el.innerHTML = this._buildImprovedSlotsHtml(count, ids);
+    },
+    // ── Section builders ─────────────────────────────────────────────────────────
+    _buildIdentityHtml(ally) {
+      return `
+    <div class="cg-ally-box">
+      <h4 class="cg-ally-subhead">Identity</h4>
+      <div class="cg-ally-field-row">
+        <label class="cg-ally-label" for="cg-ally-name">Name</label>
+        <input type="text" id="cg-ally-name" class="cg-ally-input"
+               value="${esc(ally.name || "")}" placeholder="Ally's name" />
+      </div>
+      <div class="cg-ally-field-row">
+        <label class="cg-ally-label" for="cg-ally-description">Description</label>
+        <textarea id="cg-ally-description" class="cg-ally-textarea"
+                  placeholder="Appearance, personality, background\u2026">${esc(ally.description || "")}</textarea>
+      </div>
+    </div>`;
+    },
+    _buildProfileHtml(ally) {
+      return `
+    <div class="cg-ally-box">
+      <h4 class="cg-ally-subhead">Species &amp; Career</h4>
+      <div class="cg-ally-field-row">
+        <label class="cg-ally-label" for="cg-ally-species">Species</label>
+        <select id="cg-ally-species" class="cg-ally-select">
+          <option value="">\u2014 Select Species \u2014</option>
+        </select>
+      </div>
+      <div class="cg-ally-field-row">
+        <label class="cg-ally-label" for="cg-ally-career">Career</label>
+        <select id="cg-ally-career" class="cg-ally-select">
+          <option value="">\u2014 Select Career \u2014</option>
+        </select>
+      </div>
+    </div>`;
+    },
+    _buildTraitsHtml() {
+      const traits = [
+        ["Body", "d6"],
+        ["Speed", "d6"],
+        ["Will", "d6"],
+        ["Mind", "d6"],
+        ["Species", "d6"],
+        ["Career", "d6"]
+      ];
+      return `
+    <div class="cg-ally-box">
+      <h4 class="cg-ally-subhead">Traits <span class="cg-ally-note">(all d6)</span></h4>
+      <div class="cg-ally-traits-grid">
+        ${traits.map(
+        ([label, die]) => `<div class="cg-ally-trait"><span class="cg-ally-trait-label">${label}</span><span class="cg-ally-trait-die">${die}</span></div>`
+      ).join("")}
+      </div>
+    </div>`;
+    },
+    _buildGiftsHtml() {
+      const ally = this._getData();
+      const sp = this._speciesProfile || {};
+      const cp = this._careerProfile || {};
+      const mainLang = this._getMainLang();
+      const spGifts = [sp.gift_1, sp.gift_2, sp.gift_3].filter(Boolean);
+      const cpGifts = [cp.gift_1, cp.gift_2, cp.gift_3].filter(Boolean);
+      const count = this._improvedAllyCount();
+      const ids = Array.isArray(ally.improved_gift_ids) ? ally.improved_gift_ids : [];
+      return `
+    <div class="cg-ally-box">
+      <h4 class="cg-ally-subhead">Gifts</h4>
+
+      <div class="cg-ally-gift-group">
+        <div class="cg-ally-gift-label">Language</div>
+        <div class="cg-ally-gift-item">${esc(mainLang || "(same as character)")}</div>
+      </div>
+
+      ${spGifts.length ? `
+      <div class="cg-ally-gift-group">
+        <div class="cg-ally-gift-label">Species Gifts</div>
+        <ul class="cg-ally-gift-list">
+          ${spGifts.map((g) => `<li>${esc(g)}</li>`).join("")}
+        </ul>
+      </div>` : ""}
+
+      ${cpGifts.length ? `
+      <div class="cg-ally-gift-group">
+        <div class="cg-ally-gift-label">Career Gifts</div>
+        <ul class="cg-ally-gift-list">
+          ${cpGifts.map((g) => `<li>${esc(g)}</li>`).join("")}
+        </ul>
+      </div>` : ""}
+
+      <div id="cg-ally-improved-slots">
+        ${this._buildImprovedSlotsHtml(count, ids)}
+      </div>
+    </div>`;
+    },
+    _buildImprovedSlotsHtml(count, selectedIds) {
+      if (count === 0)
+        return "";
+      let html = `<div class="cg-ally-gift-group">
+      <div class="cg-ally-gift-label">Improved Ally Gifts (${count})</div>`;
+      for (let i = 0; i < count; i++) {
+        const sel = selectedIds[i] || "";
+        html += `<div class="cg-ally-improved-slot">
+        <select class="cg-ally-improved-gift-select cg-ally-select" data-slot="${i}">
+          <option value="">\u2014 Choose a Gift \u2014</option>
+          ${this._buildGiftOptions(sel)}
+        </select>
+      </div>`;
+      }
+      html += `</div>`;
+      return html;
+    },
+    _buildGiftOptions(selectedId) {
+      if (!this._giftList)
+        return "";
+      const owned = this._getAllyOwnedGiftIds();
+      return (this._giftList || []).filter((g) => {
+        const id = String(g.id || g.ct_id || "");
+        if (!id || id === "0")
+          return false;
+        if (parseInt(g.ct_gifts_major || g.major || 0, 10) > 0)
+          return false;
+        if (id === "242")
+          return false;
+        const allows = parseInt(g.ct_gifts_manifold || g.allows_multiple || g.manifold || 0, 10) > 0;
+        if (!allows && owned.has(id) && id !== selectedId)
+          return false;
+        return true;
+      }).map((g) => {
+        const id = String(g.id || g.ct_id || "");
+        const name = String(g.name || g.ct_gifts_name || "");
+        const sel = id === selectedId ? " selected" : "";
+        return `<option value="${esc(id)}"${sel}>${esc(name)}</option>`;
+      }).join("");
+    },
+    _getAllyOwnedGiftIds() {
+      const sp = this._speciesProfile || {};
+      const cp = this._careerProfile || {};
+      const ids = /* @__PURE__ */ new Set();
+      ["gift_id_1", "gift_id_2", "gift_id_3"].forEach((k) => {
+        if (sp[k])
+          ids.add(String(sp[k]));
+        if (cp[k])
+          ids.add(String(cp[k]));
+      });
+      return ids;
+    },
+    _buildBattleHtml() {
+      const sp = this._speciesProfile || {};
+      const cp = this._careerProfile || {};
+      const weapons = this._deriveAllyWeapons(sp, cp);
+      const armor = this._deriveAllyArmor(sp, cp);
+      let soakParts = ["d6"];
+      armor.forEach((a) => {
+        if (a.soak)
+          soakParts.push(a.soak);
+      });
+      const soak = soakParts.join(" + ");
+      let html = `
+    <div class="cg-ally-box">
+      <h4 class="cg-ally-subhead">Battle Array</h4>
+      <div class="cg-ally-pools">
+        <div class="cg-ally-pool">
+          <span class="cg-ally-pool-label">Initiative</span>
+          <strong class="cg-ally-pool-dice">d6 + d6</strong>
+          <span class="cg-ally-pool-note">(Speed + Mind)</span>
+        </div>
+        <div class="cg-ally-pool">
+          <span class="cg-ally-pool-label">Dodge</span>
+          <strong class="cg-ally-pool-dice">d6</strong>
+          <span class="cg-ally-pool-note">(Speed)</span>
+        </div>
+        <div class="cg-ally-pool">
+          <span class="cg-ally-pool-label">Soak</span>
+          <strong class="cg-ally-pool-dice">${esc(soak)}</strong>
+          <span class="cg-ally-pool-note">(Body + Armour)</span>
+        </div>
+      </div>`;
+      if (weapons.length) {
+        html += `<h5 class="cg-ally-table-head">Weapons</h5>
+      <table class="cg-ally-table">
+        <thead><tr><th>Name</th><th>Attack</th><th>Damage</th><th>Range</th></tr></thead>
+        <tbody>${weapons.map(
+          (w) => `<tr><td>${esc(w.name)}</td><td>${esc(w.attack)}</td><td>${esc(w.damage)}</td><td>${esc(w.range)}</td></tr>`
+        ).join("")}</tbody>
+      </table>`;
+      }
+      if (armor.length) {
+        html += `<h5 class="cg-ally-table-head">Armour</h5>
+      <table class="cg-ally-table">
+        <thead><tr><th>Name</th><th>Soak Dice</th></tr></thead>
+        <tbody>${armor.map(
+          (a) => `<tr><td>${esc(a.name)}</td><td>${esc(a.soak)}</td></tr>`
+        ).join("")}</tbody>
+      </table>`;
+      }
+      html += `</div>`;
+      return html;
+    },
+    _buildTrappingsHtml() {
+      const ally = this._getData();
+      const list = Array.isArray(ally.trappings_list) ? ally.trappings_list : [];
+      const sp = this._speciesProfile || {};
+      const cp = this._careerProfile || {};
+      const autoWeps = this._deriveAllyWeapons(sp, cp);
+      const autoArm = this._deriveAllyArmor(sp, cp);
+      const autoItems = [...autoWeps, ...autoArm].map((t) => `<li class="cg-ally-trapping-auto">${esc(t.name)}</li>`).join("");
+      const purchItems = list.map(
+        (t, i) => `<li class="cg-ally-trapping-item">
+        ${esc(t.name)}
+        <button type="button" class="cg-ally-trapping-remove cg-btn-tiny" data-idx="${i}" title="Remove">\u2715</button>
+      </li>`
+      ).join("");
+      return `
+    <div class="cg-ally-box">
+      <h4 class="cg-ally-subhead">Trappings</h4>
+      ${autoItems || purchItems ? `
+      <ul class="cg-ally-trappings-list">
+        ${autoItems}${purchItems}
+      </ul>` : '<p class="cg-ally-empty">No trappings yet.</p>'}
+    </div>`;
+    },
+    _buildMoneyHtml() {
+      const ally = this._getData();
+      const holdings = ally.money_holdings && typeof ally.money_holdings === "object" ? ally.money_holdings : {};
+      const denar = parseInt(holdings.denar || 0, 10);
+      return `
+    <div class="cg-ally-box">
+      <h4 class="cg-ally-subhead">Money</h4>
+      <div class="cg-ally-money">
+        <span class="cg-ally-money-label">Denar</span>
+        <input type="number" id="cg-ally-money-denar" class="cg-ally-money-input"
+               value="${denar}" min="0" />
+      </div>
+    </div>`;
+    },
+    _buildShopHtml() {
+      return `
+    <div class="cg-ally-box">
+      <h4 class="cg-ally-subhead">Equipment Shop</h4>
+      <p class="cg-ally-note">Purchase equipment for the ally. Purchases deduct from the ally's money.</p>
+      <button type="button" id="cg-ally-shop-btn" class="cg-btn cg-btn-gold">Open Equipment Shop</button>
+      <div id="cg-ally-catalog" style="display:none"></div>
+    </div>`;
+    },
+    // ── Trapping derivation ──────────────────────────────────────────────────────
+    _deriveAllyWeapons(sp, cp) {
+      const weapons = [];
+      const seen = /* @__PURE__ */ new Set();
+      for (const profile of [sp, cp]) {
+        const list = Array.isArray(profile.trappings) ? profile.trappings : [];
+        for (const t of list) {
+          if ((t.kind || t.type) !== "weapon")
+            continue;
+          if (seen.has(t.name))
+            continue;
+          seen.add(t.name);
+          const dmg = t.damage_mod != null ? `+${t.damage_mod}` : "";
+          const attack = this._resolveAllyPool(t.attack_dice || "");
+          weapons.push({ name: t.name || "", attack, damage: dmg, range: t.range_band || "Melee" });
+        }
+      }
+      return weapons;
+    },
+    _deriveAllyArmor(sp, cp) {
+      const armor = [];
+      const seen = /* @__PURE__ */ new Set();
+      for (const profile of [sp, cp]) {
+        const list = Array.isArray(profile.trappings) ? profile.trappings : [];
+        for (const t of list) {
+          if (!t.armor_dice)
+            continue;
+          if (seen.has(t.name))
+            continue;
+          seen.add(t.name);
+          armor.push({ name: t.name || "", soak: t.armor_dice });
+        }
+      }
+      return armor;
+    },
+    /** Resolve an attack pool string for an ally (all traits = d6, no skill marks). */
+    _resolveAllyPool(raw) {
+      if (!raw)
+        return "";
+      const TRAIT = { body: "d6", speed: "d6", will: "d6", mind: "d6", species: "d6", career: "d6" };
+      const vsIdx = raw.toLowerCase().indexOf(" vs.");
+      const part = vsIdx > -1 ? raw.slice(0, vsIdx) : raw;
+      const parts = part.split(",").map((s) => s.trim()).filter(Boolean);
+      const dice = [];
+      for (const p of parts) {
+        const k = p.toLowerCase();
+        if (TRAIT[k]) {
+          dice.push(TRAIT[k]);
+        } else {
+          dice.push(p);
+        }
+      }
+      return dice.filter(Boolean).join(" + ");
+    },
+    // ── Gift list (for Improved Ally slots) ─────────────────────────────────────
+    _ensureGiftList() {
+      if (this._giftList)
+        return Promise.resolve(this._giftList);
+      if (this._giftListLoading)
+        return new Promise((resolve) => {
+          const wait = setInterval(() => {
+            if (this._giftList) {
+              clearInterval(wait);
+              resolve(this._giftList);
+            }
+          }, 100);
+        });
+      this._giftListLoading = true;
+      const { ajax_url, nonce } = ajaxEnv8();
+      return new Promise((resolve) => {
+        $24.post(ajax_url, { action: "cg_get_free_gifts", security: nonce, nonce, _ajax_nonce: nonce }).then((res) => {
+          let list = [];
+          if (res && res.success && Array.isArray(res.data))
+            list = res.data;
+          else if (Array.isArray(res))
+            list = res;
+          this._giftList = list;
+          this._giftListLoading = false;
+          resolve(list);
+        }).catch(() => {
+          this._giftListLoading = false;
+          resolve([]);
+        });
+      });
+    },
+    // ── Language helper ──────────────────────────────────────────────────────────
+    _getMainLang() {
+      var _a, _b;
+      try {
+        const QualState2 = window.CG_QualState || window.QualState;
+        if (QualState2 && QualState2.data && Array.isArray(QualState2.data.language) && QualState2.data.language[0]) {
+          return QualState2.data.language[0];
+        }
+      } catch (_) {
+      }
+      const d = formBuilder_default._data || {};
+      return d.language || ((_b = (_a = d.qualifications) == null ? void 0 : _a.language) == null ? void 0 : _b[0]) || "";
+    },
+    // ── Equipment catalog ────────────────────────────────────────────────────────
+    _openCatalog() {
+      const el = document.getElementById("cg-ally-catalog");
+      if (!el)
+        return;
+      this._catalogOpen = true;
+      el.style.display = "";
+      el.innerHTML = '<p class="cg-ally-loading">Loading catalog\u2026</p>';
+      const { ajax_url, nonce } = ajaxEnv8();
+      $24.post(ajax_url, { action: "cg_get_equipment_catalog", security: nonce, nonce, _ajax_nonce: nonce }).then((res) => {
+        const items = res && res.success && Array.isArray(res.data) ? res.data : [];
+        this._catalogData = items;
+        el.innerHTML = this._buildCatalogHtml(items);
+      }).catch(() => {
+        el.innerHTML = "<p>Could not load catalog.</p>";
+      });
+    },
+    _closeCatalog() {
+      const el = document.getElementById("cg-ally-catalog");
+      if (el)
+        el.style.display = "none";
+      this._catalogOpen = false;
+    },
+    _buildCatalogHtml(items) {
+      if (!items.length)
+        return '<p class="cg-ally-empty">No items available.</p>';
+      const rows = items.map((it) => `
+      <tr>
+        <td>${esc(it.name || "")}</td>
+        <td>${esc(it.cost_d || it.price || "")}</td>
+        <td>
+          <button type="button" class="cg-ally-catalog-buy cg-btn-tiny cg-btn-gold"
+            data-name="${esc(it.name || "")}" data-cost="${esc(it.cost_d || 0)}">Buy</button>
+        </td>
+      </tr>`).join("");
+      return `
+      <div class="cg-ally-catalog-wrap">
+        <div class="cg-ally-catalog-header">
+          <h5>Equipment Shop</h5>
+          <button type="button" id="cg-ally-catalog-close" class="cg-btn-tiny">\u2715 Close</button>
+        </div>
+        <table class="cg-ally-table">
+          <thead><tr><th>Item</th><th>Cost (denar)</th><th></th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+    },
+    _buyItem(dataset) {
+      const name = dataset.name || "";
+      const cost = parseInt(dataset.cost || 0, 10);
+      if (!name)
+        return;
+      const ally = this._getData();
+      const holdings = ally.money_holdings && typeof ally.money_holdings === "object" ? __spreadValues({}, ally.money_holdings) : {};
+      const denarEl = document.getElementById("cg-ally-money-denar");
+      const current = parseInt((denarEl == null ? void 0 : denarEl.value) || holdings.denar || 0, 10);
+      if (cost > 0 && current < cost) {
+        alert(`Not enough money. Need ${cost} denar, have ${current}.`);
+        return;
+      }
+      const newDenar = Math.max(0, current - cost);
+      holdings.denar = newDenar;
+      if (denarEl)
+        denarEl.value = newDenar;
+      const trappings = Array.isArray(ally.trappings_list) ? [...ally.trappings_list] : [];
+      trappings.push({ name, cost_d: cost });
+      this._patch({ trappings_list: trappings, money_holdings: holdings });
+      this._refreshTrappingsArea();
+    },
+    _removeItem(idx) {
+      const ally = this._getData();
+      const trappings = Array.isArray(ally.trappings_list) ? [...ally.trappings_list] : [];
+      trappings.splice(idx, 1);
+      this._patch({ trappings_list: trappings });
+      this._refreshTrappingsArea();
+    },
+    // ── Money input sync ─────────────────────────────────────────────────────────
+    _syncMoneyFromDom() {
+      const el = document.getElementById("cg-ally-money-denar");
+      if (!el)
+        return;
+      const ally = this._getData();
+      const holdings = ally.money_holdings && typeof ally.money_holdings === "object" ? __spreadValues({}, ally.money_holdings) : {};
+      holdings.denar = parseInt(el.value || 0, 10);
+      this._patch({ money_holdings: holdings });
+    }
+  };
+  $24(document).on("input.ally-money", "#cg-ally-money-denar", () => {
+    AllyModule._syncMoneyFromDom();
+  });
+  window.CG_AllyModule = AllyModule;
+  var ally_default = AllyModule;
+
+  // assets/js/src/core/main/builder-events.js
+  var $25 = window.jQuery;
   var LOG5 = (...a) => console.log("[BuilderEvents]", ...a);
   var SEL = {
     species: '#cg-species, select[name="species"], select[data-cg="species"], .cg-species',
     career: '#cg-career,  select[name="career"],  select[data-cg="career"],  .cg-career'
   };
   function firstSelect(selector) {
-    const $sel = $24(selector);
-    const $modalSel = $24("#cg-modal").find(selector);
+    const $sel = $25(selector);
+    const $modalSel = $25("#cg-modal").find(selector);
     if ($modalSel.length)
       return $modalSel.first();
     return $sel.length ? $sel.first() : null;
@@ -10171,7 +10905,7 @@
     if (String($sel.val() || "") === val)
       return true;
     const $byText = $sel.find("option").filter(function() {
-      return $24(this).text() === val;
+      return $25(this).text() === val;
     }).first();
     if ($byText.length) {
       $sel.val($byText.val());
@@ -10200,7 +10934,7 @@
     const $sel = firstSelect(selector);
     if (!$sel) {
       LOG5(`no ${kind} select found`);
-      return $24.Deferred().resolve().promise();
+      return $25.Deferred().resolve().promise();
     }
     const el = $sel.get(0);
     const beforeVal = String($sel.val() || "").trim();
@@ -10214,10 +10948,10 @@
     }
     const ensureOptions = () => {
       if (el.options.length > 1 && !force)
-        return $24.Deferred().resolve().promise();
+        return $25.Deferred().resolve().promise();
       const API = kind === "species" ? api_default : api_default2;
       if (typeof (API == null ? void 0 : API.populateSelect) !== "function")
-        return $24.Deferred().resolve().promise();
+        return $25.Deferred().resolve().promise();
       return API.populateSelect(el, { force: !!force });
     };
     const doApply = () => {
@@ -10236,7 +10970,7 @@
         }
       }
     };
-    return $24.Deferred(function(dfr) {
+    return $25.Deferred(function(dfr) {
       setTimeout(() => {
         ensureOptions().then(() => {
           doApply();
@@ -10246,7 +10980,7 @@
     }).promise();
   }
   function hydrateSpeciesAndCareer(opts = {}) {
-    return $24.when(
+    return $25.when(
       hydrateSelect("species", opts),
       hydrateSelect("career", opts)
     );
@@ -10257,7 +10991,7 @@
     }, 0);
   }
   function bindUIEvents() {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e, _f;
     LOG5("bindUIEvents() called");
     try {
       (_b = (_a = gifts_default) == null ? void 0 : _a.init) == null ? void 0 : _b.call(_a);
@@ -10267,9 +11001,13 @@
       (_d = (_c = trappings_default) == null ? void 0 : _c.init) == null ? void 0 : _d.call(_c);
     } catch (_) {
     }
-    $24(document).off("input.cg change.cg", "#cg-modal input, #cg-modal select, #cg-modal textarea").on("input.cg change.cg", "#cg-modal input, #cg-modal select, #cg-modal textarea", function() {
+    try {
+      (_f = (_e = ally_default) == null ? void 0 : _e.init) == null ? void 0 : _f.call(_e);
+    } catch (_) {
+    }
+    $25(document).off("input.cg change.cg", "#cg-modal input, #cg-modal select, #cg-modal textarea").on("input.cg change.cg", "#cg-modal input, #cg-modal select, #cg-modal textarea", function() {
       builder_ui_default.markDirty();
-      const $el = $24(this);
+      const $el = $25(this);
       if ($el.hasClass("skill-marks")) {
         const skillId = $el.data("skill-id");
         const val = parseInt($el.val(), 10) || 0;
@@ -10283,11 +11021,11 @@
       const key = id.replace(/^cg-/, "");
       formBuilder_default._data[key] = $el.val();
     });
-    $24(document).off("click.cg", "#cg-open-builder").on("click.cg", "#cg-open-builder", (e) => {
+    $25(document).off("click.cg", "#cg-open-builder").on("click.cg", "#cg-open-builder", (e) => {
       e.preventDefault();
-      $24("#cg-modal-splash").removeClass("cg-hidden").addClass("visible");
+      $25("#cg-modal-splash").removeClass("cg-hidden").addClass("visible");
       try {
-        const $sel = $24("#cg-splash-load-select");
+        const $sel = $25("#cg-splash-load-select");
         const optCount = $sel.length ? $sel.find("option").length : 0;
         if ($sel.length && optCount <= 1) {
           document.dispatchEvent(new CustomEvent("cg:characters:refresh", { detail: { source: "splash-open" } }));
@@ -10295,9 +11033,9 @@
       } catch (_) {
       }
     });
-    $24(document).off("click.cg", "#cg-new-splash").on("click.cg", "#cg-new-splash", (e) => {
+    $25(document).off("click.cg", "#cg-new-splash").on("click.cg", "#cg-new-splash", (e) => {
       e.preventDefault();
-      $24("#cg-modal-splash").removeClass("visible").addClass("cg-hidden");
+      $25("#cg-modal-splash").removeClass("visible").addClass("cg-hidden");
       builder_ui_default.openBuilder({ isNew: true, payload: {} });
       formBuilder_default._data.skillMarks = {};
       formBuilder_default._data.species = "";
@@ -10306,9 +11044,9 @@
         window.CG_FreeChoicesState.selected = ["", "", ""];
       }
     });
-    $24(document).off("click.cg", "#cg-load-splash").on("click.cg", "#cg-load-splash", (e) => {
+    $25(document).off("click.cg", "#cg-load-splash").on("click.cg", "#cg-load-splash", (e) => {
       e.preventDefault();
-      const charId = $24("#cg-splash-load-select").val();
+      const charId = $25("#cg-splash-load-select").val();
       if (!charId) {
         alert("Please select a character to load.");
         return;
@@ -10322,7 +11060,7 @@
           alert("Character could not be loaded.");
           return;
         }
-        $24("#cg-modal-splash").removeClass("visible").addClass("cg-hidden");
+        $25("#cg-modal-splash").removeClass("visible").addClass("cg-hidden");
         builder_ui_default.openBuilder({ isNew: false, payload: record });
         setTimeout(() => {
           hydrateSpeciesAndCareer({ force: true, record });
@@ -10334,7 +11072,7 @@
     });
     bindLoadEvents();
     bindSaveEvents();
-    $24(document).off("ajaxStart.cg ajaxStop.cg").on("ajaxStart.cg", () => {
+    $25(document).off("ajaxStart.cg ajaxStop.cg").on("ajaxStart.cg", () => {
       const el = document.getElementById("cg-busy-indicator");
       if (el) {
         el.classList.remove("cg-busy-hidden");
@@ -10345,39 +11083,39 @@
         el.classList.add("cg-busy-hidden");
       }
     });
-    $24(document).off("click.cg", "#cg-modal .cg-tabs li").on("click.cg", "#cg-modal .cg-tabs li", function(e) {
+    $25(document).off("click.cg", "#cg-modal .cg-tabs li").on("click.cg", "#cg-modal .cg-tabs li", function(e) {
       e.preventDefault();
-      const fromTab = $24("#cg-modal .cg-tabs li.active").data("tab");
-      const tabName = $24(this).data("tab");
-      $24("#cg-modal .cg-tabs li").removeClass("active");
-      $24(this).addClass("active");
-      $24(".tab-panel").removeClass("active");
-      $24(`#${tabName}`).addClass("active");
+      const fromTab = $25("#cg-modal .cg-tabs li.active").data("tab");
+      const tabName = $25(this).data("tab");
+      $25("#cg-modal .cg-tabs li").removeClass("active");
+      $25(this).addClass("active");
+      $25(".tab-panel").removeClass("active");
+      $25(`#${tabName}`).addClass("active");
       emitTabChanged(fromTab, tabName);
       refreshTab();
       setTimeout(() => {
         hydrateSpeciesAndCareer({ force: false });
       }, 0);
     });
-    $24(document).off("click.cg", "#cg-modal-close").on("click.cg", "#cg-modal-close", (e) => {
+    $25(document).off("click.cg", "#cg-modal-close").on("click.cg", "#cg-modal-close", (e) => {
       e.preventDefault();
       builder_ui_default.showUnsaved();
     });
-    $24(document).off("click.cg", "#cg-modal-overlay").on("click.cg", "#cg-modal-overlay", function(e) {
+    $25(document).off("click.cg", "#cg-modal-overlay").on("click.cg", "#cg-modal-overlay", function(e) {
       if (e.target !== this)
         return;
       builder_ui_default.showUnsaved();
     });
-    $24(document).off("click.cg", "#unsaved-save").on("click.cg", "#unsaved-save", (e) => {
+    $25(document).off("click.cg", "#unsaved-save").on("click.cg", "#unsaved-save", (e) => {
       e.preventDefault();
       console.log("[BuilderEvents] Prompt: SAVE & EXIT clicked");
       formBuilder_default.save(true);
     });
-    $24(document).off("click.cg", "#unsaved-exit").on("click.cg", "#unsaved-exit", (e) => {
+    $25(document).off("click.cg", "#unsaved-exit").on("click.cg", "#unsaved-exit", (e) => {
       e.preventDefault();
       builder_ui_default.closeBuilder();
     });
-    $24(document).off("click.cg", "#unsaved-cancel").on("click.cg", "#unsaved-cancel", (e) => {
+    $25(document).off("click.cg", "#unsaved-cancel").on("click.cg", "#unsaved-cancel", (e) => {
       e.preventDefault();
       builder_ui_default.hideUnsaved();
     });

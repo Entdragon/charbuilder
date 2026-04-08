@@ -68,6 +68,18 @@ export default {
           <button type="button" id="cg-equip-open-btn" class="cg-btn cg-btn-gold">Open Equipment Shop</button>
         </div>
       </div>
+
+      <div id="tab-ally" class="tab-panel" style="display:none">
+        <div class="cg-profile-box">
+          <h3>Ally</h3>
+          <p class="cg-ally-intro">
+            Your ally is a companion character. Select a gift below to take your ally — the sheet will auto-populate from their species and career.
+          </p>
+          <div id="cg-ally-inner" class="cg-ally-inner">
+            <p class="cg-ally-loading"><em>Loading ally sheet…</em></p>
+          </div>
+        </div>
+      </div>
     `;
   }
 };

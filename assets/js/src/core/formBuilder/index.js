@@ -462,6 +462,11 @@ function buildPayload(raw) {
     ? raw.money_holdings
     : {};
 
+  // Ally
+  character.ally = (raw.ally && typeof raw.ally === 'object' && !Array.isArray(raw.ally))
+    ? raw.ally
+    : {};
+
   flat.character = character;
 
   flat.character_json = JSON.stringify({ ...core });
@@ -488,6 +493,11 @@ const FormBuilderAPI = {
       this._data.skill_notes = recovered;
     } else if (!this._data.skill_notes || typeof this._data.skill_notes !== 'object') {
       this._data.skill_notes = {};
+    }
+
+    // Normalise ally: PHP may decode an empty JSON object as [] — convert to {}
+    if (Array.isArray(this._data.ally) || !this._data.ally || typeof this._data.ally !== 'object') {
+      this._data.ally = {};
     }
 
     // Snapshot the committed fav-use values so we can detect changes and charge 1 XP.
@@ -854,6 +864,11 @@ const FormBuilderAPI = {
       : {};
     this._data.trappings_list = d.trappings_list;
     this._data.money_holdings = d.money_holdings;
+
+    // Ally data (owned by AllyModule, patched directly into _data.ally)
+    d.ally = (this._data.ally && typeof this._data.ally === 'object' && !Array.isArray(this._data.ally))
+      ? this._data.ally
+      : {};
 
     return d;
   },

@@ -61,6 +61,14 @@ function cg_normalize_character(array $row): array {
     $row['free_gifts']  = [$g1 ?: '', $g2 ?: '', $g3 ?: ''];
     $row['freeGifts']   = $row['free_gifts'];
 
+    // Ally data (JSON object — always decoded to associative array for JS)
+    if (isset($row['ally']) && $row['ally'] !== '' && $row['ally'] !== null) {
+        $decoded = json_decode($row['ally'], true);
+        $row['ally'] = is_array($decoded) ? $decoded : [];
+    } else {
+        $row['ally'] = [];
+    }
+
     return $row;
 }
 
@@ -122,6 +130,7 @@ function cg_save_character(): void {
     cg_ensure_battle_columns();
     cg_ensure_profile_columns();
     cg_ensure_xp_columns();
+    cg_ensure_ally_column();
 
     // skill_marks may arrive as a JSON string (character[skill_marks]) or a proper nested
     // PHP array (character[skillMarks]).  Prefer the array form; decode string as fallback.
@@ -198,6 +207,9 @@ function cg_save_character(): void {
         // Retraining
         'retrain_penalty'               => (int) ($data['retrain_penalty'] ?? $data['retrainPenalty'] ?? 0),
         'retrain_log'                   => json_encode(is_array($data['retrain_log'] ?? null) ? $data['retrain_log'] : (is_array($data['retrainLog'] ?? null) ? $data['retrainLog'] : [])),
+
+        // Ally mini-character data
+        'ally'                          => json_encode(is_array($data['ally'] ?? null) ? $data['ally'] : new stdClass()),
 
         'updated'                       => date('Y-m-d H:i:s'),
     ];

@@ -26,6 +26,7 @@ import GiftsAPI        from '../gifts';
 import SkillsAPI       from '../skills';
 import SummaryAPI      from '../summary';
 import TrappingsAPI    from '../trappings/index.js';
+import AllyModule      from '../ally/index.js';
 
 // Fallback APIs (used only if Index modules don't populate)
 import SpeciesAPI      from '../species/api.js';
@@ -178,6 +179,9 @@ export default function bindUIEvents() {
 
   // Trappings system init (idempotent)
   try { TrappingsAPI?.init?.(); } catch (_) {}
+
+  // Ally module init (idempotent — shows/hides Ally tab based on Ally gift)
+  try { AllyModule?.init?.(); } catch (_) {}
 
   // 1) Mark form dirty on change & sync into FormBuilderAPI._data
   $(document)
