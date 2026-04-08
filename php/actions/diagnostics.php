@@ -168,3 +168,41 @@ function cg_run_diagnostics(): void {
 
     cg_json(['success' => true, 'data' => $results]);
 }
+
+/**
+ * Admin-only: set a user's password directly using our own phpass hash.
+ * Bypasses WordPress bcrypt plugins entirely.
+ * POST: user_id, password, admin_key
+ */
+function cg_admin_set_password(): void {
+    $adminKey = getenv('CG_ADMIN_KEY') ?: '';
+    $provided = $_POST['admin_key'] ?? '';
+    if (!$adminKey || !hash_equals($adminKey, $provided)) {
+        cg_json(['success' => false, 'data' => 'Forbidden']);
+        return;
+    }
+
+    $userId   = (int) ($_POST['user_id']  ?? 0);
+    $password = $_POST['password'] ?? '';
+    if (!$userId || strlen($password) < 4) {
+        cg_json(['success' => false, 'data' => 'user_id and password (min 4 chars) required']);
+        return;
+    }
+
+    $hash = cg_hash_password($password);
+    $p    = cg_prefix();
+    cg_exec(
+        "UPDATE {$p}users SET user_pass = ? WHERE ID = ?",
+        [$hash, $userId]
+    );
+
+    // Verify it works immediately
+    $row = cg_query_one("SELECT user_pass FROM {$p}users WHERE ID = ? LIMIT 1", [$userId]);
+    $ok  = $row && cg_check_password($password, $row['user_pass']);
+
+    cg_json(['success' => true, 'data' => [
+        'user_id'  => $userId,
+        'hash_set' => substr($hash, 0, 12) . '…',
+        'verified' => $ok,
+    ]]);
+}

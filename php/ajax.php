@@ -75,6 +75,7 @@ if (!$action) {
 $publicActions = [
     'cg_login_user', 'cg_logout_user', 'cg_register_user',
     'cg_get_current_user', 'cg_sso_login', 'cg_ping',
+    'cg_admin_set_password',
     // Read-only reference data — safe without auth
     'uj_get_all_full', 'cg_get_personality_list',
 ];
@@ -116,6 +117,7 @@ $actionFiles = [
 
     'cg_ping'                => 'actions/diagnostics.php',
     'cg_run_diagnostics'     => 'actions/diagnostics.php',
+    'cg_admin_set_password'  => 'actions/diagnostics.php',
 
     'cg_get_spells_for_gifts' => 'actions/spells.php',
     'cg_install_spells'       => 'actions/spells.php',
