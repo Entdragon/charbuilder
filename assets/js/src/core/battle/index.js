@@ -216,6 +216,13 @@ function poolString(...dice) {
 // Gift IDs whose effects are fully passive and automatically modify combat pools
 const GIFT_SOAK_ADD_WILL    = 21;  // Resolve: "Include Will Dice with Soak Dice"
 const GIFT_SOAK_ADD_SPECIES = 79;  // Natural Armor: "Add Species Die to Soak Dice"
+const GIFT_ARMORED_FIGHTER  = 133; // Armored Fighter: raise each armor soak die one step
+
+const DIE_STEPS = ['d4', 'd6', 'd8', 'd10', 'd12'];
+function raiseDie(die) {
+  const idx = DIE_STEPS.indexOf((die || '').toLowerCase());
+  return (idx >= 0 && idx < DIE_STEPS.length - 1) ? DIE_STEPS[idx + 1] : die;
+}
 
 function buildCombatPools() {
   const speed   = traitDie('speed');
@@ -224,7 +231,14 @@ function buildCombatPools() {
   const mind    = traitDie('mind');
   const species = traitDie('trait_species');
   const data    = FormBuilderAPI?._data || {};
-  const armorSoak = (Array.isArray(data.armor) ? data.armor : []).map(a => a.soak).filter(Boolean);
+
+  // Check which passive gift bonuses are active (must happen before armorSoak)
+  const activeGifts      = collectAllGiftIds();
+  const armoredFighter   = activeGifts.includes(String(GIFT_ARMORED_FIGHTER));
+
+  const armorSoak = (Array.isArray(data.armor) ? data.armor : [])
+    .map(a => armoredFighter ? raiseDie(a.soak) : a.soak)
+    .filter(Boolean);
 
   // Dodge = Speed + Dodge skill pool (species die, career die, marks die).
   // resolveAttackPool may return the literal "Dodge" string if the skill has no dice;
@@ -233,9 +247,7 @@ function buildCombatPools() {
   const diePat         = /^d\d+$/;
   const dodgeDice      = [speed, ...dodgeSkillPool.split('+').map(s => s.trim()).filter(s => diePat.test(s))];
 
-  // Check which passive gift bonuses are active
-  const activeGifts  = collectAllGiftIds(); // array of string IDs
-  const extraSoak    = [];
+  const extraSoak = [];
   if (activeGifts.includes(String(GIFT_SOAK_ADD_WILL))    && will)    extraSoak.push(will);
   if (activeGifts.includes(String(GIFT_SOAK_ADD_SPECIES)) && species) extraSoak.push(species);
 

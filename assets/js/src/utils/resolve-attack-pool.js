@@ -33,8 +33,14 @@ export function resolveAttackPool(raw, { FormBuilderAPI, SpeciesAPI, CareerAPI }
   const giftMarks  = data.gift_skill_marks  || {};
   const xpMarks    = data.xpSkillMarks      || {};
 
-  const SP  = (SpeciesAPI && SpeciesAPI.currentProfile) || (window.CG_SpeciesAPI && window.CG_SpeciesAPI.currentProfile) || {};
-  const CP  = (CareerAPI  && CareerAPI.currentProfile)  || (window.CG_CareerAPI  && window.CG_CareerAPI.currentProfile)  || {};
+  const SP  = (SpeciesAPI && SpeciesAPI.currentProfile)
+    || (window.CG_SpeciesAPI && window.CG_SpeciesAPI.currentProfile)
+    || (window.SpeciesAPI    && window.SpeciesAPI.currentProfile)
+    || {};
+  const CP  = (CareerAPI && CareerAPI.currentProfile)
+    || (window.CG_CareerAPI && window.CG_CareerAPI.currentProfile)
+    || (window.CareerAPI    && window.CareerAPI.currentProfile)
+    || {};
 
   // Species skill_one/two/three store numeric skill IDs in text_value (same format as career).
   const spSkillIds = [SP.skill_one, SP.skill_two, SP.skill_three]

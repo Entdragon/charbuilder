@@ -522,15 +522,41 @@ const TrappingsAPI = {
     const weaponTrappings = list.filter(t => t.kind === 'weapon');
     const armorTrappings  = list.filter(t => t.kind === 'equipment' && t.armor_dice);
 
+    // Check if Claws of Iron (gift 154) is active — +1 damage with all claw attacks
+    const GIFT_CLAWS_OF_IRON = '154';
+    const _data = FormBuilderAPI._data || {};
+    const _allGiftIds = [
+      ...(Array.isArray(_data.free_gifts) ? _data.free_gifts : []),
+      _data.free_gift_1, _data.free_gift_2, _data.free_gift_3,
+      ...(Array.isArray(_data.xpGifts) ? _data.xpGifts : []),
+    ].filter(Boolean).map(String);
+    // Also include career / species gifts from loaded profiles
+    const _cp = (CareerAPI && CareerAPI.currentProfile) || {};
+    const _sp = (SpeciesAPI && SpeciesAPI.currentProfile) || {};
+    ['gift_id_1','gift_id_2','gift_id_3'].forEach(k => {
+      if (_cp[k]) _allGiftIds.push(String(_cp[k]));
+      if (_sp[k]) _allGiftIds.push(String(_sp[k]));
+    });
+    (Array.isArray(_data.career_gift_replacements) ? [] : Object.values(_data.career_gift_replacements || {}))
+      .forEach(id => { if (id) _allGiftIds.push(String(id)); });
+    const clawsOfIronActive = _allGiftIds.includes(GIFT_CLAWS_OF_IRON);
+
     const trappingWeapons = weaponTrappings.map(t => {
       const range = t.range_band || 'Close';
+      const isClaw = /claw/i.test(t.name || '');
+      const dmgMod = (t.damage_mod != null ? parseInt(t.damage_mod, 10) : null);
+      let damageStr = '';
+      if (dmgMod !== null) {
+        const bonus = (clawsOfIronActive && isClaw) ? dmgMod + 1 : dmgMod;
+        damageStr = `+${bonus}`;
+      }
       return {
         _from_trappings:  true,
         _trapping_uid:    t.uid,
         _attack_dice_raw: t.attack_dice || '',
         name:   t.name,
         attack: '',
-        damage: t.damage_mod != null ? `+${t.damage_mod}` : '',
+        damage: damageStr,
         range:  range,
         notes:  t.effect || '',
       };
