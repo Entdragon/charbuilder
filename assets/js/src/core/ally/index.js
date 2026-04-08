@@ -730,9 +730,10 @@ const AllyModule = {
   /**
    * Build the soak parts array and note text from traits + armor + passive gifts.
    * Mirrors the main character logic in battle/index.js.
-   *  - Gift 21 (Resolve):      add Will die
-   *  - Gift 79 (Natural Armor): add Species die
-   *  - Gift 133 (Armored Fighter): raise each armour soak die one step
+   *  - Gift 21  (Resolve):          add Will die
+   *  - Gift 79  (Natural Armor):    add Species die
+   *  - Gift 81  (Strength):         +d8 to Natural/Melee/Thrown weapon attack pools
+   *  - Gift 133 (Armored Fighter):  raise each armour soak die one step
    */
   _buildAllysoakParts(tr, armor) {
     const DIE_STEPS = ['d4','d6','d8','d10','d12'];
@@ -761,17 +762,37 @@ const AllyModule = {
     return { soakPool: parts.join(' + '), soakNote: note };
   },
 
+  /**
+   * Applies the Strength passive bonus (gift 81) to a weapons array.
+   * For every weapon whose range qualifies (Natural/Close/Melee/Reach/Thrown),
+   * appends ' + d8' to the attack pool string.
+   * Call this after _deriveAllyWeapons() in battle and print HTML builders.
+   */
+  _applyAllyStrengthBonus(weapons) {
+    const giftIds = this._collectAllyGiftIds();
+    if (!giftIds.has('81')) return weapons;
+    return weapons.map(w => {
+      const r = String(w.range || '').toLowerCase().trim();
+      const qualifies = !r || r === 'close' || r === 'melee' || r === 'reach' || r === 'natural' || r === 'thrown';
+      if (!qualifies) return w;
+      const boosted = w.attack ? `${w.attack} + d8` : 'd8';
+      return { ...w, attack: boosted };
+    });
+  },
+
   _buildBattleHtml() {
     const sp = this._speciesProfile || {};
     const cp = this._careerProfile  || {};
     const tr = this._resolveAllyTraits();
 
-    const weapons = this._deriveAllyWeapons(sp, cp, tr);
-    const armor   = this._deriveAllyArmor(sp, cp);
+    const _rawWeapons = this._deriveAllyWeapons(sp, cp, tr);
+    const weapons     = this._applyAllyStrengthBonus(_rawWeapons);
+    const armor       = this._deriveAllyArmor(sp, cp);
 
     const { soakPool, soakNote } = this._buildAllysoakParts(tr, armor);
     const initP  = `${tr.speed} + ${tr.mind}`;
     const dodgeP = tr.speed;
+    const strengthActive = this._collectAllyGiftIds().has('81');
 
     let html = `
     <div class="cg-ally-box">
@@ -795,13 +816,16 @@ const AllyModule = {
       </div>`;
 
     if (weapons.length) {
+      const sNote = strengthActive
+        ? `<p class="cg-strength-note"><em>Strength (passive): +d8 with Natural, Melee &amp; Thrown attacks</em></p>`
+        : '';
       html += `<h5 class="cg-ally-table-head">Weapons</h5>
       <table class="cg-ally-table">
         <thead><tr><th>Name</th><th>Attack</th><th>Damage</th><th>Range</th></tr></thead>
         <tbody>${weapons.map(w =>
           `<tr><td>${esc(w.name)}</td><td>${esc(w.attack)}</td><td>${esc(w.damage)}</td><td>${esc(w.range)}</td></tr>`
         ).join('')}</tbody>
-      </table>`;
+      </table>${sNote}`;
     }
 
     if (armor.length) {
@@ -1351,7 +1375,7 @@ const AllyModule = {
 
     // ── Combat pools ─────────────────────────────────────────────────────────
     const tr      = this._resolveAllyTraits();
-    const weapons = this._deriveAllyWeapons(sp, cp, tr);
+    const weapons = this._applyAllyStrengthBonus(this._deriveAllyWeapons(sp, cp, tr));
     const armor   = this._deriveAllyArmor(sp, cp);
     const { soakPool: soak, soakNote } = this._buildAllysoakParts(tr, armor);
     const initP  = `${tr.speed} + ${tr.mind}`;

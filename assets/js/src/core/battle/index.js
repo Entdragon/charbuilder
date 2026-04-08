@@ -217,11 +217,21 @@ function poolString(...dice) {
 const GIFT_SOAK_ADD_WILL    = 21;  // Resolve: "Include Will Dice with Soak Dice"
 const GIFT_SOAK_ADD_SPECIES = 79;  // Natural Armor: "Add Species Die to Soak Dice"
 const GIFT_ARMORED_FIGHTER  = 133; // Armored Fighter: raise each armor soak die one step
+const GIFT_STRENGTH         = 81;  // Strength: add d8 to Natural/Melee/Thrown attack pools
 
 const DIE_STEPS = ['d4', 'd6', 'd8', 'd10', 'd12'];
 function raiseDie(die) {
   const idx = DIE_STEPS.indexOf((die || '').toLowerCase());
   return (idx >= 0 && idx < DIE_STEPS.length - 1) ? DIE_STEPS[idx + 1] : die;
+}
+
+/**
+ * Returns true when a weapon's range qualifies for the Strength passive bonus
+ * (Natural attacks, Melee attacks — Close/Reach — and Thrown attacks).
+ */
+function isStrengthQualifyingRange(range) {
+  const r = String(range || '').toLowerCase().trim();
+  return !r || r === 'close' || r === 'melee' || r === 'reach' || r === 'natural' || r === 'thrown';
 }
 
 function buildCombatPools() {
@@ -295,17 +305,27 @@ function refreshMovement() {
   if (runEl)    runEl.textContent    = String(m.run);
 }
 
-function weaponRowHtml(w = {}, idx) {
+function weaponRowHtml(w = {}, idx, activeGifts) {
   // For trapping-sourced weapons, compute the attack pool from trait dice at render time
   // (the DOM is fully ready when the battle tab opens, so traitDie() returns live values).
   const _rawAttack = w._attack_dice_raw
     ? resolveAttackPool(w._attack_dice_raw)
     : (w.attack || '');
-  const attackVal = _rawAttack ? compactPool(_rawAttack) : _rawAttack;
-  const trappingAttr   = w._from_trappings   ? ' data-from-trappings="1"' : '';
-  const rawDiceAttr    = w._attack_dice_raw  ? ` data-attack-dice-raw="${String(w._attack_dice_raw).replace(/"/g, '&quot;')}"` : '';
+  let attackVal = _rawAttack ? compactPool(_rawAttack) : _rawAttack;
+
+  // Strength passive (gift 81): trapping weapons with qualifying range get +d8 in their pool.
+  // Only applies to trapping-sourced weapons (those have _attack_dice_raw as source of truth),
+  // so the bonus is always computed dynamically and never baked into saved data.
+  const giftList       = activeGifts || collectAllGiftIds();
+  const strengthActive = giftList.includes(String(GIFT_STRENGTH));
+  const strengthBonus  = strengthActive && !!w._attack_dice_raw && isStrengthQualifyingRange(w.range);
+  if (strengthBonus && attackVal) attackVal = compactPool(attackVal + ' + d8');
+
+  const trappingAttr  = w._from_trappings  ? ' data-from-trappings="1"' : '';
+  const rawDiceAttr   = w._attack_dice_raw ? ` data-attack-dice-raw="${String(w._attack_dice_raw).replace(/"/g, '&quot;')}"` : '';
+  const strengthAttr  = strengthBonus      ? ' data-strength-bonus="1"' : '';
   return `
-    <tr class="cg-weapon-row" data-idx="${idx}"${trappingAttr}${rawDiceAttr}>
+    <tr class="cg-weapon-row" data-idx="${idx}"${trappingAttr}${rawDiceAttr}${strengthAttr}>
       <td><input class="cg-battle-input cg-weapon-name"   value="${escape(w.name   || '')}" placeholder="e.g. Short Sword" /></td>
       <td><input class="cg-battle-input cg-weapon-attack" value="${escape(attackVal)}"       placeholder="e.g. d6+d8" /></td>
       <td><input class="cg-battle-input cg-weapon-damage" value="${escape(w.damage  || '')}" placeholder="e.g. +1" /></td>
@@ -330,7 +350,11 @@ function armorRowHtml(a = {}, idx) {
 }
 
 function renderWeaponsTable(weapons) {
-  const rows = (Array.isArray(weapons) ? weapons : []).map((w, i) => weaponRowHtml(w, i)).join('');
+  const activeGifts   = collectAllGiftIds();
+  const rows          = (Array.isArray(weapons) ? weapons : []).map((w, i) => weaponRowHtml(w, i, activeGifts)).join('');
+  const strengthNote  = activeGifts.includes(String(GIFT_STRENGTH))
+    ? `<p class="cg-strength-note"><em>Strength (passive): +d8 with Natural, Melee &amp; Thrown attacks</em></p>`
+    : '';
   return `
     <div class="cg-battle-section">
       <h4 class="cg-battle-subhead">Weapons</h4>
@@ -342,6 +366,7 @@ function renderWeaponsTable(weapons) {
         </thead>
         <tbody id="cg-weapons-tbody">${rows}</tbody>
       </table>
+      ${strengthNote}
       <button type="button" class="cg-battle-add-btn" id="cg-add-weapon">+ Add Weapon</button>
     </div>
   `;
