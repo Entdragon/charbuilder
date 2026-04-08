@@ -11,6 +11,9 @@
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule ^$ index.php [L]
 
+  # Route /uj and all /uj/* paths to uj.php
+  RewriteRule ^uj(/.*)?$ uj.php [L,QSA]
+
   # Route /api/ajax to ajax.php
   RewriteRule ^api/ajax/?$ ajax.php [L,QSA]
 
