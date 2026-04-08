@@ -10638,8 +10638,17 @@
       this._loadCareerProfile(careerId);
     },
     _loadCareerProfile(careerId) {
-      api_default2.fetchProfile(careerId).then((p) => {
-        this._careerProfile = p;
+      const { ajax_url, nonce } = ajaxEnv8();
+      const profilePromise = api_default2.fetchProfile(careerId);
+      const trappingsPromise = ajax_url ? $24.post(ajax_url, {
+        action: "cg_get_career_trappings",
+        career_id: careerId,
+        security: nonce,
+        nonce,
+        _ajax_nonce: nonce
+      }).then((res) => res && res.success && Array.isArray(res.data) ? res.data : []).catch(() => []) : Promise.resolve([]);
+      Promise.all([profilePromise, trappingsPromise]).then(([p, trappings]) => {
+        this._careerProfile = Object.assign({}, p, { trappings });
         this._refreshGiftsArea();
         this._refreshBattleArea();
         this._refreshTrappingsArea();

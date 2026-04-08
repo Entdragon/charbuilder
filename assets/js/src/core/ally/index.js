@@ -315,8 +315,27 @@ const AllyModule = {
   },
 
   _loadCareerProfile(careerId) {
-    CareerAPI.fetchProfile(careerId).then(p => {
-      this._careerProfile = p;
+    const { ajax_url, nonce } = ajaxEnv();
+
+    // Run the career-gifts profile fetch AND the career-trappings fetch in parallel.
+    // The gifts endpoint (CareerAPI) returns only gifts/skills; weapons and armour
+    // live in the trappings_map table and must be fetched separately.
+    const profilePromise   = CareerAPI.fetchProfile(careerId);
+    const trappingsPromise = ajax_url
+      ? $.post(ajax_url, {
+          action:    'cg_get_career_trappings',
+          career_id: careerId,
+          security:  nonce,
+          nonce,
+          _ajax_nonce: nonce,
+        }).then(res => (res && res.success && Array.isArray(res.data)) ? res.data : [])
+        .catch(() => [])
+      : Promise.resolve([]);
+
+    Promise.all([profilePromise, trappingsPromise]).then(([p, trappings]) => {
+      // Merge trappings into the career profile so _deriveAllyWeapons /
+      // _deriveAllyArmor (which both look at profile.trappings) pick them up.
+      this._careerProfile = Object.assign({}, p, { trappings });
       this._refreshGiftsArea();
       this._refreshBattleArea();
       this._refreshTrappingsArea();
