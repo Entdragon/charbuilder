@@ -179,9 +179,14 @@
      CHARACTER LIST
   ════════════════════════════════════════════════════════════ */
   function showCharList() {
-    if (wizardScreen) wizardScreen.style.display = 'none';
-    if (listScreen)   listScreen.style.display   = 'block';
-    renderCharList();
+    if (developScreen) developScreen.style.display = 'none';
+    if (wizardScreen)  wizardScreen.style.display  = 'none';
+    if (listScreen)    listScreen.style.display    = 'none';
+    ajaxPost('uj_list_characters', {}).then(function(res) {
+      state.characters = (res && res.data) ? res.data : [];
+      renderCharList();
+      if (listScreen) listScreen.style.display = 'block';
+    });
   }
 
   function renderCharList() {
@@ -218,6 +223,7 @@
             '<div style="display:flex;gap:0.4rem;flex-wrap:wrap;">' +
               '<button class="uj-btn uj-btn-ghost" style="font-size:0.7rem;padding:0.3rem 0.7rem;" data-load="' + esc(c.id) + '">Edit</button>' +
               '<button class="uj-btn uj-btn-teal" style="font-size:0.7rem;padding:0.3rem 0.7rem;" data-develop="' + esc(c.id) + '">Develop</button>' +
+              '<button class="uj-btn uj-btn-amber" style="font-size:0.7rem;padding:0.3rem 0.7rem;" data-sheet="' + esc(c.id) + '">Sheet</button>' +
               '<button class="uj-btn uj-btn-danger" data-delete="' + esc(c.id) + '">Delete</button>' +
             '</div>' +
           '</div>' +
@@ -235,6 +241,9 @@
     });
     listScreen.querySelectorAll('[data-develop]').forEach(function(btn) {
       btn.addEventListener('click', function(e) { e.stopPropagation(); loadAndDevelop(btn.dataset.develop); });
+    });
+    listScreen.querySelectorAll('[data-sheet]').forEach(function(btn) {
+      btn.addEventListener('click', function(e) { e.stopPropagation(); loadAndViewSheet(btn.dataset.sheet); });
     });
     listScreen.querySelectorAll('[data-delete]').forEach(function(btn) {
       btn.addEventListener('click', function(e) {
@@ -331,18 +340,43 @@
     });
   }
 
+  function loadAndViewSheet(id) {
+    ajaxPost('uj_get_character', { id: id }).then(function(res) {
+      if (!res || !res.data) return;
+      var c = res.data;
+      state.currentChar     = c.id;
+      state.charName        = c.name || '';
+      state.speciesId       = c.species_id ? Number(c.species_id) : null;
+      state.typeId          = c.type_id    ? Number(c.type_id)    : null;
+      state.careerId        = c.career_id  ? Number(c.career_id)  : null;
+      state.bodyDie         = c.body_die   || '';
+      state.speedDie        = c.speed_die  || '';
+      state.mindDie         = c.mind_die   || '';
+      state.willDie         = c.will_die   || '';
+      state.speciesDie      = c.species_die || '';
+      state.typeDie         = c.type_die   || '';
+      state.careerDie       = c.career_die || '';
+      state.personalityWord = c.personality_word || '';
+      state.notes           = c.notes      || '';
+      state.allySpeciesId   = c.ally_species_id ? Number(c.ally_species_id) : null;
+      state.allyCareerId    = c.ally_career_id  ? Number(c.ally_career_id)  : null;
+      state.giftChoices     = (function() {
+        try { return JSON.parse(c.gift_choices || '{}') || {}; } catch(e) { return {}; }
+      })();
+      state.experience      = parseInt(c.experience || 0, 10);
+      state.purchasedGifts  = (function() {
+        try { return JSON.parse(c.purchased_gifts || '[]') || []; } catch(e) { return []; }
+      })();
+      state.currentStep = 6;
+      showWizard();
+    });
+  }
+
   function showDevelop() {
     if (listScreen)    listScreen.style.display    = 'none';
     if (wizardScreen)  wizardScreen.style.display  = 'none';
     if (developScreen) developScreen.style.display = 'block';
     renderDevelop();
-  }
-
-  function showCharList() {
-    if (developScreen) developScreen.style.display = 'none';
-    if (wizardScreen)  wizardScreen.style.display  = 'none';
-    renderCharList();
-    if (listScreen) listScreen.style.display = 'block';
   }
 
   function renderDevelop() {
@@ -450,6 +484,27 @@
         '</div>' +
       '</div>' +
 
+      (function() {
+        var hasDevAlly = state.purchasedGifts.some(function(p) { return p.slug === 'ally'; });
+        if (!hasDevAlly) return '';
+        var speciesList = d.species || [];
+        var careerList  = d.careers || [];
+        var spOpts = '<option value="">— Choose Species —</option>' +
+          speciesList.map(function(s) { return '<option value="' + esc(s.id) + '"' + (state.allySpeciesId == s.id ? ' selected' : '') + '>' + esc(s.name) + '</option>'; }).join('');
+        var caOpts = '<option value="">— Choose Career —</option>' +
+          careerList.map(function(c) { return '<option value="' + esc(c.id) + '"' + (state.allyCareerId == c.id ? ' selected' : '') + '>' + esc(c.name) + '</option>'; }).join('');
+        return '<div class="dev-xp-panel" style="flex-direction:column;align-items:flex-start;gap:0.75rem;">' +
+          '<div style="font-family:\'Cinzel\',serif;font-size:0.8rem;font-weight:700;color:var(--uj-amber);letter-spacing:0.06em;text-transform:uppercase;">Ally Configuration</div>' +
+          '<div style="display:flex;gap:1rem;flex-wrap:wrap;width:100%;">' +
+            '<div style="flex:1;min-width:160px;"><label style="font-size:0.72rem;color:var(--uj-text-dim);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:0.35rem;">Ally Species</label>' +
+            '<select class="field-select" id="dev-ally-species" style="width:100%;">' + spOpts + '</select></div>' +
+            '<div style="flex:1;min-width:160px;"><label style="font-size:0.72rem;color:var(--uj-text-dim);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:0.35rem;">Ally Career</label>' +
+            '<select class="field-select" id="dev-ally-career" style="width:100%;">' + caOpts + '</select></div>' +
+            '<div style="display:flex;align-items:flex-end;"><button class="uj-btn uj-btn-amber" id="dev-ally-save-btn" style="font-size:0.78rem;">Save Ally</button></div>' +
+          '</div>' +
+        '</div>';
+      })() +
+
       '<div class="dev-rule-box">' +
         '<strong>Development rules:</strong> Spend <strong>10 XP</strong> to buy a new Gift or Soak. ' +
         'Gifts may only be purchased multiple times if their description specifically says so.' +
@@ -471,12 +526,7 @@
         '<div class="dev-history-list">' + historyHtml + '</div>' +
       '</div>';
 
-    document.getElementById('dev-back-btn').addEventListener('click', function() {
-      ajaxPost('uj_list_characters', {}).then(function(res) {
-        state.characters = res.data || [];
-        showCharList();
-      });
-    });
+    document.getElementById('dev-back-btn').addEventListener('click', showCharList);
 
     document.getElementById('dev-xp-award-btn').addEventListener('click', function() {
       var input = document.getElementById('dev-xp-input');
@@ -485,6 +535,16 @@
       state.experience += amt;
       saveDevelop(renderDevelop);
     });
+
+    var allySpSel = document.getElementById('dev-ally-species');
+    var allyCaSel = document.getElementById('dev-ally-career');
+    var allySaveBtn = document.getElementById('dev-ally-save-btn');
+    if (allySpSel) allySpSel.addEventListener('change', function() { state.allySpeciesId = allySpSel.value ? Number(allySpSel.value) : null; });
+    if (allyCaSel) allyCaSel.addEventListener('change', function() { state.allyCareerId  = allyCaSel.value ? Number(allyCaSel.value) : null; });
+    if (allySaveBtn) allySaveBtn.addEventListener('click', function() { saveDevelop(function() {
+      allySaveBtn.textContent = 'Saved!';
+      setTimeout(function() { allySaveBtn.textContent = 'Save Ally'; }, 2000);
+    }); });
 
     developScreen.querySelectorAll('.dev-tab').forEach(function(tab) {
       tab.addEventListener('click', function() {
@@ -513,6 +573,8 @@
       id:               state.currentChar,
       experience:       state.experience,
       purchased_gifts:  JSON.stringify(state.purchasedGifts),
+      ally_species_id:  state.allySpeciesId !== null ? state.allySpeciesId : '',
+      ally_career_id:   state.allyCareerId  !== null ? state.allyCareerId  : '',
     }).then(function() {
       if (callback) callback();
     });
@@ -1229,13 +1291,35 @@
     // ── Gifts / Soaks / Gear ─────────────────────────────────
     html += '<div class="summary-grid">';
 
+    var allGiftsData = d.gifts || [];
+    function findGiftBySlug(slug) {
+      return allGiftsData.find(function(x) { return x.slug === slug; }) || null;
+    }
+
     html += '<div class="summary-section"><div class="summary-section-title">Gifts</div><ul class="summary-list">';
     Object.values(giftMap).forEach(function(g) {
+      var gData    = findGiftBySlug(g.slug);
+      var subtitle = gData ? (gData.subtitle || '') : '';
       html += '<li class="gift-item">' + esc(g.name) +
+        (subtitle ? '<span style="display:block;font-size:0.78rem;color:#4ade80;font-style:italic;margin-top:0.1rem;">' + esc(subtitle) + '</span>' : '') +
         '<small>' + esc((g.sources || []).join(', ')) + (g.note ? ' — ' + g.note : '') + '</small>' +
       '</li>';
     });
     html += '</ul></div>';
+
+    if (state.purchasedGifts && state.purchasedGifts.length > 0) {
+      var allSoaksData = d.soaks || [];
+      html += '<div class="summary-section"><div class="summary-section-title" style="color:var(--uj-teal);">Developed Gifts &amp; Soaks</div><ul class="summary-list">';
+      state.purchasedGifts.forEach(function(p) {
+        var pData     = p.kind === 'Gift' ? findGiftBySlug(p.slug) : (allSoaksData.find(function(x) { return x.slug === p.slug; }) || null);
+        var pSubtitle = pData ? (pData.subtitle || '') : '';
+        html += '<li class="gift-item" style="border-left-color:var(--uj-teal);">' + esc(p.name) +
+          (pSubtitle ? '<span style="display:block;font-size:0.78rem;color:#4ade80;font-style:italic;margin-top:0.1rem;">' + esc(pSubtitle) + '</span>' : '') +
+          '<small style="color:var(--uj-teal);">Developed · ' + esc(p.xp_cost || 10) + ' XP</small>' +
+        '</li>';
+      });
+      html += '</ul></div>';
+    }
 
     html += '<div class="summary-section"><div class="summary-section-title">Soaks</div><ul class="summary-list">';
     var soaks = Object.values(soakMap);

@@ -179,11 +179,18 @@
       console.error("[UJ Builder]", err);
     });
     function showCharList() {
+      if (developScreen)
+        developScreen.style.display = "none";
       if (wizardScreen)
         wizardScreen.style.display = "none";
       if (listScreen)
-        listScreen.style.display = "block";
-      renderCharList();
+        listScreen.style.display = "none";
+      ajaxPost("uj_list_characters", {}).then(function(res) {
+        state.characters = res && res.data ? res.data : [];
+        renderCharList();
+        if (listScreen)
+          listScreen.style.display = "block";
+      });
     }
     function renderCharList() {
       if (!listScreen)
@@ -218,7 +225,7 @@
             return s + (p.xp_cost || 10);
           }, 0);
           var xpAvail = xpTotal - xpSpent;
-          html += '<div class="char-card" data-id="' + esc(c.id) + '"><div class="char-card-name">' + esc(c.name || "(Unnamed)") + '</div><div class="char-card-detail">' + esc(detail || "Incomplete") + "</div>" + (dice ? `<div class="char-card-detail" style="color:var(--uj-amber);font-family:'Cinzel',serif;font-size:0.8rem;margin-top:0.25rem;">` + esc(dice) + "</div>" : "") + (xpTotal > 0 ? '<div class="char-card-detail" style="color:var(--uj-teal);font-size:0.78rem;margin-top:0.2rem;">' + xpAvail + " XP available (" + xpTotal + " earned)</div>" : "") + '<div class="char-card-footer"><span class="char-card-date">' + esc(date) + '</span><div style="display:flex;gap:0.4rem;flex-wrap:wrap;"><button class="uj-btn uj-btn-ghost" style="font-size:0.7rem;padding:0.3rem 0.7rem;" data-load="' + esc(c.id) + '">Edit</button><button class="uj-btn uj-btn-teal" style="font-size:0.7rem;padding:0.3rem 0.7rem;" data-develop="' + esc(c.id) + '">Develop</button><button class="uj-btn uj-btn-danger" data-delete="' + esc(c.id) + '">Delete</button></div></div></div>';
+          html += '<div class="char-card" data-id="' + esc(c.id) + '"><div class="char-card-name">' + esc(c.name || "(Unnamed)") + '</div><div class="char-card-detail">' + esc(detail || "Incomplete") + "</div>" + (dice ? `<div class="char-card-detail" style="color:var(--uj-amber);font-family:'Cinzel',serif;font-size:0.8rem;margin-top:0.25rem;">` + esc(dice) + "</div>" : "") + (xpTotal > 0 ? '<div class="char-card-detail" style="color:var(--uj-teal);font-size:0.78rem;margin-top:0.2rem;">' + xpAvail + " XP available (" + xpTotal + " earned)</div>" : "") + '<div class="char-card-footer"><span class="char-card-date">' + esc(date) + '</span><div style="display:flex;gap:0.4rem;flex-wrap:wrap;"><button class="uj-btn uj-btn-ghost" style="font-size:0.7rem;padding:0.3rem 0.7rem;" data-load="' + esc(c.id) + '">Edit</button><button class="uj-btn uj-btn-teal" style="font-size:0.7rem;padding:0.3rem 0.7rem;" data-develop="' + esc(c.id) + '">Develop</button><button class="uj-btn uj-btn-amber" style="font-size:0.7rem;padding:0.3rem 0.7rem;" data-sheet="' + esc(c.id) + '">Sheet</button><button class="uj-btn uj-btn-danger" data-delete="' + esc(c.id) + '">Delete</button></div></div></div>';
         });
         html += "</div>";
       }
@@ -236,6 +243,12 @@
         btn.addEventListener("click", function(e) {
           e.stopPropagation();
           loadAndDevelop(btn.dataset.develop);
+        });
+      });
+      listScreen.querySelectorAll("[data-sheet]").forEach(function(btn) {
+        btn.addEventListener("click", function(e) {
+          e.stopPropagation();
+          loadAndViewSheet(btn.dataset.sheet);
         });
       });
       listScreen.querySelectorAll("[data-delete]").forEach(function(btn) {
@@ -346,6 +359,46 @@
         showDevelop();
       });
     }
+    function loadAndViewSheet(id) {
+      ajaxPost("uj_get_character", { id }).then(function(res) {
+        if (!res || !res.data)
+          return;
+        var c = res.data;
+        state.currentChar = c.id;
+        state.charName = c.name || "";
+        state.speciesId = c.species_id ? Number(c.species_id) : null;
+        state.typeId = c.type_id ? Number(c.type_id) : null;
+        state.careerId = c.career_id ? Number(c.career_id) : null;
+        state.bodyDie = c.body_die || "";
+        state.speedDie = c.speed_die || "";
+        state.mindDie = c.mind_die || "";
+        state.willDie = c.will_die || "";
+        state.speciesDie = c.species_die || "";
+        state.typeDie = c.type_die || "";
+        state.careerDie = c.career_die || "";
+        state.personalityWord = c.personality_word || "";
+        state.notes = c.notes || "";
+        state.allySpeciesId = c.ally_species_id ? Number(c.ally_species_id) : null;
+        state.allyCareerId = c.ally_career_id ? Number(c.ally_career_id) : null;
+        state.giftChoices = function() {
+          try {
+            return JSON.parse(c.gift_choices || "{}") || {};
+          } catch (e) {
+            return {};
+          }
+        }();
+        state.experience = parseInt(c.experience || 0, 10);
+        state.purchasedGifts = function() {
+          try {
+            return JSON.parse(c.purchased_gifts || "[]") || [];
+          } catch (e) {
+            return [];
+          }
+        }();
+        state.currentStep = 6;
+        showWizard();
+      });
+    }
     function showDevelop() {
       if (listScreen)
         listScreen.style.display = "none";
@@ -354,15 +407,6 @@
       if (developScreen)
         developScreen.style.display = "block";
       renderDevelop();
-    }
-    function showCharList() {
-      if (developScreen)
-        developScreen.style.display = "none";
-      if (wizardScreen)
-        wizardScreen.style.display = "none";
-      renderCharList();
-      if (listScreen)
-        listScreen.style.display = "block";
     }
     function renderDevelop() {
       if (!developScreen)
@@ -436,13 +480,23 @@
           historyHtml += '<div class="dev-history-item"><div class="dev-history-item-name">' + esc(p.name) + '</div><div style="font-size:0.8rem;color:var(--uj-text-dim);"><span class="dev-badge dev-badge-type" style="margin-right:0.4rem;">' + esc(p.kind) + "</span>" + esc(p.xp_cost) + " XP spent" + (p.purchased_on ? " &mdash; " + esc(p.purchased_on) : "") + "</div></div>";
         });
       }
-      developScreen.innerHTML = '<div class="dev-header"><div><div class="dev-char-name">' + esc(state.charName || "(Unnamed)") + "</div>" + (subtitle ? '<div class="dev-char-subtitle">' + esc(subtitle) + "</div>" : "") + '</div><button class="uj-btn uj-btn-ghost" id="dev-back-btn" style="font-size:0.8rem;">&#8592; Back to Characters</button></div><div class="dev-xp-panel"><div class="dev-xp-stats"><div class="dev-xp-stat"><div class="dev-xp-stat-val">' + xpTotal + '</div><div class="dev-xp-stat-label">XP Earned</div></div><div class="dev-xp-stat"><div class="dev-xp-stat-val" style="color:var(--uj-text-muted);">' + xpSpent + '</div><div class="dev-xp-stat-label">XP Spent</div></div><div class="dev-xp-stat"><div class="dev-xp-stat-val" style="color:var(--uj-teal);">' + xpAvail + '</div><div class="dev-xp-stat-label">XP Available</div></div></div><div class="dev-xp-award"><input id="dev-xp-input" type="number" min="1" max="999" class="uj-input" style="width:6rem;" placeholder="XP"><button class="uj-btn uj-btn-amber" id="dev-xp-award-btn">Award XP</button></div></div><div class="dev-rule-box"><strong>Development rules:</strong> Spend <strong>10 XP</strong> to buy a new Gift or Soak. Gifts may only be purchased multiple times if their description specifically says so.</div><div class="dev-tabs"><button class="dev-tab active" data-tab="gifts">Gifts</button><button class="dev-tab" data-tab="soaks">Soaks</button><button class="dev-tab" data-tab="history">Purchase History (' + state.purchasedGifts.length + ')</button></div><div class="dev-panel active" data-panel="gifts"><div class="dev-shop-grid">' + giftsHtml + '</div></div><div class="dev-panel" data-panel="soaks"><div class="dev-shop-grid">' + soaksHtml + '</div></div><div class="dev-panel" data-panel="history"><div class="dev-history-list">' + historyHtml + "</div></div>";
-      document.getElementById("dev-back-btn").addEventListener("click", function() {
-        ajaxPost("uj_list_characters", {}).then(function(res) {
-          state.characters = res.data || [];
-          showCharList();
+      developScreen.innerHTML = '<div class="dev-header"><div><div class="dev-char-name">' + esc(state.charName || "(Unnamed)") + "</div>" + (subtitle ? '<div class="dev-char-subtitle">' + esc(subtitle) + "</div>" : "") + '</div><button class="uj-btn uj-btn-ghost" id="dev-back-btn" style="font-size:0.8rem;">&#8592; Back to Characters</button></div><div class="dev-xp-panel"><div class="dev-xp-stats"><div class="dev-xp-stat"><div class="dev-xp-stat-val">' + xpTotal + '</div><div class="dev-xp-stat-label">XP Earned</div></div><div class="dev-xp-stat"><div class="dev-xp-stat-val" style="color:var(--uj-text-muted);">' + xpSpent + '</div><div class="dev-xp-stat-label">XP Spent</div></div><div class="dev-xp-stat"><div class="dev-xp-stat-val" style="color:var(--uj-teal);">' + xpAvail + '</div><div class="dev-xp-stat-label">XP Available</div></div></div><div class="dev-xp-award"><input id="dev-xp-input" type="number" min="1" max="999" class="uj-input" style="width:6rem;" placeholder="XP"><button class="uj-btn uj-btn-amber" id="dev-xp-award-btn">Award XP</button></div></div>' + function() {
+        var hasDevAlly = state.purchasedGifts.some(function(p) {
+          return p.slug === "ally";
         });
-      });
+        if (!hasDevAlly)
+          return "";
+        var speciesList = d.species || [];
+        var careerList = d.careers || [];
+        var spOpts = '<option value="">\u2014 Choose Species \u2014</option>' + speciesList.map(function(s) {
+          return '<option value="' + esc(s.id) + '"' + (state.allySpeciesId == s.id ? " selected" : "") + ">" + esc(s.name) + "</option>";
+        }).join("");
+        var caOpts = '<option value="">\u2014 Choose Career \u2014</option>' + careerList.map(function(c) {
+          return '<option value="' + esc(c.id) + '"' + (state.allyCareerId == c.id ? " selected" : "") + ">" + esc(c.name) + "</option>";
+        }).join("");
+        return `<div class="dev-xp-panel" style="flex-direction:column;align-items:flex-start;gap:0.75rem;"><div style="font-family:'Cinzel',serif;font-size:0.8rem;font-weight:700;color:var(--uj-amber);letter-spacing:0.06em;text-transform:uppercase;">Ally Configuration</div><div style="display:flex;gap:1rem;flex-wrap:wrap;width:100%;"><div style="flex:1;min-width:160px;"><label style="font-size:0.72rem;color:var(--uj-text-dim);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:0.35rem;">Ally Species</label><select class="field-select" id="dev-ally-species" style="width:100%;">` + spOpts + '</select></div><div style="flex:1;min-width:160px;"><label style="font-size:0.72rem;color:var(--uj-text-dim);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:0.35rem;">Ally Career</label><select class="field-select" id="dev-ally-career" style="width:100%;">' + caOpts + '</select></div><div style="display:flex;align-items:flex-end;"><button class="uj-btn uj-btn-amber" id="dev-ally-save-btn" style="font-size:0.78rem;">Save Ally</button></div></div></div>';
+      }() + '<div class="dev-rule-box"><strong>Development rules:</strong> Spend <strong>10 XP</strong> to buy a new Gift or Soak. Gifts may only be purchased multiple times if their description specifically says so.</div><div class="dev-tabs"><button class="dev-tab active" data-tab="gifts">Gifts</button><button class="dev-tab" data-tab="soaks">Soaks</button><button class="dev-tab" data-tab="history">Purchase History (' + state.purchasedGifts.length + ')</button></div><div class="dev-panel active" data-panel="gifts"><div class="dev-shop-grid">' + giftsHtml + '</div></div><div class="dev-panel" data-panel="soaks"><div class="dev-shop-grid">' + soaksHtml + '</div></div><div class="dev-panel" data-panel="history"><div class="dev-history-list">' + historyHtml + "</div></div>";
+      document.getElementById("dev-back-btn").addEventListener("click", showCharList);
       document.getElementById("dev-xp-award-btn").addEventListener("click", function() {
         var input = document.getElementById("dev-xp-input");
         var amt = parseInt(input.value, 10);
@@ -453,6 +507,26 @@
         state.experience += amt;
         saveDevelop(renderDevelop);
       });
+      var allySpSel = document.getElementById("dev-ally-species");
+      var allyCaSel = document.getElementById("dev-ally-career");
+      var allySaveBtn = document.getElementById("dev-ally-save-btn");
+      if (allySpSel)
+        allySpSel.addEventListener("change", function() {
+          state.allySpeciesId = allySpSel.value ? Number(allySpSel.value) : null;
+        });
+      if (allyCaSel)
+        allyCaSel.addEventListener("change", function() {
+          state.allyCareerId = allyCaSel.value ? Number(allyCaSel.value) : null;
+        });
+      if (allySaveBtn)
+        allySaveBtn.addEventListener("click", function() {
+          saveDevelop(function() {
+            allySaveBtn.textContent = "Saved!";
+            setTimeout(function() {
+              allySaveBtn.textContent = "Save Ally";
+            }, 2e3);
+          });
+        });
       developScreen.querySelectorAll(".dev-tab").forEach(function(tab) {
         tab.addEventListener("click", function() {
           developScreen.querySelectorAll(".dev-tab").forEach(function(t) {
@@ -482,7 +556,9 @@
       ajaxPost("uj_update_development", {
         id: state.currentChar,
         experience: state.experience,
-        purchased_gifts: JSON.stringify(state.purchasedGifts)
+        purchased_gifts: JSON.stringify(state.purchasedGifts),
+        ally_species_id: state.allySpeciesId !== null ? state.allySpeciesId : "",
+        ally_career_id: state.allyCareerId !== null ? state.allyCareerId : ""
       }).then(function() {
         if (callback)
           callback();
@@ -1124,11 +1200,31 @@
       })).filter(Boolean);
       html += '<div class="summary-battle-array"><div class="summary-section-title">Battle Array</div><div class="battle-array-grid"><div class="battle-stat"><div class="battle-stat-name">Initiative</div><div class="battle-stat-sub">Mind + Observation</div><div class="battle-stat-dice">' + initDice.join(" + ") + '</div></div><div class="battle-stat"><div class="battle-stat-name">Dodge</div><div class="battle-stat-sub">Speed + Evasion</div><div class="battle-stat-dice">' + dodgeDice.join(" + ") + '</div></div><div class="battle-stat"><div class="battle-stat-name">Rally</div><div class="battle-stat-sub">Will + Tactics</div><div class="battle-stat-dice">' + rallyDice.join(" + ") + "</div></div></div></div>";
       html += '<div class="summary-grid">';
+      var allGiftsData = d.gifts || [];
+      function findGiftBySlug(slug) {
+        return allGiftsData.find(function(x) {
+          return x.slug === slug;
+        }) || null;
+      }
       html += '<div class="summary-section"><div class="summary-section-title">Gifts</div><ul class="summary-list">';
       Object.values(giftMap).forEach(function(g) {
-        html += '<li class="gift-item">' + esc(g.name) + "<small>" + esc((g.sources || []).join(", ")) + (g.note ? " \u2014 " + g.note : "") + "</small></li>";
+        var gData = findGiftBySlug(g.slug);
+        var subtitle2 = gData ? gData.subtitle || "" : "";
+        html += '<li class="gift-item">' + esc(g.name) + (subtitle2 ? '<span style="display:block;font-size:0.78rem;color:#4ade80;font-style:italic;margin-top:0.1rem;">' + esc(subtitle2) + "</span>" : "") + "<small>" + esc((g.sources || []).join(", ")) + (g.note ? " \u2014 " + g.note : "") + "</small></li>";
       });
       html += "</ul></div>";
+      if (state.purchasedGifts && state.purchasedGifts.length > 0) {
+        var allSoaksData = d.soaks || [];
+        html += '<div class="summary-section"><div class="summary-section-title" style="color:var(--uj-teal);">Developed Gifts &amp; Soaks</div><ul class="summary-list">';
+        state.purchasedGifts.forEach(function(p) {
+          var pData = p.kind === "Gift" ? findGiftBySlug(p.slug) : allSoaksData.find(function(x) {
+            return x.slug === p.slug;
+          }) || null;
+          var pSubtitle = pData ? pData.subtitle || "" : "";
+          html += '<li class="gift-item" style="border-left-color:var(--uj-teal);">' + esc(p.name) + (pSubtitle ? '<span style="display:block;font-size:0.78rem;color:#4ade80;font-style:italic;margin-top:0.1rem;">' + esc(pSubtitle) + "</span>" : "") + '<small style="color:var(--uj-teal);">Developed \xB7 ' + esc(p.xp_cost || 10) + " XP</small></li>";
+        });
+        html += "</ul></div>";
+      }
       html += '<div class="summary-section"><div class="summary-section-title">Soaks</div><ul class="summary-list">';
       var soaks = Object.values(soakMap);
       if (soaks.length) {

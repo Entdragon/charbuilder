@@ -230,9 +230,13 @@ function uj_update_development(): void {
     if (!is_string($purchasedGifts)) {
         $purchasedGifts = '[]';
     }
+    $rawAllySpecies = $_POST['ally_species_id'] ?? null;
+    $rawAllyCareer  = $_POST['ally_career_id']  ?? null;
+    $allySpeciesId  = ($rawAllySpecies !== null && $rawAllySpecies !== '') ? (int) $rawAllySpecies : null;
+    $allyCareerI  = ($rawAllyCareer  !== null && $rawAllyCareer  !== '') ? (int) $rawAllyCareer  : null;
     cg_exec(
-        "UPDATE `{$p}uj_character_records` SET experience = ?, purchased_gifts = ?, updated_at = ? WHERE id = ? AND user_id = ?",
-        [$experience, $purchasedGifts, date('Y-m-d H:i:s'), $id, $uid]
+        "UPDATE `{$p}uj_character_records` SET experience = ?, purchased_gifts = ?, ally_species_id = ?, ally_career_id = ?, updated_at = ? WHERE id = ? AND user_id = ?",
+        [$experience, $purchasedGifts, $allySpeciesId, $allyCareerI, date('Y-m-d H:i:s'), $id, $uid]
     );
     cg_json(['success' => true, 'data' => ['id' => (string) $id]]);
 }
