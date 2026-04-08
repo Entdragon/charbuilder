@@ -5,8 +5,42 @@ require __DIR__ . '/../layout-head.php';
 
 $p = cg_prefix();
 
-// One query: species list
-$species = cg_query("SELECT * FROM `{$p}customtables_table_species` WHERE published=1 ORDER BY ct_species_name");
+// Trait filters from query string
+$filterDiet    = trim($_GET['diet']    ?? '');
+$filterHabitat = trim($_GET['habitat'] ?? '');
+$filterCycle   = trim($_GET['cycle']   ?? '');
+$filterSense   = trim($_GET['sense']   ?? '');
+$filterActive  = $filterDiet || $filterHabitat || $filterCycle || $filterSense;
+
+// Build filtered species query
+$joins  = '';
+$params = [];
+
+if ($filterDiet) {
+    $joins .= " JOIN `{$p}customtables_table_species_traits` st_d  ON st_d.species_id  = sp.id AND st_d.trait_key  = 'diet'";
+    $joins .= " JOIN `{$p}customtables_table_diet`           d_flt ON d_flt.id          = st_d.ref_id AND d_flt.ct_slug = ?";
+    $params[] = $filterDiet;
+}
+if ($filterHabitat) {
+    $joins .= " JOIN `{$p}customtables_table_species_traits` st_h  ON st_h.species_id  = sp.id AND st_h.trait_key  = 'habitat'";
+    $joins .= " JOIN `{$p}customtables_table_habitat`        h_flt ON h_flt.id          = st_h.ref_id AND h_flt.ct_slug = ?";
+    $params[] = $filterHabitat;
+}
+if ($filterCycle) {
+    $joins .= " JOIN `{$p}customtables_table_species_traits` st_c  ON st_c.species_id  = sp.id AND st_c.trait_key  = 'cycle'";
+    $joins .= " JOIN `{$p}customtables_table_cycle`          c_flt ON c_flt.id          = st_c.ref_id AND c_flt.ct_slug = ?";
+    $params[] = $filterCycle;
+}
+if ($filterSense) {
+    $joins .= " JOIN `{$p}customtables_table_species_traits` st_s  ON st_s.species_id  = sp.id AND st_s.trait_key  LIKE 'sense%'";
+    $joins .= " JOIN `{$p}customtables_table_senses`         s_flt ON s_flt.id          = st_s.ref_id AND s_flt.ct_slug = ?";
+    $params[] = $filterSense;
+}
+
+$species = cg_query(
+    "SELECT sp.* FROM `{$p}customtables_table_species` sp {$joins} WHERE sp.published=1 ORDER BY sp.ct_species_name",
+    $params
+);
 
 // One query: traits + gift names + skill names via JOINs
 $traitsRaw = cg_query("
@@ -27,6 +61,39 @@ foreach ($traitsRaw as $t) {
         $giftsMap[(int)$t['ref_id']] = $t['ct_gifts_name'];
     }
 }
+
+// Active filter labels for display
+$filterLabels = [];
+if ($filterDiet) {
+    $dl = cg_query_one("SELECT ct_diet_name FROM `{$p}customtables_table_diet` WHERE ct_slug=?", [$filterDiet]);
+    if ($dl) $filterLabels[] = ['label' => 'Diet: ' . $dl['ct_diet_name'], 'remove' => ic_species_filter_url(diet: null)];
+}
+if ($filterHabitat) {
+    $hl = cg_query_one("SELECT ct_habitat_name FROM `{$p}customtables_table_habitat` WHERE ct_slug=?", [$filterHabitat]);
+    if ($hl) $filterLabels[] = ['label' => 'Habitat: ' . $hl['ct_habitat_name'], 'remove' => ic_species_filter_url(habitat: null)];
+}
+if ($filterCycle) {
+    $cl = cg_query_one("SELECT ct_cycle_name FROM `{$p}customtables_table_cycle` WHERE ct_slug=?", [$filterCycle]);
+    if ($cl) $filterLabels[] = ['label' => 'Cycle: ' . $cl['ct_cycle_name'], 'remove' => ic_species_filter_url(cycle: null)];
+}
+if ($filterSense) {
+    $sl = cg_query_one("SELECT ct_senses_name FROM `{$p}customtables_table_senses` WHERE ct_slug=?", [$filterSense]);
+    if ($sl) $filterLabels[] = ['label' => 'Sense: ' . $sl['ct_senses_name'], 'remove' => ic_species_filter_url(sense: null)];
+}
+
+function ic_species_filter_url(?string $diet = '__keep__', ?string $habitat = '__keep__', ?string $cycle = '__keep__', ?string $sense = '__keep__'): string {
+    global $filterDiet, $filterHabitat, $filterCycle, $filterSense;
+    $q = [];
+    $d = ($diet    === '__keep__') ? $filterDiet    : $diet;
+    $h = ($habitat === '__keep__') ? $filterHabitat : $habitat;
+    $c = ($cycle   === '__keep__') ? $filterCycle   : $cycle;
+    $s = ($sense   === '__keep__') ? $filterSense   : $sense;
+    if ($d) $q['diet']    = $d;
+    if ($h) $q['habitat'] = $h;
+    if ($c) $q['cycle']   = $c;
+    if ($s) $q['sense']   = $s;
+    return '/ic/species' . ($q ? '?' . http_build_query($q) : '');
+}
 ?>
 
 <div class="page-header">
@@ -38,6 +105,18 @@ foreach ($traitsRaw as $t) {
     <div style="margin-left:auto; color:var(--ic-text-dim); font-size:0.85rem;"><?= count($species) ?> species</div>
   </div>
 </div>
+
+<?php if ($filterActive): ?>
+<div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1rem; align-items:center;">
+  <span style="color:var(--ic-text-dim); font-size:0.85rem;">Filtered by:</span>
+  <?php foreach ($filterLabels as $fl): ?>
+    <a href="<?= htmlspecialchars($fl['remove']) ?>" style="display:inline-flex; align-items:center; gap:0.3rem; background:var(--ic-accent-dim,rgba(179,138,90,0.15)); color:var(--ic-accent); border-radius:4px; padding:0.2rem 0.5rem; font-size:0.82rem; text-decoration:none;">
+      <?= htmlspecialchars($fl['label']) ?> <span style="opacity:0.6;">✕</span>
+    </a>
+  <?php endforeach; ?>
+  <a href="/ic/species" style="font-size:0.82rem; color:var(--ic-text-dim); text-decoration:underline;">Clear all</a>
+</div>
+<?php endif; ?>
 
 <div class="filter-bar">
   <div class="filter-search">
@@ -62,7 +141,6 @@ foreach ($traitsRaw as $t) {
     $giftTags  = [];
     foreach ($myTraits as $t) {
         if (str_starts_with($t['trait_key'], 'skill')) {
-            // Use joined skill name if available, otherwise text_value
             $skillName = $t['ct_skill_name'] ?? $t['text_value'];
             if ($skillName) $skillTags[] = $skillName;
         } elseif (str_starts_with($t['trait_key'], 'gift')) {

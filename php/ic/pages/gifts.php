@@ -7,29 +7,57 @@ $p = cg_prefix();
 
 // One query: gift class names + counts via LEFT JOIN
 $classRows = cg_query("
-    SELECT gc.id, gc.ct_class_name,
+    SELECT gc.id, gc.ct_class_name, gc.ct_slug,
            COUNT(g.id) AS n
     FROM `{$p}customtables_table_giftclass` gc
     LEFT JOIN `{$p}customtables_table_gifts` g ON g.ct_gift_class = gc.id AND g.published=1
-    GROUP BY gc.id, gc.ct_class_name
+    GROUP BY gc.id, gc.ct_class_name, gc.ct_slug
     ORDER BY gc.ct_class_name
 ");
 $giftClasses = $classRows;
 $classMap    = [];
 $classCounts = [];
+$classSlugMap = [];
 foreach ($classRows as $r) {
     $classMap[(int)$r['id']]    = $r['ct_class_name'];
     $classCounts[(int)$r['id']] = (int)$r['n'];
+    if ($r['ct_slug']) $classSlugMap[$r['ct_slug']] = (int)$r['id'];
 }
 
-// Filter by class
-$filterClass = isset($_GET['class']) && (int)$_GET['class'] > 0 ? (int)$_GET['class'] : 0;
+// Filter by class — accept either integer ID or slug string
+$filterClass = 0;
+if (isset($_GET['class'])) {
+    $raw = $_GET['class'];
+    if (ctype_digit($raw) && (int)$raw > 0) {
+        $filterClass = (int)$raw;
+    } elseif (isset($classSlugMap[$raw])) {
+        $filterClass = $classSlugMap[$raw];
+    }
+}
+
+// Filter by type (slug)
+$filterType     = trim($_GET['type'] ?? '');
+$filterTypeName = '';
+if ($filterType) {
+    $typeRow = cg_query_one("SELECT id, ct_type_name FROM `{$p}customtables_table_gifttype` WHERE ct_slug=?", [$filterType]);
+    if ($typeRow) {
+        $filterTypeName = $typeRow['ct_type_name'];
+    } else {
+        $filterType = ''; // invalid slug — ignore
+    }
+}
 
 $classWhere = $filterClass ? " AND g.ct_gift_class=$filterClass" : '';
+$typeJoin   = '';
+if ($filterType && $typeRow) {
+    $tid = (int)$typeRow['id'];
+    $typeJoin  = " JOIN `{$p}customtables_table_gift_type_map` tm ON tm.gift_id=g.id AND tm.type_id=$tid";
+}
 $gifts = cg_query("
   SELECT g.*, gc.ct_class_name
   FROM `{$p}customtables_table_gifts` g
   LEFT JOIN `{$p}customtables_table_giftclass` gc ON gc.id = g.ct_gift_class
+  {$typeJoin}
   WHERE g.published=1 $classWhere
   ORDER BY gc.ct_class_name, g.ct_gifts_name
 ");
@@ -43,7 +71,7 @@ $total = count($gifts);
       <h1>Gifts</h1>
       <p>Gifts are special abilities, powers and perks that define your character.</p>
     </div>
-    <div style="margin-left:auto; color:var(--ic-text-dim); font-size:0.85rem;"><?= $total ?> gifts<?= $filterClass ? ' in class' : ' total' ?></div>
+    <div style="margin-left:auto; color:var(--ic-text-dim); font-size:0.85rem;"><?= $total ?> gifts<?= ($filterClass || $filterType) ? ' (filtered)' : ' total' ?></div>
   </div>
 </div>
 
@@ -68,6 +96,15 @@ $total = count($gifts);
     <span id="visible-count"><?= $total ?></span> shown
   </div>
 </div>
+
+<?php if ($filterTypeName): ?>
+<div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1rem; align-items:center;">
+  <span style="color:var(--ic-text-dim); font-size:0.85rem;">Filtered by type:</span>
+  <a href="/ic/gifts" style="display:inline-flex; align-items:center; gap:0.3rem; background:var(--ic-accent-dim,rgba(179,138,90,0.15)); color:var(--ic-accent); border-radius:4px; padding:0.2rem 0.5rem; font-size:0.82rem; text-decoration:none;">
+    <?= htmlspecialchars($filterTypeName) ?> <span style="opacity:0.6;">✕</span>
+  </a>
+</div>
+<?php endif; ?>
 
 <table class="ic-table" id="gifts-table">
   <thead>

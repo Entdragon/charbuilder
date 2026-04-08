@@ -7,6 +7,48 @@ declare(strict_types=1);
 
 $p = cg_prefix();
 
+// Parse @@TAG: gift markup into HTML
+function ic_parse_gift_markup(string $raw): string {
+    $html   = '';
+    $blocks = preg_split('/@@/', $raw, -1, PREG_SPLIT_NO_EMPTY);
+    foreach ($blocks as $block) {
+        $block = trim($block);
+        if (!$block) continue;
+        if (!preg_match('/^([A-Z]+):\s*(.*)/s', $block, $m)) {
+            $html .= '<p class="gift-section">' . nl2br(htmlspecialchars(trim($block))) . '</p>';
+            continue;
+        }
+        $tag  = $m[1];
+        $body = trim($m[2]);
+        switch ($tag) {
+            case 'PASSIVE':
+                $html .= '<div class="gift-block gift-passive"><span class="gift-block-label">Passive</span>';
+                if ($body) $html .= ' <span class="gift-block-text">' . htmlspecialchars($body) . '</span>';
+                $html .= '</div>';
+                break;
+            case 'STUNT':
+                $html .= '<div class="gift-block gift-stunt"><span class="gift-block-label">Stunt</span>';
+                if ($body) $html .= ' <em>' . htmlspecialchars(trim($body, '"')) . '</em>';
+                $html .= '</div>';
+                break;
+            case 'ACTION':
+                $html .= '<div class="gift-block gift-action"><span class="gift-block-label">Action</span>';
+                if ($body) $html .= ' <em>' . htmlspecialchars(trim($body, '"')) . '</em>';
+                $html .= '</div>';
+                break;
+            case 'SECTION':
+                if ($body) $html .= '<p class="gift-section">' . nl2br(htmlspecialchars($body)) . '</p>';
+                break;
+            case 'FLAVOUR':
+                if ($body) $html .= '<p class="gift-flavour"><em>' . htmlspecialchars($body) . '</em></p>';
+                break;
+            default:
+                $html .= '<p class="gift-section">' . nl2br(htmlspecialchars($body ?: $block)) . '</p>';
+        }
+    }
+    return $html;
+}
+
 // Helper function: get sorted column names we actually have
 function ic_get_cols(string $table): array {
     static $cache = [];
@@ -65,6 +107,40 @@ switch ($entity) {
             $in = implode(',', array_map('intval', $giftIds));
             $gs = cg_query("SELECT id, ct_gifts_name, ct_slug FROM `{$p}customtables_table_gifts` WHERE id IN ($in)");
             foreach ($gs as $g) { $giftsMap[(int)$g['id']] = $g; }
+        }
+
+        // Physical traits: diet, habitat, cycle, senses, weapons (via ref_id lookup tables)
+        $physTraitsRaw = cg_query("
+            SELECT st.trait_key, st.ref_id, st.text_value,
+                   d.ct_diet_name,    d.ct_slug AS diet_slug,
+                   h.ct_habitat_name, h.ct_slug AS habitat_slug,
+                   cy.ct_cycle_name,  cy.ct_slug AS cycle_slug,
+                   s.ct_senses_name,  s.ct_slug  AS sense_slug,
+                   w.ct_weapons_name, w.ct_slug  AS weapon_slug
+            FROM `{$p}customtables_table_species_traits` st
+            LEFT JOIN `{$p}customtables_table_diet`    d  ON (st.trait_key='diet'          AND d.id  = st.ref_id)
+            LEFT JOIN `{$p}customtables_table_habitat` h  ON (st.trait_key='habitat'       AND h.id  = st.ref_id)
+            LEFT JOIN `{$p}customtables_table_cycle`   cy ON (st.trait_key='cycle'         AND cy.id = st.ref_id)
+            LEFT JOIN `{$p}customtables_table_senses`  s  ON (st.trait_key LIKE 'sense%'   AND s.id  = st.ref_id)
+            LEFT JOIN `{$p}customtables_table_weapons` w  ON (st.trait_key LIKE 'weapon%'  AND w.id  = st.ref_id)
+            WHERE st.species_id=?
+              AND st.trait_key IN ('diet','habitat','cycle','sense_1','sense_2','sense_3','weapon_1','weapon_2','weapon_3')
+            ORDER BY st.sort
+        ", [(int)$row['id']]);
+        $physDiet    = null; $physHabitat = null; $physCycle = null;
+        $physSenses  = []; $physWeapons = [];
+        foreach ($physTraitsRaw as $pt) {
+            $tk = $pt['trait_key'];
+            if ($tk === 'diet' && $pt['ct_diet_name'])
+                $physDiet    = ['name' => $pt['ct_diet_name'],    'slug' => $pt['diet_slug']];
+            elseif ($tk === 'habitat' && $pt['ct_habitat_name'])
+                $physHabitat = ['name' => $pt['ct_habitat_name'], 'slug' => $pt['habitat_slug']];
+            elseif ($tk === 'cycle' && $pt['ct_cycle_name'])
+                $physCycle   = ['name' => $pt['ct_cycle_name'],   'slug' => $pt['cycle_slug']];
+            elseif (str_starts_with($tk, 'sense') && $pt['ct_senses_name'])
+                $physSenses[]  = ['name' => $pt['ct_senses_name'],  'slug' => $pt['sense_slug']];
+            elseif (str_starts_with($tk, 'weapon') && $pt['ct_weapons_name'])
+                $physWeapons[] = ['name' => $pt['ct_weapons_name'], 'slug' => $pt['weapon_slug']];
         }
 
         $pageTitle = $row['ct_species_name'];
@@ -139,6 +215,54 @@ switch ($entity) {
                     <li class="gift-item" style="font-size:0.85rem;"><?= htmlspecialchars($c) ?></li>
                   <?php endforeach; ?>
                 </ul>
+              </div>
+            <?php endif; ?>
+
+            <?php if ($physDiet || $physHabitat || $physCycle || $physSenses || $physWeapons): ?>
+              <div class="sidebar-card">
+                <p class="sidebar-card-title">Traits</p>
+                <table style="width:100%; font-size:0.88rem; border-collapse:collapse;">
+                  <?php if ($physDiet): ?>
+                    <tr>
+                      <td style="color:var(--ic-text-dim); padding:0.25rem 0; width:42%; vertical-align:top;">Diet</td>
+                      <td><a href="/ic/species?diet=<?= urlencode($physDiet['slug']) ?>"><?= htmlspecialchars($physDiet['name']) ?></a></td>
+                    </tr>
+                  <?php endif; ?>
+                  <?php if ($physHabitat): ?>
+                    <tr>
+                      <td style="color:var(--ic-text-dim); padding:0.25rem 0; vertical-align:top;">Habitat</td>
+                      <td><a href="/ic/species?habitat=<?= urlencode($physHabitat['slug']) ?>"><?= htmlspecialchars($physHabitat['name']) ?></a></td>
+                    </tr>
+                  <?php endif; ?>
+                  <?php if ($physCycle): ?>
+                    <tr>
+                      <td style="color:var(--ic-text-dim); padding:0.25rem 0; vertical-align:top;">Cycle</td>
+                      <td><a href="/ic/species?cycle=<?= urlencode($physCycle['slug']) ?>"><?= htmlspecialchars($physCycle['name']) ?></a></td>
+                    </tr>
+                  <?php endif; ?>
+                  <?php if ($physSenses): ?>
+                    <tr>
+                      <td style="color:var(--ic-text-dim); padding:0.25rem 0; vertical-align:top;">Senses</td>
+                      <td>
+                        <?php foreach ($physSenses as $i => $s):
+                          if ($i) echo ', '; ?>
+                          <a href="/ic/species?sense=<?= urlencode($s['slug']) ?>"><?= htmlspecialchars($s['name']) ?></a>
+                        <?php endforeach; ?>
+                      </td>
+                    </tr>
+                  <?php endif; ?>
+                  <?php if ($physWeapons): ?>
+                    <tr>
+                      <td style="color:var(--ic-text-dim); padding:0.25rem 0; vertical-align:top;">Natural Weapons</td>
+                      <td>
+                        <?php foreach ($physWeapons as $i => $w):
+                          if ($i) echo ', '; ?>
+                          <a href="/ic/weapons/<?= urlencode($w['slug']) ?>"><?= htmlspecialchars($w['name']) ?></a>
+                        <?php endforeach; ?>
+                      </td>
+                    </tr>
+                  <?php endif; ?>
+                </table>
               </div>
             <?php endif; ?>
 
@@ -280,12 +404,29 @@ switch ($entity) {
 
     case 'gifts':
         $row = cg_query_one("
-          SELECT g.*, gc.ct_class_name, b.ct_book_name, b.ct_ct_slug AS book_slug
+          SELECT g.*, gc.ct_class_name, gc.ct_slug AS class_slug, b.ct_book_name, b.ct_ct_slug AS book_slug
           FROM `{$p}customtables_table_gifts` g
           LEFT JOIN `{$p}customtables_table_giftclass` gc ON gc.id = g.ct_gift_class
           LEFT JOIN `{$p}customtables_table_books` b ON b.id = g.ct_book_id
           WHERE g.ct_slug=? AND g.published=1", [$slug]);
         if (!$row) $notFound();
+
+        // Gift types (many-to-many via gift_type_map)
+        $giftTypes = cg_query("
+            SELECT gt.ct_type_name, gt.ct_slug
+            FROM `{$p}customtables_table_gift_type_map` tm
+            JOIN `{$p}customtables_table_gifttype` gt ON gt.id = tm.type_id
+            WHERE tm.gift_id = ?
+            ORDER BY tm.sort
+        ", [(int)$row['id']]);
+
+        // Gift prerequisites (human-readable text)
+        $giftPrereqs = cg_query("
+            SELECT DISTINCT raw_text
+            FROM `{$p}customtables_table_gift_prereq`
+            WHERE gift_id = ? AND raw_text IS NOT NULL AND raw_text != ''
+            ORDER BY slot
+        ", [(int)$row['id']]);
 
         $pageTitle = $row['ct_gifts_name'];
         $activeNav = 'gifts';
@@ -301,12 +442,38 @@ switch ($entity) {
           <div>
             <p class="detail-name"><?= htmlspecialchars($row['ct_gifts_name']) ?></p>
             <?php if ($row['ct_class_name']): ?>
-              <p class="detail-subtitle"><?= htmlspecialchars($row['ct_class_name']) ?> Gift</p>
+              <p class="detail-subtitle">
+                <a href="/ic/gifts?class=<?= urlencode($row['class_slug'] ?? '') ?>" style="color:inherit; text-decoration:none;"><?= htmlspecialchars($row['ct_class_name']) ?></a> Gift
+              </p>
             <?php endif; ?>
 
-            <?php $effect = strip_tags($row['ct_gifts_effect_description'] ?: $row['ct_gifts_effect'] ?? ''); ?>
-            <?php if ($effect): ?>
-              <div class="detail-desc"><?= nl2br(htmlspecialchars($effect)) ?></div>
+            <?php if ($giftTypes): ?>
+              <div class="card-tags" style="margin-bottom:1rem;">
+                <?php foreach ($giftTypes as $gt): ?>
+                  <a href="/ic/gifts?type=<?= urlencode($gt['ct_slug']) ?>" class="tag tag-gift" style="text-decoration:none;"><?= htmlspecialchars($gt['ct_type_name']) ?></a>
+                <?php endforeach; ?>
+              </div>
+            <?php endif; ?>
+
+            <?php if ($giftPrereqs): ?>
+              <div class="detail-section">
+                <p class="detail-section-title">Requirements</p>
+                <ul style="margin:0; padding-left:1.2em; color:var(--ic-text-muted); font-size:0.95rem;">
+                  <?php foreach ($giftPrereqs as $pr): ?>
+                    <li><?= htmlspecialchars($pr['raw_text']) ?></li>
+                  <?php endforeach; ?>
+                </ul>
+              </div>
+            <?php endif; ?>
+
+            <?php
+            $rawDesc = $row['ct_gifts_effect_description'] ?? '';
+            if (str_contains($rawDesc, '@@')): ?>
+              <div class="gift-description"><?= ic_parse_gift_markup($rawDesc) ?></div>
+            <?php elseif ($rawDesc): ?>
+              <div class="detail-desc"><?= nl2br(htmlspecialchars(strip_tags($rawDesc))) ?></div>
+            <?php elseif (!empty($row['ct_gifts_effect'])): ?>
+              <div class="detail-desc"><?= nl2br(htmlspecialchars(strip_tags($row['ct_gifts_effect']))) ?></div>
             <?php endif; ?>
           </div>
 
@@ -317,7 +484,13 @@ switch ($entity) {
                 <?php if ($row['ct_class_name']): ?>
                   <tr>
                     <td style="color:var(--ic-text-dim); padding:0.25rem 0; width:40%;">Class</td>
-                    <td style="color:var(--ic-text-muted);"><?= htmlspecialchars($row['ct_class_name']) ?></td>
+                    <td><a href="/ic/gifts?class=<?= urlencode($row['class_slug'] ?? '') ?>"><?= htmlspecialchars($row['ct_class_name']) ?></a></td>
+                  </tr>
+                <?php endif; ?>
+                <?php if (!empty($row['ct_gift_trigger'])): ?>
+                  <tr>
+                    <td style="color:var(--ic-text-dim); padding:0.25rem 0; vertical-align:top;">Trigger</td>
+                    <td style="color:var(--ic-text-muted);"><?= htmlspecialchars($row['ct_gift_trigger']) ?></td>
                   </tr>
                 <?php endif; ?>
                 <?php if (!empty($row['ct_gifts_refresh'])): ?>

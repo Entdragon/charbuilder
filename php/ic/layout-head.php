@@ -570,6 +570,60 @@ $na = fn(string $k): string => ($activeNav ?? '') === $k ? ' active' : '';
     .trait-list li.gift-item { border-left-color: var(--ic-gold); }
     .trait-list li small { display:block; color:var(--ic-text-dim); font-size:0.78rem; margin-top:0.15rem; }
 
+    /* ── Gift description markup ──────────────────────────────────────── */
+    .gift-description { font-size:1.05rem; color:var(--ic-text); line-height:1.65; margin:0 0 1.5rem; }
+
+    .gift-block {
+      display:       flex;
+      align-items:   baseline;
+      gap:           0.5rem;
+      margin:        0.75rem 0;
+      padding:       0.5rem 0.75rem;
+      border-radius: var(--ic-radius);
+      font-size:     0.97rem;
+    }
+
+    .gift-block-label {
+      font-family:    'Cinzel', Georgia, serif;
+      font-size:      0.68rem;
+      font-weight:    700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding:        0.15rem 0.45rem;
+      border-radius:  3px;
+      white-space:    nowrap;
+    }
+
+    .gift-passive {
+      background: rgba(179,138,90,0.08);
+      border-left: 3px solid var(--ic-gold);
+    }
+    .gift-passive .gift-block-label {
+      background: var(--ic-gold);
+      color: var(--ic-bg);
+    }
+
+    .gift-stunt {
+      background: rgba(82,160,112,0.08);
+      border-left: 3px solid var(--ic-emerald);
+    }
+    .gift-stunt .gift-block-label {
+      background: var(--ic-emerald);
+      color: #fff;
+    }
+
+    .gift-action {
+      background: rgba(82,120,180,0.08);
+      border-left: 3px solid #5278b4;
+    }
+    .gift-action .gift-block-label {
+      background: #5278b4;
+      color: #fff;
+    }
+
+    .gift-section { color:var(--ic-text-muted); margin:0.6rem 0; font-size:1rem; line-height:1.65; }
+    .gift-flavour { color:var(--ic-text-dim); margin:0.6rem 0; font-size:0.95rem; line-height:1.6; }
+
     /* ── Breadcrumb ───────────────────────────────────────────────────── */
     .breadcrumb {
       font-size:     0.82rem;
