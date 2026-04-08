@@ -183,6 +183,26 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
 .cga-at-issue::before { content: '⚠ '; }
 .cga-at-empty  { padding: 0.5rem 0.65rem; font-size: 0.78rem; color: var(--muted); }
 .cga-at-preview.cga-at-collapsed .cga-at-preview-body { display: none; }
+
+/* Batch fix modal */
+#cga-batchfix-modal { position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;display:flex;align-items:flex-start;justify-content:center;padding-top:3rem; }
+#cga-batchfix-modal.hidden { display:none; }
+.cga-bfm-box { background:var(--panel);border:1px solid var(--border);border-radius:6px;width:min(860px,94vw);max-height:80vh;display:flex;flex-direction:column;overflow:hidden; }
+.cga-bfm-head { display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;border-bottom:1px solid var(--border);font-weight:600; }
+.cga-bfm-head input { flex:1;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:0.3rem 0.55rem;color:var(--fg);font-size:0.82rem; }
+.cga-bfm-body { flex:1;overflow-y:auto;padding:0.75rem 1rem; }
+.cga-bfm-foot { display:flex;align-items:center;gap:0.75rem;padding:0.65rem 1rem;border-top:1px solid var(--border); }
+.cga-bfm-item { border:1px solid var(--border);border-radius:4px;margin-bottom:0.75rem;overflow:hidden; }
+.cga-bfm-item-head { display:flex;align-items:center;gap:0.65rem;padding:0.4rem 0.65rem;background:rgba(255,255,255,0.04);cursor:pointer;font-size:0.82rem; }
+.cga-bfm-item-head input[type=checkbox] { accent-color:var(--gold);width:1rem;height:1rem; }
+.cga-bfm-item-name { font-weight:600;flex:1; }
+.cga-bfm-item-note { color:var(--muted);font-size:0.75rem; }
+.cga-bfm-diff { display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--border); }
+.cga-bfm-diff-col { padding:0.5rem 0.65rem; }
+.cga-bfm-diff-col:first-child { border-right:1px solid var(--border); }
+.cga-bfm-diff-label { font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.3rem; }
+.cga-bfm-diff pre { margin:0;font-size:0.72rem;white-space:pre-wrap;word-break:break-word;color:var(--fg); }
+.cga-bfm-empty { text-align:center;padding:2rem;color:var(--muted);font-size:0.88rem; }
 .cga-at-nobadge { color: var(--muted); font-size: 0.72rem; }
 .cga-at-warn-badge { background: rgba(192,57,43,0.2); color: #e07060; font-size: 0.68rem; font-weight: 700;
                      padding: 0.1rem 0.4rem; border-radius: 10px; }
@@ -238,6 +258,7 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
     <span class="cga-logo">Library of Calabria — Content Editor</span>
     <span class="cga-user">Logged in as <?= $username ?></span>
     <button class="cga-tool-btn" onclick="openQualityReport()">Data Quality</button>
+    <button class="cga-tool-btn" id="cga-batchfix-btn" onclick="openBatchFix()">Batch @@ Fix</button>
     <button class="cga-tool-btn" onclick="runInstallSpells(this)">Install Spells</button>
     <a class="cga-logout" href="/ajax.php?action=cg_logout_user" onclick="return doLogout(event)">Log out</a>
   </div>
@@ -1026,9 +1047,135 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
     return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
+  // ── Batch @@ Fix ──────────────────────────────────────────────────────────
+
+  let bfmProposals = [];
+
+  window.openBatchFix = function () {
+    bfmProposals = [];
+    document.getElementById('cga-bfm-body').innerHTML =
+      '<div class="cga-bfm-empty">Click "Scan Gifts" to find descriptions with misformatted @@PASSIVE: blocks.</div>';
+    document.getElementById('cga-bfm-apply-btn').disabled = true;
+    document.getElementById('cga-bfm-apply-btn').textContent = 'Apply Selected Fixes';
+    document.getElementById('cga-batchfix-modal').classList.remove('hidden');
+  };
+
+  window.closeBatchFix = function () {
+    document.getElementById('cga-batchfix-modal').classList.add('hidden');
+  };
+
+  window.scanBatchFix = async function () {
+    const btn   = document.getElementById('cga-bfm-scan-btn');
+    const after = document.getElementById('cga-bfm-after').value.trim();
+    btn.disabled    = true;
+    btn.textContent = 'Scanning…';
+    document.getElementById('cga-bfm-body').innerHTML =
+      '<div class="cga-bfm-empty">Scanning — this may take a moment…</div>';
+    document.getElementById('cga-bfm-apply-btn').disabled = true;
+
+    const r = await post('cg_admin_preview_batch_fix', after ? { after } : {});
+    btn.disabled    = false;
+    btn.textContent = 'Scan Gifts';
+
+    if (!r.success) { status(r.data, 'err'); return; }
+
+    bfmProposals = r.data;
+    renderBfmProposals();
+  };
+
+  function renderBfmProposals() {
+    const body = document.getElementById('cga-bfm-body');
+    const applyBtn = document.getElementById('cga-bfm-apply-btn');
+
+    if (!bfmProposals.length) {
+      body.innerHTML = '<div class="cga-bfm-empty">No auto-fixable patterns found.</div>';
+      applyBtn.disabled = true;
+      return;
+    }
+
+    let html = '';
+    bfmProposals.forEach((p, idx) => {
+      const noteTxt = p.notes.join(' | ');
+      html += `<div class="cga-bfm-item">
+        <div class="cga-bfm-item-head">
+          <input type="checkbox" id="bfm-chk-${idx}" checked data-idx="${idx}">
+          <label class="cga-bfm-item-name" for="bfm-chk-${idx}">${esc(p.name)}</label>
+          <span class="cga-bfm-item-note">${esc(noteTxt)}</span>
+        </div>
+        <div class="cga-bfm-diff">
+          <div class="cga-bfm-diff-col">
+            <div class="cga-bfm-diff-label">Before</div>
+            <pre>${esc(p.orig)}</pre>
+          </div>
+          <div class="cga-bfm-diff-col">
+            <div class="cga-bfm-diff-label">After</div>
+            <pre>${esc(p.fixed)}</pre>
+          </div>
+        </div>
+      </div>`;
+    });
+
+    body.innerHTML = html;
+    applyBtn.disabled    = false;
+    applyBtn.textContent = `Apply Selected Fixes (${bfmProposals.length})`;
+
+    // Keep apply count in sync with checkbox state
+    body.querySelectorAll('input[type=checkbox]').forEach(chk => {
+      chk.addEventListener('change', updateApplyCount);
+    });
+  }
+
+  function updateApplyCount() {
+    const checked = document.querySelectorAll('#cga-bfm-body input[type=checkbox]:checked').length;
+    const applyBtn = document.getElementById('cga-bfm-apply-btn');
+    applyBtn.disabled    = checked === 0;
+    applyBtn.textContent = `Apply Selected Fixes (${checked})`;
+  }
+
+  window.applyBatchFix = async function () {
+    const checkedIdx = [...document.querySelectorAll('#cga-bfm-body input[type=checkbox]:checked')]
+      .map(el => parseInt(el.dataset.idx));
+    if (!checkedIdx.length) return;
+
+    const patches = checkedIdx.map(i => ({ id: bfmProposals[i].id, fixed: bfmProposals[i].fixed }));
+    const btn     = document.getElementById('cga-bfm-apply-btn');
+    btn.disabled    = true;
+    btn.textContent = `Applying ${patches.length} fix(es)…`;
+
+    const r = await post('cg_admin_apply_batch_fix', { patches: JSON.stringify(patches) });
+    if (!r.success) { status(r.data, 'err'); btn.disabled = false; return; }
+
+    status(r.data, 'ok');
+    closeBatchFix();
+
+    // If the currently-loaded record was one of the fixed gifts, reload it
+    if (currentId && patches.some(p => p.id === currentId)) loadRecord(currentId);
+  };
+
   // ── Boot ──────────────────────────────────────────────────────────────────
   loadList();
 })();
 </script>
+
+<div id="cga-batchfix-modal" class="hidden">
+  <div class="cga-bfm-box">
+    <div class="cga-bfm-head">
+      <span>Batch @@ Fix</span>
+      <input id="cga-bfm-after" type="text" placeholder="Start after… (e.g. Death Watch — leave blank for all)">
+      <button class="cga-tool-btn" id="cga-bfm-scan-btn" onclick="scanBatchFix()">Scan Gifts</button>
+      <button class="cga-tool-btn" onclick="closeBatchFix()">✕</button>
+    </div>
+    <div class="cga-bfm-body" id="cga-bfm-body">
+      <div class="cga-bfm-empty">Click "Scan Gifts" to find descriptions with misformatted @@PASSIVE: blocks.</div>
+    </div>
+    <div class="cga-bfm-foot">
+      <span style="color:var(--muted);font-size:0.78rem;flex:1;">
+        Only @@PASSIVE: blocks containing an explicit "Requires" heading are auto-fixed.
+        Other issues are shown in the per-gift @@ preview and must be corrected manually.
+      </span>
+      <button class="cga-tool-btn" id="cga-bfm-apply-btn" disabled onclick="applyBatchFix()">Apply Selected Fixes</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>

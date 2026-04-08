@@ -127,8 +127,11 @@ $actionFiles = [
     'cg_admin_get_weapon'         => 'actions/admin.php',
     'cg_admin_save_weapon'        => 'actions/admin.php',
 
-    'cg_admin_sync_trappings_children' => 'actions/admin.php',
-    'cg_admin_sync_single_gift'        => 'actions/admin.php',
+    'cg_admin_sync_trappings_children'  => 'actions/admin.php',
+    'cg_admin_sync_single_gift'         => 'actions/admin.php',
+
+    'cg_admin_preview_batch_fix'        => 'actions/admin.php',
+    'cg_admin_apply_batch_fix'          => 'actions/admin.php',
 ];
 
 if (!isset($actionFiles[$action])) {

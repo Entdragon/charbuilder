@@ -1089,3 +1089,184 @@ function cg_admin_save_weapon(): void {
     cg_exec("UPDATE $t SET " . implode(', ', $sets) . ", updated_at = NOW() WHERE ct_id = ?", $params);
     cg_json(['success' => true, 'data' => 'Saved.']);
 }
+
+// ── Batch @@ Fix ──────────────────────────────────────────────────────────────
+
+/**
+ * Auto-fix a single gift description by extracting misplaced content from
+ * @@PASSIVE: blocks.  Returns null if nothing changed, or an array with
+ * ['fixed'=>string, 'notes'=>string[]] when changes are proposed.
+ */
+function cg_auto_fix_one_description(string $desc): ?array {
+    $desc = str_replace(["\r\n", "\r"], "\n", trim($desc));
+    if ($desc === '' || !str_contains($desc, '@@')) return null;
+
+    $blocks = cg_parse_markup_blocks($desc);
+    if (empty($blocks)) return null;
+
+    $newParts = [];
+    $changed  = false;
+    $notes    = [];
+
+    foreach ($blocks as $block) {
+        $dir  = $block['directive'];
+        $fl   = trim($block['first_line'] ?? '');
+        $body = trim($block['body'] ?? '');
+        $full = $fl !== '' ? $fl . ($body !== '' ? "\n" . $body : '') : $body;
+
+        if ($dir === 'PASSIVE') {
+            $extracted = cg_extract_requires_from_passive($fl, $body);
+            if ($extracted !== null) {
+                $changed = true;
+                $tags    = array_map(fn($p) => "@@{$p['dir']}:", $extracted);
+                $notes[] = "@@PASSIVE: split → " . implode(', ', $tags);
+                foreach ($extracted as $part) {
+                    $c          = $part['content'];
+                    $newParts[] = "@@{$part['dir']}:" . ($c !== '' ? "\n{$c}" : "");
+                }
+                continue;
+            }
+        }
+
+        // Preserve unchanged block (re-serialise)
+        $newParts[] = "@@{$dir}:" . ($full !== '' ? "\n{$full}" : "");
+    }
+
+    if (!$changed) return null;
+
+    return ['fixed' => implode("\n\n", $newParts), 'notes' => $notes];
+}
+
+/**
+ * Split a @@PASSIVE: block that contains an explicit "Requires" heading into
+ * properly-typed sub-blocks.
+ *
+ * 1. Lines before "Requires" → @@FLAVOUR:
+ * 2. Non-blank lines after "Requires" until first blank line → @@REQUIRES: (one each)
+ * 3. Content after that blank line → @@SECTION:
+ *
+ * Returns null if no "Requires" heading is detected.
+ */
+function cg_extract_requires_from_passive(string $firstLine, string $body): ?array {
+    $full  = trim($firstLine !== '' ? $firstLine . "\n" . $body : $body);
+    $lines = explode("\n", $full);
+
+    $reqIdx = -1;
+    foreach ($lines as $i => $line) {
+        if (preg_match('/^Requires?\s*$/i', trim($line))) {
+            $reqIdx = $i;
+            break;
+        }
+    }
+    if ($reqIdx === -1) return null;
+
+    $result = [];
+
+    $preLines = array_values(array_filter(
+        array_slice($lines, 0, $reqIdx),
+        fn($l) => trim($l) !== ''
+    ));
+    if (!empty($preLines)) {
+        $result[] = ['dir' => 'FLAVOUR', 'content' => implode("\n", $preLines)];
+    }
+
+    $postLines    = array_slice($lines, $reqIdx + 1);
+    $reqs         = [];
+    $sectionParts = [];
+    $blankSeen    = false;
+
+    foreach ($postLines as $line) {
+        $t = trim($line);
+        if ($t === '') {
+            if (!empty($reqs)) $blankSeen = true;
+            continue;
+        }
+        if ($blankSeen) {
+            $sectionParts[] = $t;
+        } else {
+            $reqs[] = $t;
+        }
+    }
+
+    foreach ($reqs as $req) {
+        $result[] = ['dir' => 'REQUIRES', 'content' => $req];
+    }
+
+    $sectionText = implode("\n", $sectionParts);
+    if (trim($sectionText) !== '') {
+        $result[] = ['dir' => 'SECTION', 'content' => trim($sectionText)];
+    }
+
+    return empty($result) ? null : $result;
+}
+
+/**
+ * AJAX: scan all gifts and return proposed fixes — nothing is written yet.
+ * POST[after] — optional: only gifts alphabetically after this name.
+ */
+function cg_admin_preview_batch_fix(): void {
+    cg_admin_require();
+    $t     = cg_table('gifts');
+    $after = trim($_POST['after'] ?? '');
+
+    if ($after !== '') {
+        $rows = cg_query(
+            "SELECT ct_id, ct_gifts_name, ct_gifts_effect_description
+               FROM $t WHERE ct_gifts_name > ?
+           ORDER BY ct_gifts_name ASC",
+            [$after]
+        );
+    } else {
+        $rows = cg_query(
+            "SELECT ct_id, ct_gifts_name, ct_gifts_effect_description
+               FROM $t ORDER BY ct_gifts_name ASC"
+        );
+    }
+
+    $proposals = [];
+    foreach ($rows as $row) {
+        $result = cg_auto_fix_one_description($row['ct_gifts_effect_description'] ?? '');
+        if ($result === null) continue;
+        $proposals[] = [
+            'id'    => (int) $row['ct_id'],
+            'name'  => $row['ct_gifts_name'],
+            'notes' => $result['notes'],
+            'fixed' => $result['fixed'],
+            'orig'  => $row['ct_gifts_effect_description'],
+        ];
+    }
+
+    cg_json(['success' => true, 'data' => $proposals]);
+}
+
+/**
+ * AJAX: apply fixes — update the DB and re-sync each gift so child tables
+ * (gift_rules, gift_requirements, etc.) stay consistent.
+ * POST[patches] — JSON array of {id, fixed} objects.
+ */
+function cg_admin_apply_batch_fix(): void {
+    cg_admin_require();
+    $raw = $_POST['patches'] ?? '';
+    if (!$raw) { cg_json(['success' => false, 'data' => 'No patches provided.']); return; }
+
+    $patches = json_decode($raw, true);
+    if (!is_array($patches)) { cg_json(['success' => false, 'data' => 'Invalid patches JSON.']); return; }
+
+    $t       = cg_table('gifts');
+    $applied = 0;
+
+    foreach ($patches as $patch) {
+        $id    = (int)($patch['id']    ?? 0);
+        $fixed = (string)($patch['fixed'] ?? '');
+        if (!$id || $fixed === '') continue;
+
+        cg_exec(
+            "UPDATE $t SET ct_gifts_effect_description = ?, updated_at = NOW() WHERE ct_id = ?",
+            [$fixed, $id]
+        );
+        cg_sync_one_gift_general($id);
+        $applied++;
+    }
+
+    cg_json(['success' => true, 'data' => "Applied $applied fix(es)."]);
+}
