@@ -29,6 +29,7 @@ $sections = [
     'items'   => 'items',
     'books'   => 'books',
     'search'  => 'search',
+    'builder' => 'builder',
 ];
 
 if (!array_key_exists($section, $sections)) {

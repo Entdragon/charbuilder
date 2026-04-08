@@ -903,6 +903,9 @@ $na = fn(string $k): string => ($activeNav ?? '') === $k ? ' active' : '';
       <a href="/uj/search"   class="nav-item<?= $na('search') ?>">🔍 Search</a>
 
       <div class="nav-divider"></div>
+      <a href="/uj/builder" class="nav-item<?= $na('builder') ?>" style="color:var(--uj-teal);">⚙ Character Builder</a>
+
+      <div class="nav-divider"></div>
       <a href="/ic" class="nav-item nav-item-back">← Ironclaw</a>
     </nav>
 
