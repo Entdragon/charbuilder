@@ -158,6 +158,45 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
 ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
+/* ── @@ block preview panel ── */
+.cga-at-preview { border: 1px solid var(--border); border-radius: var(--radius);
+                  background: var(--surface); margin-top: 0.5rem; overflow: hidden; }
+.cga-at-preview-head { display: flex; align-items: center; gap: 0.5rem;
+                        padding: 0.3rem 0.65rem; background: rgba(0,0,0,0.25);
+                        font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+                        letter-spacing: .07em; color: var(--muted); border-bottom: 1px solid var(--border); }
+.cga-at-preview-head button { margin-left: auto; font-size: 0.68rem; background: none;
+                               border: 1px solid var(--border); border-radius: 3px; color: var(--muted);
+                               cursor: pointer; padding: 0.1rem 0.4rem; font-family: inherit; }
+.cga-at-preview-head button:hover { color: var(--text); border-color: var(--gold-dim); }
+.cga-at-preview-body { max-height: 280px; overflow-y: auto; }
+.cga-at-block { padding: 0.4rem 0.65rem; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.cga-at-block:last-child { border-bottom: none; }
+.cga-at-tag { display: inline-block; font-size: 0.68rem; font-weight: 700; font-family: monospace;
+              padding: 0.1rem 0.4rem; border-radius: 3px; border: 1px solid; margin-bottom: 0.25rem;
+              letter-spacing: .03em; }
+.cga-at-body { font-size: 0.74rem; font-family: monospace; white-space: pre-wrap; word-break: break-word;
+               color: var(--muted); margin: 0; max-height: 90px; overflow-y: auto; }
+.cga-at-issues { padding: 0.4rem 0.65rem; background: rgba(192,57,43,0.1);
+                 border-bottom: 1px solid rgba(192,57,43,0.3); }
+.cga-at-issue  { font-size: 0.74rem; color: #e07060; padding: 0.1rem 0; }
+.cga-at-issue::before { content: '⚠ '; }
+.cga-at-empty  { padding: 0.5rem 0.65rem; font-size: 0.78rem; color: var(--muted); }
+.cga-at-preview.cga-at-collapsed .cga-at-preview-body { display: none; }
+.cga-at-nobadge { color: var(--muted); font-size: 0.72rem; }
+.cga-at-warn-badge { background: rgba(192,57,43,0.2); color: #e07060; font-size: 0.68rem; font-weight: 700;
+                     padding: 0.1rem 0.4rem; border-radius: 10px; }
+
+/* ── Sidebar jump-to ── */
+.cga-jump-row { display: flex; gap: 0.3rem; padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--border); }
+.cga-jump-row input { flex: 1; padding: 0.3rem 0.5rem; background: var(--surface); border: 1px solid var(--border);
+                      border-radius: var(--radius); color: var(--text); font-size: 0.78rem; outline: none; }
+.cga-jump-row input::placeholder { color: var(--muted); }
+.cga-jump-row input:focus { border-color: var(--gold); }
+.cga-jump-btn { padding: 0.3rem 0.55rem; background: transparent; border: 1px solid var(--border);
+                border-radius: var(--radius); color: var(--gold); cursor: pointer; font-size: 0.78rem; white-space: nowrap; }
+.cga-jump-btn:hover { background: rgba(201,168,76,0.12); border-color: var(--gold); }
+
 /* ── Data Quality modal ── */
 .cga-modal { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; }
 .cga-modal[hidden] { display: none; }
@@ -212,6 +251,10 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
     <div class="cga-sidebar">
       <div class="cga-search">
         <input id="cga-search" type="search" placeholder="Search…" autocomplete="off">
+      </div>
+      <div class="cga-jump-row">
+        <input id="cga-jump-input" type="text" placeholder="Jump after… (e.g. Death Watch)">
+        <button class="cga-jump-btn" id="cga-jump-btn" title="Navigate to the gift alphabetically after this name">After →</button>
       </div>
       <div class="cga-list" id="cga-list"></div>
     </div>
@@ -396,6 +439,14 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
           </p>
           ${field('ct_gifts_effect', 'Effect — short (character generator card)', r.ct_gifts_effect, { textarea: true, rows: 3 })}
           ${field('ct_gifts_effect_description', 'Full Description — with @@markers (character generator detail)', r.ct_gifts_effect_description, { textarea: true, xtall: true })}
+          <div class="cga-at-preview" id="cga-at-preview">
+            <div class="cga-at-preview-head">
+              @@ Block Preview
+              <span id="cga-at-badge" class="cga-at-nobadge"></span>
+              <button onclick="document.getElementById('cga-at-preview-body').parentElement.classList.toggle('cga-at-collapsed')" title="Collapse/expand preview">▾</button>
+            </div>
+            <div class="cga-at-preview-body" id="cga-at-preview-body"><div class="cga-at-empty">Parsing…</div></div>
+          </div>
           <hr class="cga-divider">
           ${field('ct_gift_trigger', 'Trigger (character generator)', r.ct_gift_trigger, { textarea: true, rows: 2 })}
         </div>
@@ -429,7 +480,153 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
       `;
     }
     document.getElementById('cga-editor').innerHTML = html;
+    if (pane === 'gifts') initDescPreview();
   }
+
+  // ── @@ block parser + preview ─────────────────────────────────────────────
+
+  const AT_COLORS = {
+    PASSIVE:  { bg: '#1a3328', border: '#2a6a50', text: '#5dbf90' },
+    ACTION:   { bg: '#2d2010', border: '#7a5010', text: '#d4902a' },
+    REACTION: { bg: '#2a1010', border: '#7a2a2a', text: '#d47070' },
+    TRIGGER:  { bg: '#102030', border: '#205060', text: '#5090c0' },
+    REQUIRES: { bg: '#200a30', border: '#5a2080', text: '#a060e0' },
+    SECTION:  { bg: '#102428', border: '#205a60', text: '#50b0c0' },
+    FLAVOUR:  { bg: '#28201a', border: '#6a5030', text: '#c0906a' },
+    FLAVOR:   { bg: '#28201a', border: '#6a5030', text: '#c0906a' },
+    TRAPPINGS:{ bg: '#1e2010', border: '#4a5020', text: '#90a040' },
+    REFRESH:  { bg: '#181e2a', border: '#2a3a6a', text: '#6080c8' },
+    NOTE:     { bg: '#1a1a1a', border: '#404040', text: '#909090' },
+  };
+
+  function parseAtBlocks(text) {
+    const norm  = text.replace(/\r\n|\r/g, '\n');
+    const re    = /(?:^|\n)(@@[A-Za-z][A-Za-z_]*\s*:[ \t]*)/g;
+    const found = [];
+    let m;
+    while ((m = re.exec(norm)) !== null) {
+      const raw       = m[1].trim();
+      const directive = raw.replace(/^@@([A-Za-z_]+)\s*:.*$/, '$1').toUpperCase();
+      found.push({ offset: m.index, matchLen: m[0].length, directive });
+    }
+    if (!found.length) return null;
+    return found.map((f, i) => {
+      const contentStart = f.offset + f.matchLen;
+      const contentEnd   = i + 1 < found.length ? found[i + 1].offset : norm.length;
+      return { directive: f.directive, content: norm.slice(contentStart, contentEnd).trimEnd() };
+    });
+  }
+
+  function detectAtIssues(blocks) {
+    const issues = [];
+    if (!blocks) return issues;
+    const nonReqBlock = b => b.directive !== 'REQUIRES';
+    const traitPat   = /\b(d4|d6|d8|d10|d12)\s+or\s+better/i;
+    const langPat    = /^(Language|Literacy)\s*:/im;
+    const requiresPat= /\bRequires?\s*\n/i;
+
+    for (const b of blocks) {
+      if (nonReqBlock(b)) {
+        if (requiresPat.test(b.content))
+          issues.push(`@@${b.directive}: contains a "Requires" list — split into @@REQUIRES: lines`);
+        else if (traitPat.test(b.content))
+          issues.push(`@@${b.directive}: contains a trait requirement (e.g. "d8 or better") — move to @@REQUIRES:`);
+        if (langPat.test(b.content))
+          issues.push(`@@${b.directive}: contains a Language/Literacy line — move to @@REQUIRES:`);
+      }
+      if (b.directive === 'PASSIVE') {
+        const lines = b.content.split('\n').filter(l => l.trim());
+        if (lines.length > 6 && b.content.length > 250)
+          issues.push(`@@PASSIVE: block is very long (${b.content.length} chars) — may contain mixed content`);
+      }
+    }
+    return issues;
+  }
+
+  function updateAtPreview(text) {
+    const body  = document.getElementById('cga-at-preview-body');
+    const badge = document.getElementById('cga-at-badge');
+    if (!body) return;
+
+    if (!text.trim()) {
+      body.innerHTML  = '<div class="cga-at-empty">No description entered.</div>';
+      if (badge) { badge.textContent = ''; badge.className = 'cga-at-nobadge'; }
+      return;
+    }
+
+    const blocks = parseAtBlocks(text);
+    if (!blocks) {
+      body.innerHTML  = '<div class="cga-at-empty">No @@ tags found — plain text only.</div>';
+      if (badge) { badge.textContent = 'no @@ tags'; badge.className = 'cga-at-nobadge'; }
+      return;
+    }
+
+    const issues = detectAtIssues(blocks);
+
+    let html = '';
+    if (issues.length) {
+      html += '<div class="cga-at-issues">' + issues.map(i => `<div class="cga-at-issue">${esc(i)}</div>`).join('') + '</div>';
+    }
+
+    blocks.forEach(b => {
+      const c = AT_COLORS[b.directive] || { bg: '#1a1a1a', border: '#444', text: '#999' };
+      html += `<div class="cga-at-block">
+        <span class="cga-at-tag" style="background:${c.bg};border-color:${c.border};color:${c.text}">@@${esc(b.directive)}:</span>
+        <pre class="cga-at-body">${esc(b.content || '(empty)')}</pre>
+      </div>`;
+    });
+
+    body.innerHTML = html;
+
+    if (badge) {
+      if (issues.length) {
+        badge.textContent = issues.length + ' issue' + (issues.length > 1 ? 's' : '');
+        badge.className   = 'cga-at-warn-badge';
+      } else {
+        badge.textContent = blocks.length + ' block' + (blocks.length > 1 ? 's' : '');
+        badge.className   = 'cga-at-nobadge';
+      }
+    }
+  }
+
+  function initDescPreview() {
+    const ta = document.querySelector('[name="ct_gifts_effect_description"]');
+    if (!ta) return;
+    let timer;
+    ta.addEventListener('input', () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => updateAtPreview(ta.value), 120);
+    });
+    updateAtPreview(ta.value);
+  }
+
+  // ── Sidebar "Jump after" ──────────────────────────────────────────────────
+
+  function jumpAfter(name) {
+    if (!name.trim() || !allItems.length) return;
+    const q        = name.trim().toLowerCase();
+    const nameKey  = pane === 'gifts' ? 'ct_gifts_name' : 'ct_weapons_name';
+    const after    = allItems.filter(i => (i[nameKey] || '').toLowerCase() > q);
+    if (!after.length) { status('No gift found after "' + name + '"', 'err'); return; }
+    const target   = after[0];
+    // Highlight in sidebar
+    document.getElementById('cga-search').value = '';
+    filtItems = allItems;
+    renderList();
+    loadRecord(parseInt(target.ct_id));
+    // Scroll sidebar item into view after render
+    setTimeout(() => {
+      const el = document.querySelector(`.cga-list-item[data-id="${target.ct_id}"]`);
+      if (el) el.scrollIntoView({ block: 'center' });
+    }, 150);
+  }
+
+  document.getElementById('cga-jump-btn').addEventListener('click', () => {
+    jumpAfter(document.getElementById('cga-jump-input').value);
+  });
+  document.getElementById('cga-jump-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') jumpAfter(e.target.value);
+  });
 
   // ── Main Save (scoped to #cga-main-form) ─────────────────────────────────
   document.getElementById('cga-save').addEventListener('click', async () => {
