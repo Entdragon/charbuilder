@@ -27,7 +27,7 @@
       "Tactics",
       "Transport"
     ];
-    var ALLOWED_DICE_JS = ["d4", "d6", "d8", "d10", "d12"];
+    var ALLOWED_DICE_JS = ["d4", "d6", "d8"];
     function ajaxPost(action, data) {
       return new Promise(function(resolve, reject) {
         var fd = new FormData();
@@ -157,7 +157,7 @@
     var listScreen = document.getElementById("uj-char-list-screen");
     var wizardScreen = document.getElementById("uj-wizard-screen");
     var developScreen = document.getElementById("uj-develop-screen");
-    var ALLOWS_MULTIPLE = { "improved-trait": true, "wealth": true };
+    var ALLOWS_MULTIPLE = { "wealth": true };
     Promise.all([
       ajaxPost("uj_get_all_full", {}),
       ajaxPost("cg_get_personality_list", {}),
@@ -257,13 +257,13 @@
       state.speciesId = null;
       state.typeId = null;
       state.careerId = null;
-      state.bodyDie = "d8";
-      state.speedDie = "d8";
-      state.mindDie = "d6";
-      state.willDie = "d4";
-      state.speciesDie = "d6";
-      state.typeDie = "d6";
-      state.careerDie = "d6";
+      state.bodyDie = "";
+      state.speedDie = "";
+      state.mindDie = "";
+      state.willDie = "";
+      state.speciesDie = "";
+      state.typeDie = "";
+      state.careerDie = "";
       state.personalityWord = "";
       state.charName = "";
       state.notes = "";
@@ -406,7 +406,23 @@
         var btnLabel = alreadyOwned ? "Already owned" : !canAfford ? "Need 10 XP" : "Buy \u2014 10 XP";
         return '<div class="dev-shop-card"><div class="dev-shop-card-header"><div class="dev-shop-card-name">' + esc(item.name) + "</div><div>" + cardBadges(item, kind) + "</div></div>" + (item.subtitle ? '<div style="font-size:0.78rem;color:var(--uj-amber-light);font-style:italic;margin-bottom:0.15rem;">' + esc(item.subtitle) + "</div>" : "") + (item.description ? '<p class="dev-shop-card-desc">' + esc(item.description) + "</p>" : "") + (item.side_effect ? '<p class="dev-shop-card-desc" style="color:var(--uj-text-dim);"><em>Side effect:</em> ' + esc(item.side_effect) + "</p>" : "") + (item.requires_text ? '<div class="dev-shop-requires"><strong>Requires/Notes:</strong> ' + esc(item.requires_text) + "</div>" : "") + '<div class="dev-shop-card-footer"><button class="uj-btn uj-btn-teal" style="font-size:0.75rem;padding:0.3rem 0.85rem;" data-buy-slug="' + esc(item.slug) + '" data-buy-name="' + esc(item.name) + '" data-buy-kind="' + esc(kind) + '"' + btnDisabled + ">" + btnLabel + "</button></div></div>";
       }
-      var giftsHtml = allGifts.map(function(g) {
+      var IMPROVED_TRAITS = ["Body", "Speed", "Mind", "Will", "Career", "Species", "Type"];
+      var expandedGifts = [];
+      allGifts.forEach(function(g) {
+        if (g.slug === "improved-trait") {
+          IMPROVED_TRAITS.forEach(function(trait) {
+            expandedGifts.push(Object.assign({}, g, {
+              name: "Improved " + trait,
+              slug: "improved-trait-" + trait.toLowerCase(),
+              subtitle: "Improved Trait [" + trait + "]",
+              requires_text: null
+            }));
+          });
+        } else {
+          expandedGifts.push(g);
+        }
+      });
+      var giftsHtml = expandedGifts.map(function(g) {
         return buildShopCard(g, "Gift");
       }).join("");
       var soaksHtml = allSoaks.map(function(s) {
@@ -739,7 +755,7 @@
       ];
       var html = '<div class="step-heading">Step 4 \u2014 Assign Dice</div><p style="color:var(--uj-text-muted);font-size:0.9rem;margin:0 0 1rem;">Distribute the pool <strong style="color:var(--uj-amber);">d8, d8, d6, d6, d6, d6, d4</strong> across all seven slots \u2014 your four traits and your three source dice.</p><div class="dice-grid dice-grid-7">';
       slots.forEach(function(t) {
-        html += '<div class="dice-trait"><div class="dice-trait-name">' + t.label + '</div><div class="dice-trait-sub">' + esc(t.sub) + '</div><select class="dice-select" data-trait="' + t.key + '">' + ALLOWED_DICE_JS.map(function(d2) {
+        html += '<div class="dice-trait"><div class="dice-trait-name">' + t.label + '</div><div class="dice-trait-sub">' + esc(t.sub) + '</div><select class="dice-select" data-trait="' + t.key + '"><option value=""' + (state[t.key] === "" ? " selected" : "") + ">\u2014 Choose \u2014</option>" + ALLOWED_DICE_JS.map(function(d2) {
           return '<option value="' + d2 + '"' + (state[t.key] === d2 ? " selected" : "") + ">" + d2.toUpperCase() + "</option>";
         }).join("") + "</select></div>";
       });
@@ -769,8 +785,9 @@
       ];
       var disp = document.getElementById("dice-pool-display");
       var errEl = document.getElementById("dice-pool-error");
+      var filled = pool.filter(Boolean);
       if (disp)
-        disp.textContent = pool.join(", ");
+        disp.textContent = filled.length ? filled.join(", ") : "(none assigned yet)";
       if (errEl)
         errEl.style.display = validateDice() ? "none" : "block";
     }

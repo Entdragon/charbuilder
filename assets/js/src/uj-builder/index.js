@@ -31,7 +31,7 @@
     'Shooting','Tactics','Transport'
   ];
 
-  var ALLOWED_DICE_JS = ['d4','d6','d8','d10','d12'];
+  var ALLOWED_DICE_JS = ['d4','d6','d8'];
 
   function ajaxPost(action, data) {
     return new Promise(function(resolve, reject) {
@@ -155,7 +155,7 @@
   var developScreen = document.getElementById('uj-develop-screen');
 
   /* ── Gifts that may be purchased more than once ─────────── */
-  var ALLOWS_MULTIPLE = { 'improved-trait': true, 'wealth': true };
+  var ALLOWS_MULTIPLE = { 'wealth': true };
 
   /* ── Boot ──────────────────────────────────────────────── */
   Promise.all([
@@ -253,13 +253,13 @@
     state.speciesId      = null;
     state.typeId         = null;
     state.careerId       = null;
-    state.bodyDie        = 'd8';
-    state.speedDie       = 'd8';
-    state.mindDie        = 'd6';
-    state.willDie        = 'd4';
-    state.speciesDie     = 'd6';
-    state.typeDie        = 'd6';
-    state.careerDie      = 'd6';
+    state.bodyDie        = '';
+    state.speedDie       = '';
+    state.mindDie        = '';
+    state.willDie        = '';
+    state.speciesDie     = '';
+    state.typeDie        = '';
+    state.careerDie      = '';
     state.personalityWord= '';
     state.charName       = '';
     state.notes          = '';
@@ -394,7 +394,23 @@
       '</div>';
     }
 
-    var giftsHtml = allGifts.map(function(g) { return buildShopCard(g, 'Gift'); }).join('');
+    var IMPROVED_TRAITS = ['Body', 'Speed', 'Mind', 'Will', 'Career', 'Species', 'Type'];
+    var expandedGifts = [];
+    allGifts.forEach(function(g) {
+      if (g.slug === 'improved-trait') {
+        IMPROVED_TRAITS.forEach(function(trait) {
+          expandedGifts.push(Object.assign({}, g, {
+            name:         'Improved ' + trait,
+            slug:         'improved-trait-' + trait.toLowerCase(),
+            subtitle:     'Improved Trait [' + trait + ']',
+            requires_text: null,
+          }));
+        });
+      } else {
+        expandedGifts.push(g);
+      }
+    });
+    var giftsHtml = expandedGifts.map(function(g) { return buildShopCard(g, 'Gift'); }).join('');
     var soaksHtml = allSoaks.map(function(s) { return buildShopCard(s, 'Soak'); }).join('');
 
     var historyHtml = '';
@@ -765,6 +781,7 @@
         '<div class="dice-trait-name">' + t.label + '</div>' +
         '<div class="dice-trait-sub">' + esc(t.sub) + '</div>' +
         '<select class="dice-select" data-trait="' + t.key + '">' +
+        '<option value=""' + (state[t.key] === '' ? ' selected' : '') + '>— Choose —</option>' +
         ALLOWED_DICE_JS.map(function(d) {
           return '<option value="' + d + '"' + (state[t.key] === d ? ' selected' : '') + '>' + d.toUpperCase() + '</option>';
         }).join('') +
@@ -793,7 +810,8 @@
                  state.speciesDie, state.typeDie, state.careerDie];
     var disp  = document.getElementById('dice-pool-display');
     var errEl = document.getElementById('dice-pool-error');
-    if (disp)  disp.textContent = pool.join(', ');
+    var filled = pool.filter(Boolean);
+    if (disp)  disp.textContent = filled.length ? filled.join(', ') : '(none assigned yet)';
     if (errEl) errEl.style.display = validateDice() ? 'none' : 'block';
   }
 
