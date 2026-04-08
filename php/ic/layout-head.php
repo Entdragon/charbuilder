@@ -715,16 +715,58 @@ $na = fn(string $k): string => ($activeNav ?? '') === $k ? ' active' : '';
     .gift-table-block {
       margin: 0.75rem 0;
       overflow-x: auto;
+      background: var(--ic-surface-2);
+      border: 1px solid var(--ic-border-light);
+      border-radius: var(--ic-radius);
+    }
+    .gift-table-title {
+      font-family: 'Cinzel', Georgia, serif;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--ic-gold);
+      letter-spacing: 0.04em;
+      padding: 0.55rem 0.85rem 0.35rem;
+      border-bottom: 1px solid var(--ic-border-light);
     }
     .gift-table {
-      font-size: 0.82rem;
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.83rem;
       color: var(--ic-text-muted);
-      background: var(--ic-surface-2);
-      border-radius: var(--ic-radius);
-      padding: 0.6rem 0.75rem;
-      white-space: pre-wrap;
       line-height: 1.5;
-      border: 1px solid var(--ic-border-light);
+    }
+    .gift-table thead tr {
+      background: rgba(255,255,255,0.04);
+    }
+    .gift-table thead th {
+      padding: 0.45rem 0.85rem;
+      text-align: left;
+      font-family: 'Cinzel', Georgia, serif;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--ic-text-dim);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--ic-border-light);
+    }
+    .gift-table tbody tr:nth-child(even) {
+      background: rgba(255,255,255,0.02);
+    }
+    .gift-table tbody th,
+    .gift-table tbody td {
+      padding: 0.45rem 0.85rem;
+      vertical-align: top;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .gift-table tbody th {
+      font-weight: 600;
+      color: var(--ic-text);
+      white-space: nowrap;
+      width: 1%;
+    }
+    .gift-table tbody tr:last-child th,
+    .gift-table tbody tr:last-child td {
+      border-bottom: none;
     }
 
     /* ── Breadcrumb ───────────────────────────────────────────────────── */

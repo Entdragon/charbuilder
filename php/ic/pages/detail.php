@@ -129,8 +129,37 @@ function ic_parse_gift_markup(string $raw): string {
             // ── Table ──────────────────────────────────────────────────
             case 'TABLE':
                 if ($body) {
+                    // First line of $body is the table title; remaining lines are pipe-delimited rows
+                    $nl         = strpos($body, "\n");
+                    $tableTitle = $nl !== false ? trim(substr($body, 0, $nl)) : trim($body);
+                    $tableRest  = $nl !== false ? trim(substr($body, $nl + 1)) : '';
+                    $rows       = array_values(array_filter(array_map('trim', explode("\n", $tableRest))));
+
                     $html .= '<div class="gift-table-block">';
-                    $html .= '<pre class="gift-table">' . htmlspecialchars($body) . '</pre>';
+                    if ($tableTitle) {
+                        $html .= '<div class="gift-table-title">' . htmlspecialchars($tableTitle) . '</div>';
+                    }
+                    if ($rows) {
+                        $html .= '<table class="gift-table">';
+                        foreach ($rows as $i => $row) {
+                            $cells = array_map('trim', explode('|', $row));
+                            if ($i === 0) {
+                                $html .= '<thead><tr>';
+                                foreach ($cells as $cell) {
+                                    $html .= '<th>' . htmlspecialchars($cell) . '</th>';
+                                }
+                                $html .= '</tr></thead><tbody>';
+                            } else {
+                                $html .= '<tr>';
+                                foreach ($cells as $j => $cell) {
+                                    $tag2 = ($j === 0) ? 'th' : 'td';
+                                    $html .= '<' . $tag2 . '>' . nl2br(htmlspecialchars($cell)) . '</' . $tag2 . '>';
+                                }
+                                $html .= '</tr>';
+                            }
+                        }
+                        $html .= '</tbody></table>';
+                    }
                     $html .= '</div>';
                 }
                 break;
