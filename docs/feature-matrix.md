@@ -15,53 +15,54 @@
 
 A ✅ means the feature is fully implemented. A ❌ means it is absent or not wired
 in that flow. "Partial" means some subset is present but not the full feature.
+`—` in the endpoint column means the feature is client-side only (no AJAX needed).
 
-| Feature / System | Main Char | Ally | Notes |
-|---|:---:|:---:|---|
-| **Identity — name** | ✅ | ✅ | |
-| **Identity — age** | ✅ | ✅ | |
-| **Identity — gender** | ✅ | ✅ | |
-| **Identity — player name** | ✅ | ❌ | Ally has Description field instead |
-| **Identity — motto** | ✅ | ❌ | |
-| **Species selection** | ✅ | ✅ | Both use `SpeciesAPI.getList` + `SpeciesAPI.fetchProfile` |
-| **Species profile** (habitat/diet/cycle/senses) | ✅ | ✅ | Stored as `_speciesProfile` |
-| **Species gifts** (names + trigger text on sheet) | ✅ | ✅ | |
-| **Species skills** | ✅ | ✅ | |
-| **Career selection** | ✅ | ✅ | Both use `CareerAPI.fetchProfile` |
-| **Career gifts** (names + trigger text on sheet) | ✅ | ✅ | |
-| **Career skills** | ✅ | ✅ | |
-| **Extra careers** | ✅ | ❌ | Main char only; `career/extra.js` |
-| **Trait dice** (Will/Mind/Speed/Body/Species/Career) | ✅ | ✅ | Ally reads resolved traits from main char + gift boosts |
-| **Trait die boosts** (gift IDs 78/89/85/100/224/223) | ✅ | ✅ | Both apply boost gifts to raise trait dice |
-| **Qualifications panel** (Language/Literacy/Insider/Mystic/Piety) | ✅ | ❌ | `quals/` module; `cg_get_language_list` not called for ally |
-| **Default gift — Local Knowledge** | ✅ | ❌ | `cg_get_local_knowledge` not called for ally |
-| **Default gift — Language** | ✅ | ❌ | `cg_get_language_gift` not called; language shown on ally print from main char data only via `_getMainLang()` |
-| **Default gift — Combat Save** | ✅ | ❌ | `cg_get_combat_save` not called for ally |
-| **Default gift — Personality** | ✅ | ❌ | `cg_get_personality_gift` not called for ally |
-| **Free gift slots** (eligibility-filtered selection) | ✅ | ✅ | Ally uses `cg_get_free_gifts` for Improved Ally slots |
-| **Gift eligibility filter** (`gift-filter.js`) | ✅ | ✅ | Both import `filterGiftIneligibleReason` from `gifts/gift-filter.js` |
-| **Passive gift effects on soak** (Gift 21/79/133) | ✅ | ✅ | Ally: `_buildAllysoakParts(tr, armor)` |
-| **Battle array** (Initiative/Dodge/Soak) | ✅ | ✅ | |
-| **Movement table** (Stride/Dash/Sprint/Run) | ✅ | ✅ | Both derive from Speed+Body dice maxima |
-| **Damage track + Healing Quota circles** | ✅ | ✅ | |
-| **Status conditions** (Burdened/Knockdown/Unconscious etc.) | ✅ | ✅ | |
-| **Spells tied to gifts** | ✅ | ❌ | `cg_get_spells_for_gifts` never called for ally; `battle/index.js` only |
-| **Skills display** (species + career dice pools) | ✅ | ✅ | Both call `cg_get_skills_list` |
-| **Skill detail** (individual skill lookup) | ❌ | ❌ | `cg_get_skill_detail` endpoint exists but is unused in both flows |
-| **Career trappings** (weapons/armour auto-loaded) | ✅ | ✅ | Both call `cg_get_career_trappings` |
-| **Gift trappings** (equipment auto-loaded from gifts) | ✅ | ❌ | `cg_get_gift_trappings` only in `trappings/index.js`; never called for ally |
-| **Equipment shop** (catalog browse + purchase) | ✅ | ✅ | Both call `cg_get_equipment_catalog` |
-| **Money/Denar tracking** | ✅ | Partial | Ally tracks denar manually; does not call `cg_get_money_list` for full denomination list |
-| **Experience/XP pool** | ✅ | ❌ | `experience/` module; ally has no XP panel |
-| **XP — skill marks** | ✅ | ❌ | |
-| **XP — gift slots** | ✅ | ❌ | |
-| **XP — retraining** | ✅ | ❌ | `experience/retrain.js` |
-| **Print/export sheet** | ✅ | ✅ | Ally sheet mirrors main char layout (added 2026-04-08) |
-| **Gift descriptions on print** | ✅ | ✅ | Both show gift trigger text from `_giftList` |
-| **Character save/load** | ✅ | ✅ (embedded) | Ally data saved as part of main char JSON blob via `cg_save_character` |
-| **Description / backstory free text** | ✅ | ✅ | Ally uses Description; main char has separate Description + Backstory fields |
-| **"Ally Sheet" banner on print** | N/A | ✅ | `.summary-ally-banner` CSS class |
-| **"Ally of: [main char]" attribution** | N/A | ✅ | Reads `FormBuilderAPI._data.name` |
+| Feature / System | Main Char | Ally | PHP endpoint(s) | Gap note |
+|---|:---:|:---:|---|---|
+| **Identity — name** | ✅ | ✅ | — | |
+| **Identity — age** | ✅ | ✅ | — | |
+| **Identity — gender** | ✅ | ✅ | — | |
+| **Identity — player name** | ✅ | ❌ | — | Ally uses Description field instead |
+| **Identity — motto** | ✅ | ❌ | — | |
+| **Species selection** | ✅ | ✅ | `cg_get_species_list` | |
+| **Species profile** (habitat/diet/cycle/senses) | ✅ | ✅ | `cg_get_species_profile` | |
+| **Species gifts** (names + trigger text on sheet) | ✅ | ✅ | `cg_get_species_profile` | Gift IDs returned as `gift_id_1/2/3` |
+| **Species skills** | ✅ | ✅ | `cg_get_species_profile` + `cg_get_skills_list` | |
+| **Career selection** | ✅ | ✅ | `cg_get_career_list` | |
+| **Career gifts** (names + trigger text on sheet) | ✅ | ✅ | `cg_get_career_gifts` | |
+| **Career skills** | ✅ | ✅ | `cg_get_career_gifts` + `cg_get_skills_list` | |
+| **Extra careers** | ✅ | ❌ | `cg_get_career_gifts` | Intentional — ally has one career only |
+| **Trait dice** (Will/Mind/Speed/Body/Species/Career) | ✅ | ✅ | — | Ally reads from main char + applies gift boosts |
+| **Trait die boosts** (gift IDs 78/89/85/100/224/223) | ✅ | ✅ | — | |
+| **Qualifications panel** (Language/Literacy/Insider/Mystic/Piety) | ✅ | ❌ | `cg_get_language_list` | **G5** — quals panel absent from ally |
+| **Default gift — Local Knowledge** | ✅ | ❌ | `cg_get_local_knowledge` | **G2** |
+| **Default gift — Language** | ✅ | ❌ | `cg_get_language_gift` | **G2** — ally shows main char's language on print only via `_getMainLang()` |
+| **Default gift — Combat Save** | ✅ | ❌ | `cg_get_combat_save` | **G2** |
+| **Default gift — Personality** | ✅ | ❌ | `cg_get_personality_list`, `cg_get_personality_gift` | **G2** |
+| **Free gift slots** (eligibility-filtered selection) | ✅ | ✅ | `cg_get_free_gifts` | Ally uses this for Improved Ally slots |
+| **Gift eligibility filter** (`gift-filter.js`) | ✅ | ✅ | `cg_get_free_gifts` | Both import shared `filterGiftIneligibleReason` |
+| **Passive gift effects on soak** (Gift 21/79/133) | ✅ | ✅ | — | Ally: `_buildAllysoakParts(tr, armor)` |
+| **Battle array** (Initiative/Dodge/Soak) | ✅ | ✅ | — | |
+| **Movement table** (Stride/Dash/Sprint/Run) | ✅ | ✅ | — | Both derive from Speed+Body dice maxima |
+| **Damage track + Healing Quota circles** | ✅ | ✅ | — | |
+| **Status conditions** (Burdened/Knockdown/Unconscious etc.) | ✅ | ✅ | — | |
+| **Spells tied to gifts** | ✅ | ❌ | `cg_get_spells_for_gifts` | **G3** — never called for ally |
+| **Skills display** (species + career dice pools) | ✅ | ✅ | `cg_get_skills_list` | |
+| **Skill detail** (individual skill lookup) | ❌ | ❌ | `cg_get_skill_detail` | **G6** — endpoint exists; unused in both flows |
+| **Career trappings** (weapons/armour auto-loaded) | ✅ | ✅ | `cg_get_career_trappings` | |
+| **Gift trappings** (equipment auto-loaded from gifts) | ✅ | ❌ | `cg_get_gift_trappings` | **G1** — never called for ally |
+| **Equipment shop** (catalog browse + purchase) | ✅ | ✅ | `cg_get_equipment_catalog` | |
+| **Money/Denar tracking** | ✅ | Partial | `cg_get_money_list` | **G4** — ally tracks denar only; full denomination list not loaded |
+| **Experience/XP pool** | ✅ | ❌ | `cg_get_free_gifts` (XP gift options) | **G8** — intentional; allies don't earn XP |
+| **XP — skill marks** | ✅ | ❌ | — | **G8** |
+| **XP — gift slots** | ✅ | ❌ | `cg_get_free_gifts` | **G8** |
+| **XP — retraining** | ✅ | ❌ | — | **G8** — `experience/retrain.js` |
+| **Print/export sheet** | ✅ | ✅ | — | Ally sheet mirrors main char layout |
+| **Gift descriptions on print** | ✅ | ✅ | — | Both read trigger text from loaded `_giftList` |
+| **Character save/load** | ✅ | ✅ (embedded) | `cg_save_character`, `cg_get_character` | Ally data embedded in main char JSON blob |
+| **Description / backstory free text** | ✅ | ✅ | — | Ally has Description; main char has Description + Backstory |
+| **"Ally Sheet" banner on print** | N/A | ✅ | — | `.summary-ally-banner` CSS class |
+| **"Ally of: [main char]" attribution** | N/A | ✅ | — | Reads `FormBuilderAPI._data.name` |
 
 ---
 
