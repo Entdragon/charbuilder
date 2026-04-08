@@ -1,0 +1,56 @@
+It's easier to show a couple of examples as I do them so
+
+Spring Loaded Sheathe is currently  but should be
+
+@@PASSIVE: IF you strike Fast enough, people won't even see your attack.
+Requires
+Mind of d8 or better
+Sneaky Fighter
+Streetwise
+
+@@REFRESH: X (Battle)
+
+@@ACTION: Extra action "put away and conceal Spring-
+Loaded Weapon"
+On your turn, exhaust this gift to take an extra action: a "put away" action, but only to put away a Spring-Loaded weapon. The Spring-Loaded weapon is not just put away, it's also concealed. (That's normally a stunt for other characters, but when you use this gift, it's only a "put away" action.)
+
+
+@@FLAVOUR: If you strike Fast enough, people won't even see your attack.
+
+@@REQUIRES: Mind of d8 or better
+@@REQUIRES: Sneaky Fighter
+@@REQUIRES: Streetwise
+
+@@REFRESH: X (Battle)
+
+@@SECTION: Extra action "put away and conceal Spring- Loaded Weapon"
+
+On your turn, exhaust this gift to take an extra action: a "put away" action, but only to put away a Spring-Loaded weapon. The Spring-Loaded weapon is not just put away, it's also concealed. (That's normally a stunt for other characters, but when you use this gift, it's only a "put away" action.)
+
+Or Dragon'S Tail
+
+Currently 
+
+@@PASSIVE: Requires
+Dragon Species Trait of d4 or better
+Contortionist
+Literacy: Zho-ngwén
+Language: Zhonggese
+
+@@FLAVOUR:
+An unedited copy of The Romance of Chien Tang and Her Nine Sons
+Extra off-hand: tail.
+You have a long tail that can be used as an extra off-hand. Besides the name and the requirements, this gift is the same as "Prehensile Tail". (No, you don't get a monkey with two tails.)
+
+Should be
+
+@@REQUIRES: Dragon Species Trait of d4 or better
+@@REQUIRES: Contortionist
+@@REQUIRES: Literacy: Zho-ngwén
+@@REQUIRES: Language: Zhonggese
+@@REQUIRES:  An unedited copy of The Romance of Chien Tang and Her Nine Sons
+
+
+@@SECTION: Extra off-hand: tail.
+
+You have a long tail that can be used as an extra off-hand. Besides the name and the requirements, this gift is the same as "Prehensile Tail". (No, you don't get a monkey with two tails.)
