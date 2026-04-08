@@ -87,6 +87,7 @@ $actionFiles = [
     'cg_register_user'       => 'actions/auth.php',
     'cg_get_current_user'    => 'actions/auth.php',
     'cg_sso_login'           => 'actions/auth.php',
+    'cg_change_password'     => 'actions/auth.php',
 
     'cg_load_characters'     => 'actions/character.php',
     'cg_get_character'       => 'actions/character.php',

@@ -115,6 +115,54 @@
     });
   }
 
+  // Change Password modal
+  var changePwBtn    = document.getElementById('uj-change-pw-btn');
+  var changePwOverlay= document.getElementById('uj-change-pw-overlay');
+  var cpwCancel      = document.getElementById('cpw-cancel-btn');
+  var cpwSubmit      = document.getElementById('cpw-submit-btn');
+  var cpwError       = document.getElementById('cpw-error');
+  function openChangePw() {
+    document.getElementById('cpw-current').value = '';
+    document.getElementById('cpw-new').value     = '';
+    document.getElementById('cpw-confirm').value = '';
+    if (cpwError) cpwError.textContent = '';
+    if (changePwOverlay) { changePwOverlay.style.display = 'flex'; }
+  }
+  function closeChangePw() {
+    if (changePwOverlay) { changePwOverlay.style.display = 'none'; }
+  }
+  if (changePwBtn)    changePwBtn.addEventListener('click', openChangePw);
+  if (cpwCancel)      cpwCancel.addEventListener('click', closeChangePw);
+  if (changePwOverlay) changePwOverlay.addEventListener('click', function(e) {
+    if (e.target === changePwOverlay) closeChangePw();
+  });
+  if (cpwSubmit) cpwSubmit.addEventListener('click', function() {
+    var cur     = document.getElementById('cpw-current').value;
+    var nw      = document.getElementById('cpw-new').value;
+    var confirm = document.getElementById('cpw-confirm').value;
+    if (cpwError) cpwError.textContent = '';
+    cpwSubmit.disabled = true;
+    cpwSubmit.textContent = 'Updating…';
+    ajaxPost('cg_change_password', {
+      current_password: cur,
+      new_password:     nw,
+      confirm_password: confirm,
+    }).then(function(res) {
+      cpwSubmit.disabled = false;
+      cpwSubmit.textContent = 'Update Password';
+      if (res.success) {
+        closeChangePw();
+        alert('Password updated successfully. Please use your new password next time you sign in.');
+      } else {
+        if (cpwError) cpwError.textContent = res.data || 'Something went wrong.';
+      }
+    }).catch(function() {
+      cpwSubmit.disabled = false;
+      cpwSubmit.textContent = 'Update Password';
+      if (cpwError) cpwError.textContent = 'Request failed — please try again.';
+    });
+  });
+
   /* ════════════════════════════════════════════════════════════
      UJ CHARACTER BUILDER STATE
   ════════════════════════════════════════════════════════════ */

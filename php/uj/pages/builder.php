@@ -737,7 +737,25 @@ require __DIR__ . '/../layout-head.php';
   <div class="builder-topbar">
     <div class="builder-topbar-user">Signed in as <strong><?= $username ?></strong></div>
     <div class="builder-topbar-actions">
+      <button class="uj-btn uj-btn-ghost" id="uj-change-pw-btn" style="font-size:0.78rem;">Change Password</button>
       <button class="uj-btn uj-btn-ghost" id="uj-logout-btn">Sign Out</button>
+    </div>
+  </div>
+
+  <!-- Change Password Modal -->
+  <div id="uj-change-pw-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:none;align-items:center;justify-content:center;">
+    <div style="background:var(--uj-panel-bg,#1a1a2e);border:1px solid var(--uj-border,#3a3a5a);border-radius:12px;padding:2rem;width:100%;max-width:380px;box-shadow:0 8px 32px rgba(0,0,0,0.5);">
+      <h3 style="font-family:'Cinzel',serif;color:var(--uj-amber,#d4a843);margin:0 0 1.25rem;font-size:1rem;letter-spacing:0.06em;text-transform:uppercase;">Change Password</h3>
+      <div style="display:flex;flex-direction:column;gap:0.75rem;">
+        <input type="password" id="cpw-current"  class="field-input" placeholder="Current password" style="width:100%;">
+        <input type="password" id="cpw-new"      class="field-input" placeholder="New password (min 8 chars)" style="width:100%;">
+        <input type="password" id="cpw-confirm"  class="field-input" placeholder="Confirm new password" style="width:100%;">
+        <div id="cpw-error" style="color:#f87171;font-size:0.8rem;min-height:1.2em;"></div>
+        <div style="display:flex;gap:0.75rem;justify-content:flex-end;margin-top:0.25rem;">
+          <button class="uj-btn uj-btn-ghost" id="cpw-cancel-btn">Cancel</button>
+          <button class="uj-btn uj-btn-amber" id="cpw-submit-btn">Update Password</button>
+        </div>
+      </div>
     </div>
   </div>
   <div id="uj-builder-main">

@@ -104,6 +104,38 @@ function cg_logout_user(): void {
     cg_json(['success' => true, 'data' => ['redirect' => '/']]);
 }
 
+function cg_change_password(): void {
+    cg_require_auth();
+    $uid         = cg_current_user_id();
+    $currentPass = $_POST['current_password'] ?? '';
+    $newPass     = $_POST['new_password']     ?? '';
+    $confirmPass = $_POST['confirm_password'] ?? '';
+
+    if (!$currentPass || !$newPass || !$confirmPass) {
+        cg_json(['success' => false, 'data' => 'All fields are required.']);
+        return;
+    }
+    if (strlen($newPass) < 8) {
+        cg_json(['success' => false, 'data' => 'New password must be at least 8 characters.']);
+        return;
+    }
+    if ($newPass !== $confirmPass) {
+        cg_json(['success' => false, 'data' => 'New passwords do not match.']);
+        return;
+    }
+
+    $p   = cg_prefix();
+    $row = cg_query_one("SELECT user_pass FROM {$p}users WHERE ID = ? LIMIT 1", [$uid]);
+    if (!$row || !cg_check_password($currentPass, $row['user_pass'])) {
+        cg_json(['success' => false, 'data' => 'Current password is incorrect.']);
+        return;
+    }
+
+    $newHash = cg_hash_password($newPass);
+    cg_exec("UPDATE {$p}users SET user_pass = ? WHERE ID = ?", [$newHash, $uid]);
+    cg_json(['success' => true, 'data' => 'Password updated successfully.']);
+}
+
 function cg_register_user(): void {
     $username = trim($_POST['username'] ?? '');
     $email    = strtolower(trim($_POST['email'] ?? ''));
