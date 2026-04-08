@@ -157,9 +157,10 @@ $actionFiles = [
     'uj_get_careers_full'=> 'actions/uj.php',
     'uj_get_all_full'    => 'actions/uj.php',
     'uj_load_characters' => 'actions/uj_character.php',
-    'uj_get_character'   => 'actions/uj_character.php',
-    'uj_save_character'  => 'actions/uj_character.php',
-    'uj_delete_character'=> 'actions/uj_character.php',
+    'uj_get_character'      => 'actions/uj_character.php',
+    'uj_save_character'     => 'actions/uj_character.php',
+    'uj_delete_character'   => 'actions/uj_character.php',
+    'uj_update_development' => 'actions/uj_character.php',
 ];
 
 if (!isset($actionFiles[$action])) {

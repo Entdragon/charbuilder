@@ -509,7 +509,7 @@
   }
 
   function saveDevelop(callback) {
-    ajaxPost('uj_save_character', {
+    ajaxPost('uj_update_development', {
       id:               state.currentChar,
       experience:       state.experience,
       purchased_gifts:  JSON.stringify(state.purchasedGifts),
@@ -795,12 +795,42 @@
     return html;
   }
 
-  function bindDiceStep() {
+  var DICE_SLOT_KEYS = ['bodyDie','speedDie','mindDie','willDie','speciesDie','typeDie','careerDie'];
+
+  function getRemainingPoolFor(excludeKey) {
+    var remaining = { d4: 1, d6: 4, d8: 2 };
+    DICE_SLOT_KEYS.forEach(function(k) {
+      if (k !== excludeKey && state[k]) {
+        remaining[state[k]] = (remaining[state[k]] || 0) - 1;
+      }
+    });
+    return remaining;
+  }
+
+  function updateDiceSelects() {
+    document.querySelectorAll('.dice-select').forEach(function(sel) {
+      var key       = sel.dataset.trait;
+      var current   = state[key] || '';
+      var remaining = getRemainingPoolFor(key);
+      var html      = '<option value=""' + (current === '' ? ' selected' : '') + '>— Choose —</option>';
+      ALLOWED_DICE_JS.forEach(function(d) {
+        var avail   = (remaining[d] || 0) > 0;
+        var chosen  = current === d;
+        if (avail || chosen) {
+          html += '<option value="' + d + '"' + (chosen ? ' selected' : '') + '>' + d.toUpperCase() + '</option>';
+        }
+      });
+      sel.innerHTML = html;
+    });
     updateDiceDisplay();
+  }
+
+  function bindDiceStep() {
+    updateDiceSelects();
     document.querySelectorAll('.dice-select').forEach(function(sel) {
       sel.addEventListener('change', function() {
         state[sel.dataset.trait] = sel.value;
-        updateDiceDisplay();
+        updateDiceSelects();
       });
     });
   }

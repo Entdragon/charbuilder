@@ -203,6 +203,40 @@ function uj_save_character(): void {
     }
 }
 
+function uj_update_development(): void {
+    cg_session_start();
+    if (!cg_is_logged_in()) {
+        cg_json(['success' => false, 'data' => 'Not logged in.']);
+        return;
+    }
+    $uid    = cg_current_user_id();
+    $id     = (int) ($_POST['id'] ?? 0);
+    if ($id <= 0) {
+        cg_json(['success' => false, 'data' => 'Invalid ID.']);
+        return;
+    }
+    $p = cg_prefix();
+    uj_ensure_characters_table();
+    $exists = cg_query_one(
+        "SELECT id FROM `{$p}uj_character_records` WHERE id = ? AND user_id = ? LIMIT 1",
+        [$id, $uid]
+    );
+    if (!$exists) {
+        cg_json(['success' => false, 'data' => 'Character not found.']);
+        return;
+    }
+    $experience     = max(0, (int) ($_POST['experience'] ?? 0));
+    $purchasedGifts = $_POST['purchased_gifts'] ?? null;
+    if (!is_string($purchasedGifts)) {
+        $purchasedGifts = '[]';
+    }
+    cg_exec(
+        "UPDATE `{$p}uj_character_records` SET experience = ?, purchased_gifts = ?, updated_at = ? WHERE id = ? AND user_id = ?",
+        [$experience, $purchasedGifts, date('Y-m-d H:i:s'), $id, $uid]
+    );
+    cg_json(['success' => true, 'data' => ['id' => (string) $id]]);
+}
+
 function uj_delete_character(): void {
     cg_session_start();
     if (!cg_is_logged_in()) {
