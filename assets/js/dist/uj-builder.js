@@ -445,6 +445,20 @@
         return x.id == state.careerId;
       });
       var subtitle = [sp ? sp.name : "", ty ? ty.name : "", ca ? ca.name : ""].filter(Boolean).join(" / ");
+      var creationGrantedSlugs = {};
+      function addCreationSlugs(arr) {
+        (arr || []).forEach(function(g) {
+          creationGrantedSlugs[g.slug || String(g.id)] = true;
+        });
+      }
+      if (sp)
+        addCreationSlugs(sp.gifts);
+      if (ty)
+        addCreationSlugs(ty.gifts);
+      if (ca)
+        addCreationSlugs(ca.gifts);
+      if (ty)
+        addCreationSlugs(ty.soaks);
       function countPurchased(slug) {
         return state.purchasedGifts.filter(function(p) {
           return p.slug === slug;
@@ -460,10 +474,11 @@
       function buildShopCard(item, kind) {
         var owned = countPurchased(item.slug);
         var canMultiple = item.requires_text && /again/i.test(item.requires_text);
-        var alreadyOwned = owned > 0 && !canMultiple;
+        var fromCreation = !!creationGrantedSlugs[item.slug];
+        var alreadyOwned = (owned > 0 || fromCreation) && !canMultiple;
         var canAfford = xpAvail >= 10;
         var btnDisabled = alreadyOwned || !canAfford ? " disabled" : "";
-        var btnLabel = alreadyOwned ? "Already owned" : !canAfford ? "Need 10 XP" : "Buy \u2014 10 XP";
+        var btnLabel = fromCreation ? "Granted at creation" : alreadyOwned ? "Already owned" : !canAfford ? "Need 10 XP" : "Buy \u2014 10 XP";
         return '<div class="dev-shop-card" style="' + (alreadyOwned ? "opacity:0.45;pointer-events:none;" : "") + '"><div class="dev-shop-card-header"><div class="dev-shop-card-name">' + esc(item.name) + "</div><div>" + cardBadges(item, kind) + "</div></div>" + (item.subtitle ? '<div style="font-size:0.78rem;color:var(--uj-amber-light);font-style:italic;margin-bottom:0.15rem;">' + esc(item.subtitle) + "</div>" : "") + (item.description ? '<p class="dev-shop-card-desc">' + esc(item.description) + "</p>" : "") + (item.side_effect ? '<p class="dev-shop-card-desc" style="color:var(--uj-text-dim);"><em>Side effect:</em> ' + esc(item.side_effect) + "</p>" : "") + (item.requires_text ? '<div class="dev-shop-requires"><strong>Requires/Notes:</strong> ' + esc(item.requires_text) + "</div>" : "") + '<div class="dev-shop-card-footer"><button class="uj-btn uj-btn-teal" style="font-size:0.75rem;padding:0.3rem 0.85rem;" data-buy-slug="' + esc(item.slug) + '" data-buy-name="' + esc(item.name) + '" data-buy-kind="' + esc(kind) + '"' + btnDisabled + ">" + btnLabel + "</button></div></div>";
       }
       var IMPROVED_TRAITS = ["Body", "Speed", "Mind", "Will", "Career", "Species", "Type"];

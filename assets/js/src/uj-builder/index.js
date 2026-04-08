@@ -408,6 +408,16 @@
     var ca = (d.careers || []).find(function(x) { return x.id == state.careerId; });
     var subtitle = [sp ? sp.name : '', ty ? ty.name : '', ca ? ca.name : ''].filter(Boolean).join(' / ');
 
+    // Build set of slugs already granted through species / type / career at creation
+    var creationGrantedSlugs = {};
+    function addCreationSlugs(arr) {
+      (arr || []).forEach(function(g) { creationGrantedSlugs[g.slug || String(g.id)] = true; });
+    }
+    if (sp) addCreationSlugs(sp.gifts);
+    if (ty) addCreationSlugs(ty.gifts);
+    if (ca) addCreationSlugs(ca.gifts);
+    if (ty) addCreationSlugs(ty.soaks);
+
     function countPurchased(slug) {
       return state.purchasedGifts.filter(function(p) { return p.slug === slug; }).length;
     }
@@ -420,12 +430,13 @@
     }
 
     function buildShopCard(item, kind) {
-      var owned       = countPurchased(item.slug);
-      var canMultiple = item.requires_text && /again/i.test(item.requires_text);
-      var alreadyOwned = owned > 0 && !canMultiple;
-      var canAfford   = xpAvail >= 10;
-      var btnDisabled = alreadyOwned || !canAfford ? ' disabled' : '';
-      var btnLabel    = alreadyOwned ? 'Already owned' : (!canAfford ? 'Need 10 XP' : 'Buy — 10 XP');
+      var owned        = countPurchased(item.slug);
+      var canMultiple  = item.requires_text && /again/i.test(item.requires_text);
+      var fromCreation = !!creationGrantedSlugs[item.slug];
+      var alreadyOwned = (owned > 0 || fromCreation) && !canMultiple;
+      var canAfford    = xpAvail >= 10;
+      var btnDisabled  = alreadyOwned || !canAfford ? ' disabled' : '';
+      var btnLabel     = fromCreation ? 'Granted at creation' : (alreadyOwned ? 'Already owned' : (!canAfford ? 'Need 10 XP' : 'Buy — 10 XP'));
 
       return '<div class="dev-shop-card" style="' + (alreadyOwned ? 'opacity:0.45;pointer-events:none;' : '') + '">' +
         '<div class="dev-shop-card-header">' +
