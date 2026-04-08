@@ -198,6 +198,11 @@ const AllyModule = {
       this._onImprovedGiftChange();
     });
 
+    // Print / PDF export
+    $(document).on('click.ally', '#cg-ally-export-pdf', () => {
+      this._openPrintWindow();
+    });
+
     // Equipment catalog
     $(document).on('click.ally', '#cg-ally-shop-btn', () => {
       this._openCatalog();
@@ -306,7 +311,11 @@ const AllyModule = {
 
     const ally = this._getData();
     panel.dataset.rendered = '1';
-    panel.innerHTML = this._buildIdentityHtml(ally)
+    panel.innerHTML =
+        `<div class="cg-ally-export-bar">
+           <button type="button" id="cg-ally-export-pdf" class="cg-ally-export-btn">🖨 Print Ally Sheet</button>
+         </div>`
+      + this._buildIdentityHtml(ally)
       + this._buildProfileHtml(ally)
       + this._buildTraitsHtml()
       + `<div id="cg-ally-gifts-area">${this._buildGiftsHtml()}</div>`
@@ -685,6 +694,163 @@ const AllyModule = {
           resolve([]);
         });
     });
+  },
+
+  // ── Print / PDF export ───────────────────────────────────────────────────────
+
+  _openPrintWindow() {
+    const sheetHtml = this._buildPrintHtml();
+
+    const cssLinks = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+      .map(l => l.outerHTML).join('\n');
+
+    const win = window.open('', '_blank', 'width=900,height=700');
+    if (!win) { alert('Please allow pop-ups to print the Ally sheet.'); return; }
+
+    win.document.open();
+    win.document.write(`<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Ally Sheet</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap">
+  ${cssLinks}
+  <style>
+    @page { size: A4; margin: 1.2cm 1.6cm; }
+    body  { margin: 0; padding: 0; background: white; }
+  </style>
+</head>
+<body class="cg-print-window">
+  ${sheetHtml}
+</body>
+</html>`);
+    win.document.close();
+    win.focus();
+    setTimeout(() => { win.print(); }, 800);
+  },
+
+  _buildPrintHtml() {
+    const ally = this._getData();
+    const sp   = this._speciesProfile || {};
+    const cp   = this._careerProfile  || {};
+
+    const name       = ally.name        || '—';
+    const desc       = ally.description || '';
+    const speciesName = sp.name || sp.speciesName || '';
+    const careerName  = cp.name || cp.careerName  || '';
+
+    const mainCharName = FormBuilderAPI._data?.name || '';
+
+    const mainLang = this._getMainLang();
+    const spGifts  = [sp.gift_1, sp.gift_2, sp.gift_3].filter(Boolean);
+    const cpGifts  = [cp.gift_1, cp.gift_2, cp.gift_3].filter(Boolean);
+    const count    = this._improvedAllyCount();
+    const improvedIds = Array.isArray(ally.improved_gift_ids) ? ally.improved_gift_ids : [];
+    const improvedNames = improvedIds.map(id => {
+      if (!id || !this._giftList) return id;
+      const g = this._giftList.find(x => String(x.id || x.ct_id || '') === String(id));
+      return g ? String(g.name || g.ct_gifts_name || id) : id;
+    }).filter(Boolean);
+
+    const weapons = this._deriveAllyWeapons(sp, cp);
+    const armor   = this._deriveAllyArmor(sp, cp);
+    let soakParts = ['d6'];
+    armor.forEach(a => { if (a.soak) soakParts.push(a.soak); });
+    const soak = soakParts.join(' + ');
+
+    const trappings     = Array.isArray(ally.trappings_list) ? ally.trappings_list : [];
+    const autoTrappings = [...weapons, ...armor];
+    const denar = (() => {
+      const h = (ally.money_holdings && typeof ally.money_holdings === 'object') ? ally.money_holdings : {};
+      return parseInt(h.denar || 0, 10);
+    })();
+
+    const allGiftRows = [];
+    if (mainLang) allGiftRows.push(`<li><strong>Language:</strong> ${esc(mainLang)}</li>`);
+    spGifts.forEach(g => allGiftRows.push(`<li><strong>Species:</strong> ${esc(g)}</li>`));
+    cpGifts.forEach(g => allGiftRows.push(`<li><strong>Career:</strong> ${esc(g)}</li>`));
+    improvedNames.forEach(g => allGiftRows.push(`<li><strong>Improved Ally:</strong> ${esc(g)}</li>`));
+
+    const weaponRows = weapons.map(w =>
+      `<tr><td>${esc(w.name)}</td><td>${esc(w.attack)}</td><td>${esc(w.damage)}</td><td>${esc(w.range)}</td></tr>`
+    ).join('');
+
+    const armorRows = armor.map(a =>
+      `<tr><td>${esc(a.name)}</td><td>${esc(a.soak)}</td></tr>`
+    ).join('');
+
+    const trappingRows = [
+      ...autoTrappings.map(t => `<li>${esc(t.name)} <em>(auto)</em></li>`),
+      ...trappings.map(t => `<li>${esc(t.name)}${t.cost_d ? ` — ${esc(t.cost_d)}d` : ''}</li>`),
+    ].join('');
+
+    return `
+<div id="cg-summary-sheet">
+  <div class="summary-header-block">
+    <h2>${esc(name)}</h2>
+    <div class="summary-basic-row">
+      ${speciesName ? `<span><strong>Species:</strong> ${esc(speciesName)}</span>` : ''}
+      ${careerName  ? `<span><strong>Career:</strong>  ${esc(careerName)}</span>`  : ''}
+      ${mainCharName ? `<span><strong>Ally of:</strong> ${esc(mainCharName)}</span>` : ''}
+    </div>
+    ${desc ? `<p class="summary-motto">${esc(desc)}</p>` : ''}
+  </div>
+
+  <div class="summary-page1-body">
+    <div class="summary-col-left">
+
+      <div class="summary-section">
+        <h3>Traits (all d6)</h3>
+        <table class="cg-battle-summary-table">
+          <thead><tr><th>Body</th><th>Speed</th><th>Will</th><th>Mind</th><th>Species</th><th>Career</th></tr></thead>
+          <tbody><tr><td>d6</td><td>d6</td><td>d6</td><td>d6</td><td>d6</td><td>d6</td></tr></tbody>
+        </table>
+      </div>
+
+      <div class="summary-section">
+        <h3>Battle Array</h3>
+        <table class="cg-battle-summary-table">
+          <thead><tr><th>Pool</th><th>Dice</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>Initiative</td><td>d6 + d6</td><td>Speed + Mind</td></tr>
+            <tr><td>Dodge</td><td>d6</td><td>Speed</td></tr>
+            <tr><td>Soak</td><td>${esc(soak)}</td><td>Body + Armour</td></tr>
+          </tbody>
+        </table>
+        ${weaponRows ? `
+        <p class="summary-sub-heading">Weapons</p>
+        <table class="cg-battle-summary-table">
+          <thead><tr><th>Name</th><th>Attack</th><th>Damage</th><th>Range</th></tr></thead>
+          <tbody>${weaponRows}</tbody>
+        </table>` : ''}
+        ${armorRows ? `
+        <p class="summary-sub-heading">Armour</p>
+        <table class="cg-battle-summary-table">
+          <thead><tr><th>Name</th><th>Soak Dice</th></tr></thead>
+          <tbody>${armorRows}</tbody>
+        </table>` : ''}
+      </div>
+
+    </div>
+    <div class="summary-col-right">
+
+      <div class="summary-section">
+        <h3>Gifts</h3>
+        <ul>${allGiftRows.join('') || '<li>None</li>'}</ul>
+      </div>
+
+      ${(trappingRows || denar > 0) ? `
+      <div class="summary-section summary-equipment">
+        <h3>Equipment &amp; Money</h3>
+        ${trappingRows ? `<ul>${trappingRows}</ul>` : ''}
+        ${denar > 0 ? `<p><strong>Denar:</strong> ${denar}</p>` : ''}
+      </div>` : ''}
+
+    </div>
+  </div>
+</div>`;
   },
 
   // ── Language helper ──────────────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 // _ally.scss — Ally mini-character sheet
 
 .cg-ally-intro {
-  color: var(--cg-muted, #888);
+  color: var(--cg-text-muted, #6a5b3e);
   font-size: 0.93em;
   margin-bottom: 1em;
 }
@@ -12,17 +12,46 @@
   gap: 1.2em;
 }
 
+// ── Export button ─────────────────────────────────────────────────────────────
+.cg-ally-export-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.5em;
+}
+
+.cg-ally-export-btn {
+  background: var(--cg-gold, #c9a84c);
+  color: #1a1208;
+  border: none;
+  border-radius: 4px;
+  padding: 0.45em 1.1em;
+  font-size: 0.88em;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+
+  &:hover {
+    background: var(--cg-gold-light, #e5c97a);
+  }
+}
+
+// ── Dark info boxes ──────────────────────────────────────────────────────────
+// These boxes sit on the parchment modal background but have their own
+// dark surface — all text inside must be light-coloured.
 .cg-ally-box {
-  background: var(--cg-surface, #1a1a2e);
-  border: 1px solid var(--cg-border, #333);
+  background: var(--cg-surface, #242019);
+  border: 1px solid var(--cg-border, rgba(201,168,76,0.22));
   border-radius: 6px;
   padding: 1em 1.2em;
+  // Base colour for all text inside dark boxes:
+  color: var(--cg-text-light, #e8dcc4);
 }
 
 .cg-ally-subhead {
   font-size: 1em;
   font-weight: 700;
-  color: var(--cg-gold, #c9a34d);
+  color: var(--cg-gold, #c9a84c);
   margin: 0 0 0.8em 0;
   display: flex;
   align-items: baseline;
@@ -31,7 +60,7 @@
 
 .cg-ally-note {
   font-size: 0.85em;
-  color: var(--cg-muted, #888);
+  color: var(--cg-text-dim, #9a8a6a);
   font-style: italic;
   margin: 0;
 }
@@ -47,7 +76,7 @@
 
 .cg-ally-label {
   font-size: 0.82em;
-  color: var(--cg-muted, #aaa);
+  color: var(--cg-text-dim, #9a8a6a);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -57,17 +86,19 @@
 .cg-ally-select,
 .cg-ally-money-input {
   width: 100%;
-  background: var(--cg-input-bg, #111);
-  border: 1px solid var(--cg-border, #444);
+  background: rgba(0,0,0,0.35);
+  border: 1px solid var(--cg-border, rgba(201,168,76,0.22));
   border-radius: 4px;
-  color: var(--cg-text, #eee);
+  color: var(--cg-text-light, #e8dcc4);
   padding: 0.4em 0.6em;
   font-size: 0.93em;
   box-sizing: border-box;
 
+  option { background: #2e2820; color: #e8dcc4; }
+
   &:focus {
     outline: none;
-    border-color: var(--cg-gold, #c9a34d);
+    border-color: var(--cg-gold, #c9a84c);
   }
 }
 
@@ -79,18 +110,20 @@
   width: 100%;
   min-height: 80px;
   resize: vertical;
-  background: var(--cg-input-bg, #111);
-  border: 1px solid var(--cg-border, #444);
+  background: rgba(0,0,0,0.35);
+  border: 1px solid var(--cg-border, rgba(201,168,76,0.22));
   border-radius: 4px;
-  color: var(--cg-text, #eee);
+  color: var(--cg-text-light, #e8dcc4);
   padding: 0.4em 0.6em;
   font-size: 0.93em;
   box-sizing: border-box;
   font-family: inherit;
 
+  &::placeholder { color: var(--cg-text-dim, #9a8a6a); }
+
   &:focus {
     outline: none;
-    border-color: var(--cg-gold, #c9a34d);
+    border-color: var(--cg-gold, #c9a84c);
   }
 }
 
@@ -110,7 +143,7 @@
 
 .cg-ally-trait-label {
   font-size: 0.78em;
-  color: var(--cg-muted, #aaa);
+  color: var(--cg-text-dim, #9a8a6a);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -118,7 +151,7 @@
 .cg-ally-trait-die {
   font-size: 1.05em;
   font-weight: 700;
-  color: var(--cg-gold, #c9a34d);
+  color: var(--cg-gold, #c9a84c);
 }
 
 // Gifts
@@ -130,7 +163,7 @@
 
 .cg-ally-gift-label {
   font-size: 0.82em;
-  color: var(--cg-muted, #aaa);
+  color: var(--cg-text-dim, #9a8a6a);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -139,14 +172,14 @@
 
 .cg-ally-gift-item {
   font-size: 0.93em;
-  color: var(--cg-text, #eee);
+  color: var(--cg-text-light, #e8dcc4);
 }
 
 .cg-ally-gift-list {
   margin: 0;
   padding-left: 1.4em;
   font-size: 0.93em;
-  color: var(--cg-text, #eee);
+  color: var(--cg-text-light, #e8dcc4);
 
   li {
     margin-bottom: 0.2em;
@@ -174,26 +207,26 @@
 
 .cg-ally-pool-label {
   font-size: 0.78em;
-  color: var(--cg-muted, #aaa);
+  color: var(--cg-text-dim, #9a8a6a);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
 .cg-ally-pool-dice {
   font-size: 1.05em;
-  color: var(--cg-gold, #c9a34d);
+  color: var(--cg-gold, #c9a84c);
 }
 
 .cg-ally-pool-note {
   font-size: 0.75em;
-  color: var(--cg-muted, #888);
+  color: var(--cg-text-dim, #9a8a6a);
   font-style: italic;
 }
 
 .cg-ally-table-head {
   font-size: 0.85em;
   font-weight: 600;
-  color: var(--cg-muted, #aaa);
+  color: var(--cg-text-dim, #9a8a6a);
   margin: 0.8em 0 0.3em 0;
 }
 
@@ -206,8 +239,8 @@
   th {
     text-align: left;
     padding: 0.3em 0.5em;
-    color: var(--cg-muted, #aaa);
-    border-bottom: 1px solid var(--cg-border, #333);
+    color: var(--cg-text-dim, #9a8a6a);
+    border-bottom: 1px solid var(--cg-border, rgba(201,168,76,0.22));
     font-weight: 600;
     font-size: 0.85em;
     text-transform: uppercase;
@@ -216,8 +249,8 @@
 
   td {
     padding: 0.3em 0.5em;
-    border-bottom: 1px solid var(--cg-border-light, #222);
-    color: var(--cg-text, #eee);
+    border-bottom: 1px solid rgba(201,168,76,0.10);
+    color: var(--cg-text-light, #e8dcc4);
   }
 
   tr:last-child td {
@@ -236,16 +269,16 @@
     align-items: center;
     justify-content: space-between;
     padding: 0.25em 0;
-    border-bottom: 1px solid var(--cg-border-light, #222);
+    border-bottom: 1px solid rgba(201,168,76,0.10);
     font-size: 0.93em;
-    color: var(--cg-text, #eee);
+    color: var(--cg-text-light, #e8dcc4);
 
     &:last-child { border-bottom: none; }
   }
 }
 
 .cg-ally-trapping-auto {
-  color: var(--cg-muted, #aaa) !important;
+  color: var(--cg-text-dim, #9a8a6a) !important;
   font-style: italic;
 }
 
@@ -258,7 +291,7 @@
 
 .cg-ally-money-label {
   font-size: 0.85em;
-  color: var(--cg-muted, #aaa);
+  color: var(--cg-text-dim, #9a8a6a);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -267,7 +300,7 @@
 
 // Equipment catalog
 .cg-ally-catalog-wrap {
-  border: 1px solid var(--cg-border, #444);
+  border: 1px solid var(--cg-border, rgba(201,168,76,0.22));
   border-radius: 6px;
   padding: 0.8em;
   margin-top: 0.75em;
@@ -282,18 +315,18 @@
   h5 {
     margin: 0;
     font-size: 0.95em;
-    color: var(--cg-gold, #c9a34d);
+    color: var(--cg-gold, #c9a84c);
   }
 }
 
 .cg-ally-loading {
-  color: var(--cg-muted, #888);
+  color: var(--cg-text-dim, #9a8a6a);
   font-style: italic;
   font-size: 0.9em;
 }
 
 .cg-ally-empty {
-  color: var(--cg-muted, #888);
+  color: var(--cg-text-dim, #9a8a6a);
   font-style: italic;
   font-size: 0.9em;
   margin: 0.5em 0;
