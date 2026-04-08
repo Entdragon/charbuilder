@@ -630,17 +630,13 @@
         var canAfford = xpAvail >= 10;
         var candidateList = isCareer ? d.careers || [] : d.types || [];
         var kindLabel = isCareer ? "Career" : "Type";
-        var devPurchasedSlugs = {};
-        state.purchasedGifts.forEach(function(p) {
-          devPurchasedSlugs[p.slug] = true;
-        });
         var mainExcludeId = isCareer ? state.careerId : state.typeId;
         var eligibleItems = candidateList.filter(function(item) {
           if (item.id == mainExcludeId)
             return false;
           var required = (item.gifts || []).concat(isCareer ? [] : item.soaks || []);
           return required.every(function(gift) {
-            return devPurchasedSlugs[gift.slug || String(gift.id)];
+            return ownedSlugSet[gift.slug || String(gift.id)];
           });
         });
         var selectedId = isCareer ? state.extraCareerId : state.extraTypeId;

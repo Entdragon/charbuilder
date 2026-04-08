@@ -587,21 +587,15 @@
       var candidateList    = isCareer ? (d.careers || []) : (d.types || []);
       var kindLabel        = isCareer ? 'Career' : 'Type';
 
-      // Build a set of slugs purchased through development only (not granted at creation).
-      // Eligibility for Extra Career/Type requires you to have *purchased* all of the
-      // target's creation gifts — having them free from your own career does not count.
-      var devPurchasedSlugs = {};
-      state.purchasedGifts.forEach(function(p) { devPurchasedSlugs[p.slug] = true; });
-
-      // Eligible: must have purchased every creation gift (and for type: soaks) through dev.
+      // Eligible: must own every creation gift (and for type: soaks too) from any source
+      // (granted at creation or purchased through development).
       // Exclude the character's own main career/type — you can't pick what you already are.
-      // A career/type with zero creation gifts is vacuously eligible (unless it's your main).
       var mainExcludeId = isCareer ? state.careerId : state.typeId;
       var eligibleItems = candidateList.filter(function(item) {
         if (item.id == mainExcludeId) return false;
         var required = (item.gifts || []).concat(isCareer ? [] : (item.soaks || []));
         return required.every(function(gift) {
-          return devPurchasedSlugs[gift.slug || String(gift.id)];
+          return ownedSlugSet[gift.slug || String(gift.id)];
         });
       });
 
