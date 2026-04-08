@@ -1,0 +1,12 @@
+
+Remember that many lesser undead may be in the company of enablers. Greater undead (such as powerful aswangs) may be able to rally their minions or negotiate with them to remove the bad statuses. And any necromancer can make undead become Berserk, though when they add Berserk to an Afraid, Terrified, or Immobilized undead, the Berserk is instantly cancelled and those bad statuses are removed. You should deal with bosses before you abjure the minions.
+
+@@TABLE: Banish the Supernatural
+Will, Supernatural, Mystic's d12 ≥4 | Choose one result
+No successes | No effect, but your gift of "Banish Monster" can be recharged with a "recharge" action.
+1 success or more | One Typical supernatural creature (no trait higher than d6) that is Near you (within 4m) becomes Terrified. You can recharge this gift with a "recharge" action.
+2 successes or more | All Typical supernatural creatures (no trait higher than d6) that are Near you (within 4m) become Afraid and Immobilized; all Typical supernatural creatures within Short range (12m) become Afraid. You can recharge this gift at the start of the next scene.
+3 successes or more | One Elite supernatural creature (no trait higher than d8) that is Near you (within 4m) becomes Afraid. You can recharge this gift with a "recharge" action. Or, you can choose that all Typical supernatural creatures (no trait higher than d6) become Terrified. You can recharge this gift at your next respite.
+4 successes or more | All Elite supernatural creatures (no trait higher than d8) that are Near you (within 4m) become Afraid and Immobilized; all Elite supernatural creatures within Short range (12m) become Afraid. You can recharge this gift at the start of the next scene.
+5 successes or more | One supernatural creature (of any strength) that is Near you (within 4m) becomes Afraid and Immobilized. You can recharge this gift at your next respite. Or, you can choose that all Elite supernatural creatures (no trait higher than d8) become Terrified. You can recharge this gift at your next respite.
+6 successes or more | One supernatural creature (of any strength) that is Near you (within 4m) becomes Terrified. You can recharge this gift at the start of the next chapter.
