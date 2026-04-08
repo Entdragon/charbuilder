@@ -142,6 +142,8 @@ $actionFiles = [
     'uj_get_skills'      => 'actions/uj.php',
     'uj_get_gifts'       => 'actions/uj.php',
     'uj_get_soaks'       => 'actions/uj.php',
+    'uj_get_attacks'     => 'actions/uj.php',
+    'uj_get_items'       => 'actions/uj.php',
     'uj_get_all_traits'  => 'actions/uj.php',
 ];
 

@@ -16,7 +16,7 @@ $counts  = [];
 $hasData = false;
 try {
     $p  = cg_prefix();
-    foreach (['uj_species' => 'species', 'uj_types' => 'types', 'uj_careers' => 'careers', 'uj_skills' => 'skills', 'uj_gifts' => 'gifts', 'uj_soaks' => 'soaks'] as $tbl => $label) {
+    foreach (['uj_species' => 'species', 'uj_types' => 'types', 'uj_careers' => 'careers', 'uj_skills' => 'skills', 'uj_gifts' => 'gifts', 'uj_soaks' => 'soaks', 'uj_attacks' => 'attacks', 'uj_items' => 'items'] as $tbl => $label) {
         $row = cg_query_one("SELECT COUNT(*) AS n FROM `{$p}{$tbl}`");
         $counts[$label] = (int)($row['n'] ?? 0);
     }
@@ -86,6 +86,14 @@ try {
         <div class="uj-count">
           <div class="uj-count-n"><?= $counts['soaks'] ?></div>
           <div class="uj-count-l">Soaks</div>
+        </div>
+        <div class="uj-count">
+          <div class="uj-count-n"><?= $counts['attacks'] ?></div>
+          <div class="uj-count-l">Attacks</div>
+        </div>
+        <div class="uj-count">
+          <div class="uj-count-n"><?= $counts['items'] ?></div>
+          <div class="uj-count-l">Items</div>
         </div>
       </div>
     <?php else: ?>

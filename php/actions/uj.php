@@ -95,6 +95,39 @@ function uj_create_tables_internal(): array {
             UNIQUE KEY `slug` (`slug`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
 
+        // Attack methods
+        "CREATE TABLE IF NOT EXISTS `{$p}uj_attacks` (
+            `id`            INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `name`          VARCHAR(100) NOT NULL DEFAULT '',
+            `slug`          VARCHAR(100) NOT NULL DEFAULT '',
+            `category`      VARCHAR(40)  NOT NULL DEFAULT '',
+            `attack_range`  VARCHAR(40)  NOT NULL DEFAULT '',
+            `counter_range` VARCHAR(40)  NOT NULL DEFAULT '',
+            `attack_dice`   VARCHAR(120) NOT NULL DEFAULT '',
+            `effect`        VARCHAR(120) NOT NULL DEFAULT '',
+            `notes`         VARCHAR(200) NOT NULL DEFAULT '',
+            `published`     TINYINT(1)   NOT NULL DEFAULT 1,
+            `created_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `updated_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `slug` (`slug`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+        // Equipment / item price list
+        "CREATE TABLE IF NOT EXISTS `{$p}uj_items` (
+            `id`          INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `name`        VARCHAR(120) NOT NULL DEFAULT '',
+            `slug`        VARCHAR(120) NOT NULL DEFAULT '',
+            `cost_class`  ENUM('Affordable','Expensive','Extravagant','Proscribed') NOT NULL DEFAULT 'Affordable',
+            `price_early` VARCHAR(30)  NOT NULL DEFAULT '',
+            `price_late`  VARCHAR(30)  NOT NULL DEFAULT '',
+            `published`   TINYINT(1)   NOT NULL DEFAULT 1,
+            `created_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `updated_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `slug` (`slug`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
         // Gifts
         "CREATE TABLE IF NOT EXISTS `{$p}uj_gifts` (
             `id`            INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -177,8 +210,10 @@ function uj_install_data(): void {
     $counts['skills']   = uj_install_skills();
     $counts['gifts']    = uj_install_gifts();
     $counts['soaks']    = uj_install_soaks();
+    $counts['attacks']  = uj_install_attacks();
+    $counts['items']    = uj_install_items();
 
-    $msg = "Upserted: {$counts['species']} species, {$counts['types']} types, {$counts['careers']} careers, {$counts['skills']} skills, {$counts['gifts']} gifts, {$counts['soaks']} soaks.";
+    $msg = "Upserted: {$counts['species']} species, {$counts['types']} types, {$counts['careers']} careers, {$counts['skills']} skills, {$counts['gifts']} gifts, {$counts['soaks']} soaks, {$counts['attacks']} attacks, {$counts['items']} items.";
     cg_json(['success' => true, 'data' => $msg]);
 }
 
@@ -775,6 +810,26 @@ function uj_get_skills(): void {
     cg_json(['success' => true, 'data' => $rows]);
 }
 
+function uj_get_attacks(): void {
+    $rows = cg_query(
+        "SELECT id, name, slug, category, attack_range, counter_range, attack_dice, effect, notes
+           FROM `" . uj_tbl('attacks') . "`
+          WHERE published = 1
+       ORDER BY category ASC, name ASC"
+    );
+    cg_json(['success' => true, 'data' => $rows]);
+}
+
+function uj_get_items(): void {
+    $rows = cg_query(
+        "SELECT id, name, slug, cost_class, price_early, price_late
+           FROM `" . uj_tbl('items') . "`
+          WHERE published = 1
+       ORDER BY name ASC"
+    );
+    cg_json(['success' => true, 'data' => $rows]);
+}
+
 function uj_get_gifts(): void {
     $rows = cg_query(
         "SELECT id, name, slug, subtitle, description, gift_type, recharge, requires_text
@@ -803,7 +858,9 @@ function uj_get_all_traits(): void {
     $sk = cg_query("SELECT id, name, slug, description, paired_trait, sample_favorites, gift_notes FROM `" . uj_tbl('skills') . "` WHERE published = 1 ORDER BY name ASC");
     $gi = cg_query("SELECT id, name, slug, subtitle, description, gift_type, recharge, requires_text FROM `" . uj_tbl('gifts') . "` WHERE published = 1 ORDER BY gift_type ASC, name ASC");
     $so = cg_query("SELECT id, name, slug, damage_negated, recharge, side_effect, description, soak_type FROM `" . uj_tbl('soaks') . "` WHERE published = 1 ORDER BY soak_type ASC, name ASC");
-    cg_json(['success' => true, 'data' => ['species' => $sp, 'types' => $ty, 'careers' => $ca, 'skills' => $sk, 'gifts' => $gi, 'soaks' => $so]]);
+    $at = cg_query("SELECT id, name, slug, category, attack_range, counter_range, attack_dice, effect, notes FROM `" . uj_tbl('attacks') . "` WHERE published = 1 ORDER BY category ASC, name ASC");
+    $it = cg_query("SELECT id, name, slug, cost_class, price_early, price_late FROM `" . uj_tbl('items') . "` WHERE published = 1 ORDER BY name ASC");
+    cg_json(['success' => true, 'data' => ['species' => $sp, 'types' => $ty, 'careers' => $ca, 'skills' => $sk, 'gifts' => $gi, 'soaks' => $so, 'attacks' => $at, 'items' => $it]]);
 }
 
 // ── Skills data ───────────────────────────────────────────────────────────────
@@ -1275,6 +1332,220 @@ function uj_install_soaks(): int {
                 recharge=VALUES(recharge), side_effect=VALUES(side_effect),
                 description=VALUES(description), soak_type=VALUES(soak_type)",
             [$name, $slug, $dmg, $recharge, $side, $desc, $type]
+        );
+        $count++;
+    }
+    return $count;
+}
+
+// ── Attack methods data ────────────────────────────────────────────────────────
+
+function uj_install_attacks(): int {
+    $t = uj_tbl('attacks');
+
+    // Each row: [name, slug, category, attack_range, counter_range, attack_dice, effect, notes]
+    $rows = [
+        // ── Unarmed ───────────────────────────────────────────────────────────
+        ['Brutalize',   'brutalize',   'unarmed', 'Close', '',              'Body, Fighting',       'Dmg +1, Escape',              '2 hands, Unarmed'],
+        ["Bum's Rush",  'bums-rush',   'unarmed', 'Held',  '',              'Body, Fighting',       'Dmg, Shove, Target Escapes',  '2 hands, Unarmed'],
+        ['Grab',        'grab',        'unarmed', 'Close', 'Counter@Held',  'Body, Fighting',       'Hold',                        'Off hand, Unarmed'],
+        ['Kick',        'kick',        'unarmed', 'Close', 'Counter@Held',  'Body, Fighting',       'Dmg, Escape',                 'Unarmed'],
+        ['Punch',       'punch',       'unarmed', 'Close', '',              'Body, Fighting',       'Dmg +1',                      'Off Hand, Unarmed'],
+        ['Struggle',    'struggle',    'unarmed', 'Close', 'Counter@Held',  'Body, Fighting',       'Dmg, Hold, Drag',             '2 hands, Unarmed'],
+        ['Trip',        'trip',        'unarmed', 'Close', '',              'Body, Fighting',       'Down',                        'Unarmed'],
+        ['Wrest Away',  'wrest-away',  'unarmed', 'Close', 'Counter@Held',  'Body, Fighting',       'Dmg, Disarm',                 '2 hands, Unarmed'],
+
+        // ── Improvised ────────────────────────────────────────────────────────
+        ['Butt Stroke',       'butt-stroke',       'improvised', 'Close',      '',              'Body, Mind, Fighting', 'Dmg +1',  '2 Hands, Improvised'],
+        ['Large Improv',      'large-improv',      'improvised', 'Close',      'Counter@Close', 'Body, Mind, Fighting', 'Dmg +1',  '2 Hands, Improvised'],
+        ['Pistol Whip',       'pistol-whip',       'improvised', 'Close',      '',              'Body, Mind, Fighting', 'Dmg',     'Good Hand, Improvised'],
+        ['Small Improv',      'small-improv',      'improvised', 'Close/Throw','Counter@Close', 'Body, Mind, Fighting', 'Dmg',     'Good Hand, Improvised'],
+        ['Unbalanced Improv', 'unbalanced-improv', 'improvised', 'Near',       '',              'Body, Mind, Fighting', 'Dmg +2',  '2 Hands, Improvised'],
+
+        // ── Boxing ────────────────────────────────────────────────────────────
+        ['Jab',      'jab',      'boxing', 'Close', 'Counter@Close', 'Body, Speed, Fighting', 'Dmg +1', 'Off hand, Boxing'],
+        ['Uppercut', 'uppercut', 'boxing', 'Close', '',              'Body, Speed, Fighting', 'Dmg +2', 'Good hand, Boxing'],
+
+        // ── Brawling ──────────────────────────────────────────────────────────
+        ['Grapple',  'grapple',  'brawling', 'Close', 'Counter@Held', 'Body, Will, Fighting', 'Dmg +1, Hold, Drag',    'Off hand, Brawling'],
+        ['Overbear', 'overbear', 'brawling', 'Close', 'Counter@Held', 'Body, Will, Fighting', 'Dmg, Escape, Shove',    'Brawling'],
+        ['Pummel',   'pummel',   'brawling', 'Close', '',              'Body, Will, Fighting', 'Dmg +2',                'Off hand, Brawling'],
+
+        // ── Contortionist ─────────────────────────────────────────────────────
+        ['Squirm',  'squirm',  'contortionist', 'Held',  'Counter@Held', 'Speed, Mind, Fighting, d12', 'Escape', 'Contortionist'],
+        ['Wriggle', 'wriggle', 'contortionist', 'Close', '',              'Speed, Mind, Fighting, d12', 'Spring', 'Contortionist'],
+
+        // ── Jumping ───────────────────────────────────────────────────────────
+        ['Vault', 'vault', 'jumping', 'Charge', '', 'Speed, Fighting, d12', 'Spring', 'Jumping'],
+
+        // ── Quills ────────────────────────────────────────────────────────────
+        ['Quills', 'quills', 'quills', 'Close', 'Counter@Close', 'Body, Evasion', 'Dmg', 'Quills'],
+
+        // ── Running ───────────────────────────────────────────────────────────
+        ['Rush',    'rush',    'running', 'Charge', '', 'Body, Speed, Fighting', 'Dmg, Shove',        'Running'],
+        ['Trample', 'trample', 'running', 'Charge', '', 'Body, Speed, Fighting', 'Dmg, Down, Spring', 'Running'],
+
+        // ── Sleight of Hand ───────────────────────────────────────────────────
+        ['Legerdemain', 'legerdemain', 'sleight-of-hand', 'Close', 'Counter@Held', 'Speed, Mind, Deceit', 'Disarm', 'Good hand, Sleight of Hand'],
+
+        // ── Spray ─────────────────────────────────────────────────────────────
+        ['Spray', 'spray', 'spray', 'Short', '', 'Body, Will, Fighting', 'Dazed, Panicked, Sweep', 'Spray, 1/rest'],
+
+        // ── Wrestling ─────────────────────────────────────────────────────────
+        ['Crush',   'crush',   'wrestling', 'Held',  'Counter@Held',  'Body, Will, Fighting', 'Dmg +2, Hold',                  'Off hand, Wrestling'],
+        ['Suplex',  'suplex',  'wrestling', 'Held',  'Counter@Held',  'Body, Will, Fighting', 'Dmg +3, Down, Target Escapes',  '2 hands, Wrestling'],
+        ['Throw',   'throw',   'wrestling', 'Held',  '',              'Body, Will, Fighting', 'Dmg +2, Shove',                 '2 hands, Wrestling'],
+        ['Wrestle', 'wrestle', 'wrestling', 'Close', 'Counter@Close', 'Body, Will, Fighting', 'Dmg +1, Hold',                  '2 hands, Wrestling'],
+
+        // ── Firearms ──────────────────────────────────────────────────────────
+        ['High-Power Rifle',  'high-power-rifle',  'firearm', 'Long',   '',              'Body, Speed, Shooting, Ammo d4',       'Dmg +4',        '2 Hands, Rifle, Proscribed, Loud, 1 shot'],
+        ['Holdout Shotgun',   'holdout-shotgun',   'firearm', 'Short',  'Counter@Near',  'Burst Close: Body, Will, Shooting',    'Dmg +2',        '2 Hands, Shotgun, Loud, 2 shots'],
+        ['Hunting Rifle',     'hunting-rifle',     'firearm', 'Long',   '',              'Speed, Shooting, Ammo d4',             'Dmg +3',        '2 Hands, Rifle, Loud'],
+        ['Magnum Pistol',     'magnum-pistol',     'firearm', 'Medium', 'Counter@Near',  'Body, Shooting, Ammo d4',              'Dmg +3',        'Good Hand, Pistol, Loud'],
+        ['Pocket Pistol',     'pocket-pistol',     'firearm', 'Medium', 'Counter@Short', 'Speed, Mind, Shooting, Ammo d4',       'Dmg +1',        'Good Hand, Pistol, Loud'],
+        ['Pump Shotgun',      'pump-shotgun',      'firearm', 'Medium', 'Counter@Near',  'Burst Close: Body, Shooting',          'Dmg +3',        '2 Hands, Shotgun, Loud, 4 shots'],
+        ['Service Pistol',    'service-pistol',    'firearm', 'Medium', 'Counter@Short', 'Speed, Shooting, Ammo d4',             'Dmg +2',        'Good Hand, Pistol, Loud'],
+        ['Silenced Pistol',   'silenced-pistol',   'firearm', 'Medium', 'Counter@Medium','Speed, Mind, Shooting, Ammo d4',       'Dmg +1',        'Good Hand, Pistol, Proscribed'],
+        ['Tommy Gun',         'tommy-gun',         'firearm', 'Medium', 'Counter@Medium','Speed, Mind, Shooting, Ammo d6',       'Dmg +2, Sweep', '2 Hands, Carbine, Proscribed, Loud'],
+        ['Varmint Rifle',     'varmint-rifle',     'firearm', 'Long',   '',              'Speed, Mind, Shooting, Ammo d6',       'Dmg +1',        '2 Hands, Rifle, Loud'],
+
+        // ── Melee (Hand-to-Hand Weapons) ──────────────────────────────────────
+        ['Baseball Bat',  'baseball-bat',  'melee', 'Close',      'Counter@Close', 'Body, Speed, Fighting', 'Dmg +2', '2 Hands, Club'],
+        ['Blackjack',     'blackjack',     'melee', 'Close',      '',              'Speed, Will, Fighting', 'Dmg +1', 'Good hand, Subdual, Proscribed'],
+        ['Bowie Knife',   'bowie-knife',   'melee', 'Close/Throw','Counter@Close', 'Body, Speed, Fighting', 'Dmg +2', 'Good Hand, Blade'],
+        ["Fireman's Ax",  'firemans-ax',   'melee', 'Near',       '',              'Body, Speed, Fighting', 'Dmg +3', '2 Hands, Blade'],
+        ['Pocket Knife',  'pocket-knife',  'melee', 'Close',      '',              'Body, Speed, Fighting', 'Dmg +1', 'Good Hand, Blade'],
+        ['Switchblade',   'switchblade',   'melee', 'Close',      '',              'Body, Speed, Fighting', 'Dmg +1', 'Off Hand, Blade'],
+        ['Tomahawk',      'tomahawk',      'melee', 'Close/Throw','Counter@Close', 'Body, Speed, Fighting', 'Dmg +1', 'Good Hand, Blade'],
+        ['Truncheon',     'truncheon',     'melee', 'Close',      'Counter@Close', 'Body, Will, Fighting',  'Dmg +1', 'Off Hand, Club'],
+
+        // ── Explosives ────────────────────────────────────────────────────────
+        ['Dynamite & Lighter', 'dynamite-and-lighter', 'explosive', 'Medium', 'Burst Short', 'Body, Will, Athletics',  'Dmg +4', '2 hands, Explosive, Consumed, Proscribed, Loud'],
+        ['Grenade',            'grenade',               'explosive', 'Medium', 'Burst Near',  'Body, Speed, Athletics', 'Dmg +3', 'Off hand, Explosive, Consumed, Proscribed, Loud'],
+        ['Homemade Bomb',      'homemade-bomb',         'explosive', 'Short',  'Burst Near',  'Body, Speed, Athletics', 'Dmg +3', '2 hands, Explosive, Consumed, Proscribed, Loud'],
+    ];
+
+    $count = 0;
+    foreach ($rows as [$name, $slug, $cat, $atk, $ctr, $dice, $fx, $notes]) {
+        cg_exec(
+            "INSERT INTO `$t`
+                (name, slug, category, attack_range, counter_range, attack_dice, effect, notes)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE
+                name=VALUES(name), category=VALUES(category),
+                attack_range=VALUES(attack_range), counter_range=VALUES(counter_range),
+                attack_dice=VALUES(attack_dice), effect=VALUES(effect),
+                notes=VALUES(notes)",
+            [$name, $slug, $cat, $atk, $ctr, $dice, $fx, $notes]
+        );
+        $count++;
+    }
+    return $count;
+}
+
+// ── Equipment / item price-list data ──────────────────────────────────────────
+
+function uj_install_items(): int {
+    $t = uj_tbl('items');
+
+    // Each row: [name, slug, cost_class, price_early (1910s/1930s), price_late (1920s/1940s)]
+    $rows = [
+        ['Baby carriage',          'baby-carriage',       'Extravagant', '$8.00',       '$14.00'],
+        ['Bag, carpet',            'bag-carpet',          'Affordable',  '$0.10',        '$0.20'],
+        ['Bag, leather',           'bag-leather',         'Expensive',   '$0.58',        '$1.00'],
+        ['Banjo',                  'banjo',               'Expensive',   '$2.30',        '$4.00'],
+        ['Baseball',               'baseball',            'Expensive',   '$0.80',        '$1.50'],
+        ['Bed',                    'bed',                 'Expensive',   '$11.50',       '$20.00'],
+        ['Blanket',                'blanket',             'Affordable',  '$0.58',        '$1.00'],
+        ['Book, popular fiction',  'book-popular-fiction','Affordable',  '$0.25',        '$0.50'],
+        ['Book, reference',        'book-reference',      'Expensive',   '$1.15',        '$2.00'],
+        ['Boots, nice',            'boots-nice',          'Expensive',   '$3.45',        '$6.00'],
+        ['Camera, brownie',        'camera-brownie',      'Expensive',   '$5.75',        '$10.00'],
+        ['Candy',                  'candy',               'Affordable',  '$3.50/lb',     '$6/lb'],
+        ['Chair, rocking',         'chair-rocking',       'Expensive',   '$3.45',        '$6.00'],
+        ['Chair, simple',          'chair-simple',        'Affordable',  '$0.58',        '$1.00'],
+        ['Chaise lounge',          'chaise-lounge',       'Extravagant', '$34.50',       '$60.00'],
+        ['Chicken wire',           'chicken-wire',        'Expensive',   '$0.02/sq ft',  '$0.04/sq ft'],
+        ['Cigar',                  'cigar',               'Expensive',   '$0.10',        '$0.20'],
+        ['Clock',                  'clock',               'Expensive',   '$1.15',        '$2.00'],
+        ['Clothes fabric',         'clothes-fabric',      'Affordable',  '$0.30/sq ft',  '$0.50/sq ft'],
+        ['Clothes wringer',        'clothes-wringer',     'Expensive',   '$1.73',        '$3.00'],
+        ['Coffee',                 'coffee',              'Affordable',  '$0.40/lb',     '$0.50/lb'],
+        ['Corset',                 'corset',              'Expensive',   '$2.30',        '$4.00'],
+        ['Cowbell',                'cowbell',             'Affordable',  '$0.25',        '$0.50'],
+        ['Dinner Set (100 pc)',    'dinner-set-100-pc',   'Extravagant', '$17.25',       '$30.00'],
+        ['Farm tool',              'farm-tool',           'Affordable',  '$0.50',        '$1.00'],
+        ['Flashlight',             'flashlight',          'Affordable',  '$0.80',        '$1.50'],
+        ['Fountain pen',           'fountain-pen',        'Expensive',   '$1.15',        '$2.00'],
+        ['Guitar',                 'guitar',              'Expensive',   '$5.75',        '$10.00'],
+        ['Harmonica',              'harmonica',           'Affordable',  '$0.29',        '$0.50'],
+        ['Hat, dress',             'hat-dress',           'Expensive',   '$5.75',        '$10.00'],
+        ['Hat, utility',           'hat-utility',         'Affordable',  '$1.15',        '$2.00'],
+        ['House Paint',            'house-paint',         'Expensive',   '$1.15/gal',    '$2.00/gal'],
+        ['Iron, Clothes',          'iron-clothes',        'Affordable',  '$0.12',        '$0.20'],
+        ['Kettle or Pot',          'kettle-or-pot',       'Affordable',  '$0.35',        '$0.60'],
+        ['Lamp',                   'lamp',                'Extravagant', '$4.50',        '$8.00'],
+        ['Lamp Oil',               'lamp-oil',            'Affordable',  '$0.05/gal',    '$0.10/gal'],
+        ['Lantern, driver',        'lantern-driver',      'Expensive',   '$3.45',        '$6.00'],
+        ['Lantern, hand',          'lantern-hand',        'Affordable',  '$0.58',        '$1.00'],
+        ['Machinist tool',         'machinist-tool',      'Expensive',   '$2.88',        '$5.00'],
+        ['Mason Jar',              'mason-jar',           'Affordable',  '$0.58',        '$1.00'],
+        ['Oil Heater',             'oil-heater',          'Expensive',   '$8.05',        '$14.00'],
+        ['Outfit, Fancy',          'outfit-fancy',        'Expensive',   '$25.00',       '$50.00'],
+        ['Outfit, Handy',          'outfit-handy',        'Expensive',   '$20.00',       '$40.00'],
+        ['Outfit, Medical',        'outfit-medical',      'Expensive',   '$22.50',       '$45.00'],
+        ['Outfit, Rough',          'outfit-rough',        'Expensive',   '$19.00',       '$38.00'],
+        ['Outfit, Sneaky',         'outfit-sneaky',       'Proscribed',  '$18.00',       '$36.00'],
+        ['Outfit, Uniform',        'outfit-uniform',      'Expensive',   '$30.00',       '$60.00'],
+        ['Piano',                  'piano',               'Extravagant', '$172.50',      '$300.00'],
+        ['Pipe, smoking',          'pipe-smoking',        'Affordable',  '$0.12',        '$0.20'],
+        ['Pistol bullets (reload)','pistol-bullets-reload','Expensive',  '$0.50',        '$1.00'],
+        ['Pistol, Magnum',         'pistol-magnum',       'Expensive',   '$15.00',       '$22.50'],
+        ['Pistol, Pocket',         'pistol-pocket',       'Expensive',   '$10.00',       '$15.00'],
+        ['Pistol, Service',        'pistol-service',      'Expensive',   '$12.00',       '$18.00'],
+        ['Pistol, Silenced',       'pistol-silenced',     'Proscribed',  '$15.00',       '$22.50'],
+        ['Plow',                   'plow',                'Expensive',   '$3.50',        '$6.00'],
+        ['Radio',                  'radio',               'Expensive',   '$30.00',       '$45.00'],
+        ['Refrigerator',           'refrigerator',        'Extravagant', '$57.50',       '$100.00'],
+        ['Rifle bullets (reload)', 'rifle-bullets-reload','Expensive',   '$1.00',        '$2.00'],
+        ['Rifle, High-Power',      'rifle-high-power',    'Proscribed',  '$30.00',       '$40.00'],
+        ['Rifle, Hunting',         'rifle-hunting',       'Expensive',   '$24.00',       '$32.00'],
+        ['Rifle, Varmint',         'rifle-varmint',       'Expensive',   '$12.00',       '$16.00'],
+        ['Rug',                    'rug',                 'Affordable',  '$0.50/sq yd',  '$1.00/sq yd'],
+        ['Safe (300 lbs., 1 cu.ft)','safe-300lbs',        'Expensive',   '$23.00',       '$40.00'],
+        ['Saxophone',              'saxophone',           'Expensive',   '$40.00',       '$80.00'],
+        ['Scale, Weighing',        'scale-weighing',      'Expensive',   '$2.88',        '$5.00'],
+        ['Sewing Machine',         'sewing-machine',      'Extravagant', '$11.50',       '$20.00'],
+        ['Sheet Music',            'sheet-music',         'Affordable',  '$0.50',        '$1.00'],
+        ['Shotgun shells (20)',    'shotgun-shells-20',   'Expensive',   '$2.50',        '$5.00'],
+        ['Shotgun, Holdout',       'shotgun-holdout',     'Expensive',   '$16.00',       '$24.00'],
+        ['Shotgun, Pump',          'shotgun-pump',        'Expensive',   '$24.00',       '$32.00'],
+        ['Soap',                   'soap',                'Affordable',  '$0.05/lb',     '$0.10/lb'],
+        ['Spectacles',             'spectacles',          'Expensive',   '$2.30',        '$4.00'],
+        ['Tacks',                  'tacks',               'Affordable',  '$0.12/lb',     '$0.20/lb'],
+        ['Tea',                    'tea',                 'Affordable',  '$0.23/lb',     '$0.40/lb'],
+        ['Tea Set (40 pc)',        'tea-set-40-pc',       'Extravagant', '$6.90',        '$12.00'],
+        ['Tommy Gun',              'tommy-gun',           'Proscribed',  '$32.50',       '$42.00'],
+        ['Toolset, portable',      'toolset-portable',    'Extravagant', '$57.50',       '$100.00'],
+        ['Trunk',                  'trunk',               'Expensive',   '$4.50',        '$8.00'],
+        ['Umbrella',               'umbrella',            'Expensive',   '$3.45',        '$6.00'],
+        ['Violin',                 'violin',              'Expensive',   '$3.45',        '$6.00'],
+        ['Washtub',                'washtub',             'Affordable',  '$0.58',        '$1.00'],
+        ['Windmill',               'windmill',            'Extravagant', '$230.00',      '$400.00'],
+        ['Wood-burning stove',     'wood-burning-stove',  'Expensive',   '$17.25',       '$30.00'],
+        ['Workshop',               'workshop',            'Expensive',   '$17.25',       '$30.00'],
+    ];
+
+    $count = 0;
+    foreach ($rows as [$name, $slug, $cost, $early, $late]) {
+        cg_exec(
+            "INSERT INTO `$t`
+                (name, slug, cost_class, price_early, price_late)
+             VALUES (?, ?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE
+                name=VALUES(name), cost_class=VALUES(cost_class),
+                price_early=VALUES(price_early), price_late=VALUES(price_late)",
+            [$name, $slug, $cost, $early, $late]
         );
         $count++;
     }
