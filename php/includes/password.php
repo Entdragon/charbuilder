@@ -55,9 +55,21 @@ function cg_check_password(string $password, string $hash): bool {
     // $wp$ prefix (wp-passwords-bcrypt plugin)
     // Format: $wp$$2y$... — strip the 4-char "$wp$" prefix to get the real bcrypt hash
     if (str_starts_with($hash, '$wp$')) {
-        // Plugin stores as "$wp$" + bcrypt-without-leading-$ e.g. "$wp$2y$10$..."
-        // Restore the "$" that was stripped with the prefix to reconstruct valid bcrypt
-        $real = '$' . substr($hash, 4);
+        // Log the raw hash structure (first 16 chars only, safe to log) for diagnosis
+        $rawSample = substr($hash, 0, 16);
+        error_log("[CG pw] \$wp\$ raw sample='" . $rawSample . "' len=" . strlen($hash));
+        // Try both formats:
+        //   Format A: $wp$$2y$... (plugin prepends "$wp$" before real bcrypt "$2y$...")
+        //   Format B: $wp$2y$...  (plugin stores without the leading "$" of bcrypt)
+        $suffix = substr($hash, 4);
+        if (str_starts_with($suffix, '$')) {
+            // Format A: suffix already starts with "$" → real bcrypt hash = suffix
+            $real = $suffix;
+        } else {
+            // Format B: suffix missing the leading "$" → restore it
+            $real = '$' . $suffix;
+        }
+        error_log("[CG pw] reconstructed real='" . substr($real, 0, 16) . "'");
         return password_verify($password, $real);
     }
 
