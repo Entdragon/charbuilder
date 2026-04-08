@@ -55,11 +55,10 @@ function cg_check_password(string $password, string $hash): bool {
     // $wp$ prefix (wp-passwords-bcrypt plugin)
     // Format: $wp$$2y$... — strip the 4-char "$wp$" prefix to get the real bcrypt hash
     if (str_starts_with($hash, '$wp$')) {
-        $real = substr($hash, 4);
-        $diagChars = substr($real, 0, 6); // first 6 chars of real hash (no plaintext exposed)
-        $result = password_verify($password, $real);
-        error_log("[CG auth] \$wp\$ check: real[0..5]='" . $diagChars . "' len=" . strlen($real) . " result=" . ($result ? 'true' : 'false'));
-        return $result;
+        // Plugin stores as "$wp$" + bcrypt-without-leading-$ e.g. "$wp$2y$10$..."
+        // Restore the "$" that was stripped with the prefix to reconstruct valid bcrypt
+        $real = '$' . substr($hash, 4);
+        return password_verify($password, $real);
     }
 
     // bcrypt (WordPress 6.8+ core or bcrypt plugin)
