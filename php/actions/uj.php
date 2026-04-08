@@ -1161,8 +1161,8 @@ function uj_get_all_full(): void {
     $types    = cg_query("SELECT id, name, slug, description, gear FROM `{$p}uj_types` WHERE published=1 ORDER BY name ASC");
     $careers  = cg_query("SELECT id, name, slug, description, gear FROM `{$p}uj_careers` WHERE published=1 ORDER BY name ASC");
     $skills   = cg_query("SELECT id, name, slug, description, paired_trait FROM `{$p}uj_skills` WHERE published=1 ORDER BY name ASC");
-    $gifts    = cg_query("SELECT id, name, slug, subtitle, description, gift_type, recharge FROM `{$p}uj_gifts` WHERE published=1 ORDER BY gift_type ASC, name ASC");
-    $soaks    = cg_query("SELECT id, name, slug, damage_negated, recharge, side_effect, soak_type FROM `{$p}uj_soaks` WHERE published=1 ORDER BY soak_type ASC, name ASC");
+    $gifts    = cg_query("SELECT id, name, slug, subtitle, description, gift_type, recharge, requires_text FROM `{$p}uj_gifts` WHERE published=1 ORDER BY gift_type ASC, name ASC");
+    $soaks    = cg_query("SELECT id, name, slug, damage_negated, recharge, side_effect, description, soak_type FROM `{$p}uj_soaks` WHERE published=1 ORDER BY soak_type ASC, name ASC");
 
     // Fetch all junction rows
     $spSkills = uj_index_by_parent(cg_query("SELECT ss.species_id AS parent_id, sk.id, sk.name, sk.slug, sk.paired_trait, ss.sort_order FROM `{$p}uj_species_skills` ss JOIN `{$p}uj_skills` sk ON sk.id=ss.skill_id ORDER BY ss.species_id, ss.sort_order"), 'parent_id');

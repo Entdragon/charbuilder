@@ -589,6 +589,104 @@ require __DIR__ . '/../layout-head.php';
     #uj-builder-main { padding: 1rem; }
     body { background: #fff !important; color: #000 !important; }
   }
+
+  /* ── Development screen ───────────────────────────────────── */
+  .dev-header {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem;
+  }
+  .dev-char-name {
+    font-family: 'Cinzel', Georgia, serif; font-size: 1.3rem; font-weight: 700;
+    color: var(--uj-amber-light); margin: 0 0 0.15rem; letter-spacing: 0.04em;
+  }
+  .dev-char-subtitle { font-size: 0.85rem; color: var(--uj-text-muted); font-style: italic; }
+  .dev-xp-panel {
+    background: var(--uj-surface); border: 1px solid var(--uj-border-cool);
+    border-radius: var(--uj-radius-lg); padding: 1.25rem 1.5rem;
+    margin-bottom: 1.25rem; display: flex; align-items: center;
+    justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+  }
+  .dev-xp-stats { display: flex; gap: 2rem; flex-wrap: wrap; }
+  .dev-xp-stat  { text-align: center; }
+  .dev-xp-stat-val {
+    font-family: 'Cinzel', Georgia, serif; font-size: 2rem; font-weight: 700;
+    color: var(--uj-amber); line-height: 1;
+  }
+  .dev-xp-stat-label {
+    font-size: 0.68rem; color: var(--uj-text-dim); text-transform: uppercase;
+    letter-spacing: 0.08em; margin-top: 0.25rem;
+  }
+  .dev-xp-award { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  .dev-rule-box {
+    background: rgba(75,191,216,0.06); border: 1px solid rgba(75,191,216,0.15);
+    border-radius: var(--uj-radius); padding: 0.75rem 1rem;
+    font-size: 0.86rem; color: var(--uj-text-muted); margin-bottom: 1.25rem; line-height: 1.5;
+  }
+  .dev-tabs {
+    display: flex; border-bottom: 2px solid var(--uj-border-cool); margin-bottom: 1.25rem;
+  }
+  .dev-tab {
+    background: none; border: none; border-bottom: 2px solid transparent;
+    margin-bottom: -2px; padding: 0.55rem 1.25rem;
+    font-family: 'Cinzel', Georgia, serif; font-size: 0.76rem; font-weight: 700;
+    letter-spacing: 0.07em; text-transform: uppercase; color: var(--uj-text-dim);
+    cursor: pointer; transition: all 0.18s;
+  }
+  .dev-tab.active            { color: var(--uj-amber); border-bottom-color: var(--uj-amber); }
+  .dev-tab:hover:not(.active){ color: var(--uj-text-muted); }
+  .dev-panel        { display: none; }
+  .dev-panel.active { display: block; }
+  .dev-shop-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 0.75rem; margin-bottom: 1.5rem;
+  }
+  .dev-shop-card {
+    background: var(--uj-surface); border: 1px solid var(--uj-border-cool);
+    border-radius: var(--uj-radius-lg); padding: 1rem 1.1rem;
+    display: flex; flex-direction: column; gap: 0.3rem; transition: border-color 0.2s;
+  }
+  .dev-shop-card-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.2rem;
+  }
+  .dev-shop-card-name {
+    font-family: 'Cinzel', Georgia, serif; font-size: 0.95rem; font-weight: 700;
+    color: var(--uj-amber-light);
+  }
+  .dev-shop-card-desc {
+    font-size: 0.83rem; color: var(--uj-text-muted); line-height: 1.45; margin: 0;
+  }
+  .dev-shop-requires {
+    font-size: 0.78rem; color: var(--uj-text-dim); line-height: 1.4;
+    border-left: 2px solid rgba(248,113,113,0.4); padding-left: 0.5rem;
+    margin-top: 0.1rem;
+  }
+  .dev-shop-card-footer {
+    margin-top: auto; padding-top: 0.6rem; border-top: 1px solid var(--uj-border-light);
+  }
+  .dev-badge {
+    font-family: 'Cinzel', Georgia, serif; font-size: 0.62rem; font-weight: 700;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 0.15rem 0.5rem; border-radius: 999px; white-space: nowrap;
+  }
+  .dev-badge-creation { background: rgba(74,222,128,0.15);  color: #4ade80;              border: 1px solid rgba(74,222,128,0.3); }
+  .dev-badge-owned    { background: rgba(244,166,34,0.15);  color: var(--uj-amber-light); border: 1px solid rgba(244,166,34,0.3); }
+  .dev-badge-type     { background: rgba(255,255,255,0.06); color: var(--uj-text-dim);    border: 1px solid rgba(255,255,255,0.1); }
+  .dev-badge-req      { background: rgba(248,113,113,0.1);  color: #f87171;               border: 1px solid rgba(248,113,113,0.25); }
+  .dev-history-list   { display: flex; flex-direction: column; gap: 0.5rem; }
+  .dev-history-item {
+    background: var(--uj-surface); border: 1px solid var(--uj-border-cool);
+    border-radius: var(--uj-radius-lg); padding: 0.75rem 1rem;
+  }
+  .dev-history-item-name {
+    font-family: 'Cinzel', Georgia, serif; font-size: 0.9rem; font-weight: 700;
+    color: var(--uj-amber-light); margin-bottom: 0.35rem;
+  }
+  @media (max-width: 600px) {
+    .dev-xp-panel  { flex-direction: column; align-items: flex-start; }
+    .dev-xp-stats  { gap: 1.25rem; }
+    .dev-shop-grid { grid-template-columns: 1fr; }
+  }
 </style>
 
 <?php if (!$loggedIn): ?>
@@ -646,6 +744,7 @@ require __DIR__ . '/../layout-head.php';
     <div id="uj-builder-loading" style="text-align:center; padding:3rem; color:var(--uj-text-dim); font-style:italic;">Loading game data…</div>
     <div id="uj-char-list-screen" style="display:none;"></div>
     <div id="uj-wizard-screen"    style="display:none;"></div>
+    <div id="uj-develop-screen"   style="display:none;"></div>
   </div>
 </div>
 <?php endif; ?>

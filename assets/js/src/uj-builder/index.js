@@ -139,6 +139,8 @@
     allySpeciesId:   null,
     allyCareerId:    null,
     giftChoices:     {},
+    experience:      0,
+    purchasedGifts:  [],
     currentStep:     0,
   };
 
@@ -147,9 +149,13 @@
   var UJ_TRAITS   = ['Body', 'Speed', 'Mind', 'Will', 'Type', 'Species', 'Career'];
 
   /* ── DOM refs ───────────────────────────────────────────── */
-  var loadingEl    = document.getElementById('uj-builder-loading');
-  var listScreen   = document.getElementById('uj-char-list-screen');
-  var wizardScreen = document.getElementById('uj-wizard-screen');
+  var loadingEl     = document.getElementById('uj-builder-loading');
+  var listScreen    = document.getElementById('uj-char-list-screen');
+  var wizardScreen  = document.getElementById('uj-wizard-screen');
+  var developScreen = document.getElementById('uj-develop-screen');
+
+  /* ── Gifts that may be purchased more than once ─────────── */
+  var ALLOWS_MULTIPLE = { 'improved-trait': true, 'wealth': true };
 
   /* ── Boot ──────────────────────────────────────────────── */
   Promise.all([
@@ -194,17 +200,24 @@
         var sp = (d.species  || []).find(function(x) { return x.id == c.species_id; });
         var ty = (d.types    || []).find(function(x) { return x.id == c.type_id;    });
         var ca = (d.careers  || []).find(function(x) { return x.id == c.career_id;  });
-        var detail = [sp ? sp.name : null, ty ? ty.name : null, ca ? ca.name : null].filter(Boolean).join(' / ');
-        var dice   = [c.body_die, c.speed_die, c.mind_die, c.will_die].filter(Boolean).join(' ');
-        var date   = c.updated_at ? c.updated_at.substring(0, 10) : '';
+        var detail  = [sp ? sp.name : null, ty ? ty.name : null, ca ? ca.name : null].filter(Boolean).join(' / ');
+        var dice    = [c.body_die, c.speed_die, c.mind_die, c.will_die].filter(Boolean).join(' ');
+        var date    = c.updated_at ? c.updated_at.substring(0, 10) : '';
+        var xpTotal = parseInt(c.experience || 0, 10);
+        var purchased;
+        try { purchased = JSON.parse(c.purchased_gifts || '[]') || []; } catch(e) { purchased = []; }
+        var xpSpent = purchased.reduce(function(s, p) { return s + (p.xp_cost || 10); }, 0);
+        var xpAvail = xpTotal - xpSpent;
         html += '<div class="char-card" data-id="' + esc(c.id) + '">' +
           '<div class="char-card-name">' + esc(c.name || '(Unnamed)') + '</div>' +
           '<div class="char-card-detail">' + esc(detail || 'Incomplete') + '</div>' +
           (dice ? '<div class="char-card-detail" style="color:var(--uj-amber);font-family:\'Cinzel\',serif;font-size:0.8rem;margin-top:0.25rem;">' + esc(dice) + '</div>' : '') +
+          (xpTotal > 0 ? '<div class="char-card-detail" style="color:var(--uj-teal);font-size:0.78rem;margin-top:0.2rem;">' + xpAvail + ' XP available (' + xpTotal + ' earned)</div>' : '') +
           '<div class="char-card-footer">' +
             '<span class="char-card-date">' + esc(date) + '</span>' +
-            '<div style="display:flex;gap:0.4rem;">' +
+            '<div style="display:flex;gap:0.4rem;flex-wrap:wrap;">' +
               '<button class="uj-btn uj-btn-ghost" style="font-size:0.7rem;padding:0.3rem 0.7rem;" data-load="' + esc(c.id) + '">Edit</button>' +
+              '<button class="uj-btn uj-btn-teal" style="font-size:0.7rem;padding:0.3rem 0.7rem;" data-develop="' + esc(c.id) + '">Develop</button>' +
               '<button class="uj-btn uj-btn-danger" data-delete="' + esc(c.id) + '">Delete</button>' +
             '</div>' +
           '</div>' +
@@ -219,6 +232,9 @@
 
     listScreen.querySelectorAll('[data-load]').forEach(function(btn) {
       btn.addEventListener('click', function(e) { e.stopPropagation(); loadChar(btn.dataset.load); });
+    });
+    listScreen.querySelectorAll('[data-develop]').forEach(function(btn) {
+      btn.addEventListener('click', function(e) { e.stopPropagation(); loadAndDevelop(btn.dataset.develop); });
     });
     listScreen.querySelectorAll('[data-delete]').forEach(function(btn) {
       btn.addEventListener('click', function(e) {
@@ -250,6 +266,8 @@
     state.allySpeciesId  = null;
     state.allyCareerId   = null;
     state.giftChoices    = {};
+    state.experience     = 0;
+    state.purchasedGifts = [];
     state.currentStep    = 0;
     showWizard();
   }
@@ -277,6 +295,10 @@
       state.giftChoices    = (function() {
         try { return JSON.parse(c.gift_choices || '{}') || {}; } catch(e) { return {}; }
       })();
+      state.experience     = parseInt(c.experience || 0, 10);
+      state.purchasedGifts = (function() {
+        try { return JSON.parse(c.purchased_gifts || '[]') || []; } catch(e) { return []; }
+      })();
       state.currentStep    = 0;
       showWizard();
     });
@@ -286,6 +308,197 @@
     ajaxPost('uj_delete_character', { id: id }).then(function() {
       state.characters = state.characters.filter(function(c) { return c.id != id; });
       renderCharList();
+    });
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     CHARACTER DEVELOPMENT
+  ════════════════════════════════════════════════════════════ */
+  function loadAndDevelop(id) {
+    ajaxPost('uj_get_character', { id: id }).then(function(res) {
+      if (!res || !res.data) return;
+      var c = res.data;
+      state.currentChar    = c.id;
+      state.charName       = c.name || '';
+      state.speciesId      = c.species_id ? Number(c.species_id) : null;
+      state.typeId         = c.type_id    ? Number(c.type_id)    : null;
+      state.careerId       = c.career_id  ? Number(c.career_id)  : null;
+      state.experience     = parseInt(c.experience || 0, 10);
+      state.purchasedGifts = (function() {
+        try { return JSON.parse(c.purchased_gifts || '[]') || []; } catch(e) { return []; }
+      })();
+      showDevelop();
+    });
+  }
+
+  function showDevelop() {
+    if (listScreen)    listScreen.style.display    = 'none';
+    if (wizardScreen)  wizardScreen.style.display  = 'none';
+    if (developScreen) developScreen.style.display = 'block';
+    renderDevelop();
+  }
+
+  function showCharList() {
+    if (developScreen) developScreen.style.display = 'none';
+    if (wizardScreen)  wizardScreen.style.display  = 'none';
+    renderCharList();
+    if (listScreen) listScreen.style.display = 'block';
+  }
+
+  function renderDevelop() {
+    if (!developScreen) return;
+    var d        = state.allData || {};
+    var allGifts = d.gifts  || [];
+    var allSoaks = d.soaks  || [];
+
+    var xpTotal  = state.experience;
+    var xpSpent  = state.purchasedGifts.reduce(function(s, p) { return s + (p.xp_cost || 10); }, 0);
+    var xpAvail  = xpTotal - xpSpent;
+
+    var sp = (d.species || []).find(function(x) { return x.id == state.speciesId; });
+    var ty = (d.types   || []).find(function(x) { return x.id == state.typeId;   });
+    var ca = (d.careers || []).find(function(x) { return x.id == state.careerId; });
+    var subtitle = [sp ? sp.name : '', ty ? ty.name : '', ca ? ca.name : ''].filter(Boolean).join(' / ');
+
+    function countPurchased(slug) {
+      return state.purchasedGifts.filter(function(p) { return p.slug === slug; }).length;
+    }
+
+    function cardBadges(item, kind) {
+      var owned = countPurchased(item.slug);
+      var out = '<span class="dev-badge dev-badge-type">' + esc(kind) + '</span> ';
+      if (owned) out += '<span class="dev-badge dev-badge-owned">Owned ×' + owned + '</span> ';
+      return out;
+    }
+
+    function buildShopCard(item, kind) {
+      var owned       = countPurchased(item.slug);
+      var canMultiple = item.requires_text && /again/i.test(item.requires_text);
+      var alreadyOwned = owned > 0 && !canMultiple;
+      var canAfford   = xpAvail >= 10;
+      var btnDisabled = alreadyOwned || !canAfford ? ' disabled' : '';
+      var btnLabel    = alreadyOwned ? 'Already owned' : (!canAfford ? 'Need 10 XP' : 'Buy — 10 XP');
+
+      return '<div class="dev-shop-card">' +
+        '<div class="dev-shop-card-header">' +
+          '<div class="dev-shop-card-name">' + esc(item.name) + '</div>' +
+          '<div>' + cardBadges(item, kind) + '</div>' +
+        '</div>' +
+        (item.subtitle ? '<div style="font-size:0.78rem;color:var(--uj-amber-light);font-style:italic;margin-bottom:0.15rem;">' + esc(item.subtitle) + '</div>' : '') +
+        (item.description ? '<p class="dev-shop-card-desc">' + esc(item.description) + '</p>' : '') +
+        (item.side_effect ? '<p class="dev-shop-card-desc" style="color:var(--uj-text-dim);"><em>Side effect:</em> ' + esc(item.side_effect) + '</p>' : '') +
+        (item.requires_text ? '<div class="dev-shop-requires"><strong>Requires/Notes:</strong> ' + esc(item.requires_text) + '</div>' : '') +
+        '<div class="dev-shop-card-footer">' +
+          '<button class="uj-btn uj-btn-teal" style="font-size:0.75rem;padding:0.3rem 0.85rem;" data-buy-slug="' + esc(item.slug) + '" data-buy-name="' + esc(item.name) + '" data-buy-kind="' + esc(kind) + '"' + btnDisabled + '>' + btnLabel + '</button>' +
+        '</div>' +
+      '</div>';
+    }
+
+    var giftsHtml = allGifts.map(function(g) { return buildShopCard(g, 'Gift'); }).join('');
+    var soaksHtml = allSoaks.map(function(s) { return buildShopCard(s, 'Soak'); }).join('');
+
+    var historyHtml = '';
+    if (state.purchasedGifts.length === 0) {
+      historyHtml = '<p style="color:var(--uj-text-dim);font-style:italic;">No purchases yet.</p>';
+    } else {
+      state.purchasedGifts.forEach(function(p) {
+        historyHtml += '<div class="dev-history-item">' +
+          '<div class="dev-history-item-name">' + esc(p.name) + '</div>' +
+          '<div style="font-size:0.8rem;color:var(--uj-text-dim);">' +
+            '<span class="dev-badge dev-badge-type" style="margin-right:0.4rem;">' + esc(p.kind) + '</span>' +
+            esc(p.xp_cost) + ' XP spent' +
+            (p.purchased_on ? ' &mdash; ' + esc(p.purchased_on) : '') +
+          '</div>' +
+        '</div>';
+      });
+    }
+
+    developScreen.innerHTML =
+      '<div class="dev-header">' +
+        '<div>' +
+          '<div class="dev-char-name">' + esc(state.charName || '(Unnamed)') + '</div>' +
+          (subtitle ? '<div class="dev-char-subtitle">' + esc(subtitle) + '</div>' : '') +
+        '</div>' +
+        '<button class="uj-btn uj-btn-ghost" id="dev-back-btn" style="font-size:0.8rem;">&#8592; Back to Characters</button>' +
+      '</div>' +
+
+      '<div class="dev-xp-panel">' +
+        '<div class="dev-xp-stats">' +
+          '<div class="dev-xp-stat"><div class="dev-xp-stat-val">' + xpTotal + '</div><div class="dev-xp-stat-label">XP Earned</div></div>' +
+          '<div class="dev-xp-stat"><div class="dev-xp-stat-val" style="color:var(--uj-text-muted);">' + xpSpent + '</div><div class="dev-xp-stat-label">XP Spent</div></div>' +
+          '<div class="dev-xp-stat"><div class="dev-xp-stat-val" style="color:var(--uj-teal);">' + xpAvail + '</div><div class="dev-xp-stat-label">XP Available</div></div>' +
+        '</div>' +
+        '<div class="dev-xp-award">' +
+          '<input id="dev-xp-input" type="number" min="1" max="999" class="uj-input" style="width:6rem;" placeholder="XP">' +
+          '<button class="uj-btn uj-btn-amber" id="dev-xp-award-btn">Award XP</button>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="dev-rule-box">' +
+        '<strong>Development rules:</strong> Spend <strong>10 XP</strong> to buy a new Gift or Soak. ' +
+        'Gifts may only be purchased multiple times if their description specifically says so.' +
+      '</div>' +
+
+      '<div class="dev-tabs">' +
+        '<button class="dev-tab active" data-tab="gifts">Gifts</button>' +
+        '<button class="dev-tab" data-tab="soaks">Soaks</button>' +
+        '<button class="dev-tab" data-tab="history">Purchase History (' + state.purchasedGifts.length + ')</button>' +
+      '</div>' +
+
+      '<div class="dev-panel active" data-panel="gifts">' +
+        '<div class="dev-shop-grid">' + giftsHtml + '</div>' +
+      '</div>' +
+      '<div class="dev-panel" data-panel="soaks">' +
+        '<div class="dev-shop-grid">' + soaksHtml + '</div>' +
+      '</div>' +
+      '<div class="dev-panel" data-panel="history">' +
+        '<div class="dev-history-list">' + historyHtml + '</div>' +
+      '</div>';
+
+    document.getElementById('dev-back-btn').addEventListener('click', function() {
+      ajaxPost('uj_list_characters', {}).then(function(res) {
+        state.characters = res.data || [];
+        showCharList();
+      });
+    });
+
+    document.getElementById('dev-xp-award-btn').addEventListener('click', function() {
+      var input = document.getElementById('dev-xp-input');
+      var amt   = parseInt(input.value, 10);
+      if (!amt || amt < 1) { alert('Enter a positive XP amount.'); return; }
+      state.experience += amt;
+      saveDevelop(renderDevelop);
+    });
+
+    developScreen.querySelectorAll('.dev-tab').forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        developScreen.querySelectorAll('.dev-tab').forEach(function(t) { t.classList.remove('active'); });
+        developScreen.querySelectorAll('.dev-panel').forEach(function(p) { p.classList.remove('active'); });
+        tab.classList.add('active');
+        developScreen.querySelector('[data-panel="' + tab.dataset.tab + '"]').classList.add('active');
+      });
+    });
+
+    developScreen.querySelectorAll('[data-buy-slug]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var slug = btn.dataset.buySlug;
+        var name = btn.dataset.buyName;
+        var kind = btn.dataset.buyKind;
+        if (!confirm('Spend 10 XP to purchase "' + name + '"?')) return;
+        var today = new Date().toISOString().substring(0, 10);
+        state.purchasedGifts.push({ slug: slug, name: name, kind: kind, xp_cost: 10, purchased_on: today });
+        saveDevelop(renderDevelop);
+      });
+    });
+  }
+
+  function saveDevelop(callback) {
+    ajaxPost('uj_save_character', {
+      id:               state.currentChar,
+      experience:       state.experience,
+      purchased_gifts:  JSON.stringify(state.purchasedGifts),
+    }).then(function() {
+      if (callback) callback();
     });
   }
 
@@ -1034,6 +1247,8 @@
       ally_species_id:  state.allySpeciesId !== null ? state.allySpeciesId : '',
       ally_career_id:   state.allyCareerId  !== null ? state.allyCareerId  : '',
       gift_choices:     JSON.stringify(state.giftChoices || {}),
+      experience:       state.experience     || 0,
+      purchased_gifts:  JSON.stringify(state.purchasedGifts || []),
     };
 
     ajaxPost('uj_save_character', { character: payload }).then(function(res) {
