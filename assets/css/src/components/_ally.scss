@@ -265,6 +265,15 @@
   }
 }
 
+// 4-column skills table — first column wider, die columns compact
+.cg-ally-skills-table {
+  td:first-child,
+  th:first-child { width: 44%; }
+  td:nth-child(2), th:nth-child(2),
+  td:nth-child(3), th:nth-child(3) { width: 18%; text-align: center; }
+  td:last-child,  th:last-child   { width: 20%; text-align: center; }
+}
+
 // Trappings list
 .cg-ally-trappings-list {
   list-style: none;

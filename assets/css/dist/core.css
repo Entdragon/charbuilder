@@ -3587,6 +3587,20 @@ body.cg-print-window .summary-skill-note {
   border-bottom: none;
 }
 
+.cg-ally-skills-table td:first-child,
+.cg-ally-skills-table th:first-child {
+  width: 44%;
+}
+.cg-ally-skills-table td:nth-child(2), .cg-ally-skills-table th:nth-child(2),
+.cg-ally-skills-table td:nth-child(3), .cg-ally-skills-table th:nth-child(3) {
+  width: 18%;
+  text-align: center;
+}
+.cg-ally-skills-table td:last-child, .cg-ally-skills-table th:last-child {
+  width: 20%;
+  text-align: center;
+}
+
 .cg-ally-trappings-list {
   list-style: none;
   margin: 0;

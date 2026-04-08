@@ -10640,28 +10640,93 @@
       html += `</div>`;
       return html;
     },
+    /** Extract required gift IDs from the flat ct_gifts_requires* columns AND requirements array. */
+    _extractAllyRequiredGiftIds(g) {
+      if (!g || typeof g !== "object")
+        return [];
+      const out = [];
+      Object.keys(g).forEach((k) => {
+        if (!/^ct_gifts_requires(_[a-z]+)?$/i.test(k) && !/^ct_gifts_requires_/i.test(k))
+          return;
+        if (k.toLowerCase() === "ct_gifts_requires_special")
+          return;
+        const v = g[k];
+        if (v == null)
+          return;
+        String(v).trim().split(",").map((x) => x.trim()).filter(Boolean).forEach((x) => out.push(x));
+      });
+      (Array.isArray(g.requirements) ? g.requirements : []).forEach((req) => {
+        if (String(req.kind || "") === "gift_ref") {
+          const refId = String(req.ref_id || "");
+          if (refId)
+            out.push(refId);
+        }
+      });
+      return [...new Set(out)];
+    },
+    /** Returns null if the gift can be offered to the ally, or a reason string if not. */
+    _allyGiftIneligibleReason(g, allyOwnedSet, otherSlotIds) {
+      const id = String(g.id || g.ct_id || "");
+      if (!id || id === "0")
+        return "Invalid";
+      if (id === "242")
+        return "Local Knowledge excluded";
+      const cls = String(g.giftclass || "").trim().toLowerCase();
+      if (cls === "natural")
+        return "Natural gift";
+      if (cls === "major")
+        return "Major gift";
+      const allows = parseInt(g.ct_gifts_manifold || g.allows_multiple || 0, 10) > 0;
+      if (!allows && allyOwnedSet.has(id))
+        return "Already owned";
+      if (!allows && otherSlotIds.has(id))
+        return "Already selected";
+      for (const rid of this._extractAllyRequiredGiftIds(g)) {
+        if (!allyOwnedSet.has(String(rid))) {
+          const reqGift = (this._giftList || []).find((x) => String(x.id || x.ct_id || "") === String(rid));
+          const reqName = reqGift ? String(reqGift.name || `#${rid}`) : `#${rid}`;
+          return `Requires: ${reqName}`;
+        }
+      }
+      const requirements = Array.isArray(g.requirements) ? g.requirements : [];
+      for (const req of requirements) {
+        if (String(req.kind || "") === "gift_ref") {
+          const refId = String(req.ref_id || "");
+          if (refId && !allyOwnedSet.has(refId)) {
+            const reqName = String(req.text || `#${refId}`);
+            return `Requires: ${reqName}`;
+          }
+        }
+      }
+      return null;
+    },
     _buildGiftOptions(selectedId, slotIndex = -1) {
       if (!this._giftList)
         return "";
       const owned = this._getAllyOwnedGiftIds(slotIndex);
-      return (this._giftList || []).filter((g) => {
+      const ally = this._getData();
+      const otherSlotIds = new Set(
+        (Array.isArray(ally.improved_gift_ids) ? ally.improved_gift_ids : []).filter((id, idx) => idx !== slotIndex && id).map(String)
+      );
+      const items = [];
+      if (selectedId) {
+        const cur = (this._giftList || []).find((x) => String(x.id || x.ct_id || "") === selectedId);
+        if (cur)
+          items.push({ id: selectedId, name: String(cur.name || ""), saved: true });
+      }
+      for (const g of this._giftList || []) {
         const id = String(g.id || g.ct_id || "");
-        if (!id || id === "0")
-          return false;
-        const cls = String(g.giftclass || "").trim().toLowerCase();
-        if (cls === "major")
-          return false;
-        if (id === "242")
-          return false;
-        const allows = parseInt(g.ct_gifts_manifold || g.allows_multiple || 0, 10) > 0;
-        if (!allows && owned.has(id) && id !== selectedId)
-          return false;
-        return true;
-      }).map((g) => {
-        const id = String(g.id || g.ct_id || "");
-        const name = String(g.name || g.ct_gifts_name || "");
-        const sel = id === selectedId ? " selected" : "";
-        return `<option value="${esc(id)}"${sel}>${esc(name)}</option>`;
+        if (!id || id === selectedId)
+          continue;
+        const reason = this._allyGiftIneligibleReason(g, owned, otherSlotIds);
+        if (reason)
+          continue;
+        items.push({ id, name: String(g.name || "") });
+      }
+      return items.map((o) => {
+        const label = o.saved ? `${o.name} (saved)` : o.name;
+        const sel = o.id === selectedId ? " selected" : "";
+        return `<option value="${esc(o.id)}"${sel}>${esc(label)}</option>`;
       }).join("");
     },
     /** IDs of all gifts the ally already has.
@@ -10782,26 +10847,38 @@
         }).catch(() => resolve([]));
       });
     },
-    _buildSkillsHtml() {
-      const sp = this._speciesProfile || {};
-      const cp = this._careerProfile || {};
-      const tr = this._resolveAllyTraits();
-      const spSkillNames = /* @__PURE__ */ new Set();
+    /** Build the set of skill names the ally knows from species. */
+    _allySpSkillNames(sp) {
+      const set = /* @__PURE__ */ new Set();
       const spIds = [sp.skill_one_id, sp.skill_two_id, sp.skill_three_id];
       ["skill_one", "skill_two", "skill_three"].forEach((k, i) => {
         const raw = sp[k] ? String(sp[k]).trim() : "";
         const name = this._resolveSkillName(raw || spIds[i]);
         if (name && !/^\d+$/.test(name))
-          spSkillNames.add(name.toLowerCase());
+          set.add(name.toLowerCase());
       });
-      const cpSkillNames = /* @__PURE__ */ new Set();
+      return set;
+    },
+    /** Build the set of skill names the ally knows from career. */
+    _allyCpSkillNames(cp) {
+      const set = /* @__PURE__ */ new Set();
       ["skill_name_one", "skill_name_two", "skill_name_three"].forEach((k, i) => {
         const fallbackKey = ["skill_one", "skill_two", "skill_three"][i];
         const raw = String(cp[k] || cp[fallbackKey] || "").trim();
         const name = this._resolveSkillName(raw);
         if (name && !/^\d+$/.test(name))
-          cpSkillNames.add(name.toLowerCase());
+          set.add(name.toLowerCase());
       });
+      return set;
+    },
+    _buildSkillsHtml() {
+      const sp = this._speciesProfile || {};
+      const cp = this._careerProfile || {};
+      const tr = this._resolveAllyTraits();
+      const spSkillNames = this._allySpSkillNames(sp);
+      const cpSkillNames = this._allyCpSkillNames(cp);
+      const speciesLabel = esc(sp.name || sp.speciesName || sp.species_name || "Species");
+      const careerLabel = esc(cp.name || cp.careerName || cp.career_name || "Career");
       const allSkills = Array.isArray(window.CG_SKILLS_LIST) ? window.CG_SKILLS_LIST : [];
       if (!allSkills.length) {
         this._ensureSkillsList().then(() => {
@@ -10817,21 +10894,38 @@
       const rows = allSkills.map((skill) => {
         const name = String(skill.name || "");
         const lc = name.toLowerCase();
-        if (spSkillNames.has(lc))
-          return { name, pool: `d6 + ${tr.trait_species}` };
-        if (cpSkillNames.has(lc))
-          return { name, pool: `d6 + ${tr.trait_career}` };
-        return { name, pool: "\u2014" };
+        const inSp = spSkillNames.has(lc);
+        const inCp = cpSkillNames.has(lc);
+        const spDie = inSp ? tr.trait_species : "\u2014";
+        const cpDie = inCp ? tr.trait_career : "\u2014";
+        let pool = "\u2014";
+        if (inSp && inCp)
+          pool = `${tr.trait_species} + ${tr.trait_career}`;
+        else if (inSp)
+          pool = tr.trait_species;
+        else if (inCp)
+          pool = tr.trait_career;
+        return { name, spDie, cpDie, pool };
       });
       return `
     <div class="cg-ally-box">
       <h4 class="cg-ally-subhead">Skills</h4>
-      <table class="cg-ally-table">
-        <thead><tr><th>Skill</th><th>Dice Pool</th></tr></thead>
+      <table class="cg-ally-table cg-ally-skills-table">
+        <thead>
+          <tr>
+            <th>Skill</th>
+            <th>${speciesLabel}</th>
+            <th>${careerLabel}</th>
+            <th>Dice Pool</th>
+          </tr>
+        </thead>
         <tbody>
-          ${rows.map(
-        (r) => `<tr><td>${esc(r.name)}</td><td>${esc(r.pool)}</td></tr>`
-      ).join("")}
+          ${rows.map((r) => `<tr>
+            <td>${esc(r.name)}</td>
+            <td>${esc(r.spDie)}</td>
+            <td>${esc(r.cpDie)}</td>
+            <td>${esc(r.pool)}</td>
+          </tr>`).join("")}
         </tbody>
       </table>
     </div>`;
@@ -11074,31 +11168,26 @@
         ...autoTrappings.map((t) => `<li>${esc(t.name)} <em>(auto)</em></li>`),
         ...trappings.map((t) => `<li>${esc(t.name)}${t.cost_d ? ` \u2014 ${esc(t.cost_d)}d` : ""}</li>`)
       ].join("");
-      const spSkillNamesP = /* @__PURE__ */ new Set();
-      const spIdsP = [sp.skill_one_id, sp.skill_two_id, sp.skill_three_id];
-      ["skill_one", "skill_two", "skill_three"].forEach((k, i) => {
-        const raw = sp[k] ? String(sp[k]).trim() : "";
-        const n = this._resolveSkillName(raw || spIdsP[i]);
-        if (n && !/^\d+$/.test(n))
-          spSkillNamesP.add(n.toLowerCase());
-      });
-      const cpSkillNamesP = /* @__PURE__ */ new Set();
-      ["skill_name_one", "skill_name_two", "skill_name_three"].forEach((k, i) => {
-        const fallbackKey = ["skill_one", "skill_two", "skill_three"][i];
-        const raw = String(cp[k] || cp[fallbackKey] || "").trim();
-        const n = this._resolveSkillName(raw);
-        if (n && !/^\d+$/.test(n))
-          cpSkillNamesP.add(n.toLowerCase());
-      });
+      const spSkillNamesP = this._allySpSkillNames(sp);
+      const cpSkillNamesP = this._allyCpSkillNames(cp);
       const allSkillsP = Array.isArray(window.CG_SKILLS_LIST) ? window.CG_SKILLS_LIST : [];
+      const printSpLabel = esc(sp.name || sp.speciesName || "Species");
+      const printCpLabel = esc(cp.name || cp.careerName || "Career");
       const skillsRows = allSkillsP.map((skill) => {
         const n = String(skill.name || "");
         const lc = n.toLowerCase();
-        if (spSkillNamesP.has(lc))
-          return `<tr><td>${esc(n)}</td><td>d6 + ${esc(tr.trait_species)}</td></tr>`;
-        if (cpSkillNamesP.has(lc))
-          return `<tr><td>${esc(n)}</td><td>d6 + ${esc(tr.trait_career)}</td></tr>`;
-        return `<tr><td>${esc(n)}</td><td>\u2014</td></tr>`;
+        const inSp = spSkillNamesP.has(lc);
+        const inCp = cpSkillNamesP.has(lc);
+        const spDie = inSp ? tr.trait_species : "\u2014";
+        const cpDie = inCp ? tr.trait_career : "\u2014";
+        let pool = "\u2014";
+        if (inSp && inCp)
+          pool = `${tr.trait_species} + ${tr.trait_career}`;
+        else if (inSp)
+          pool = tr.trait_species;
+        else if (inCp)
+          pool = tr.trait_career;
+        return `<tr><td>${esc(n)}</td><td>${esc(spDie)}</td><td>${esc(cpDie)}</td><td>${esc(pool)}</td></tr>`;
       });
       const allBase = Object.values(tr).every((v) => v === "d6");
       const traitsNote = allBase ? " (all d6)" : "";
@@ -11156,7 +11245,7 @@
       <div class="summary-section">
         <h3>Skills</h3>
         <table class="cg-battle-summary-table">
-          <thead><tr><th>Skill</th><th>Dice Pool</th></tr></thead>
+          <thead><tr><th>Skill</th><th>${printSpLabel}</th><th>${printCpLabel}</th><th>Dice Pool</th></tr></thead>
           <tbody>${skillsRows.join("")}</tbody>
         </table>
       </div>` : ""}
