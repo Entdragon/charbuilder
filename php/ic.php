@@ -24,6 +24,7 @@ $sections = [
     'skills'    => 'skills',
     'equipment' => 'equipment',
     'weapons'   => 'weapons',
+    'books'     => 'books',
     'search'    => 'search',
 ];
 

@@ -1,9 +1,23 @@
-# Character Generator – Library of Calabria
+# Library of Calabria
 
 ## Project Overview
-A PHP web application serving a character creation system for the Library of Calabria tabletop RPG (Ironclaw). Connects to the existing WordPress MySQL database via a PHP proxy (shared hosting firewall blocks direct MySQL access from Replit). Live site is hosted on cPanel/Apache at `characters.libraryofcalbria.com`; Replit is dev-only.
+A PHP web application serving the Library of Calabria — the main reference site and character generator for Ironclaw and Urban Jungle tabletop RPGs. Connects to the existing WordPress MySQL database via a PHP proxy. Hosted on cPanel/Apache; Replit is dev-only.
 
-- **Production URL**: https://characters.libraryofcalbria.com/
+- **Production URL**: https://libraryofcalbria.com/ (consolidating from characters.libraryofcalbria.com)
+
+## URL Structure
+| Path | Description |
+|---|---|
+| `/` | Main landing page — Ironclaw + Urban Jungle tiles + blog |
+| `/builder` | Ironclaw character generator |
+| `/ic` | Ironclaw reference home |
+| `/ic/species`, `/ic/careers`, etc. | Ironclaw reference pages |
+| `/ic/books` | Ironclaw books with covers and buy links |
+| `/uj` | Urban Jungle reference home |
+| `/uj/species`, `/uj/types`, etc. | Urban Jungle reference pages |
+| `/uj/books` | Urban Jungle books (placeholder) |
+| `/blog-admin` | Blog post management (login required) |
+| `/admin` | Database editor |
 
 ## Feature Reference
 See **`docs/feature-matrix.md`** for a full inventory of:

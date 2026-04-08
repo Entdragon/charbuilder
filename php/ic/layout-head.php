@@ -735,6 +735,9 @@ $na = fn(string $k): string => ($activeNav ?? '') === $k ? ' active' : '';
   <div id="ic-body">
 
     <nav id="ic-nav">
+      <a href="/" class="nav-item nav-item-alt">← Library of Calabria</a>
+
+      <div class="nav-divider"></div>
       <div class="nav-group-label">Characters</div>
       <a href="/ic/species"   class="nav-item<?= $na('species') ?>">Species <?= $nt('species') ?></a>
       <a href="/ic/careers"   class="nav-item<?= $na('careers') ?>">Careers <?= $nt('careers') ?></a>
@@ -750,11 +753,13 @@ $na = fn(string $k): string => ($activeNav ?? '') === $k ? ' active' : '';
       <a href="/ic/weapons"   class="nav-item<?= $na('weapons') ?>">Weapons <?= $nt('weapons') ?></a>
 
       <div class="nav-divider"></div>
+      <div class="nav-group-label">Library</div>
+      <a href="/ic/books"     class="nav-item<?= $na('books') ?>">Books</a>
       <a href="/ic/search"    class="nav-item<?= $na('search') ?>">🔍 Search</a>
 
       <div class="nav-divider"></div>
-      <a href="/"   class="nav-item nav-item-alt">⚙ Character Builder</a>
-      <a href="/uj" class="nav-item nav-item-alt">Urban Jungle →</a>
+      <a href="/builder" class="nav-item nav-item-alt">⚙ Character Builder</a>
+      <a href="/uj"      class="nav-item nav-item-alt">Urban Jungle →</a>
     </nav>
 
     <main id="ic-content">

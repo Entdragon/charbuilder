@@ -25,6 +25,24 @@ if ($uri === '/admin' || $uri === '/admin/') {
     exit;
 }
 
+// ── Blog admin ─────────────────────────────────────────────────────────────────
+if ($uri === '/blog-admin' || $uri === '/blog-admin/') {
+    require __DIR__ . '/blog-admin.php';
+    exit;
+}
+
+// ── Main landing page ──────────────────────────────────────────────────────────
+if ($uri === '/') {
+    require __DIR__ . '/home.php';
+    exit;
+}
+
+// ── Character builder (moved from / to /builder) ───────────────────────────────
+if ($uri === '/builder' || $uri === '/builder/') {
+    require __DIR__ . '/index.php';
+    exit;
+}
+
 // ── Static files (assets, vendor, public root files) ─────────────────────────
 // Returning false tells php -S to serve the file with its built-in file handler.
 $disk = $root . $uri;

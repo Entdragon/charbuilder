@@ -878,6 +878,9 @@ $na = fn(string $k): string => ($activeNav ?? '') === $k ? ' active' : '';
   <div id="uj-body">
 
     <nav id="uj-nav">
+      <a href="/" class="nav-item nav-item-back">← Library of Calabria</a>
+
+      <div class="nav-divider"></div>
       <div class="nav-group-label">Characters</div>
       <a href="/uj/species"  class="nav-item<?= $na('species') ?>">Species <?= $nt('species') ?></a>
       <a href="/uj/types"    class="nav-item<?= $na('types') ?>">Types <?= $nt('types') ?></a>
@@ -895,6 +898,8 @@ $na = fn(string $k): string => ($activeNav ?? '') === $k ? ' active' : '';
       <a href="/uj/items"    class="nav-item<?= $na('items') ?>">Items <?= $nt('items') ?></a>
 
       <div class="nav-divider"></div>
+      <div class="nav-group-label">Library</div>
+      <a href="/uj/books"    class="nav-item<?= $na('books') ?>">Books</a>
       <a href="/uj/search"   class="nav-item<?= $na('search') ?>">🔍 Search</a>
 
       <div class="nav-divider"></div>

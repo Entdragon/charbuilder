@@ -6,10 +6,16 @@
   RewriteRule ^includes/ - [F,L]
   RewriteRule ^actions/  - [F,L]
 
-  # Clean URL: / loads index.php
+  # Clean URL: / loads the landing page
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteRule ^$ index.php [L]
+  RewriteRule ^$ home.php [L]
+
+  # /builder → character builder
+  RewriteRule ^builder/?$ index.php [L,QSA]
+
+  # /blog-admin → blog management
+  RewriteRule ^blog-admin/?$ blog-admin.php [L,QSA]
 
   # Route /uj and all /uj/* paths to uj.php
   RewriteRule ^uj(/.*)?$ uj.php [L,QSA]

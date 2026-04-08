@@ -529,7 +529,7 @@ try {
 <div id="site-wrapper">
 
   <header id="site-header">
-    <a href="https://libraryofcalbria.com" class="site-title">
+    <a href="/" class="site-title">
       The Library of Calabria
       <span class="site-title-sub">Character Generator</span>
     </a>
@@ -543,21 +543,17 @@ try {
   <div id="site-body">
 
     <nav id="site-nav" aria-label="Site navigation">
-      <a href="/ic" class="nav-item parent">Ironclaw</a>
-      <a href="https://libraryofcalbria.com/ironclaw-books/" class="nav-item child">Ironclaw Books</a>
+      <a href="/" class="nav-item">← Library of Calabria</a>
+      <div class="nav-divider"></div>
+      <a href="/ic"           class="nav-item parent">Ironclaw</a>
+      <a href="/ic/books"     class="nav-item child">Books</a>
       <a href="/ic/species"   class="nav-item child">Species</a>
       <a href="/ic/careers"   class="nav-item child">Careers</a>
       <a href="/ic/gifts"     class="nav-item child">Gifts</a>
       <a href="/ic/skills"    class="nav-item child">Skills</a>
       <a href="/ic/equipment" class="nav-item child">Equipment</a>
       <div class="nav-divider"></div>
-      <a href="https://characters.libraryofcalbria.com/" class="nav-item active">Character Generator</a>
-      <?php if (!$loggedIn): ?>
-      <a href="https://libraryofcalbria.com/register/" class="nav-item">Register</a>
-      <a href="https://libraryofcalbria.com/login/" class="nav-item">Login</a>
-      <?php endif; ?>
-      <a href="https://libraryofcalbria.com/corrections-log/" class="nav-item">Corrections Log</a>
-      <a href="https://libraryofcalbria.com/updates/" class="nav-item">Updates</a>
+      <a href="/builder"      class="nav-item active">Character Generator</a>
     </nav>
 
     <div id="site-content">
