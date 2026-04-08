@@ -168,10 +168,9 @@
     padding-left: 12pt !important;
   }
 
-  // ── Traits — two inline columns ─────────────────────────────────────────────
+  // ── Traits — single vertical column ─────────────────────────────────────────
   .summary-traits ul {
-    column-count:  2 !important;
-    column-gap:    1em !important;
+    column-count:  1 !important;
     list-style:    none !important;
     padding:       0 !important;
     margin:        0 !important;
@@ -382,8 +381,8 @@ body.cg-print-window {
   ul    { margin: 3pt 0; padding-left: 14pt; }
   .summary-section { margin-bottom: 7pt; }
 
-  // Traits two-col
-  .summary-traits ul { column-count: 2; column-gap: 1em; list-style: none; padding: 0; margin: 0; }
+  // Traits single vertical column
+  .summary-traits ul { column-count: 1; list-style: none; padding: 0; margin: 0; }
   .summary-traits li { break-inside: avoid; padding: 1pt 0; }
 
   // Battle
