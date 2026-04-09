@@ -281,6 +281,7 @@ switch ($entity) {
         <div class="detail-layout">
           <div>
             <p class="detail-name"><?= htmlspecialchars($row['ct_species_name']) ?></p>
+            <?php if ($isAdmin): ?><a href="/admin?pane=ic-species&amp;slug=<?= urlencode($slug) ?>" class="admin-edit-btn" style="margin-bottom:0.75rem; display:inline-flex;">✎ Edit</a><?php endif; ?>
             <?php if ($row['ct_species_description']): ?>
               <div class="detail-desc"><?= nl2br(htmlspecialchars(strip_tags($row['ct_species_description']))) ?></div>
             <?php endif; ?>
@@ -450,6 +451,7 @@ switch ($entity) {
         <div class="detail-layout">
           <div>
             <p class="detail-name"><?= htmlspecialchars($row['ct_career_name']) ?></p>
+            <?php if ($isAdmin): ?><a href="/admin?pane=ic-careers&amp;slug=<?= urlencode($slug) ?>" class="admin-edit-btn" style="margin-bottom:0.75rem; display:inline-flex;">✎ Edit</a><?php endif; ?>
             <?php if (isset($typeMap[(int)$row['ct_career_type']])): ?>
               <p class="detail-subtitle"><?= $typeMap[(int)$row['ct_career_type']] ?> Career</p>
             <?php endif; ?>
@@ -569,6 +571,7 @@ switch ($entity) {
         <div class="detail-layout">
           <div>
             <p class="detail-name"><?= htmlspecialchars($row['ct_gifts_name']) ?></p>
+            <?php if ($isAdmin): ?><a href="/admin?pane=ic-gifts&amp;slug=<?= urlencode($slug) ?>" class="admin-edit-btn" style="margin-bottom:0.75rem; display:inline-flex;">✎ Edit</a><?php endif; ?>
             <?php if ($row['ct_class_name']): ?>
               <p class="detail-subtitle">
                 <a href="/ic/gifts?class=<?= urlencode($row['class_slug'] ?? '') ?>" style="color:inherit; text-decoration:none;"><?= htmlspecialchars($row['ct_class_name']) ?></a> Gift
@@ -719,6 +722,7 @@ switch ($entity) {
         <div class="detail-layout">
           <div>
             <p class="detail-name"><?= htmlspecialchars($row['ct_skill_name']) ?></p>
+            <?php if ($isAdmin): ?><a href="/admin?pane=ic-skills&amp;slug=<?= urlencode($slug) ?>" class="admin-edit-btn" style="margin-bottom:0.75rem; display:inline-flex;">✎ Edit</a><?php endif; ?>
 
             <?php if ($descs): ?>
               <div class="card-tags" style="margin-bottom:1rem;">
@@ -809,6 +813,7 @@ switch ($entity) {
         <div class="detail-layout">
           <div>
             <p class="detail-name"><?= htmlspecialchars($row['ct_weapons_name']) ?></p>
+            <?php if ($isAdmin): ?><a href="/admin?pane=ic-weapons&amp;slug=<?= urlencode($slug) ?>" class="admin-edit-btn" style="margin-bottom:0.75rem; display:inline-flex;">✎ Edit</a><?php endif; ?>
             <?php if ($row['ct_weapon_class']): ?>
               <p class="detail-subtitle"><?= htmlspecialchars(ucfirst($row['ct_weapon_class'])) ?> Weapon</p>
             <?php endif; ?>
@@ -880,6 +885,7 @@ switch ($entity) {
         <div class="detail-layout">
           <div>
             <p class="detail-name"><?= htmlspecialchars($row['ct_name']) ?></p>
+            <?php if ($isAdmin): ?><a href="/admin?pane=ic-equipment&amp;slug=<?= urlencode($slug) ?>" class="admin-edit-btn" style="margin-bottom:0.75rem; display:inline-flex;">✎ Edit</a><?php endif; ?>
             <?php if ($row['ct_subcategory']): ?>
               <p class="detail-subtitle"><?= htmlspecialchars($row['ct_subcategory']) ?> · <?= htmlspecialchars($catName) ?></p>
             <?php endif; ?>
@@ -979,6 +985,7 @@ switch ($entity) {
         <div class="detail-layout">
           <div>
             <p class="detail-name"><?= htmlspecialchars($row['ct_book_name']) ?></p>
+            <?php if ($isAdmin): ?><a href="/admin?pane=ic-books&amp;slug=<?= urlencode($slug) ?>" class="admin-edit-btn" style="margin-bottom:0.75rem; display:inline-flex;">✎ Edit</a><?php endif; ?>
 
             <?php if ($bookDesc): ?>
               <div class="detail-desc"><?= nl2br(htmlspecialchars($bookDesc)) ?></div>

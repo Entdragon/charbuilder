@@ -43,6 +43,7 @@ foreach ($ccRows as $r) { $catCounts[$r['ct_category']] = (int)$r['n']; }
       <p>Gear, trade goods, clothing, transportation and more.</p>
     </div>
     <div style="margin-left:auto; color:var(--ic-text-dim); font-size:0.85rem;"><?= count($items) ?> items</div>
+    <?php if ($isAdmin): ?><a href="/admin?pane=ic-equipment&amp;action=new" class="admin-edit-btn">+ Add New</a><?php endif; ?>
   </div>
 </div>
 

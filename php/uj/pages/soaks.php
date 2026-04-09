@@ -15,7 +15,10 @@ require __DIR__ . '/../layout-head.php';
 ?>
 
 <div class="page-header">
-  <h1>Soaks</h1>
+  <div class="header-row">
+    <h1>Soaks</h1>
+    <?php if ($isAdmin): ?><a href="/admin?pane=uj-soaks&amp;action=new" class="admin-edit-btn">+ Add New</a><?php endif; ?>
+  </div>
   <p>Soaks reduce damage taken. Basic soaks are available to all characters; advanced soaks must be granted by a type or career.</p>
 </div>
 

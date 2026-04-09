@@ -4,6 +4,11 @@
  * Expects: $pageTitle (string), $activeNav (string), $ujCounts (array)
  */
 
+// Admin session check
+cg_session_start();
+cg_try_wp_sso();
+$isAdmin = cg_is_admin();
+
 // Fetch nav counts once if not already set
 if (!isset($ujCounts)) {
     $ujCounts = [];
@@ -704,6 +709,32 @@ $na = fn(string $k): string => ($activeNav ?? '') === $k ? ' active' : '';
     .mb-0 { margin-bottom: 0; }
 
     .hidden { display: none !important; }
+
+    /* ── Admin-only buttons ───────────────────────────────────────────── */
+    .admin-edit-btn {
+      display:        inline-flex;
+      align-items:    center;
+      gap:            0.3rem;
+      padding:        0.25rem 0.7rem;
+      font-family:    'Cinzel', Georgia, serif;
+      font-size:      0.65rem;
+      font-weight:    700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      border:         1px solid rgba(45,212,191,0.4);
+      border-radius:  4px;
+      color:          var(--uj-teal);
+      background:     rgba(45,212,191,0.06);
+      text-decoration:none;
+      transition:     all 0.2s;
+      cursor:         pointer;
+      white-space:    nowrap;
+    }
+    .admin-edit-btn:hover {
+      background:     rgba(45,212,191,0.15);
+      border-color:   var(--uj-teal);
+      color:          var(--uj-teal);
+    }
 
     /* ── Skill info list (skills page) ────────────────────────────────── */
     .skill-row {

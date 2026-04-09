@@ -44,7 +44,10 @@ require __DIR__ . '/../layout-head.php';
 ?>
 
 <div class="page-header">
-  <h1>Items &amp; Price List</h1>
+  <div class="header-row">
+    <h1>Items &amp; Price List</h1>
+    <?php if ($isAdmin): ?><a href="/admin?pane=uj-items&amp;action=new" class="admin-edit-btn">+ Add New</a><?php endif; ?>
+  </div>
   <p>Equipment organised by cost class. Prices shown for 1910s–1920s and 1930s–1940s eras.</p>
 </div>
 

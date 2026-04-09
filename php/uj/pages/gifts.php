@@ -29,6 +29,7 @@ require __DIR__ . '/../layout-head.php';
 <div class="page-header">
   <div class="header-row">
     <h1>Gifts</h1>
+    <?php if ($isAdmin): ?><a href="/admin?pane=uj-gifts&amp;action=new" class="admin-edit-btn">+ Add New</a><?php endif; ?>
   </div>
   <p>Special abilities granted by your species, type, career, and personality choices.</p>
 </div>

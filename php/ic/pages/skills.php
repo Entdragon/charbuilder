@@ -28,7 +28,10 @@ function getSkillFavs(array $row): array {
 ?>
 
 <div class="page-header">
-  <h1>Skills</h1>
+  <div class="header-row">
+    <h1>Skills</h1>
+    <?php if ($isAdmin): ?><a href="/admin?pane=ic-skills&amp;action=new" class="admin-edit-btn">+ Add New</a><?php endif; ?>
+  </div>
   <p>Core skills used by all characters. Each skill can be specialised with descriptors.</p>
 </div>
 

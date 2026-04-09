@@ -17,6 +17,7 @@ require __DIR__ . '/../layout-head.php';
 <div class="page-header">
   <div class="header-row">
     <h1>Types</h1>
+    <?php if ($isAdmin): ?><a href="/admin?pane=uj-types&amp;action=new" class="admin-edit-btn">+ Add New</a><?php endif; ?>
   </div>
   <p>A character's type refines their species, granting three skills, a gift, soaks, and starting gear.</p>
 </div>

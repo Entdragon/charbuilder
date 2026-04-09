@@ -8,7 +8,10 @@ $books = cg_query("SELECT * FROM `{$p}customtables_table_books` WHERE published=
 ?>
 
 <div class="page-header">
-  <h1>Ironclaw Books</h1>
+  <div class="header-row">
+    <h1>Ironclaw Books</h1>
+    <?php if ($isAdmin): ?><a href="/admin?pane=ic-books&amp;action=new" class="admin-edit-btn">+ Add New</a><?php endif; ?>
+  </div>
   <p>The full Ironclaw library — sourcebooks, supplements, and adventures.</p>
 </div>
 

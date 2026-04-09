@@ -4,6 +4,11 @@
  * Expects: $pageTitle (string), $activeNav (string)
  */
 
+// Admin session check
+cg_session_start();
+cg_try_wp_sso();
+$isAdmin = cg_is_admin();
+
 // Fetch all nav counts in ONE query (UNION ALL) to minimise proxy round-trips
 if (!isset($icCounts)) {
     $icCounts = [];
@@ -906,6 +911,32 @@ $na = fn(string $k): string => ($activeNav ?? '') === $k ? ' active' : '';
     .text-muted  { color: var(--ic-text-muted); }
     .text-dim    { color: var(--ic-text-dim); }
     .hidden      { display: none !important; }
+
+    /* ── Admin-only buttons ───────────────────────────────────────────── */
+    .admin-edit-btn {
+      display:        inline-flex;
+      align-items:    center;
+      gap:            0.3rem;
+      padding:        0.25rem 0.7rem;
+      font-family:    'Cinzel', Georgia, serif;
+      font-size:      0.65rem;
+      font-weight:    700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      border:         1px solid rgba(93,191,144,0.4);
+      border-radius:  4px;
+      color:          var(--ic-emerald);
+      background:     rgba(93,191,144,0.06);
+      text-decoration:none;
+      transition:     all 0.2s;
+      cursor:         pointer;
+      white-space:    nowrap;
+    }
+    .admin-edit-btn:hover {
+      background:     rgba(93,191,144,0.15);
+      border-color:   var(--ic-emerald);
+      color:          var(--ic-emerald);
+    }
 
     @media (max-width:640px) {
       #ic-content { padding: 1.25rem; }

@@ -17,6 +17,7 @@ require __DIR__ . '/../layout-head.php';
 <div class="page-header">
   <div class="header-row">
     <h1>Careers</h1>
+    <?php if ($isAdmin): ?><a href="/admin?pane=uj-careers&amp;action=new" class="admin-edit-btn">+ Add New</a><?php endif; ?>
   </div>
   <p>A character's career defines their profession, granting three skills, two gifts, and starting gear.</p>
 </div>

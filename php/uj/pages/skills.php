@@ -17,6 +17,7 @@ require __DIR__ . '/../layout-head.php';
 <div class="page-header">
   <div class="header-row">
     <h1>Skills</h1>
+    <?php if ($isAdmin): ?><a href="/admin?pane=uj-skills&amp;action=new" class="admin-edit-btn">+ Add New</a><?php endif; ?>
   </div>
   <p>There are <?= count($rows) ?> skills in Urban Jungle, each paired with a core trait. Skills are gained from your Species, Type, and Career choices.</p>
 </div>

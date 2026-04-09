@@ -37,7 +37,7 @@ function cg_admin_list_gifts(): void {
         $where    = "WHERE ct_gifts_name LIKE ?";
         $params[] = '%' . $search . '%';
     }
-    $rows = cg_query("SELECT ct_id, ct_gifts_name, published FROM $t $where ORDER BY ct_gifts_name ASC", $params);
+    $rows = cg_query("SELECT ct_id, ct_gifts_name, ct_slug, published FROM $t $where ORDER BY ct_gifts_name ASC", $params);
     cg_json(['success' => true, 'data' => $rows]);
 }
 
@@ -1017,7 +1017,7 @@ function cg_admin_list_weapons(): void {
         $where    = "WHERE ct_weapons_name LIKE ?";
         $params[] = '%' . $search . '%';
     }
-    $rows = cg_query("SELECT ct_id, ct_weapons_name, ct_weapon_class, published FROM $t $where ORDER BY ct_weapons_name ASC", $params);
+    $rows = cg_query("SELECT ct_id, ct_weapons_name, ct_slug, ct_weapon_class, published FROM $t $where ORDER BY ct_weapons_name ASC", $params);
     cg_json(['success' => true, 'data' => $rows]);
 }
 
@@ -1269,4 +1269,382 @@ function cg_admin_apply_batch_fix(): void {
     }
 
     cg_json(['success' => true, 'data' => "Applied $applied fix(es)."]);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ── Generic admin CRUD helpers ────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+
+function _cga_list(string $table, string $nameCol, string $slugCol, string $idCol = 'id'): void {
+    cg_admin_require();
+    $p = cg_prefix();
+    $search = trim($_POST['search'] ?? '');
+    $where  = $search ? "WHERE `{$nameCol}` LIKE ?" : '';
+    $params = $search ? ['%' . $search . '%'] : [];
+    $rows = cg_query(
+        "SELECT `{$idCol}` AS id, `{$nameCol}` AS name, `{$slugCol}` AS slug, published
+           FROM `{$p}{$table}` {$where} ORDER BY `{$nameCol}`",
+        $params
+    );
+    cg_json(['success' => true, 'data' => $rows]);
+}
+
+function _cga_get(string $table, string $nameCol, string $idCol = 'id'): void {
+    cg_admin_require();
+    $id = (int)($_POST['id'] ?? 0);
+    if (!$id) { cg_json(['success' => false, 'data' => 'Missing id.']); return; }
+    $p = cg_prefix();
+    $row = cg_query_one("SELECT * FROM `{$p}{$table}` WHERE `{$idCol}` = ?", [$id]);
+    if (!$row) { cg_json(['success' => false, 'data' => 'Not found.']); return; }
+    $name = $row[$nameCol];
+    $prev = cg_query_one("SELECT `{$idCol}` AS id FROM `{$p}{$table}` WHERE `{$nameCol}` < ? ORDER BY `{$nameCol}` DESC LIMIT 1", [$name]);
+    $next = cg_query_one("SELECT `{$idCol}` AS id FROM `{$p}{$table}` WHERE `{$nameCol}` > ? ORDER BY `{$nameCol}` ASC LIMIT 1", [$name]);
+    cg_json(['success' => true, 'data' => ['record' => $row, 'prev_id' => $prev['id'] ?? null, 'next_id' => $next['id'] ?? null]]);
+}
+
+function _cga_save(string $table, array $allowed, string $idCol = 'id'): void {
+    cg_admin_require();
+    $id = (int)($_POST['id'] ?? 0);
+    if (!$id) { cg_json(['success' => false, 'data' => 'Missing id.']); return; }
+    $p = cg_prefix();
+    $sets = []; $params = [];
+    foreach ($allowed as $col => $type) {
+        if (!array_key_exists($col, $_POST)) continue;
+        $val = $type === 'int' ? (int)$_POST[$col] : (string)$_POST[$col];
+        $sets[]   = "`{$col}` = ?";
+        $params[] = $val;
+    }
+    if (!$sets) { cg_json(['success' => false, 'data' => 'Nothing to update.']); return; }
+    $params[] = $id;
+    try {
+        cg_exec("UPDATE `{$p}{$table}` SET " . implode(', ', $sets) . ", updated_at = NOW() WHERE `{$idCol}` = ?", $params);
+    } catch (\Throwable $e) {
+        cg_exec("UPDATE `{$p}{$table}` SET " . implode(', ', $sets) . " WHERE `{$idCol}` = ?", $params);
+    }
+    cg_json(['success' => true, 'data' => 'Saved.']);
+}
+
+function _cga_create(string $table, array $allowed): void {
+    cg_admin_require();
+    $p = cg_prefix();
+    $cols = []; $phs = []; $params = [];
+    foreach ($allowed as $col => $type) {
+        $val = $type === 'int' ? (int)($_POST[$col] ?? 0) : (string)($_POST[$col] ?? '');
+        $cols[]   = "`{$col}`";
+        $phs[]    = '?';
+        $params[] = $val;
+    }
+    if (!$cols) { cg_json(['success' => false, 'data' => 'No data provided.']); return; }
+    try {
+        $res = cg_exec(
+            "INSERT INTO `{$p}{$table}` (" . implode(', ', $cols) . ", created_at, updated_at) VALUES (" . implode(', ', $phs) . ", NOW(), NOW())",
+            $params
+        );
+    } catch (\Throwable $e) {
+        $res = cg_exec(
+            "INSERT INTO `{$p}{$table}` (" . implode(', ', $cols) . ") VALUES (" . implode(', ', $phs) . ")",
+            $params
+        );
+    }
+    cg_json(['success' => true, 'data' => ['id' => $res['lastInsertId']]]);
+}
+
+// ── IC: Species ───────────────────────────────────────────────────────────────
+function cg_admin_list_ic_species(): void { _cga_list('customtables_table_species', 'ct_species_name', 'ct_slug'); }
+function cg_admin_get_ic_species(): void  { _cga_get('customtables_table_species', 'ct_species_name'); }
+function cg_admin_save_ic_species(): void {
+    _cga_save('customtables_table_species', [
+        'ct_species_name'        => 'string',
+        'ct_slug'                => 'string',
+        'ct_species_description' => 'string',
+        'published'              => 'int',
+    ]);
+}
+function cg_admin_create_ic_species(): void {
+    _cga_create('customtables_table_species', [
+        'ct_species_name'        => 'string',
+        'ct_slug'                => 'string',
+        'ct_species_description' => 'string',
+        'published'              => 'int',
+    ]);
+}
+
+// ── IC: Careers ───────────────────────────────────────────────────────────────
+function cg_admin_list_ic_careers(): void { _cga_list('customtables_table_career', 'ct_career_name', 'ct_slug'); }
+function cg_admin_get_ic_careers(): void  { _cga_get('customtables_table_career', 'ct_career_name'); }
+function cg_admin_save_ic_careers(): void {
+    _cga_save('customtables_table_career', [
+        'ct_career_name'        => 'string',
+        'ct_slug'               => 'string',
+        'ct_career_description' => 'string',
+        'ct_career_type'        => 'int',
+        'published'             => 'int',
+    ]);
+}
+function cg_admin_create_ic_careers(): void {
+    _cga_create('customtables_table_career', [
+        'ct_career_name'        => 'string',
+        'ct_slug'               => 'string',
+        'ct_career_description' => 'string',
+        'ct_career_type'        => 'int',
+        'published'             => 'int',
+    ]);
+}
+
+// ── IC: Skills ────────────────────────────────────────────────────────────────
+function cg_admin_list_ic_skills(): void { _cga_list('customtables_table_skills', 'ct_skill_name', 'ct_slug'); }
+function cg_admin_get_ic_skills(): void  { _cga_get('customtables_table_skills', 'ct_skill_name'); }
+function cg_admin_save_ic_skills(): void {
+    _cga_save('customtables_table_skills', [
+        'ct_skill_name' => 'string',
+        'ct_slug'       => 'string',
+        'published'     => 'int',
+    ]);
+}
+function cg_admin_create_ic_skills(): void {
+    _cga_create('customtables_table_skills', [
+        'ct_skill_name' => 'string',
+        'ct_slug'       => 'string',
+        'published'     => 'int',
+    ]);
+}
+
+// ── IC: Equipment ─────────────────────────────────────────────────────────────
+function cg_admin_list_ic_equipment(): void { _cga_list('customtables_table_equipment', 'ct_name', 'ct_slug'); }
+function cg_admin_get_ic_equipment(): void  { _cga_get('customtables_table_equipment', 'ct_name'); }
+function cg_admin_save_ic_equipment(): void {
+    _cga_save('customtables_table_equipment', [
+        'ct_name'        => 'string',
+        'ct_slug'        => 'string',
+        'ct_category'    => 'string',
+        'ct_subcategory' => 'string',
+        'ct_effect'      => 'string',
+        'ct_cost_d'      => 'string',
+        'published'      => 'int',
+    ]);
+}
+function cg_admin_create_ic_equipment(): void {
+    _cga_create('customtables_table_equipment', [
+        'ct_name'        => 'string',
+        'ct_slug'        => 'string',
+        'ct_category'    => 'string',
+        'ct_subcategory' => 'string',
+        'ct_effect'      => 'string',
+        'ct_cost_d'      => 'string',
+        'published'      => 'int',
+    ]);
+}
+
+// ── IC: Books ─────────────────────────────────────────────────────────────────
+function cg_admin_list_ic_books(): void { _cga_list('customtables_table_books', 'ct_book_name', 'ct_ct_slug'); }
+function cg_admin_get_ic_books(): void  { _cga_get('customtables_table_books', 'ct_book_name'); }
+function cg_admin_save_ic_books(): void {
+    _cga_save('customtables_table_books', [
+        'ct_book_name'    => 'string',
+        'ct_ct_slug'      => 'string',
+        'ct_book_abstract'=> 'string',
+        'published'       => 'int',
+    ]);
+}
+function cg_admin_create_ic_books(): void {
+    _cga_create('customtables_table_books', [
+        'ct_book_name'    => 'string',
+        'ct_ct_slug'      => 'string',
+        'ct_book_abstract'=> 'string',
+        'published'       => 'int',
+    ]);
+}
+
+// ── UJ: Gifts ─────────────────────────────────────────────────────────────────
+function cg_admin_list_uj_gifts(): void { _cga_list('uj_gifts', 'name', 'slug'); }
+function cg_admin_get_uj_gift(): void   { _cga_get('uj_gifts', 'name'); }
+function cg_admin_save_uj_gift(): void {
+    _cga_save('uj_gifts', [
+        'name'       => 'string',
+        'slug'       => 'string',
+        'subtitle'   => 'string',
+        'gift_type'  => 'string',
+        'description'=> 'string',
+        'recharge'   => 'string',
+        'published'  => 'int',
+    ]);
+}
+function cg_admin_create_uj_gift(): void {
+    _cga_create('uj_gifts', [
+        'name'       => 'string',
+        'slug'       => 'string',
+        'subtitle'   => 'string',
+        'gift_type'  => 'string',
+        'description'=> 'string',
+        'recharge'   => 'string',
+        'published'  => 'int',
+    ]);
+}
+
+// ── UJ: Species ───────────────────────────────────────────────────────────────
+function cg_admin_list_uj_species(): void { _cga_list('uj_species', 'name', 'slug'); }
+function cg_admin_get_uj_species(): void  { _cga_get('uj_species', 'name'); }
+function cg_admin_save_uj_species(): void {
+    _cga_save('uj_species', [
+        'name'       => 'string',
+        'slug'       => 'string',
+        'description'=> 'string',
+        'published'  => 'int',
+    ]);
+}
+function cg_admin_create_uj_species(): void {
+    _cga_create('uj_species', [
+        'name'       => 'string',
+        'slug'       => 'string',
+        'description'=> 'string',
+        'published'  => 'int',
+    ]);
+}
+
+// ── UJ: Types ─────────────────────────────────────────────────────────────────
+function cg_admin_list_uj_types(): void { _cga_list('uj_types', 'name', 'slug'); }
+function cg_admin_get_uj_type(): void   { _cga_get('uj_types', 'name'); }
+function cg_admin_save_uj_type(): void {
+    _cga_save('uj_types', [
+        'name'       => 'string',
+        'slug'       => 'string',
+        'description'=> 'string',
+        'published'  => 'int',
+    ]);
+}
+function cg_admin_create_uj_type(): void {
+    _cga_create('uj_types', [
+        'name'       => 'string',
+        'slug'       => 'string',
+        'description'=> 'string',
+        'published'  => 'int',
+    ]);
+}
+
+// ── UJ: Careers ───────────────────────────────────────────────────────────────
+function cg_admin_list_uj_careers(): void { _cga_list('uj_careers', 'name', 'slug'); }
+function cg_admin_get_uj_career(): void   { _cga_get('uj_careers', 'name'); }
+function cg_admin_save_uj_career(): void {
+    _cga_save('uj_careers', [
+        'name'       => 'string',
+        'slug'       => 'string',
+        'description'=> 'string',
+        'gear'       => 'string',
+        'published'  => 'int',
+    ]);
+}
+function cg_admin_create_uj_career(): void {
+    _cga_create('uj_careers', [
+        'name'       => 'string',
+        'slug'       => 'string',
+        'description'=> 'string',
+        'gear'       => 'string',
+        'published'  => 'int',
+    ]);
+}
+
+// ── UJ: Skills ────────────────────────────────────────────────────────────────
+function cg_admin_list_uj_skills(): void { _cga_list('uj_skills', 'name', 'slug'); }
+function cg_admin_get_uj_skill(): void   { _cga_get('uj_skills', 'name'); }
+function cg_admin_save_uj_skill(): void {
+    _cga_save('uj_skills', [
+        'name'             => 'string',
+        'slug'             => 'string',
+        'description'      => 'string',
+        'paired_trait'     => 'string',
+        'sample_favorites' => 'string',
+        'gift_notes'       => 'string',
+        'published'        => 'int',
+    ]);
+}
+function cg_admin_create_uj_skill(): void {
+    _cga_create('uj_skills', [
+        'name'             => 'string',
+        'slug'             => 'string',
+        'description'      => 'string',
+        'paired_trait'     => 'string',
+        'sample_favorites' => 'string',
+        'gift_notes'       => 'string',
+        'published'        => 'int',
+    ]);
+}
+
+// ── UJ: Soaks ─────────────────────────────────────────────────────────────────
+function cg_admin_list_uj_soaks(): void { _cga_list('uj_soaks', 'name', 'slug'); }
+function cg_admin_get_uj_soak(): void   { _cga_get('uj_soaks', 'name'); }
+function cg_admin_save_uj_soak(): void {
+    _cga_save('uj_soaks', [
+        'name'           => 'string',
+        'slug'           => 'string',
+        'description'    => 'string',
+        'damage_negated' => 'string',
+        'soak_type'      => 'string',
+        'recharge'       => 'string',
+        'side_effect'    => 'string',
+        'published'      => 'int',
+    ]);
+}
+function cg_admin_create_uj_soak(): void {
+    _cga_create('uj_soaks', [
+        'name'           => 'string',
+        'slug'           => 'string',
+        'description'    => 'string',
+        'damage_negated' => 'string',
+        'soak_type'      => 'string',
+        'recharge'       => 'string',
+        'side_effect'    => 'string',
+        'published'      => 'int',
+    ]);
+}
+
+// ── UJ: Items ─────────────────────────────────────────────────────────────────
+function cg_admin_list_uj_items(): void { _cga_list('uj_items', 'name', 'slug'); }
+function cg_admin_get_uj_item(): void   { _cga_get('uj_items', 'name'); }
+function cg_admin_save_uj_item(): void {
+    _cga_save('uj_items', [
+        'name'        => 'string',
+        'slug'        => 'string',
+        'description' => 'string',
+        'cost_class'  => 'string',
+        'price_early' => 'string',
+        'price_late'  => 'string',
+        'published'   => 'int',
+    ]);
+}
+function cg_admin_create_uj_item(): void {
+    _cga_create('uj_items', [
+        'name'        => 'string',
+        'slug'        => 'string',
+        'description' => 'string',
+        'cost_class'  => 'string',
+        'price_early' => 'string',
+        'price_late'  => 'string',
+        'published'   => 'int',
+    ]);
+}
+
+// ── UJ: Books ─────────────────────────────────────────────────────────────────
+function cg_admin_list_uj_books(): void { _cga_list('uj_books', 'name', 'slug'); }
+function cg_admin_get_uj_book(): void   { _cga_get('uj_books', 'name'); }
+function cg_admin_save_uj_book(): void {
+    _cga_save('uj_books', [
+        'name'       => 'string',
+        'slug'       => 'string',
+        'blurb'      => 'string',
+        'cover_url'  => 'string',
+        'buy_url'    => 'string',
+        'sort_order' => 'int',
+        'published'  => 'int',
+    ]);
+}
+function cg_admin_create_uj_book(): void {
+    _cga_create('uj_books', [
+        'name'       => 'string',
+        'slug'       => 'string',
+        'blurb'      => 'string',
+        'cover_url'  => 'string',
+        'buy_url'    => 'string',
+        'sort_order' => 'int',
+        'published'  => 'int',
+    ]);
 }

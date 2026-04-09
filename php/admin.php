@@ -58,12 +58,12 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
                 font-family: inherit; }
 .cga-tool-btn:hover { color: var(--gold); border-color: var(--gold); }
 
-/* ── Tabs ── */
-.cga-tabs    { display: flex; border-bottom: 1px solid var(--border); }
-.cga-tab     { padding: 0.55rem 1.2rem; font-size: 0.82rem; font-weight: 600; letter-spacing: .05em;
-               text-transform: uppercase; cursor: pointer; color: var(--muted);
-               border-bottom: 2px solid transparent; transition: color .15s; }
-.cga-tab.active, .cga-tab:hover { color: var(--gold); border-bottom-color: var(--gold); }
+/* ── Pane selector ── */
+.cga-pane-row { padding: 0.45rem 0.5rem; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.cga-pane-row select { width: 100%; padding: 0.35rem 0.5rem; background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--radius); color: var(--text);
+  font-size: 0.82rem; outline: none; cursor: pointer; }
+.cga-pane-row select:focus { border-color: var(--gold); }
 
 /* ── Sidebar ── */
 .cga-search  { padding: 0.5rem; border-bottom: 1px solid var(--border); }
@@ -264,13 +264,31 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
     <a class="cga-logout" href="/ajax.php?action=cg_logout_user" onclick="return doLogout(event)">Log out</a>
   </div>
 
-  <div class="cga-tabs" style="padding: 0 1rem; background: var(--panel); border-bottom: 1px solid var(--border);">
-    <div class="cga-tab active" data-pane="gifts">Gifts</div>
-    <div class="cga-tab"        data-pane="weapons">Weapons</div>
-  </div>
-
   <div class="cga-body">
     <div class="cga-sidebar">
+      <div class="cga-pane-row">
+        <select id="cga-pane-sel">
+          <optgroup label="── Ironclaw ──">
+            <option value="ic-gifts">IC: Gifts</option>
+            <option value="ic-weapons">IC: Weapons</option>
+            <option value="ic-species">IC: Species</option>
+            <option value="ic-careers">IC: Careers</option>
+            <option value="ic-skills">IC: Skills</option>
+            <option value="ic-equipment">IC: Equipment</option>
+            <option value="ic-books">IC: Books</option>
+          </optgroup>
+          <optgroup label="── Urban Jungle ──">
+            <option value="uj-gifts">UJ: Gifts</option>
+            <option value="uj-species">UJ: Species</option>
+            <option value="uj-types">UJ: Types</option>
+            <option value="uj-careers">UJ: Careers</option>
+            <option value="uj-skills">UJ: Skills</option>
+            <option value="uj-soaks">UJ: Soaks</option>
+            <option value="uj-items">UJ: Items</option>
+            <option value="uj-books">UJ: Books</option>
+          </optgroup>
+        </select>
+      </div>
       <div class="cga-search">
         <input id="cga-search" type="search" placeholder="Search…" autocomplete="off">
       </div>
@@ -287,6 +305,7 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
         <span class="cga-record-id" id="cga-rec-label">Select a record to begin editing</span>
         <button class="cga-nav-btn" id="cga-next" title="Next" disabled>&#8250;</button>
         <span class="cga-status" id="cga-status"></span>
+        <button class="cga-tool-btn" id="cga-new-btn" onclick="showNewForm()" style="margin-left:auto;">+ New</button>
         <button class="cga-save-btn" id="cga-save" disabled>Save</button>
       </div>
       <div class="cga-editor" id="cga-editor">
@@ -315,7 +334,8 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
   'use strict';
 
   const AJAX = '/ajax.php';
-  let pane      = 'gifts';
+  let pane      = 'ic-gifts';
+  let isNew     = false;
   let allItems  = [];
   let filtItems = [];
   let curId     = null;
@@ -329,6 +349,161 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
     return res.json();
   }
 
+  // ── Simple-pane config (list/get/save/create via generic helpers) ─────────
+  const SIMPLE_PANES = {
+    'ic-species': {
+      listAction: 'cg_admin_list_ic_species', getAction: 'cg_admin_get_ic_species',
+      saveAction: 'cg_admin_save_ic_species', createAction: 'cg_admin_create_ic_species',
+      fields: [
+        { col: 'ct_species_name',        label: 'Name' },
+        { col: 'ct_slug',                label: 'Slug' },
+        { col: 'ct_species_description', label: 'Description', textarea: true, tall: true },
+        { col: 'published',              label: 'Published', checkbox: true },
+      ],
+    },
+    'ic-careers': {
+      listAction: 'cg_admin_list_ic_careers', getAction: 'cg_admin_get_ic_careers',
+      saveAction: 'cg_admin_save_ic_careers', createAction: 'cg_admin_create_ic_careers',
+      fields: [
+        { col: 'ct_career_name',        label: 'Name' },
+        { col: 'ct_slug',               label: 'Slug' },
+        { col: 'ct_career_type',        label: 'Type (1=Major, 2=Minor)', select: true,
+          options: [{ v: '1', l: 'Major' }, { v: '2', l: 'Minor' }] },
+        { col: 'ct_career_description', label: 'Description', textarea: true, tall: true },
+        { col: 'published',             label: 'Published', checkbox: true },
+      ],
+    },
+    'ic-skills': {
+      listAction: 'cg_admin_list_ic_skills', getAction: 'cg_admin_get_ic_skills',
+      saveAction: 'cg_admin_save_ic_skills', createAction: 'cg_admin_create_ic_skills',
+      fields: [
+        { col: 'ct_skill_name', label: 'Name' },
+        { col: 'ct_slug',       label: 'Slug' },
+        { col: 'published',     label: 'Published', checkbox: true },
+      ],
+    },
+    'ic-equipment': {
+      listAction: 'cg_admin_list_ic_equipment', getAction: 'cg_admin_get_ic_equipment',
+      saveAction: 'cg_admin_save_ic_equipment', createAction: 'cg_admin_create_ic_equipment',
+      fields: [
+        { col: 'ct_name',        label: 'Name' },
+        { col: 'ct_slug',        label: 'Slug' },
+        { col: 'ct_category',    label: 'Category' },
+        { col: 'ct_subcategory', label: 'Subcategory' },
+        { col: 'ct_cost_d',      label: 'Cost (D)' },
+        { col: 'ct_effect',      label: 'Effect', textarea: true, tall: true },
+        { col: 'published',      label: 'Published', checkbox: true },
+      ],
+    },
+    'ic-books': {
+      listAction: 'cg_admin_list_ic_books', getAction: 'cg_admin_get_ic_books',
+      saveAction: 'cg_admin_save_ic_books', createAction: 'cg_admin_create_ic_books',
+      fields: [
+        { col: 'ct_book_name',     label: 'Name' },
+        { col: 'ct_ct_slug',       label: 'Slug' },
+        { col: 'ct_book_abstract', label: 'Abstract', textarea: true, tall: true },
+        { col: 'published',        label: 'Published', checkbox: true },
+      ],
+    },
+    'uj-gifts': {
+      listAction: 'cg_admin_list_uj_gifts', getAction: 'cg_admin_get_uj_gift',
+      saveAction: 'cg_admin_save_uj_gift', createAction: 'cg_admin_create_uj_gift',
+      fields: [
+        { col: 'name',        label: 'Name' },
+        { col: 'slug',        label: 'Slug' },
+        { col: 'subtitle',    label: 'Subtitle' },
+        { col: 'gift_type',   label: 'Gift Type' },
+        { col: 'recharge',    label: 'Recharge' },
+        { col: 'description', label: 'Description', textarea: true, tall: true },
+        { col: 'published',   label: 'Published', checkbox: true },
+      ],
+    },
+    'uj-species': {
+      listAction: 'cg_admin_list_uj_species', getAction: 'cg_admin_get_uj_species',
+      saveAction: 'cg_admin_save_uj_species', createAction: 'cg_admin_create_uj_species',
+      fields: [
+        { col: 'name',        label: 'Name' },
+        { col: 'slug',        label: 'Slug' },
+        { col: 'description', label: 'Description', textarea: true, tall: true },
+        { col: 'published',   label: 'Published', checkbox: true },
+      ],
+    },
+    'uj-types': {
+      listAction: 'cg_admin_list_uj_types', getAction: 'cg_admin_get_uj_type',
+      saveAction: 'cg_admin_save_uj_type', createAction: 'cg_admin_create_uj_type',
+      fields: [
+        { col: 'name',        label: 'Name' },
+        { col: 'slug',        label: 'Slug' },
+        { col: 'description', label: 'Description', textarea: true, tall: true },
+        { col: 'published',   label: 'Published', checkbox: true },
+      ],
+    },
+    'uj-careers': {
+      listAction: 'cg_admin_list_uj_careers', getAction: 'cg_admin_get_uj_career',
+      saveAction: 'cg_admin_save_uj_career', createAction: 'cg_admin_create_uj_career',
+      fields: [
+        { col: 'name',        label: 'Name' },
+        { col: 'slug',        label: 'Slug' },
+        { col: 'gear',        label: 'Starting Gear' },
+        { col: 'description', label: 'Description', textarea: true, tall: true },
+        { col: 'published',   label: 'Published', checkbox: true },
+      ],
+    },
+    'uj-skills': {
+      listAction: 'cg_admin_list_uj_skills', getAction: 'cg_admin_get_uj_skill',
+      saveAction: 'cg_admin_save_uj_skill', createAction: 'cg_admin_create_uj_skill',
+      fields: [
+        { col: 'name',             label: 'Name' },
+        { col: 'slug',             label: 'Slug' },
+        { col: 'paired_trait',     label: 'Paired Trait' },
+        { col: 'sample_favorites', label: 'Sample Favorites' },
+        { col: 'gift_notes',       label: 'Gift Notes' },
+        { col: 'description',      label: 'Description', textarea: true, tall: true },
+        { col: 'published',        label: 'Published', checkbox: true },
+      ],
+    },
+    'uj-soaks': {
+      listAction: 'cg_admin_list_uj_soaks', getAction: 'cg_admin_get_uj_soak',
+      saveAction: 'cg_admin_save_uj_soak', createAction: 'cg_admin_create_uj_soak',
+      fields: [
+        { col: 'name',           label: 'Name' },
+        { col: 'slug',           label: 'Slug' },
+        { col: 'soak_type',      label: 'Soak Type' },
+        { col: 'damage_negated', label: 'Damage Negated' },
+        { col: 'recharge',       label: 'Recharge' },
+        { col: 'side_effect',    label: 'Side Effect' },
+        { col: 'description',    label: 'Description', textarea: true, tall: true },
+        { col: 'published',      label: 'Published', checkbox: true },
+      ],
+    },
+    'uj-items': {
+      listAction: 'cg_admin_list_uj_items', getAction: 'cg_admin_get_uj_item',
+      saveAction: 'cg_admin_save_uj_item', createAction: 'cg_admin_create_uj_item',
+      fields: [
+        { col: 'name',        label: 'Name' },
+        { col: 'slug',        label: 'Slug' },
+        { col: 'cost_class',  label: 'Cost Class' },
+        { col: 'price_early', label: 'Price (Early)' },
+        { col: 'price_late',  label: 'Price (Late)' },
+        { col: 'description', label: 'Description', textarea: true, tall: true },
+        { col: 'published',   label: 'Published', checkbox: true },
+      ],
+    },
+    'uj-books': {
+      listAction: 'cg_admin_list_uj_books', getAction: 'cg_admin_get_uj_book',
+      saveAction: 'cg_admin_save_uj_book', createAction: 'cg_admin_create_uj_book',
+      fields: [
+        { col: 'name',       label: 'Name' },
+        { col: 'slug',       label: 'Slug' },
+        { col: 'sort_order', label: 'Sort Order' },
+        { col: 'blurb',      label: 'Blurb', textarea: true },
+        { col: 'cover_url',  label: 'Cover Image URL' },
+        { col: 'buy_url',    label: 'Buy URL' },
+        { col: 'published',  label: 'Published', checkbox: true },
+      ],
+    },
+  };
+
   // ── Global status ─────────────────────────────────────────────────────────
   function status(msg, type = 'ok') {
     const el = document.getElementById('cga-status');
@@ -337,27 +512,38 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
     if (msg) setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, 3000);
   }
 
-  // ── Tabs ──────────────────────────────────────────────────────────────────
-  document.querySelectorAll('.cga-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      if (tab.dataset.pane === pane) return;
-      document.querySelectorAll('.cga-tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      pane  = tab.dataset.pane;
-      curId = null;
-      document.getElementById('cga-editor').innerHTML = '<div class="cga-empty">← Select a record from the sidebar</div>';
-      document.getElementById('cga-rec-label').textContent = 'Select a record to begin editing';
-      document.getElementById('cga-prev').disabled = true;
-      document.getElementById('cga-next').disabled = true;
-      document.getElementById('cga-save').disabled = true;
-      loadList();
-    });
+  // ── Pane helpers ──────────────────────────────────────────────────────────
+  function getItemId(item)   { return item.id !== undefined ? item.id : item.ct_id; }
+  function getItemName(item) {
+    if (item.name !== undefined)          return item.name;
+    if (item.ct_gifts_name !== undefined) return item.ct_gifts_name;
+    if (item.ct_weapons_name !== undefined) return item.ct_weapons_name;
+    return '#' + getItemId(item);
+  }
+  function getListAction() {
+    const cfg = SIMPLE_PANES[pane];
+    if (cfg) return cfg.listAction;
+    return pane === 'ic-gifts' ? 'cg_admin_list_gifts' : 'cg_admin_list_weapons';
+  }
+
+  // ── Pane select ───────────────────────────────────────────────────────────
+  document.getElementById('cga-pane-sel').addEventListener('change', e => {
+    if (e.target.value === pane) return;
+    pane  = e.target.value;
+    isNew = false;
+    curId = null;
+    document.getElementById('cga-editor').innerHTML = '<div class="cga-empty">← Select a record from the sidebar</div>';
+    document.getElementById('cga-rec-label').textContent = 'Select a record to begin editing';
+    document.getElementById('cga-prev').disabled = true;
+    document.getElementById('cga-next').disabled = true;
+    document.getElementById('cga-save').disabled = true;
+    document.getElementById('cga-search').value = '';
+    loadList();
   });
 
   // ── Sidebar ───────────────────────────────────────────────────────────────
   async function loadList(search = '') {
-    const action = pane === 'gifts' ? 'cg_admin_list_gifts' : 'cg_admin_list_weapons';
-    const res    = await post(action, search ? { search } : {});
+    const res = await post(getListAction(), search ? { search } : {});
     if (!res.success) return;
     allItems  = res.data;
     filtItems = allItems;
@@ -365,13 +551,13 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
   }
 
   function renderList() {
-    const ul      = document.getElementById('cga-list');
-    const nameKey = pane === 'gifts' ? 'ct_gifts_name' : 'ct_weapons_name';
-    ul.innerHTML  = filtItems.map(item => {
-      const active = item.ct_id == curId ? ' active' : '';
+    const ul = document.getElementById('cga-list');
+    ul.innerHTML = filtItems.map(item => {
+      const id     = getItemId(item);
+      const active = id == curId ? ' active' : '';
       const unpub  = !parseInt(item.published) ? ' unpub' : '';
-      const label  = item[nameKey] || `#${item.ct_id}`;
-      return `<div class="cga-list-item${active}${unpub}" data-id="${item.ct_id}">${esc(label)}</div>`;
+      const label  = getItemName(item);
+      return `<div class="cga-list-item${active}${unpub}" data-id="${id}">${esc(label)}</div>`;
     }).join('');
     ul.querySelectorAll('.cga-list-item').forEach(el => {
       el.addEventListener('click', () => loadRecord(parseInt(el.dataset.id)));
@@ -383,36 +569,64 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
     clearTimeout(searchTimer);
     const q = e.target.value.trim().toLowerCase();
     searchTimer = setTimeout(() => {
-      const nameKey = pane === 'gifts' ? 'ct_gifts_name' : 'ct_weapons_name';
-      filtItems = q ? allItems.filter(i => (i[nameKey] || '').toLowerCase().includes(q)) : allItems;
+      filtItems = q ? allItems.filter(i => getItemName(i).toLowerCase().includes(q)) : allItems;
       renderList();
     }, 180);
   });
 
   // ── Load a record ─────────────────────────────────────────────────────────
   async function loadRecord(id) {
-    const action = pane === 'gifts' ? 'cg_admin_get_gift' : 'cg_admin_get_weapon';
-    const res    = await post(action, { id });
-    if (!res.success) { status('Load failed: ' + res.data, 'err'); return; }
+    isNew = false;
+    const cfg = SIMPLE_PANES[pane];
+    let action, record;
 
-    curId     = id;
-    curPrevId = res.data.prev_id;
-    curNextId = res.data.next_id;
+    if (cfg) {
+      const res = await post(cfg.getAction, { id });
+      if (!res.success) { status('Load failed: ' + res.data, 'err'); return; }
+      record    = res.data.record;
+      curId     = id;
+      curPrevId = res.data.prev_id;
+      curNextId = res.data.next_id;
+    } else {
+      const action2 = pane === 'ic-gifts' ? 'cg_admin_get_gift' : 'cg_admin_get_weapon';
+      const res2    = await post(action2, { id });
+      if (!res2.success) { status('Load failed: ' + res2.data, 'err'); return; }
+      record    = pane === 'ic-gifts' ? res2.data.gift : res2.data.weapon;
+      curId     = id;
+      curPrevId = res2.data.prev_id;
+      curNextId = res2.data.next_id;
+    }
 
     document.getElementById('cga-prev').disabled = !curPrevId;
     document.getElementById('cga-next').disabled = !curNextId;
     document.getElementById('cga-save').disabled = false;
 
-    const record  = pane === 'gifts' ? res.data.gift : res.data.weapon;
-    const nameKey = pane === 'gifts' ? 'ct_gifts_name' : 'ct_weapons_name';
-    document.getElementById('cga-rec-label').textContent = `ID ${record.ct_id} — ${record[nameKey] || ''}`;
+    const recId   = record.ct_id ?? record.id ?? id;
+    const recName = getItemName(record);
+    document.getElementById('cga-rec-label').textContent = `ID ${recId} — ${recName}`;
 
     renderEditor(record);
     renderList();
     status('');
 
-    if (pane === 'gifts') loadGiftChildren(id);
+    if (pane === 'ic-gifts') loadGiftChildren(id);
   }
+
+  // ── Show new-record form ───────────────────────────────────────────────────
+  window.showNewForm = function () {
+    const cfg = SIMPLE_PANES[pane];
+    if (!cfg) { status('Create new not available for this pane yet', 'err'); return; }
+    isNew = true;
+    curId = null;
+    curPrevId = null;
+    curNextId = null;
+    document.getElementById('cga-prev').disabled = true;
+    document.getElementById('cga-next').disabled = true;
+    document.getElementById('cga-save').disabled = false;
+    document.getElementById('cga-rec-label').textContent = '+ New Record';
+    renderEditor({});
+    renderList();
+  };
 
   document.getElementById('cga-prev').addEventListener('click', () => { if (curPrevId) loadRecord(curPrevId); });
   document.getElementById('cga-next').addEventListener('click', () => { if (curNextId) loadRecord(curNextId); });
@@ -441,9 +655,23 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
   }
 
   // ── Render main editor form ───────────────────────────────────────────────
+  function renderSimpleForm(r, cfg) {
+    const rows = cfg.fields.map(f => {
+      const opts = {};
+      if (f.textarea)  { opts.textarea = true; if (f.tall) opts.tall = true; if (f.xtall) opts.xtall = true; }
+      if (f.checkbox)  { opts.checkbox = true; }
+      if (f.select)    { opts.select = true; opts.options = f.options; }
+      return field(f.col, f.label, r[f.col], opts);
+    }).join('');
+    return `<div id="cga-main-form">${rows}</div>`;
+  }
+
   function renderEditor(r) {
+    const cfg = SIMPLE_PANES[pane];
     let html = '';
-    if (pane === 'gifts') {
+    if (cfg) {
+      html = renderSimpleForm(r, cfg);
+    } else if (pane === 'ic-gifts') {
       html = `
         <div id="cga-main-form">
           <div class="cga-row">
@@ -502,7 +730,7 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
       `;
     }
     document.getElementById('cga-editor').innerHTML = html;
-    if (pane === 'gifts') initDescPreview();
+    if (pane === 'ic-gifts') initDescPreview();
   }
 
   // ── @@ block parser + preview ─────────────────────────────────────────────
@@ -626,19 +854,17 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
 
   function jumpAfter(name) {
     if (!name.trim() || !allItems.length) return;
-    const q        = name.trim().toLowerCase();
-    const nameKey  = pane === 'gifts' ? 'ct_gifts_name' : 'ct_weapons_name';
-    const after    = allItems.filter(i => (i[nameKey] || '').toLowerCase() > q);
-    if (!after.length) { status('No gift found after "' + name + '"', 'err'); return; }
-    const target   = after[0];
-    // Highlight in sidebar
+    const q     = name.trim().toLowerCase();
+    const after = allItems.filter(i => getItemName(i).toLowerCase() > q);
+    if (!after.length) { status('No record found after "' + name + '"', 'err'); return; }
+    const target  = after[0];
+    const targetId = getItemId(target);
     document.getElementById('cga-search').value = '';
     filtItems = allItems;
     renderList();
-    loadRecord(parseInt(target.ct_id));
-    // Scroll sidebar item into view after render
+    loadRecord(targetId);
     setTimeout(() => {
-      const el = document.querySelector(`.cga-list-item[data-id="${target.ct_id}"]`);
+      const el = document.querySelector(`.cga-list-item[data-id="${targetId}"]`);
       if (el) el.scrollIntoView({ block: 'center' });
     }, 150);
   }
@@ -652,13 +878,13 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
 
   // ── Main Save (scoped to #cga-main-form) ─────────────────────────────────
   document.getElementById('cga-save').addEventListener('click', async () => {
-    if (!curId) return;
-    const form   = document.getElementById('cga-main-form');
+    if (!curId && !isNew) return;
+    const form = document.getElementById('cga-main-form');
     if (!form) return;
-    const action = pane === 'gifts' ? 'cg_admin_save_gift' : 'cg_admin_save_weapon';
-    const params = { id: curId };
 
-    form.querySelectorAll('input[type="text"], textarea').forEach(el => {
+    const params = {};
+    if (!isNew) params.id = curId;
+    form.querySelectorAll('input[type="text"], textarea, select').forEach(el => {
       if (el.name) params[el.name] = el.value;
     });
     form.querySelectorAll('input[type="checkbox"]').forEach(el => {
@@ -668,10 +894,30 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
     const saveBtn = document.getElementById('cga-save');
     saveBtn.disabled = true;
     try {
-      const res = await post(action, params);
+      const cfg = SIMPLE_PANES[pane];
 
-      if (res.success) {
-        if (pane === 'gifts') {
+      if (isNew && cfg) {
+        const res = await post(cfg.createAction, params);
+        if (res.success) {
+          status('Created ✓', 'ok');
+          isNew = false;
+          curId = res.data.id;
+          await loadList(document.getElementById('cga-search').value.trim());
+          loadRecord(curId);
+        } else {
+          status('Error: ' + (res.data || 'create failed'), 'err');
+        }
+      } else if (cfg) {
+        const res = await post(cfg.saveAction, params);
+        if (res.success) {
+          status('Saved ✓', 'ok');
+          loadList(document.getElementById('cga-search').value.trim());
+        } else {
+          status('Error: ' + (res.data || 'save failed'), 'err');
+        }
+      } else if (pane === 'ic-gifts') {
+        const res = await post('cg_admin_save_gift', params);
+        if (res.success) {
           status('Syncing…', 'ok');
           const syncRes = await post('cg_admin_sync_single_gift', { gift_id: curId });
           if (syncRes.success) {
@@ -680,12 +926,18 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
             status('Saved ✓  (sync: ' + (syncRes.data || 'error') + ')', 'err');
           }
           await loadGiftChildren(curId);
+          loadList(document.getElementById('cga-search').value.trim());
         } else {
-          status('Saved ✓', 'ok');
+          status('Error: ' + (res.data || 'save failed'), 'err');
         }
-        loadList(document.getElementById('cga-search').value.trim());
       } else {
-        status('Error: ' + (res.data || 'save failed'), 'err');
+        const res = await post('cg_admin_save_weapon', params);
+        if (res.success) {
+          status('Saved ✓', 'ok');
+          loadList(document.getElementById('cga-search').value.trim());
+        } else {
+          status('Error: ' + (res.data || 'save failed'), 'err');
+        }
       }
     } finally {
       saveBtn.disabled = false;
@@ -1031,8 +1283,12 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
     body.querySelectorAll('.cga-qr-row').forEach(row => {
       row.addEventListener('click', () => {
         closeQualityReport();
-        if (pane !== 'gifts') {
-          document.querySelector('.cga-tab[data-pane="gifts"]').click();
+        if (pane !== 'ic-gifts') {
+          pane = 'ic-gifts';
+          document.getElementById('cga-pane-sel').value = 'ic-gifts';
+          document.getElementById('cga-search').value = '';
+          loadList().then(() => loadRecord(parseInt(row.dataset.id)));
+          return;
         }
         loadRecord(parseInt(row.dataset.id));
       });
@@ -1169,7 +1425,26 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
   };
 
   // ── Boot ──────────────────────────────────────────────────────────────────
-  loadList();
+  (async () => {
+    const sp        = new URLSearchParams(location.search);
+    const urlPane   = sp.get('pane');
+    const urlSlug   = sp.get('slug');
+    const urlAction = sp.get('action');
+
+    if (urlPane && (SIMPLE_PANES[urlPane] || urlPane === 'ic-gifts' || urlPane === 'ic-weapons')) {
+      pane = urlPane;
+      document.getElementById('cga-pane-sel').value = pane;
+    }
+
+    await loadList();
+
+    if (urlAction === 'new') {
+      showNewForm();
+    } else if (urlSlug && allItems.length) {
+      const target = allItems.find(i => (i.slug || i.ct_slug) === urlSlug);
+      if (target) loadRecord(getItemId(target));
+    }
+  })();
 })();
 </script>
 

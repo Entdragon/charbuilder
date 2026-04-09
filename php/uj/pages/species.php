@@ -17,6 +17,7 @@ require __DIR__ . '/../layout-head.php';
 <div class="page-header">
   <div class="header-row">
     <h1>Species</h1>
+    <?php if ($isAdmin): ?><a href="/admin?pane=uj-species&amp;action=new" class="admin-edit-btn">+ Add New</a><?php endif; ?>
   </div>
   <p>Every character belongs to a species, which grants three skills and two gifts.</p>
 </div>

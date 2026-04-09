@@ -103,6 +103,7 @@ function ic_species_filter_url(?string $diet = '__keep__', ?string $habitat = '_
       <p>Every character belongs to a species, which grants skills and gifts.</p>
     </div>
     <div style="margin-left:auto; color:var(--ic-text-dim); font-size:0.85rem;"><?= count($species) ?> species</div>
+    <?php if ($isAdmin): ?><a href="/admin?pane=ic-species&amp;action=new" class="admin-edit-btn">+ Add New</a><?php endif; ?>
   </div>
 </div>
 

@@ -41,6 +41,7 @@ $careers = cg_query("SELECT * FROM `{$p}customtables_table_careers` $where ORDER
       <h1>Careers</h1>
       <p>Major careers suit player characters; minor careers are for supporting NPCs.</p>
     </div>
+    <?php if ($isAdmin): ?><a href="/admin?pane=ic-careers&amp;action=new" class="admin-edit-btn">+ Add New</a><?php endif; ?>
   </div>
 </div>
 

@@ -48,6 +48,7 @@ if ($entity === 'books') {
     <div class="detail-layout">
       <div class="detail-body">
         <p class="detail-name"><?= htmlspecialchars($book['name']) ?></p>
+        <?php if ($isAdmin): ?><a href="/admin?pane=uj-books&amp;slug=<?= urlencode($book['slug']) ?>" class="admin-edit-btn" style="margin-bottom:0.75rem; display:inline-flex;">✎ Edit</a><?php endif; ?>
 
         <?php if ($book['blurb']): ?>
           <div class="detail-desc">
@@ -313,6 +314,7 @@ $listLabel = [
 <div class="detail-layout">
   <div class="detail-body">
     <h1 class="detail-name"><?= htmlspecialchars($record['name']) ?></h1>
+    <?php if ($isAdmin): ?><a href="/admin?pane=uj-<?= htmlspecialchars($entity) ?>&amp;slug=<?= urlencode($slug) ?>" class="admin-edit-btn" style="margin-bottom:0.75rem; display:inline-flex;">✎ Edit</a><?php endif; ?>
 
     <?php if (!empty($record['description'])): ?>
     <p class="detail-desc"><?= nl2br(htmlspecialchars($record['description'])) ?></p>
@@ -407,6 +409,7 @@ $listLabel = [
 <div class="detail-layout">
   <div class="detail-body">
     <h1 class="detail-name"><?= htmlspecialchars($record['name']) ?></h1>
+    <?php if ($isAdmin): ?><a href="/admin?pane=uj-skills&amp;slug=<?= urlencode($slug) ?>" class="admin-edit-btn" style="margin-bottom:0.75rem; display:inline-flex;">✎ Edit</a><?php endif; ?>
     <?php if (!empty($record['paired_trait'])): ?>
     <p class="detail-subtitle">Paired with <?= htmlspecialchars($record['paired_trait']) ?></p>
     <?php endif; ?>
@@ -466,6 +469,7 @@ $listLabel = [
     <div style="display:flex; align-items:flex-start; gap:0.75rem; margin-bottom:0.5rem; flex-wrap:wrap;">
       <h1 class="detail-name" style="margin:0;"><?= htmlspecialchars($record['name']) ?></h1>
       <span class="tag tag-<?= htmlspecialchars($record['gift_type']) ?>" style="margin-top:6px;"><?= ucfirst($record['gift_type']) ?></span>
+      <?php if ($isAdmin): ?><a href="/admin?pane=uj-gifts&amp;slug=<?= urlencode($slug) ?>" class="admin-edit-btn" style="margin-top:4px;">✎ Edit</a><?php endif; ?>
     </div>
     <?php if (!empty($record['subtitle'])): ?>
     <p class="detail-subtitle"><?= htmlspecialchars($record['subtitle']) ?></p>
@@ -521,6 +525,7 @@ $listLabel = [
 <div style="display:flex; align-items:flex-start; gap:0.75rem; margin-bottom:0.5rem; flex-wrap:wrap;">
   <h1 class="detail-name" style="margin:0;"><?= htmlspecialchars($record['name']) ?></h1>
   <span class="tag tag-<?= htmlspecialchars($record['soak_type'] ?? 'basic') ?>" style="margin-top:6px;"><?= ucfirst($record['soak_type'] ?? 'basic') ?></span>
+  <?php if ($isAdmin): ?><a href="/admin?pane=uj-soaks&amp;slug=<?= urlencode($slug) ?>" class="admin-edit-btn" style="margin-top:4px;">✎ Edit</a><?php endif; ?>
 </div>
 <?php if (!empty($record['damage_negated'])): ?>
 <p class="detail-subtitle">Negates: <?= htmlspecialchars($record['damage_negated']) ?></p>
@@ -538,6 +543,7 @@ $listLabel = [
 <?php elseif ($entity === 'attacks'): ?>
 <!-- ── Attack detail ─────────────────────────────────────────────────────── -->
 <h1 class="detail-name"><?= htmlspecialchars($record['name']) ?></h1>
+<?php if ($isAdmin): ?><a href="/admin?pane=uj-attacks&amp;slug=<?= urlencode($slug) ?>" class="admin-edit-btn" style="margin-bottom:0.75rem; display:inline-flex;">✎ Edit</a><?php endif; ?>
 <p class="detail-subtitle"><?= htmlspecialchars(ucwords($record['category'] ?? '')) ?></p>
 <div style="display:flex; gap:1.5rem; flex-wrap:wrap; margin-bottom:1.25rem;">
   <?php foreach (['attack_range' => 'Attack Range', 'counter_range' => 'Counter Range', 'attack_dice' => 'Dice'] as $col => $lbl): ?>
@@ -564,6 +570,7 @@ $cls = $record['cost_class'] ?? '';
 $cc  = $classColors[$cls] ?? 'var(--uj-text-muted)';
 ?>
 <h1 class="detail-name"><?= htmlspecialchars($record['name']) ?></h1>
+<?php if ($isAdmin): ?><a href="/admin?pane=uj-items&amp;slug=<?= urlencode($slug) ?>" class="admin-edit-btn" style="margin-bottom:0.75rem; display:inline-flex;">✎ Edit</a><?php endif; ?>
 <p class="detail-subtitle" style="color:<?= $cc ?>;"><?= htmlspecialchars($cls) ?></p>
 <div style="display:flex; gap:2rem; flex-wrap:wrap; margin-bottom:1.25rem;">
   <?php if (!empty($record['price_early'])): ?>
