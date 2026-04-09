@@ -28,7 +28,6 @@ $weapons = cg_query("SELECT * FROM `{$p}customtables_table_weapons` $where ORDER
       <p>Melee, ranged, natural and thrown weapons of Calabria.</p>
     </div>
     <div style="margin-left:auto; color:var(--ic-text-dim); font-size:0.85rem;"><?= count($weapons) ?> weapons</div>
-    <?php if ($isAdmin): ?><a href="/admin?pane=ic-weapons&amp;action=new" class="admin-edit-btn">+ Add New</a><?php endif; ?>
   </div>
 </div>
 

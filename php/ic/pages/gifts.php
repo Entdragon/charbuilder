@@ -72,7 +72,6 @@ $total = count($gifts);
       <p>Gifts are special abilities, powers and perks that define your character.</p>
     </div>
     <div style="margin-left:auto; color:var(--ic-text-dim); font-size:0.85rem;"><?= $total ?> gifts<?= ($filterClass || $filterType) ? ' (filtered)' : ' total' ?></div>
-    <?php if ($isAdmin): ?><a href="/admin?pane=ic-gifts&amp;action=new" class="admin-edit-btn">+ Add New</a><?php endif; ?>
   </div>
 </div>
 
