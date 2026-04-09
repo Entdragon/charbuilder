@@ -126,6 +126,7 @@ $actionFiles = [
     'cg_admin_list_gifts'         => 'actions/admin.php',
     'cg_admin_get_gift'           => 'actions/admin.php',
     'cg_admin_save_gift'          => 'actions/admin.php',
+    'cg_admin_create_gift'        => 'actions/admin.php',
     'cg_admin_get_gift_children'  => 'actions/admin.php',
     'cg_admin_save_gift_rule'     => 'actions/admin.php',
     'cg_admin_delete_gift_rule'   => 'actions/admin.php',
@@ -135,6 +136,7 @@ $actionFiles = [
     'cg_admin_list_weapons'       => 'actions/admin.php',
     'cg_admin_get_weapon'         => 'actions/admin.php',
     'cg_admin_save_weapon'        => 'actions/admin.php',
+    'cg_admin_create_weapon'      => 'actions/admin.php',
 
     'cg_admin_sync_trappings_children'  => 'actions/admin.php',
     'cg_admin_sync_single_gift'         => 'actions/admin.php',

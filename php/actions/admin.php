@@ -108,6 +108,45 @@ function cg_admin_save_gift(): void {
     cg_json(['success' => true, 'data' => 'Saved.']);
 }
 
+function cg_admin_create_gift(): void {
+    cg_admin_require();
+    $p = cg_prefix();
+    $t = $p . 'customtables_table_gifts';
+
+    $allowed = [
+        'ct_gifts_name'               => 'string',
+        'ct_slug'                     => 'string',
+        'ct_pg_no'                    => 'string',
+        'ct_gifts_effect'             => 'string',
+        'ct_gifts_effect_description' => 'string',
+        'ct_gift_trigger'             => 'string',
+        'ct_gifts_manifold'           => 'int',
+        'ct_gifts_allows_multiple'    => 'int',
+        'published'                   => 'int',
+    ];
+
+    $cols   = [];
+    $vals   = [];
+    $params = [];
+    foreach ($allowed as $col => $type) {
+        if (!array_key_exists($col, $_POST)) continue;
+        $val = $_POST[$col];
+        if ($type === 'int') $val = (int) $val;
+        else                  $val = (string) $val;
+        $cols[]   = $col;
+        $vals[]   = '?';
+        $params[] = $val;
+    }
+
+    if (!$cols) { cg_json(['success' => false, 'data' => 'No fields provided.']); return; }
+
+    $res = cg_exec(
+        "INSERT INTO $t (" . implode(', ', $cols) . ") VALUES (" . implode(', ', $vals) . ")",
+        $params
+    );
+    cg_json(['success' => true, 'data' => ['id' => (int)$res['lastInsertId']]]);
+}
+
 // ── Gift child tables ─────────────────────────────────────────────────────────
 
 function cg_admin_get_gift_children(): void {
@@ -1088,6 +1127,49 @@ function cg_admin_save_weapon(): void {
     $params[] = $id;
     cg_exec("UPDATE $t SET " . implode(', ', $sets) . ", updated_at = NOW() WHERE ct_id = ?", $params);
     cg_json(['success' => true, 'data' => 'Saved.']);
+}
+
+function cg_admin_create_weapon(): void {
+    cg_admin_require();
+    $p = cg_prefix();
+    $t = $p . 'customtables_table_weapons';
+
+    $allowed = [
+        'ct_weapons_name'  => 'string',
+        'ct_slug'          => 'string',
+        'ct_weapon_class'  => 'string',
+        'ct_equip'         => 'string',
+        'ct_range_band'    => 'string',
+        'ct_attack_dice'   => 'string',
+        'ct_effect'        => 'string',
+        'ct_descriptors'   => 'string',
+        'ct_damage_mod'    => 'string',
+        'ct_description'   => 'string',
+        'ct_pg_no'         => 'string',
+        'ct_cost_d'        => 'string',
+        'published'        => 'int',
+    ];
+
+    $cols   = [];
+    $vals   = [];
+    $params = [];
+    foreach ($allowed as $col => $type) {
+        if (!array_key_exists($col, $_POST)) continue;
+        $val = $_POST[$col];
+        if ($type === 'int') $val = (int) $val;
+        else                  $val = (string) $val;
+        $cols[]   = $col;
+        $vals[]   = '?';
+        $params[] = $val;
+    }
+
+    if (!$cols) { cg_json(['success' => false, 'data' => 'No fields provided.']); return; }
+
+    $res = cg_exec(
+        "INSERT INTO $t (" . implode(', ', $cols) . ") VALUES (" . implode(', ', $vals) . ")",
+        $params
+    );
+    cg_json(['success' => true, 'data' => ['id' => (int)$res['lastInsertId']]]);
 }
 
 // ── Batch @@ Fix ──────────────────────────────────────────────────────────────
