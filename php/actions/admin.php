@@ -1460,24 +1460,26 @@ function cg_admin_list_uj_gifts(): void { _cga_list('uj_gifts', 'name', 'slug');
 function cg_admin_get_uj_gift(): void   { _cga_get('uj_gifts', 'name'); }
 function cg_admin_save_uj_gift(): void {
     _cga_save('uj_gifts', [
-        'name'       => 'string',
-        'slug'       => 'string',
-        'subtitle'   => 'string',
-        'gift_type'  => 'string',
-        'description'=> 'string',
-        'recharge'   => 'string',
-        'published'  => 'int',
+        'name'          => 'string',
+        'slug'          => 'string',
+        'subtitle'      => 'string',
+        'gift_type'     => 'string',
+        'description'   => 'string',
+        'recharge'      => 'string',
+        'requires_text' => 'string',
+        'published'     => 'int',
     ]);
 }
 function cg_admin_create_uj_gift(): void {
     _cga_create('uj_gifts', [
-        'name'       => 'string',
-        'slug'       => 'string',
-        'subtitle'   => 'string',
-        'gift_type'  => 'string',
-        'description'=> 'string',
-        'recharge'   => 'string',
-        'published'  => 'int',
+        'name'          => 'string',
+        'slug'          => 'string',
+        'subtitle'      => 'string',
+        'gift_type'     => 'string',
+        'description'   => 'string',
+        'recharge'      => 'string',
+        'requires_text' => 'string',
+        'published'     => 'int',
     ]);
 }
 
@@ -1486,18 +1488,28 @@ function cg_admin_list_uj_species(): void { _cga_list('uj_species', 'name', 'slu
 function cg_admin_get_uj_species(): void  { _cga_get('uj_species', 'name'); }
 function cg_admin_save_uj_species(): void {
     _cga_save('uj_species', [
-        'name'       => 'string',
-        'slug'       => 'string',
-        'description'=> 'string',
-        'published'  => 'int',
+        'name'        => 'string',
+        'slug'        => 'string',
+        'description' => 'string',
+        'skill_1'     => 'string',
+        'skill_2'     => 'string',
+        'skill_3'     => 'string',
+        'gift_1'      => 'string',
+        'gift_2'      => 'string',
+        'published'   => 'int',
     ]);
 }
 function cg_admin_create_uj_species(): void {
     _cga_create('uj_species', [
-        'name'       => 'string',
-        'slug'       => 'string',
-        'description'=> 'string',
-        'published'  => 'int',
+        'name'        => 'string',
+        'slug'        => 'string',
+        'description' => 'string',
+        'skill_1'     => 'string',
+        'skill_2'     => 'string',
+        'skill_3'     => 'string',
+        'gift_1'      => 'string',
+        'gift_2'      => 'string',
+        'published'   => 'int',
     ]);
 }
 
@@ -1506,18 +1518,32 @@ function cg_admin_list_uj_types(): void { _cga_list('uj_types', 'name', 'slug');
 function cg_admin_get_uj_type(): void   { _cga_get('uj_types', 'name'); }
 function cg_admin_save_uj_type(): void {
     _cga_save('uj_types', [
-        'name'       => 'string',
-        'slug'       => 'string',
-        'description'=> 'string',
-        'published'  => 'int',
+        'name'        => 'string',
+        'slug'        => 'string',
+        'description' => 'string',
+        'skill_1'     => 'string',
+        'skill_2'     => 'string',
+        'skill_3'     => 'string',
+        'gift_1'      => 'string',
+        'soak_1'      => 'string',
+        'soak_2'      => 'string',
+        'gear'        => 'string',
+        'published'   => 'int',
     ]);
 }
 function cg_admin_create_uj_type(): void {
     _cga_create('uj_types', [
-        'name'       => 'string',
-        'slug'       => 'string',
-        'description'=> 'string',
-        'published'  => 'int',
+        'name'        => 'string',
+        'slug'        => 'string',
+        'description' => 'string',
+        'skill_1'     => 'string',
+        'skill_2'     => 'string',
+        'skill_3'     => 'string',
+        'gift_1'      => 'string',
+        'soak_1'      => 'string',
+        'soak_2'      => 'string',
+        'gear'        => 'string',
+        'published'   => 'int',
     ]);
 }
 
@@ -1526,20 +1552,30 @@ function cg_admin_list_uj_careers(): void { _cga_list('uj_careers', 'name', 'slu
 function cg_admin_get_uj_career(): void   { _cga_get('uj_careers', 'name'); }
 function cg_admin_save_uj_career(): void {
     _cga_save('uj_careers', [
-        'name'       => 'string',
-        'slug'       => 'string',
-        'description'=> 'string',
-        'gear'       => 'string',
-        'published'  => 'int',
+        'name'        => 'string',
+        'slug'        => 'string',
+        'description' => 'string',
+        'skill_1'     => 'string',
+        'skill_2'     => 'string',
+        'skill_3'     => 'string',
+        'gift_1'      => 'string',
+        'gift_2'      => 'string',
+        'gear'        => 'string',
+        'published'   => 'int',
     ]);
 }
 function cg_admin_create_uj_career(): void {
     _cga_create('uj_careers', [
-        'name'       => 'string',
-        'slug'       => 'string',
-        'description'=> 'string',
-        'gear'       => 'string',
-        'published'  => 'int',
+        'name'        => 'string',
+        'slug'        => 'string',
+        'description' => 'string',
+        'skill_1'     => 'string',
+        'skill_2'     => 'string',
+        'skill_3'     => 'string',
+        'gift_1'      => 'string',
+        'gift_2'      => 'string',
+        'gear'        => 'string',
+        'published'   => 'int',
     ]);
 }
 
@@ -1577,7 +1613,7 @@ function cg_admin_save_uj_soak(): void {
         'name'           => 'string',
         'slug'           => 'string',
         'description'    => 'string',
-        'damage_negated' => 'string',
+        'damage_negated' => 'int',
         'soak_type'      => 'string',
         'recharge'       => 'string',
         'side_effect'    => 'string',
@@ -1589,7 +1625,7 @@ function cg_admin_create_uj_soak(): void {
         'name'           => 'string',
         'slug'           => 'string',
         'description'    => 'string',
-        'damage_negated' => 'string',
+        'damage_negated' => 'int',
         'soak_type'      => 'string',
         'recharge'       => 'string',
         'side_effect'    => 'string',
@@ -1604,7 +1640,6 @@ function cg_admin_save_uj_item(): void {
     _cga_save('uj_items', [
         'name'        => 'string',
         'slug'        => 'string',
-        'description' => 'string',
         'cost_class'  => 'string',
         'price_early' => 'string',
         'price_late'  => 'string',
@@ -1615,7 +1650,6 @@ function cg_admin_create_uj_item(): void {
     _cga_create('uj_items', [
         'name'        => 'string',
         'slug'        => 'string',
-        'description' => 'string',
         'cost_class'  => 'string',
         'price_early' => 'string',
         'price_late'  => 'string',
