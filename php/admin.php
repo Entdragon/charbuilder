@@ -1443,7 +1443,7 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
     closeBatchFix();
 
     // If the currently-loaded record was one of the fixed gifts, reload it
-    if (currentId && patches.some(p => p.id === currentId)) loadRecord(currentId);
+    if (curId && patches.some(p => p.id === curId)) loadRecord(curId);
   };
 
   // ── Urban Jungle install ──────────────────────────────────────────────────
