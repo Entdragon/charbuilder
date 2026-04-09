@@ -619,7 +619,8 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
     document.getElementById('cga-save').disabled = false;
 
     const recId   = record.ct_id ?? record.id ?? id;
-    const recName = getItemName(record);
+    const listItem = allItems.find(i => getItemId(i) == id);
+    const recName = listItem ? getItemName(listItem) : getItemName(record);
     document.getElementById('cga-rec-label').textContent = `ID ${recId} — ${recName}`;
 
     renderEditor(record);
