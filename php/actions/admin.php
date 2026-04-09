@@ -1370,10 +1370,10 @@ function cg_admin_create_ic_species(): void {
 }
 
 // ── IC: Careers ───────────────────────────────────────────────────────────────
-function cg_admin_list_ic_careers(): void { _cga_list('customtables_table_career', 'ct_career_name', 'ct_slug'); }
-function cg_admin_get_ic_careers(): void  { _cga_get('customtables_table_career', 'ct_career_name'); }
+function cg_admin_list_ic_careers(): void { _cga_list('customtables_table_careers', 'ct_career_name', 'ct_slug'); }
+function cg_admin_get_ic_careers(): void  { _cga_get('customtables_table_careers', 'ct_career_name'); }
 function cg_admin_save_ic_careers(): void {
-    _cga_save('customtables_table_career', [
+    _cga_save('customtables_table_careers', [
         'ct_career_name'        => 'string',
         'ct_slug'               => 'string',
         'ct_career_description' => 'string',
@@ -1382,7 +1382,7 @@ function cg_admin_save_ic_careers(): void {
     ]);
 }
 function cg_admin_create_ic_careers(): void {
-    _cga_create('customtables_table_career', [
+    _cga_create('customtables_table_careers', [
         'ct_career_name'        => 'string',
         'ct_slug'               => 'string',
         'ct_career_description' => 'string',

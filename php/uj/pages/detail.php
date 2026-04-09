@@ -543,7 +543,6 @@ $listLabel = [
 <?php elseif ($entity === 'attacks'): ?>
 <!-- ── Attack detail ─────────────────────────────────────────────────────── -->
 <h1 class="detail-name"><?= htmlspecialchars($record['name']) ?></h1>
-<?php if ($isAdmin): ?><a href="/admin?pane=uj-attacks&amp;slug=<?= urlencode($slug) ?>" class="admin-edit-btn" style="margin-bottom:0.75rem; display:inline-flex;">✎ Edit</a><?php endif; ?>
 <p class="detail-subtitle"><?= htmlspecialchars(ucwords($record['category'] ?? '')) ?></p>
 <div style="display:flex; gap:1.5rem; flex-wrap:wrap; margin-bottom:1.25rem;">
   <?php foreach (['attack_range' => 'Attack Range', 'counter_range' => 'Counter Range', 'attack_dice' => 'Dice'] as $col => $lbl): ?>

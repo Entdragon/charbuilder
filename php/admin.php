@@ -615,7 +615,20 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
   // ── Show new-record form ───────────────────────────────────────────────────
   window.showNewForm = function () {
     const cfg = SIMPLE_PANES[pane];
-    if (!cfg) { status('Create new not available for this pane yet', 'err'); return; }
+    if (!cfg) {
+      const names = { 'ic-gifts': 'gifts', 'ic-weapons': 'weapons' };
+      const label = names[pane] || pane;
+      document.getElementById('cga-editor').innerHTML =
+        `<div class="cga-empty" style="max-width:460px;text-align:left;line-height:1.7;">
+          <strong style="color:var(--gold);">Add New — ${esc(label)}</strong><br><br>
+          New ${esc(label)} are created directly in WordPress (CustomTables), which handles
+          the full data structure including rules, sections, and sync.<br><br>
+          Once created in WordPress, return here to edit the content.
+        </div>`;
+      document.getElementById('cga-rec-label').textContent = '+ New (WordPress)';
+      document.getElementById('cga-save').disabled = true;
+      return;
+    }
     isNew = true;
     curId = null;
     curPrevId = null;
