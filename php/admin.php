@@ -1464,7 +1464,9 @@ html, body { height: 100%; font-family: var(--font-ui); background: var(--bg); c
   // ── Boot ──────────────────────────────────────────────────────────────────
   (async () => {
     const sp        = new URLSearchParams(location.search);
-    const urlPane   = sp.get('pane');
+    const COMPAT    = { gifts: 'ic-gifts', weapons: 'ic-weapons' };
+    let urlPane     = sp.get('pane');
+    if (urlPane && COMPAT[urlPane]) urlPane = COMPAT[urlPane];
     const urlSlug   = sp.get('slug');
     const urlAction = sp.get('action');
 
