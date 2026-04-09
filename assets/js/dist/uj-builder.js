@@ -1551,6 +1551,75 @@
         return x.die;
       })).filter(Boolean);
       html += '<div class="summary-battle-array"><div class="summary-section-title">Battle Array</div><div class="battle-array-grid"><div class="battle-stat"><div class="battle-stat-name">Initiative</div><div class="battle-stat-sub">Mind + Observation</div><div class="battle-stat-dice">' + initDice.join(" + ") + '</div></div><div class="battle-stat"><div class="battle-stat-name">Dodge</div><div class="battle-stat-sub">Speed + Evasion</div><div class="battle-stat-dice">' + dodgeDice.join(" + ") + '</div></div><div class="battle-stat"><div class="battle-stat-name">Rally</div><div class="battle-stat-sub">Will + Tactics</div><div class="battle-stat-dice">' + rallyDice.join(" + ") + "</div></div></div></div>";
+      var GIFT_ATTACK_CATS = ["boxing", "brawling", "contortionist", "jumping", "quills", "running", "sleight-of-hand", "spray", "wrestling"];
+      var charGiftSlugs = {};
+      [sp, ty, ca, extraCa, extraTy].forEach(function(entity) {
+        if (!entity || !entity.gifts)
+          return;
+        entity.gifts.forEach(function(g) {
+          charGiftSlugs[g.slug || String(g.id)] = true;
+        });
+      });
+      state.purchasedGifts.forEach(function(p) {
+        charGiftSlugs[p.slug] = true;
+      });
+      var charAccessible = { "unarmed": true };
+      GIFT_ATTACK_CATS.forEach(function(cat) {
+        if (charGiftSlugs[cat])
+          charAccessible[cat] = true;
+      });
+      var charTraitMap = {
+        "Body": effectiveDie(state.bodyDie, "Body"),
+        "Speed": effectiveDie(state.speedDie, "Speed"),
+        "Mind": effectiveDie(state.mindDie, "Mind"),
+        "Will": effectiveDie(state.willDie, "Will")
+      };
+      function parseAttackPool(diceStr, traitMap, skillFn) {
+        var str = diceStr.replace(/^[^:]+:\s*/, "");
+        var pool = [];
+        str.split(",").forEach(function(part) {
+          part = part.trim();
+          if (!part)
+            return;
+          if (/^d\d+$/i.test(part)) {
+            pool.push(part.toLowerCase());
+            return;
+          }
+          if (/^ammo\s+d\d+$/i.test(part)) {
+            pool.push(part.replace(/^ammo\s+/i, "").toLowerCase());
+            return;
+          }
+          if (traitMap[part]) {
+            pool.push(traitMap[part]);
+            return;
+          }
+          var sd = skillFn(part);
+          sd.forEach(function(x) {
+            pool.push(x.die || x);
+          });
+        });
+        return pool.filter(Boolean);
+      }
+      var allAttacks = d.attacks || [];
+      var charAttacks = allAttacks.filter(function(a) {
+        return charAccessible[a.category];
+      });
+      if (charAttacks.length) {
+        html += '<div class="summary-section">';
+        html += '<div class="summary-section-title">Attacks</div>';
+        html += '<table class="skills-table" style="font-size:0.82rem;">';
+        html += '<thead><tr><th class="skill-name-col">Attack</th><th style="width:5rem;text-align:left;padding-left:0.4rem;">Range</th><th style="text-align:left;padding-left:0.4rem;">Dice Pool</th><th style="text-align:left;padding-left:0.4rem;">Effect</th></tr></thead><tbody>';
+        var lastCat = "";
+        charAttacks.forEach(function(a) {
+          if (a.category !== lastCat) {
+            lastCat = a.category;
+            html += '<tr><td colspan="4" style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--uj-amber-light);padding:0.55rem 0.4rem 0.2rem;border-top:1px solid var(--uj-border-cool);">' + esc(lastCat.charAt(0).toUpperCase() + lastCat.slice(1).replace(/-/g, " ")) + "</td></tr>";
+          }
+          var pool = parseAttackPool(a.attack_dice, charTraitMap, skillDiceFor);
+          html += '<tr class="skill-row-active"><td class="skill-name-col" style="font-weight:500;">' + esc(a.name) + '</td><td style="font-size:0.78rem;color:var(--uj-text-dim);padding-left:0.4rem;">' + esc(a.attack_range) + '</td><td style="padding-left:0.4rem;">' + (pool.length ? '<span style="color:var(--uj-teal);font-weight:600;">' + pool.join(" + ") + "</span>" : '<span class="skill-die-empty">\u2014</span>') + '</td><td style="font-size:0.78rem;color:var(--uj-text-dim);padding-left:0.4rem;">' + esc(a.effect) + "</td></tr>";
+        });
+        html += "</tbody></table></div>";
+      }
       html += '<div class="summary-grid">';
       var allGiftsData = d.gifts || [];
       function findGiftBySlug(slug) {
@@ -1615,6 +1684,19 @@
           return entity.skills.some(function(sk) {
             return (sk.name || sk).toLowerCase() === skillName.toLowerCase();
           });
+        }, addAllyGiftSlugs = function(entity) {
+          if (!entity || !entity.gifts)
+            return;
+          entity.gifts.forEach(function(g) {
+            allyGiftSlugsForAtk[g.slug || String(g.id)] = true;
+          });
+        }, allySkillFn = function(skillName) {
+          var dice = [];
+          if (allyGrantsSkill(allySp, skillName) && aSpDie)
+            dice.push({ die: aSpDie });
+          if (allyGrantsSkill(allyCa, skillName) && aCaDie)
+            dice.push({ die: aCaDie });
+          return dice;
         }, addAllyGifts = function(entity) {
           if (!entity || !entity.gifts)
             return;
@@ -1656,6 +1738,33 @@
         var aDodgeDice = [aSpeedDie].concat(allyGrantsSkill(allySp, "Evasion") ? [aSpDie] : []).concat(allyGrantsSkill(allyCa, "Evasion") ? [aCaDie] : []).filter(Boolean);
         var aRallyDice = [aWillDie].concat(allyGrantsSkill(allySp, "Tactics") ? [aSpDie] : []).concat(allyGrantsSkill(allyCa, "Tactics") ? [aCaDie] : []).filter(Boolean);
         html += '<div class="summary-battle-array" style="margin-bottom:1.25rem;"><div class="summary-section-title" style="font-size:0.72rem;">Battle Array</div><div class="battle-array-grid"><div class="battle-stat"><div class="battle-stat-name">Initiative</div><div class="battle-stat-sub">Mind + Observation</div><div class="battle-stat-dice">' + aInitDice.join(" + ") + '</div></div><div class="battle-stat"><div class="battle-stat-name">Dodge</div><div class="battle-stat-sub">Speed + Evasion</div><div class="battle-stat-dice">' + aDodgeDice.join(" + ") + '</div></div><div class="battle-stat"><div class="battle-stat-name">Rally</div><div class="battle-stat-sub">Will + Tactics</div><div class="battle-stat-dice">' + aRallyDice.join(" + ") + "</div></div></div></div>";
+        var allyGiftSlugsForAtk = {};
+        addAllyGiftSlugs(allySp);
+        addAllyGiftSlugs(allyCa);
+        var allyAccessible = { "unarmed": true };
+        GIFT_ATTACK_CATS.forEach(function(cat) {
+          if (allyGiftSlugsForAtk[cat])
+            allyAccessible[cat] = true;
+        });
+        var allyTraitMap = { "Body": aBodyDie, "Speed": aSpeedDie, "Mind": aMindDie, "Will": aWillDie };
+        var allyAttackList = allAttacks.filter(function(a) {
+          return allyAccessible[a.category];
+        });
+        if (allyAttackList.length) {
+          html += '<div class="summary-section summary-skills-section" style="margin-bottom:1.25rem;">';
+          html += '<div class="summary-section-title" style="font-size:0.72rem;">Attacks</div>';
+          html += '<table class="skills-table" style="font-size:0.82rem;"><thead><tr><th class="skill-name-col">Attack</th><th style="width:5rem;text-align:left;padding-left:0.4rem;">Range</th><th style="text-align:left;padding-left:0.4rem;">Dice Pool</th><th style="text-align:left;padding-left:0.4rem;">Effect</th></tr></thead><tbody>';
+          var aLastCat = "";
+          allyAttackList.forEach(function(a) {
+            if (a.category !== aLastCat) {
+              aLastCat = a.category;
+              html += '<tr><td colspan="4" style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--uj-amber-light);padding:0.55rem 0.4rem 0.2rem;border-top:1px solid var(--uj-border-cool);">' + esc(aLastCat.charAt(0).toUpperCase() + aLastCat.slice(1).replace(/-/g, " ")) + "</td></tr>";
+            }
+            var aPool = parseAttackPool(a.attack_dice, allyTraitMap, allySkillFn);
+            html += '<tr class="skill-row-active"><td class="skill-name-col" style="font-weight:500;">' + esc(a.name) + '</td><td style="font-size:0.78rem;color:var(--uj-text-dim);padding-left:0.4rem;">' + esc(a.attack_range) + '</td><td style="padding-left:0.4rem;">' + (aPool.length ? '<span style="color:var(--uj-teal);font-weight:600;">' + aPool.join(" + ") + "</span>" : '<span class="skill-die-empty">\u2014</span>') + '</td><td style="font-size:0.78rem;color:var(--uj-text-dim);padding-left:0.4rem;">' + esc(a.effect) + "</td></tr>";
+          });
+          html += "</tbody></table></div>";
+        }
         html += '<div class="summary-section summary-skills-section" style="margin-bottom:1.25rem;"><div class="summary-section-title" style="font-size:0.72rem;">Skills</div><table class="skills-table"><thead><tr><th class="skill-name-col">Skill</th><th class="skill-die-col">Species</th><th class="skill-die-col">Career</th><th class="skill-total-col">Pool</th></tr></thead><tbody>';
         CORE_SKILLS.forEach(function(skillName) {
           var spDie2 = allySp && allyGrantsSkill(allySp, skillName) ? aSpDie : "";

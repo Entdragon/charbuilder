@@ -1229,7 +1229,9 @@ function uj_get_all_full(): void {
         $ca['gifts']  = $caGifts[$id]  ?? [];
     }
 
-    cg_json(['success' => true, 'data' => compact('species','types','careers','skills','gifts','soaks')]);
+    $attacks = cg_query("SELECT id, name, slug, category, attack_range, counter_range, attack_dice, effect FROM `{$p}uj_attacks` WHERE published=1 ORDER BY category ASC, name ASC");
+
+    cg_json(['success' => true, 'data' => compact('species','types','careers','skills','gifts','soaks','attacks')]);
 }
 
 // ── Skills data ───────────────────────────────────────────────────────────────
