@@ -8,11 +8,13 @@
   <div style="background:#1a1714;border:1px solid rgba(201,168,76,0.3);border-radius:10px;padding:2rem;width:100%;max-width:380px;box-shadow:0 8px 40px rgba(0,0,0,0.7);">
     <h3 style="font-family:'Cinzel',Georgia,serif;color:#e5c97a;margin:0 0 1.25rem;font-size:1rem;letter-spacing:0.06em;text-transform:uppercase;">Change Password</h3>
     <div style="display:flex;flex-direction:column;gap:0.75rem;">
-      <input type="password" id="ic-cpw-current" placeholder="Current password"
+      <input type="text" autocomplete="username" aria-hidden="true" tabindex="-1"
+        style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;">
+      <input type="password" id="ic-cpw-current" placeholder="Current password" autocomplete="current-password"
         style="width:100%;background:#242019;border:1px solid rgba(154,138,106,0.3);border-radius:5px;color:#e8dcc4;font-family:'Crimson Pro',Georgia,serif;font-size:1rem;padding:0.5rem 0.75rem;outline:none;box-sizing:border-box;">
-      <input type="password" id="ic-cpw-new" placeholder="New password (min 8 chars)"
+      <input type="password" id="ic-cpw-new" placeholder="New password (min 8 chars)" autocomplete="new-password"
         style="width:100%;background:#242019;border:1px solid rgba(154,138,106,0.3);border-radius:5px;color:#e8dcc4;font-family:'Crimson Pro',Georgia,serif;font-size:1rem;padding:0.5rem 0.75rem;outline:none;box-sizing:border-box;">
-      <input type="password" id="ic-cpw-confirm" placeholder="Confirm new password"
+      <input type="password" id="ic-cpw-confirm" placeholder="Confirm new password" autocomplete="new-password"
         style="width:100%;background:#242019;border:1px solid rgba(154,138,106,0.3);border-radius:5px;color:#e8dcc4;font-family:'Crimson Pro',Georgia,serif;font-size:1rem;padding:0.5rem 0.75rem;outline:none;box-sizing:border-box;">
       <div id="ic-cpw-error" style="color:#d9534f;font-size:0.82rem;min-height:1.2em;"></div>
       <div style="display:flex;gap:0.75rem;justify-content:flex-end;margin-top:0.25rem;">
