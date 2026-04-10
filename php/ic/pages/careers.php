@@ -107,9 +107,13 @@ $careers = cg_query("SELECT * FROM `{$p}customtables_table_careers` $where ORDER
     });
     if (counter) counter.textContent = visible;
   }
-  input.addEventListener('input', doFilter);
+  let _typed = false;
+  input.addEventListener('input', function() { _typed = true; doFilter(); });
   window.addEventListener('pagehide', function() { input.value = ''; });
-  window.addEventListener('pageshow', function() { input.value = ''; doFilter(); });
+  window.addEventListener('pageshow', function() { _typed = false; input.value = ''; doFilter(); });
+  [100, 350, 750].forEach(function(ms) {
+    setTimeout(function() { if (!_typed && input.value) { input.value = ''; doFilter(); } }, ms);
+  });
 }());
 </script>
 

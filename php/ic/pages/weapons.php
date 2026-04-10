@@ -106,9 +106,13 @@ $weapons = cg_query("SELECT * FROM `{$p}customtables_table_weapons` $where ORDER
     });
     if (c) c.textContent = n;
   }
-  s.addEventListener('input', doFilter);
+  let _typed = false;
+  s.addEventListener('input', function() { _typed = true; doFilter(); });
   window.addEventListener('pagehide', function() { s.value = ''; });
-  window.addEventListener('pageshow', function() { s.value = ''; doFilter(); });
+  window.addEventListener('pageshow', function() { _typed = false; s.value = ''; doFilter(); });
+  [100, 350, 750].forEach(function(ms) {
+    setTimeout(function() { if (!_typed && s.value) { s.value = ''; doFilter(); } }, ms);
+  });
 }());
 </script>
 

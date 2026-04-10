@@ -138,10 +138,14 @@ foreach ($ccRows as $r) { $catCounts[$r['ct_category']] = (int)$r['n']; }
     if (counter) counter.textContent = n;
   }
 
-  search.addEventListener('input', applyFilter);
+  let _typed = false;
+  search.addEventListener('input', function() { _typed = true; applyFilter(); });
   select.addEventListener('change', applyFilter);
   window.addEventListener('pagehide', function() { search.value = ''; if (select) select.value = ''; });
-  window.addEventListener('pageshow', function() { search.value = ''; if (select) select.value = ''; applyFilter(); });
+  window.addEventListener('pageshow', function() { _typed = false; search.value = ''; if (select) select.value = ''; applyFilter(); });
+  [100, 350, 750].forEach(function(ms) {
+    setTimeout(function() { if (!_typed && search.value) { search.value = ''; if (select) select.value = ''; applyFilter(); } }, ms);
+  });
 }());
 </script>
 
