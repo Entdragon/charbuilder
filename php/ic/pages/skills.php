@@ -89,6 +89,7 @@ function getSkillFavs(array $row): array {
     });
   }
   input.addEventListener('input', doFilter);
+  window.addEventListener('pagehide', function() { input.value = ''; });
   window.addEventListener('pageshow', doFilter);
 }());
 </script>

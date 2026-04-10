@@ -108,6 +108,7 @@ $careers = cg_query("SELECT * FROM `{$p}customtables_table_careers` $where ORDER
     if (counter) counter.textContent = visible;
   }
   input.addEventListener('input', doFilter);
+  window.addEventListener('pagehide', function() { input.value = ''; });
   window.addEventListener('pageshow', doFilter);
 }());
 </script>

@@ -198,6 +198,7 @@ function ic_species_filter_url(?string $diet = '__keep__', ?string $habitat = '_
     if (counter) counter.textContent = visible;
   }
   input.addEventListener('input', doFilter);
+  window.addEventListener('pagehide', function() { input.value = ''; });
   window.addEventListener('pageshow', doFilter);
 }());
 </script>
