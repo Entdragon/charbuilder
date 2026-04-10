@@ -82,12 +82,14 @@ function getSkillFavs(array $row): array {
 (function () {
   const input = document.getElementById('ic-live-search');
   if (!input) return;
-  input.addEventListener('input', function () {
-    const q = this.value.trim().toLowerCase();
+  function doFilter() {
+    const q = input.value.trim().toLowerCase();
     document.querySelectorAll('.skill-row').forEach(el => {
       el.classList.toggle('hidden', !!q && !el.dataset.name.includes(q) && !el.textContent.toLowerCase().includes(q));
     });
-  });
+  }
+  input.addEventListener('input', doFilter);
+  window.addEventListener('pageshow', doFilter);
 }());
 </script>
 

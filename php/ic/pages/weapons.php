@@ -95,8 +95,8 @@ $weapons = cg_query("SELECT * FROM `{$p}customtables_table_weapons` $where ORDER
   const s = document.getElementById('w-search');
   const c = document.getElementById('visible-count');
   if (!s) return;
-  s.addEventListener('input', function () {
-    const q = this.value.trim().toLowerCase();
+  function doFilter() {
+    const q = s.value.trim().toLowerCase();
     document.querySelectorAll('.w-cat').forEach(h => h.style.display = '');
     let n = 0;
     document.querySelectorAll('.w-row').forEach(row => {
@@ -105,7 +105,9 @@ $weapons = cg_query("SELECT * FROM `{$p}customtables_table_weapons` $where ORDER
       if (show) n++;
     });
     if (c) c.textContent = n;
-  });
+  }
+  s.addEventListener('input', doFilter);
+  window.addEventListener('pageshow', doFilter);
 }());
 </script>
 

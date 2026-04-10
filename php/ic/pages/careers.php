@@ -97,8 +97,8 @@ $careers = cg_query("SELECT * FROM `{$p}customtables_table_careers` $where ORDER
   const input = document.getElementById('ic-live-search');
   const counter = document.getElementById('visible-count');
   if (!input) return;
-  input.addEventListener('input', function () {
-    const q = this.value.trim().toLowerCase();
+  function doFilter() {
+    const q = input.value.trim().toLowerCase();
     let visible = 0;
     document.querySelectorAll('.card').forEach(el => {
       const match = !q || (el.dataset.name || el.textContent).toLowerCase().includes(q);
@@ -106,7 +106,9 @@ $careers = cg_query("SELECT * FROM `{$p}customtables_table_careers` $where ORDER
       if (match) visible++;
     });
     if (counter) counter.textContent = visible;
-  });
+  }
+  input.addEventListener('input', doFilter);
+  window.addEventListener('pageshow', doFilter);
 }());
 </script>
 
