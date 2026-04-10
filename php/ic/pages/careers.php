@@ -109,7 +109,7 @@ $careers = cg_query("SELECT * FROM `{$p}customtables_table_careers` $where ORDER
   }
   input.addEventListener('input', doFilter);
   window.addEventListener('pagehide', function() { input.value = ''; });
-  window.addEventListener('pageshow', doFilter);
+  window.addEventListener('pageshow', function() { input.value = ''; doFilter(); });
 }());
 </script>
 

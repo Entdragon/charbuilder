@@ -141,7 +141,7 @@ foreach ($ccRows as $r) { $catCounts[$r['ct_category']] = (int)$r['n']; }
   search.addEventListener('input', applyFilter);
   select.addEventListener('change', applyFilter);
   window.addEventListener('pagehide', function() { search.value = ''; if (select) select.value = ''; });
-  window.addEventListener('pageshow', applyFilter);
+  window.addEventListener('pageshow', function() { search.value = ''; if (select) select.value = ''; applyFilter(); });
 }());
 </script>
 

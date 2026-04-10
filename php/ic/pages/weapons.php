@@ -108,7 +108,7 @@ $weapons = cg_query("SELECT * FROM `{$p}customtables_table_weapons` $where ORDER
   }
   s.addEventListener('input', doFilter);
   window.addEventListener('pagehide', function() { s.value = ''; });
-  window.addEventListener('pageshow', doFilter);
+  window.addEventListener('pageshow', function() { s.value = ''; doFilter(); });
 }());
 </script>
 

@@ -199,7 +199,7 @@ function ic_species_filter_url(?string $diet = '__keep__', ?string $habitat = '_
   }
   input.addEventListener('input', doFilter);
   window.addEventListener('pagehide', function() { input.value = ''; });
-  window.addEventListener('pageshow', doFilter);
+  window.addEventListener('pageshow', function() { input.value = ''; doFilter(); });
 }());
 </script>
 

@@ -179,7 +179,7 @@ $total = count($gifts);
 
   search.addEventListener('input', filter);
   window.addEventListener('pagehide', function() { search.value = ''; if (select) select.value = ''; });
-  window.addEventListener('pageshow', filter);
+  window.addEventListener('pageshow', function() { search.value = ''; if (select) select.value = ''; filter(); });
   select.addEventListener('change', function () {
     const cls = this.value ? '?class=' + this.value : '';
     // Update URL without reload for class filter
