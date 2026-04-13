@@ -626,6 +626,15 @@ $na = fn(string $k): string => ($activeNav ?? '') === $k ? ' active' : '';
       color: #fff;
     }
 
+    .gift-block-body {
+      color:       var(--ic-text-muted);
+      font-size:   0.97rem;
+      line-height: 1.7;
+      margin:      -0.25rem 0 0.75rem 0;
+      padding:     0.5rem 0.75rem 0.5rem 1rem;
+      border-left: 3px solid rgba(120,120,140,0.2);
+    }
+
     .gift-section { color:var(--ic-text-muted); margin:0.6rem 0; font-size:1rem; line-height:1.65; }
     .gift-flavour { color:var(--ic-text-dim); margin:0.6rem 0; font-size:0.95rem; line-height:1.6; font-style:italic; }
 

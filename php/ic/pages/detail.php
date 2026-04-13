@@ -33,16 +33,26 @@ function ic_parse_gift_markup(string $raw): string {
             case 'PASSIVE':
                 $namedBlock('gift-passive', 'Passive', $body);
                 break;
-            case 'STUNT':
+            case 'STUNT': {
+                $nl    = strpos($body, "\n");
+                $title = $nl !== false ? trim(substr($body, 0, $nl)) : trim($body, '"');
+                $rest  = $nl !== false ? trim(substr($body, $nl + 1)) : '';
                 $html .= '<div class="gift-block gift-stunt"><span class="gift-block-label">Stunt</span>';
-                if ($body) $html .= ' <em>' . htmlspecialchars(trim($body, '"')) . '</em>';
+                if ($title) $html .= ' <em>' . htmlspecialchars($title) . '</em>';
                 $html .= '</div>';
+                if ($rest) $html .= '<div class="gift-block-body">' . nl2br(htmlspecialchars($rest)) . '</div>';
                 break;
-            case 'ACTION':
+            }
+            case 'ACTION': {
+                $nl    = strpos($body, "\n");
+                $title = $nl !== false ? trim(substr($body, 0, $nl)) : trim($body, '"');
+                $rest  = $nl !== false ? trim(substr($body, $nl + 1)) : '';
                 $html .= '<div class="gift-block gift-action"><span class="gift-block-label">Action</span>';
-                if ($body) $html .= ' <em>' . htmlspecialchars(trim($body, '"')) . '</em>';
+                if ($title) $html .= ' <em>' . htmlspecialchars($title) . '</em>';
                 $html .= '</div>';
+                if ($rest) $html .= '<div class="gift-block-body">' . nl2br(htmlspecialchars($rest)) . '</div>';
                 break;
+            }
             case 'REACTION':
                 $html .= '<div class="gift-block gift-reaction"><span class="gift-block-label">Reaction</span>';
                 if ($body) $html .= ' <span class="gift-block-text">' . nl2br(htmlspecialchars($body)) . '</span>';
