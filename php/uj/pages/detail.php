@@ -396,13 +396,13 @@ $listLabel = [
 
     <div class="sidebar-card">
       <h3 class="sidebar-card-title">Source</h3>
-      <?php $srcBook = !empty($record['source_book']) ? $record['source_book'] : 'Urban Jungle'; ?>
+      <?php
+        $srcBook = !empty($record['source_book']) ? $record['source_book'] : 'Urban Jungle';
+        $srcSlug = strtolower(preg_replace('/[^a-z0-9]+/i', '-', trim($srcBook)));
+        $srcSlug = trim($srcSlug, '-');
+      ?>
       <p style="font-size:0.9rem; margin:0;">
-        <?php if ($srcBook === 'Urban Jungle'): ?>
-          <a href="/uj/books/urban-jungle">Urban Jungle</a>
-        <?php else: ?>
-          <?= htmlspecialchars($srcBook) ?>
-        <?php endif; ?>
+        <a href="/uj/books/<?= htmlspecialchars($srcSlug) ?>"><?= htmlspecialchars($srcBook) ?></a>
       </p>
       <?php if (!empty($record['page_number'])): ?>
         <p style="font-size:0.8rem; color:var(--uj-text-dim); margin:0.25rem 0 0; text-transform:uppercase; letter-spacing:0.05em;">Page&nbsp;<?= (int)$record['page_number'] ?></p>
@@ -463,13 +463,13 @@ $listLabel = [
 
     <div class="sidebar-card">
       <h3 class="sidebar-card-title">Source</h3>
-      <?php $srcBook = !empty($record['source_book']) ? $record['source_book'] : 'Urban Jungle'; ?>
+      <?php
+        $srcBook = !empty($record['source_book']) ? $record['source_book'] : 'Urban Jungle';
+        $srcSlug = strtolower(preg_replace('/[^a-z0-9]+/i', '-', trim($srcBook)));
+        $srcSlug = trim($srcSlug, '-');
+      ?>
       <p style="font-size:0.9rem; margin:0;">
-        <?php if ($srcBook === 'Urban Jungle'): ?>
-          <a href="/uj/books/urban-jungle">Urban Jungle</a>
-        <?php else: ?>
-          <?= htmlspecialchars($srcBook) ?>
-        <?php endif; ?>
+        <a href="/uj/books/<?= htmlspecialchars($srcSlug) ?>"><?= htmlspecialchars($srcBook) ?></a>
       </p>
       <?php if (!empty($record['page_number'])): ?>
         <p style="font-size:0.8rem; color:var(--uj-text-dim); margin:0.25rem 0 0; text-transform:uppercase; letter-spacing:0.05em;">Page&nbsp;<?= (int)$record['page_number'] ?></p>
@@ -529,13 +529,13 @@ $listLabel = [
 
     <div class="sidebar-card">
       <h3 class="sidebar-card-title">Source</h3>
-      <?php $srcBook = !empty($record['source_book']) ? $record['source_book'] : 'Urban Jungle'; ?>
+      <?php
+        $srcBook = !empty($record['source_book']) ? $record['source_book'] : 'Urban Jungle';
+        $srcSlug = strtolower(preg_replace('/[^a-z0-9]+/i', '-', trim($srcBook)));
+        $srcSlug = trim($srcSlug, '-');
+      ?>
       <p style="font-size:0.9rem; margin:0;">
-        <?php if ($srcBook === 'Urban Jungle'): ?>
-          <a href="/uj/books/urban-jungle">Urban Jungle</a>
-        <?php else: ?>
-          <?= htmlspecialchars($srcBook) ?>
-        <?php endif; ?>
+        <a href="/uj/books/<?= htmlspecialchars($srcSlug) ?>"><?= htmlspecialchars($srcBook) ?></a>
       </p>
       <?php if (!empty($record['page_number'])): ?>
         <p style="font-size:0.8rem; color:var(--uj-text-dim); margin:0.25rem 0 0; text-transform:uppercase; letter-spacing:0.05em;">Page&nbsp;<?= (int)$record['page_number'] ?></p>
@@ -564,10 +564,13 @@ $listLabel = [
 <p style="color:var(--uj-error); font-size:0.9rem;"><strong>Side effect:</strong> <?= htmlspecialchars($record['side_effect']) ?></p>
 <?php endif; ?>
 <?php if (!empty($record['page_number']) || !empty($record['source_book'])): ?>
-<?php $srcBook = !empty($record['source_book']) ? $record['source_book'] : 'Urban Jungle'; ?>
+<?php
+  $srcBook = !empty($record['source_book']) ? $record['source_book'] : 'Urban Jungle';
+  $srcSlug = strtolower(preg_replace('/[^a-z0-9]+/i', '-', trim($srcBook)));
+  $srcSlug = trim($srcSlug, '-');
+?>
 <p style="color:var(--uj-text-dim); font-size:0.85rem; margin-top:1rem;">
-  <?php if ($srcBook === 'Urban Jungle'): ?>
-    <a href="/uj/books/urban-jungle">Urban Jungle</a><?php else: ?><?= htmlspecialchars($srcBook) ?><?php endif; ?><?php if (!empty($record['page_number'])): ?> &middot; Page&nbsp;<?= (int)$record['page_number'] ?><?php endif; ?>
+  <a href="/uj/books/<?= htmlspecialchars($srcSlug) ?>"><?= htmlspecialchars($srcBook) ?></a><?php if (!empty($record['page_number'])): ?> &middot; Page&nbsp;<?= (int)$record['page_number'] ?><?php endif; ?>
 </p>
 <?php endif; ?>
 
@@ -592,10 +595,13 @@ $listLabel = [
 <p style="color:var(--uj-text-dim); font-size:0.9rem; font-style:italic;"><?= htmlspecialchars($record['notes']) ?></p>
 <?php endif; ?>
 <?php if (!empty($record['page_number']) || !empty($record['source_book'])): ?>
-<?php $srcBook = !empty($record['source_book']) ? $record['source_book'] : 'Urban Jungle'; ?>
+<?php
+  $srcBook = !empty($record['source_book']) ? $record['source_book'] : 'Urban Jungle';
+  $srcSlug = strtolower(preg_replace('/[^a-z0-9]+/i', '-', trim($srcBook)));
+  $srcSlug = trim($srcSlug, '-');
+?>
 <p style="color:var(--uj-text-dim); font-size:0.85rem; margin-top:1rem;">
-  <?php if ($srcBook === 'Urban Jungle'): ?>
-    <a href="/uj/books/urban-jungle">Urban Jungle</a><?php else: ?><?= htmlspecialchars($srcBook) ?><?php endif; ?><?php if (!empty($record['page_number'])): ?> &middot; Page&nbsp;<?= (int)$record['page_number'] ?><?php endif; ?>
+  <a href="/uj/books/<?= htmlspecialchars($srcSlug) ?>"><?= htmlspecialchars($srcBook) ?></a><?php if (!empty($record['page_number'])): ?> &middot; Page&nbsp;<?= (int)$record['page_number'] ?><?php endif; ?>
 </p>
 <?php endif; ?>
 
@@ -627,10 +633,13 @@ $cc  = $classColors[$cls] ?? 'var(--uj-text-muted)';
 <p class="detail-desc"><?= nl2br(htmlspecialchars($record['description'])) ?></p>
 <?php endif; ?>
 <?php if (!empty($record['page_number']) || !empty($record['source_book'])): ?>
-<?php $srcBook = !empty($record['source_book']) ? $record['source_book'] : 'Urban Jungle'; ?>
+<?php
+  $srcBook = !empty($record['source_book']) ? $record['source_book'] : 'Urban Jungle';
+  $srcSlug = strtolower(preg_replace('/[^a-z0-9]+/i', '-', trim($srcBook)));
+  $srcSlug = trim($srcSlug, '-');
+?>
 <p style="color:var(--uj-text-dim); font-size:0.85rem; margin-top:1rem;">
-  <?php if ($srcBook === 'Urban Jungle'): ?>
-    <a href="/uj/books/urban-jungle">Urban Jungle</a><?php else: ?><?= htmlspecialchars($srcBook) ?><?php endif; ?><?php if (!empty($record['page_number'])): ?> &middot; Page&nbsp;<?= (int)$record['page_number'] ?><?php endif; ?>
+  <a href="/uj/books/<?= htmlspecialchars($srcSlug) ?>"><?= htmlspecialchars($srcBook) ?></a><?php if (!empty($record['page_number'])): ?> &middot; Page&nbsp;<?= (int)$record['page_number'] ?><?php endif; ?>
 </p>
 <?php endif; ?>
 <?php endif; ?>
