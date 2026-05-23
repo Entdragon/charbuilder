@@ -26,12 +26,16 @@ if ($entity === 'books') {
     // The core book (urban-jungle) also owns all legacy rows where source_book is empty.
     $allSpecies = $allCareers = $allGifts = $allSkills = [];
     $speciesCount = $careerCount = $giftCount = $skillCount = 0;
+    // Match by either exact book name or by slugifying the source_book value
+    // (so "Occult Horror" tag matches the "occult-horror" book even when the
+    // book's full name is longer, e.g. "Occult Horror: Supernatural Options…").
+    $slugExpr = "LOWER(REPLACE(REPLACE(REPLACE(REPLACE(source_book, ' ', '-'), ':', ''), ',', ''), '.', ''))";
     if ($book['slug'] === 'urban-jungle') {
-        $whereClause = "published=1 AND (source_book = '' OR source_book = ?)";
+        $whereClause = "published=1 AND (source_book = '' OR source_book = ? OR {$slugExpr} = ?)";
     } else {
-        $whereClause = "published=1 AND source_book = ?";
+        $whereClause = "published=1 AND (source_book = ? OR {$slugExpr} = ?)";
     }
-    $params = [$book['name']];
+    $params = [$book['name'], $book['slug']];
     try {
         $allSpecies   = cg_query("SELECT name, slug FROM `{$p}uj_species` WHERE {$whereClause} ORDER BY name", $params);
         $allCareers   = cg_query("SELECT name, slug FROM `{$p}uj_careers` WHERE {$whereClause} ORDER BY name", $params);
