@@ -50,7 +50,7 @@ function uj_create_tables_internal(): array {
             `gift_1`      VARCHAR(100) NOT NULL DEFAULT '',
             `gift_2`      VARCHAR(100) NOT NULL DEFAULT '',
             `page_number` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-            `source_book`  VARCHAR(60)  NOT NULL DEFAULT '','
+            `source_book`  VARCHAR(60) NOT NULL DEFAULT '',
             `published`   TINYINT(1)   NOT NULL DEFAULT 1,
             `created_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `updated_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -72,7 +72,7 @@ function uj_create_tables_internal(): array {
             `soak_2`      VARCHAR(100) NOT NULL DEFAULT '',
             `gear`        TEXT,
             `page_number` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-            `source_book`  VARCHAR(60)  NOT NULL DEFAULT '','
+            `source_book`  VARCHAR(60) NOT NULL DEFAULT '',
             `published`   TINYINT(1)   NOT NULL DEFAULT 1,
             `created_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `updated_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -93,7 +93,7 @@ function uj_create_tables_internal(): array {
             `gift_2`      VARCHAR(100) NOT NULL DEFAULT '',
             `gear`        TEXT,
             `page_number` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-            `source_book`  VARCHAR(60)  NOT NULL DEFAULT '','
+            `source_book`  VARCHAR(60) NOT NULL DEFAULT '',
             `published`   TINYINT(1)   NOT NULL DEFAULT 1,
             `created_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `updated_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -113,7 +113,7 @@ function uj_create_tables_internal(): array {
             `effect`        VARCHAR(120) NOT NULL DEFAULT '',
             `notes`         VARCHAR(200) NOT NULL DEFAULT '',
             `page_number`   SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-            `source_book`  VARCHAR(60)  NOT NULL DEFAULT '','
+            `source_book`  VARCHAR(60) NOT NULL DEFAULT '',
             `published`     TINYINT(1)   NOT NULL DEFAULT 1,
             `created_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `updated_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -130,7 +130,7 @@ function uj_create_tables_internal(): array {
             `price_early` VARCHAR(30)  NOT NULL DEFAULT '',
             `price_late`  VARCHAR(30)  NOT NULL DEFAULT '',
             `page_number` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-            `source_book`  VARCHAR(60)  NOT NULL DEFAULT '','
+            `source_book`  VARCHAR(60) NOT NULL DEFAULT '',
             `published`   TINYINT(1)   NOT NULL DEFAULT 1,
             `created_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `updated_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -149,7 +149,7 @@ function uj_create_tables_internal(): array {
             `recharge`      VARCHAR(60)  NOT NULL DEFAULT '',
             `requires_text` TEXT,
             `page_number`   SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-            `source_book`  VARCHAR(60)  NOT NULL DEFAULT '','
+            `source_book`  VARCHAR(60) NOT NULL DEFAULT '',
             `published`     TINYINT(1)   NOT NULL DEFAULT 1,
             `created_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `updated_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -168,7 +168,7 @@ function uj_create_tables_internal(): array {
             `description`    TEXT,
             `soak_type`      ENUM('basic','advanced') NOT NULL DEFAULT 'basic',
             `page_number`    SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-            `source_book`  VARCHAR(60)  NOT NULL DEFAULT '','
+            `source_book`  VARCHAR(60) NOT NULL DEFAULT '',
             `published`      TINYINT(1)   NOT NULL DEFAULT 1,
             `created_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `updated_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -186,7 +186,7 @@ function uj_create_tables_internal(): array {
             `sample_favorites` TEXT,
             `gift_notes`       TEXT,
             `page_number`      SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-            `source_book`  VARCHAR(60)  NOT NULL DEFAULT '','
+            `source_book`  VARCHAR(60) NOT NULL DEFAULT '',
             `published`        TINYINT(1)   NOT NULL DEFAULT 1,
             `created_at`       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `updated_at`       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
