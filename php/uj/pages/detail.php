@@ -22,18 +22,26 @@ if ($entity === 'books') {
         exit;
     }
 
-    // For the core book, load all content; supplements show blurb only
-    $allSpecies = $allCareers = $allGifts = [];
+    // Load content tagged to this book via the source_book field.
+    // The core book (urban-jungle) also owns all legacy rows where source_book is empty.
+    $allSpecies = $allCareers = $allGifts = $allSkills = [];
     $speciesCount = $careerCount = $giftCount = $skillCount = 0;
     if ($book['slug'] === 'urban-jungle') {
-        $speciesCount = (int)(cg_query_one("SELECT COUNT(*) n FROM `{$p}uj_species` WHERE published=1")['n'] ?? 0);
-        $careerCount  = (int)(cg_query_one("SELECT COUNT(*) n FROM `{$p}uj_careers` WHERE published=1")['n'] ?? 0);
-        $giftCount    = (int)(cg_query_one("SELECT COUNT(*) n FROM `{$p}uj_gifts`   WHERE published=1")['n'] ?? 0);
-        $skillCount   = (int)(cg_query_one("SELECT COUNT(*) n FROM `{$p}uj_skills`  WHERE published=1")['n'] ?? 0);
-        $allSpecies   = cg_query("SELECT name, slug FROM `{$p}uj_species` WHERE published=1 ORDER BY name");
-        $allCareers   = cg_query("SELECT name, slug FROM `{$p}uj_careers` WHERE published=1 ORDER BY name");
-        $allGifts     = cg_query("SELECT name, slug FROM `{$p}uj_gifts`   WHERE published=1 ORDER BY name");
+        $whereClause = "published=1 AND (source_book = '' OR source_book = ?)";
+    } else {
+        $whereClause = "published=1 AND source_book = ?";
     }
+    $params = [$book['name']];
+    try {
+        $allSpecies   = cg_query("SELECT name, slug FROM `{$p}uj_species` WHERE {$whereClause} ORDER BY name", $params);
+        $allCareers   = cg_query("SELECT name, slug FROM `{$p}uj_careers` WHERE {$whereClause} ORDER BY name", $params);
+        $allGifts     = cg_query("SELECT name, slug FROM `{$p}uj_gifts`   WHERE {$whereClause} ORDER BY name", $params);
+        $allSkills    = cg_query("SELECT name, slug FROM `{$p}uj_skills`  WHERE {$whereClause} ORDER BY name", $params);
+        $speciesCount = count($allSpecies);
+        $careerCount  = count($allCareers);
+        $giftCount    = count($allGifts);
+        $skillCount   = count($allSkills);
+    } catch (Throwable) { /* source_book column may not exist yet */ }
 
     $pageTitle = $book['name'];
     $activeNav = 'books';
@@ -86,6 +94,17 @@ if ($entity === 'books') {
           <div class="card-tags">
             <?php foreach ($allGifts as $g): ?>
               <a href="/uj/gifts/<?= htmlspecialchars($g['slug']) ?>" class="tag tag-basic"><?= htmlspecialchars($g['name']) ?></a>
+            <?php endforeach; ?>
+          </div>
+        </div>
+        <?php endif; ?>
+
+        <?php if ($allSkills): ?>
+        <div class="detail-section">
+          <p class="detail-section-title">Skills (<?= $skillCount ?>)</p>
+          <div class="card-tags">
+            <?php foreach ($allSkills as $s): ?>
+              <a href="/uj/skills/<?= htmlspecialchars($s['slug']) ?>" class="tag tag-basic"><?= htmlspecialchars($s['name']) ?></a>
             <?php endforeach; ?>
           </div>
         </div>
