@@ -841,6 +841,118 @@ function uj_install_careers(): int {
          'Academics', 'Observation', 'Questioning',
          'Gossip', 'Research',
          "Fancy Outfit.\nPortable typewriter."],
+
+        // ── Occult Horror — New Magical Careers (pp. 216-219) ────────────────
+        ['Anthroposophist', 'anthroposophist',
+         '"There is a morphogenic, super-sensory consciousness that goes beyond what can normally be perceived. To learn what this force is, is to tap into an unlimited reservoir of potential energy. Just as science has explained fire, electricity, and atomics, one day we shall master this vital force within us all."',
+         'Academics', 'Endurance', 'Presence',
+         'Personal Power', 'Vitalism',
+         "Fancy Outfit.\nJar of vitamins."],
+        ['Clairvoyant', 'clairvoyant',
+         '"I can\'t really explain how I know what I know. How do you explain music to the deaf, or eyesight to the blind? I have a gift and I endeavor to use it for the good of all."',
+         'Academics', 'Negotiation', 'Observation',
+         'Extra-Sensory Perception', 'Personal Power',
+         "Fancy Outfit.\nA deck of Zener cards."],
+        ['Ceremonial', 'ceremonial',
+         '"Knowledge is belief, and belief is power. In this, the dawn of the 20th century, the triumph of modernity over ignorance, we must all join together to pierce the veil from this world into the next. Your fears and doubts are understandable, but if you would just take my hand, I will show you a light fantastic."',
+         'Academics', 'Negotiation', 'Presence',
+         'Personal Power', 'Ostentatious Casting',
+         "Fancy Outfit.\nChalice and wand."],
+        ['Conjuror', 'conjuror',
+         '"The chief difficulty of practicing is that the rituals you find are so imprecise. Mistranslated words, improper measurements, and all kinds of meaningless gestures added later by authors with their own agendas. Be composed, be precise, be true, and all will come to you."',
+         'Academics', 'Craft', 'Questioning',
+         'Meticulous Arcana 2d8', 'Personal Power',
+         "Fancy Outfit.\nPersonal talisman."],
+        ['Debunker', 'debunker',
+         '"This isn\'t just some stage show. These charlatans are taking advantage of people. It\'s not just about the money, they\'re hurting these people. They\'re giving them false hope, they\'re keeping them from getting the help they really need. And I can\'t allow that to go on."',
+         'Academics', 'Observation', 'Questioning',
+         'Disbelief Soak -2', 'Research',
+         "Handy Outfit.\nFlashlight.\nCamera with infrared film."],
+        ['Exorcist', 'exorcist',
+         '"There are dark forces abroad, spirits that can control the souls of men and women! And yes, even children! I know the rites that can force these spirits to depart and leave mortals in peace. But even so, it can be a struggle\u{2026}"',
+         'Academics', 'Endurance', 'Presence',
+         'Convocation Soak -2', 'Disbelief Soak -2',
+         "Fancy outfit.\nBible.\nRosary."],
+        ['Dabbler', 'dabbler',
+         '"I call on the power within to effect change without. I can see your secrets and open your locked doors without using any books or memorized incantations. I practice the oldest magic!"',
+         'Academics', 'Endurance', 'Presence',
+         'Personal Power', 'Petitioned Power',
+         "Fancy Outfit.\nBook of forgotten lore, with lots of notes scribbled in the margins."],
+        ['Fiend', 'fiend',
+         '"I have seen the worst that this world has to offer. No one ever showed me a lick of kindness, and any light of goodness within me was smothered long ago. I have been hurt. I will hurt others."',
+         'Endurance', 'Fighting', 'Presence',
+         'Guts', 'Monstrous Soak -2',
+         "Rough outfit.\nLarge sack."],
+        ['Dedicant', 'dedicant',
+         '"Do not think of the spirit world as another strange land to colonize, to dominate, to control. What you do in this life will come back to you. If you fight with monsters, you may become a monster yourself. To know peace is to know yourself. Do as you will, as long as you harm none."',
+         'Academics', 'Craft', 'Endurance',
+         'Personal Power', 'Rede Casting',
+         "Fancy Outfit.\nTalisman."],
+        ['Fortune Teller', 'fortune-teller',
+         '"I don\'t see the future. I can see flashes of what is destined to happen\u{2026} if you continue this path. What you do with this information is up to you, but I suggest you take my insight into account."',
+         'Academics', 'Negotiation', 'Observation',
+         'Extra-Sensory Perception', 'Personal Power',
+         "Fancy Outfit.\nA tool for divination (cards, crystal ball, tea leaves, bones, etc.)."],
+        ['Hypnotist', 'hypnotist',
+         '"All living bodies exert their own personal magnetic force. With training, discipline, and a proper regimen of diet and exercise, one can learn how to exert this force over others."',
+         'Academics', 'Deceit', 'Questioning',
+         'Mesmerism', 'Personal Power',
+         "Fancy Outfit.\nPocket watch."],
+        ['Medium', 'medium',
+         '"The wandering souls are all around us. I can talk to them, you know. Usually they rave and are full of sorrow, but sometimes, sometimes\u{2026} they know things no living mortal could know."',
+         'Academics', 'Negotiation', 'Questioning',
+         'Personal Power', 'Spiritualism',
+         "Fancy Outfit.\nBible.\nRosary."],
+        ['Jinx', 'jinx',
+         '"Do I believe in ghosts? Well, somebody\'s out to get me, and it sure is weird. I\'m not rightly sure what I\'ve done to justify the stress of this regard, but until I can learn to make peace with it, it\'s my cross to bear."',
+         'Craft', 'Endurance', 'Observation',
+         'Malign Soak -4', 'Wicked Soak 6d6',
+         "Handy Outfit.\nLucky charm."],
+        ['Mentalist', 'mentalist',
+         '"Someday in the future, we will all be able to communicate directly to each other\'s minds. There will be no barriers of language, of misunderstanding, of hate. Until that day comes, I must use my talents to help people come closer together."',
+         'Academics', 'Negotiation', 'Questioning',
+         'Personal Power', 'Telepathy',
+         "Fancy Outfit.\nHeadache powder."],
+        ['Magus', 'magus',
+         '"My soul is a pillar of fire unto heaven, indomitable and unbowed. I shall speak the words and I shall know the path of all life. Through the power of truth, I, though living, will conquer the universe."',
+         'Academics', 'Presence', 'Questioning',
+         'Personal Power', 'Reckoning Soak -2',
+         "Fancy Outfit.\nBook of forgotten lore, with lots of notes scribbled in the margins."],
+        ['Monster Hunter', 'monster-hunter',
+         '"I\'ve\u{2026} seen things\u{2026} you people wouldn\'t believe. Vampires! Werewolves! Demons made flesh! But you don\'t need to believe me, friend. I\'ll still hunt the dark places, keeping the world safe for skeptics like you."',
+         'Academics', 'Endurance', 'Fighting',
+         'Disbelief Soak -2', 'Guts',
+         "Rough Outfit.\nHoldout Shotgun.\nWooden stake.\nFour different religious symbols."],
+        ['Occultist', 'occultist',
+         '"It is all too easy to dismiss the writings of our ancestors as meaningless superstition. I swear to you that I have borne witness first-hand to phenomena so singular as to have no other explanation other than the existence of the para-normal."',
+         'Academics', 'Presence', 'Questioning',
+         'Petitioned Power', 'Research',
+         "Fancy Outfit.\nBook of forgotten lore, with lots of notes scribbled in the margins."],
+        ['Shaman', 'shaman',
+         '"You are meddling in affairs quite beyond your understanding. You who know nothing of the old ways, who think of the spirits as a story told to frighten children and to mock in your motion pictures. There is a world you know nothing about."',
+         'Academics', 'Endurance', 'Presence',
+         'Malign Soak -4', 'Petitioned Power',
+         "Rough Outfit.\nPersonal talisman."],
+        ['Parapsychologist', 'parapsychologist',
+         '"No, I haven\'t seen any real magic, yet. I\'m not even sure if it\'s out there. You run into crazy people, you run into fakers looking for a quick buck, and you run into desperate people who just want to believe. But you gotta investigate it all, if just to rule it out."',
+         'Academics', 'Craft', 'Observation',
+         'Diplomacy', 'Research',
+         "Handy Outfit.\nFlashlight.\nCamera with infrared film."],
+        ['Telekinetic', 'telekinetic',
+         '"When I was little, objects would fall off shelves, and one time a plate threw itself across the room. I used to talk about imaginary friends, but now I know that I can control these forces directly as an extension of myself, like invisible hands."',
+         'Academics', 'Observation', 'Presence',
+         'Personal Power', 'Psychokinesis',
+         "Fancy Outfit.\nThree pennies."],
+        ['Reincarnation', 'reincarnation',
+         '"I\'ve always had dreams of when I was a noble in a grand palace, where I performed the rituals that kept the old gods at peace, and our city thrived. I believe that in a past life, I was a powerful practitioner of magic, and that legacy has been passed on to me, in this life."',
+         'Academics', 'Craft', 'Questioning',
+         'Personal Power', 'Soul Casting',
+         "Fancy Outfit.\nDream journal."],
+        ['Witch', 'witch',
+         '"It\'s how to tell the difference between your own ideas and the ones that they\'re whispering in your ear, hoping to catch you in a moment of weakness when you\'re most likely to give in to dark temptation."',
+         'Academics', 'Endurance', 'Observation',
+         'Malign Soak -4', 'Personal Power',
+         "Fancy Outfit.\nPersonal talisman."],
     ];
 
     $count = 0;
@@ -857,6 +969,41 @@ function uj_install_careers(): int {
         );
         $count++;
     }
+
+    // ── Occult Horror source-book metadata ────────────────────────────────
+    $ohCareers = [
+        'anthroposophist'  => 216,
+        'clairvoyant'      => 216,
+        'ceremonial'       => 216,
+        'conjuror'         => 216,
+        'debunker'         => 217,
+        'exorcist'         => 217,
+        'dabbler'          => 217,
+        'fiend'            => 217,
+        'dedicant'         => 217,
+        'fortune-teller'   => 217,
+        'hypnotist'        => 218,
+        'medium'           => 218,
+        'jinx'             => 218,
+        'mentalist'        => 218,
+        'magus'            => 218,
+        'monster-hunter'   => 218,
+        'occultist'        => 219,
+        'shaman'           => 219,
+        'parapsychologist' => 219,
+        'telekinetic'      => 219,
+        'reincarnation'    => 219,
+        'witch'            => 219,
+    ];
+    foreach ($ohCareers as $slug => $page) {
+        try {
+            cg_exec(
+                "UPDATE `$t` SET source_book = ?, page_number = ? WHERE slug = ?",
+                ['Occult Horror', $page, $slug]
+            );
+        } catch (Throwable) { /* columns may not exist yet */ }
+    }
+
     return $count;
 }
 
@@ -1736,6 +1883,28 @@ function uj_install_gifts(): int {
          'bonus 2d8 when you declare a Retro casting',
          "The future is uncertain and random. The past has already happened, so studying the magic of learning about it is much easier. Before making a casting for ESP Magic, you may declare you will only be casting for effects with the \"Retro\" descriptor. You gain a 2d8 bonus to your casting roll, but you may only select effects with the \"Retro\" descriptor \u{2013} all other effects will fail.",
          'advanced', '', 'Requires: Extra-Sensory Perception'],
+
+        // Gifts that Build Casting Power (p. 213)
+        ['Masterful Casting', 'masterful-casting',
+         'make another casting roll',
+         "These gifts let you roll to build power more than once. You can stack these gifts' effects to roll a single casting roll multiple times, to cast spells of the highest orders. When building power, tap this gift to make another casting roll. This roll builds upon the previous casting roll. It's that simple to build power, when you know what you're doing. This gift recharges after you take a rest.",
+         'advanced', '1/rest', 'Requires: a gift of supernatural power'],
+        ['Ostentatious Casting', 'ostentatious-casting',
+         'become Dazed, make a big show, extra casting roll',
+         "After making a casting roll, but before choosing an effect, you may make a spectacle of yourself. Shout loud curses! Wave your arms! Your turn ends and you become Dazed. (You have a debuff that makes you blindsided by all attacks.) If someone takes notice of you, you may tap this gift and make another casting roll, building on your last one. Someone must take notice of your ostentatious display. If you're hiding, or if there's no one to see you, this ability doesn't work. (Yes, you can bring an ally or a hireling to follow you around, just to watch you be ostentatious.)",
+         'advanced', '1/scene', 'Requires: a gift of supernatural power'],
+        ['Rede Casting', 'rede-casting',
+         'make another casting roll',
+         "If it harms none, then do as thou wilt. By living a good life, you have reserves of power that you can call upon. When building power, tap this gift to make another casting roll. This roll builds upon the previous casting roll. If you use Rede Casting to cast a hostile spell, check for wickedness. (Hostile spells are not just attacks; to dominate another's will is to deny them their life. The evil that you do in this world will come back to you \u{2014} so any wickedness triggered by this effect should have something bad come back on you.) If you haven't engaged in any violence, this gift recharges after about five minutes (1/scene). If you have been hostile, then this gift recharges after you can go 24 hours without causing harm to anyone (1/peace). Consider buying the Noncombatant gift.",
+         'advanced', '1/special', 'Requires: a gift of supernatural power'],
+        ['Soul Casting', 'soul-casting',
+         'make another casting roll but suffer damage',
+         "A dangerous ability, you may attempt to plumb the depths of your soul to build power with your personal energy. However, you risk causing great harm to yourself in the process. When building power, tap this gift to make another casting roll. When you're done, you'll suffer damage equal to your power build. For example, if your final build roll is 5th-order, then you'll have to soak 5 points of damage. If this damage overkills you, the Game host and the other Players should suggest ways to describe your horrific and diabolical demise. Everyone who witnesses your demise will become Panicked, and they will suffer nightmares for years to come. If you survive, this gift recharges with a recover action. (And yes, other people may rally you to recharge it, too.)",
+         'advanced', '1/recover', 'Requires: a gift of supernatural power'],
+        ['Wicked Casting', 'wicked-casting',
+         'make another casting roll, now wicked',
+         "When building power, tap this gift to make another casting roll. This roll builds upon the previous casting roll. But your casting becomes wicked. (Wicked castings have bad things happen when three or more sixes are showing, on any of the rolls. See page 191.) If no wickedness happened from your casting roll, then this gift recharges in about five minutes (1/scene). If any wickedness did happen, then this gift won't recharge before the next chapter in the story (1/episode). (If any wickedness happens in your vicinity, but this gift was untapped, it stays untapped. It's only wickedness from the casting roll itself that leaves this tapped until the next episode.)",
+         'advanced', '1/special', 'Requires: a gift of supernatural power'],
     ];
 
     $count = 0;
@@ -1778,6 +1947,11 @@ function uj_install_gifts(): int {
         'oneiric-arcana'           => 212,
         'protection-arcana'        => 212,
         'retro-arcana'             => 212,
+        'masterful-casting'        => 213,
+        'ostentatious-casting'     => 213,
+        'rede-casting'             => 213,
+        'soul-casting'             => 213,
+        'wicked-casting'           => 213,
     ];
     foreach ($ohGifts as $slug => $page) {
         try {
@@ -1841,6 +2015,32 @@ function uj_install_soaks(): int {
          2, '1/rest', 'bonus d12 to all Counters until recharged',
          "You may use this Soak to negate 2 points of damage. (And you can't negate 1 point now and 1 point later, or something weird like that. It's all or nothing.) After you use up this Soak, you may claim a bonus d12 to all Counters until you recharge this Gift (at your next rest). You cannot claim the d12 bonus to Counters before you've used it. If it's still ready to use, there's no bonus. This Soak never gives you a bonus to Attacks. The bonus is only for Counters.",
          'advanced'],
+
+        // ── Occult Horror — Supernatural Soaks (pp. 214-215) ─────────────────
+        ['Convocation Soak -2', 'convocation-soak',
+         2, '1/peace', 'or take a supernatural hit for a friend',
+         "You would help those who know not what works against them. You could tap this gift to negate 2 points of damage, just like any other soak. However, you could instead use this gift to take a supernatural hit for a friend. You use this ability out of turn, when a friend is about to suffer. You use it after your friend has made their roll to avoid the effect (and failed). You may use this ability: on a friend that you can see, who is within Medium range, or on a friend who is within Short range of you, no matter the obstacles, or on a friend who is within Near range of you, even if you are incapacitated, or on a friend that you have a supernatural connection with (such as a Rapport), even if you are incapacitated. You can use this ability one of two ways: If your friend failed to resist a supernatural effect, you may tap this gift. Now you're suffering from that effect, based on how badly your friend rolled on their resistance. If your friend failed to avoid suffering supernatural damage, they will avoid the damage completely\u{2026} and now you must soak all the damage, minus two. (Yes, the -2 from this gift helps vs. the supernatural damage.) You can only take a supernatural hit for friends. You cannot tap Convocation Soak to take hits for friends that come from mundane sources, devoid of the supernatural. (No, you couldn't tap this gift to take a bullet for a friend\u{2026} but you could tap it to make a supernatural creature attack you instead of someone else. It's all about sacrifice!) This gift recharges if you can go 24 hours without engaging in any violence (1/peace).",
+         'advanced'],
+        ['Disbelief Soak -2', 'disbelief-soak',
+         2, '1/episode', 'passive d12 to resist magic',
+         "Particularly obnoxious skeptics often have this gift. Some strange practitioners also have this gift, after vowing to use magic only as a final resort. While this gift is untapped, you may claim a bonus d12 to resist any magic or supernatural effect thrown at you. You may tap this gift to soak 2 points of damage (from any source, not just magic). If you make a casting roll, tap this gift. If you consent to having magic used on you, tap this gift. While this gift is tapped out, you may no longer claim the d12 bonus to resist magic. This gift recharges at the start of the next episode.",
+         'advanced'],
+        ['Malign Soak -4', 'malign-soak',
+         4, '1/episode', 'your attacker suffers damage',
+         "You call upon dark powers to resist a terrible vengeance on your assailant. Maybe you're a wizard who has memorized curses to use on your enemies. Or you might be a reservoir of supernatural hate and fury. Tap this gift to reduce damage by 4. In addition, your attacker suffers the same damage that was dished out to you in the first place. (So if you were originally hit for 6 points of damage, the attacker must now soak 6 points of damage.) In case it matters, the nature of the damage that they suffer is the same as what they gave to you. (If they shot you, they also suffer a bullet wound. If they burned you, then they are burned, etc.) The wound that the target suffers from your Malign Soak might not make a lot of sense. It's magic! This reflection ability only works against attackers \u{2014} that is, something sent against you with malicious intent. You can still soak the 4 points of damage, you just don't inflict damage on anything else. So no, if you tap to soak falling damage, it won't hurt the ground. (But it will hurt someone who threw a grenade at you. Magic!) The reflection ability also doesn't reflect self-inflicted damage. (For example, if you are suffering damage from Soul Casting, this soak will still reduce the damage by 4. You don't have to worry about \"rebounding\" the damage onto a hostile or anything.) This gift recharges at the start of a new episode.",
+         'advanced'],
+        ['Monstrous Soak -2', 'monstrous-soak',
+         2, '1/rest', 'passive d12 vs. Panicked & Terrified',
+         "All the time, you have an unsettling countenance that puts people on edge. People describe you as ugly, cruel, twisted, and monstrous. While this gift is untapped, you may claim a bonus d12 to any rolls when your target is Panicked or Terrified. This d12 bonus definitely adds to attack rolls. (While the bonus does technically add to counter-attacks, Panicked characters can't attack.) It also adds to rolls to sneak up on Panicked characters, or to observe where they're hiding. You're just that creepy. The bonus only applies to characters who were already Panicked before you roll. Try using a Scare stunt first. Or attack them until their Panic Soak is tapped. You can also Tap this gift to soak 2 points of damage. While this gift is tapped out, you look more pathetic than monstrous, and your bonus d12 against Panicked and Terrified targets goes away. (\"If it bleeds, we can kill it.\") This gift recharges after you've had a rest.",
+         'advanced'],
+        ['Reckoning Soak -2', 'reckoning-soak',
+         2, '1/episode', 'also recharges your Personal Power Die',
+         "Requires: Personal Power. You have not yet begun to show your true power. Tap this gift to soak 2 points of damage. Also, immediately reset your Personal Power die to d6. (If it was already d6 or higher, there's no effect.) You can tap this gift at any time to reset your Personal Power die to d6. (You just won't get the soak benefit. No, you don't have to hurt yourself just to get the reckoning.) This gift recharges at the start of a new episode.",
+         'advanced'],
+        ['Wicked Soak 6d6', 'wicked-soak',
+         0, '1/special', 'your soak roll becomes Wicked',
+         "They say that the devil looks after their own. Whenever you have to make a Soak roll, you may declare you will call upon the Wicked Soak 6d6. Tap this gift and roll an extra 6d6 soak dice. Your soak roll is now at risk for wickedness. That is, if three or more 6s are showing, wickedness happens. And that's all the soak dice, not just the 6d6 from this gift; it includes the soak dice from all your other sources, too. (That is, your Body dice, your Endurance dice, Outfit soak dice, etc.) See page 191 for more details on wickedness. Recharging this gift depends on the result of your soak roll. If no wickedness was triggered, you may recharge this gift when your next attack or counter-attack is successful (1/hit). If wickedness was triggered, play out its effects, and then you can't recharge this gift before the start of the next chapter in the story (1/episode).",
+         'advanced'],
     ];
 
     $count = 0;
@@ -1857,6 +2057,25 @@ function uj_install_soaks(): int {
         );
         $count++;
     }
+
+    // ── Occult Horror source-book metadata ────────────────────────────────
+    $ohSoaks = [
+        'convocation-soak' => 214,
+        'disbelief-soak'   => 214,
+        'malign-soak'      => 214,
+        'monstrous-soak'   => 215,
+        'reckoning-soak'   => 215,
+        'wicked-soak'      => 215,
+    ];
+    foreach ($ohSoaks as $slug => $page) {
+        try {
+            cg_exec(
+                "UPDATE `$t` SET source_book = ?, page_number = ? WHERE slug = ?",
+                ['Occult Horror', $page, $slug]
+            );
+        } catch (Throwable) { /* columns may not exist yet */ }
+    }
+
     return $count;
 }
 
