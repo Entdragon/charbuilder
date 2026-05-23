@@ -1550,6 +1550,7 @@ function cg_admin_save_uj_gift(): void {
         'recharge'      => 'string',
         'requires_text' => 'string',
         'page_number'   => 'int',
+        'source_book'   => 'string',
         'published'     => 'int',
     ]);
 }
@@ -1563,6 +1564,7 @@ function cg_admin_create_uj_gift(): void {
         'recharge'      => 'string',
         'requires_text' => 'string',
         'page_number'   => 'int',
+        'source_book'   => 'string',
         'published'     => 'int',
     ]);
 }
@@ -1581,6 +1583,7 @@ function cg_admin_save_uj_species(): void {
         'gift_1'      => 'string',
         'gift_2'      => 'string',
         'page_number' => 'int',
+        'source_book' => 'string',
         'published'   => 'int',
     ]);
 }
@@ -1595,6 +1598,7 @@ function cg_admin_create_uj_species(): void {
         'gift_1'      => 'string',
         'gift_2'      => 'string',
         'page_number' => 'int',
+        'source_book' => 'string',
         'published'   => 'int',
     ]);
 }
@@ -1615,6 +1619,7 @@ function cg_admin_save_uj_type(): void {
         'soak_2'      => 'string',
         'gear'        => 'string',
         'page_number' => 'int',
+        'source_book' => 'string',
         'published'   => 'int',
     ]);
 }
@@ -1631,6 +1636,7 @@ function cg_admin_create_uj_type(): void {
         'soak_2'      => 'string',
         'gear'        => 'string',
         'page_number' => 'int',
+        'source_book' => 'string',
         'published'   => 'int',
     ]);
 }
@@ -1650,6 +1656,7 @@ function cg_admin_save_uj_career(): void {
         'gift_2'      => 'string',
         'gear'        => 'string',
         'page_number' => 'int',
+        'source_book' => 'string',
         'published'   => 'int',
     ]);
 }
@@ -1665,6 +1672,7 @@ function cg_admin_create_uj_career(): void {
         'gift_2'      => 'string',
         'gear'        => 'string',
         'page_number' => 'int',
+        'source_book' => 'string',
         'published'   => 'int',
     ]);
 }
@@ -1681,6 +1689,7 @@ function cg_admin_save_uj_skill(): void {
         'sample_favorites' => 'string',
         'gift_notes'       => 'string',
         'page_number'      => 'int',
+        'source_book'      => 'string',
         'published'        => 'int',
     ]);
 }
@@ -1693,6 +1702,7 @@ function cg_admin_create_uj_skill(): void {
         'sample_favorites' => 'string',
         'gift_notes'       => 'string',
         'page_number'      => 'int',
+        'source_book'      => 'string',
         'published'        => 'int',
     ]);
 }
@@ -1710,6 +1720,7 @@ function cg_admin_save_uj_soak(): void {
         'recharge'       => 'string',
         'side_effect'    => 'string',
         'page_number'    => 'int',
+        'source_book'    => 'string',
         'published'      => 'int',
     ]);
 }
@@ -1723,6 +1734,7 @@ function cg_admin_create_uj_soak(): void {
         'recharge'       => 'string',
         'side_effect'    => 'string',
         'page_number'    => 'int',
+        'source_book'    => 'string',
         'published'      => 'int',
     ]);
 }
@@ -1738,6 +1750,7 @@ function cg_admin_save_uj_item(): void {
         'price_early' => 'string',
         'price_late'  => 'string',
         'page_number' => 'int',
+        'source_book' => 'string',
         'published'   => 'int',
     ]);
 }
@@ -1749,6 +1762,7 @@ function cg_admin_create_uj_item(): void {
         'price_early' => 'string',
         'price_late'  => 'string',
         'page_number' => 'int',
+        'source_book' => 'string',
         'published'   => 'int',
     ]);
 }

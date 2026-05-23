@@ -50,6 +50,7 @@ function uj_create_tables_internal(): array {
             `gift_1`      VARCHAR(100) NOT NULL DEFAULT '',
             `gift_2`      VARCHAR(100) NOT NULL DEFAULT '',
             `page_number` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+            `source_book`  VARCHAR(60)  NOT NULL DEFAULT '','
             `published`   TINYINT(1)   NOT NULL DEFAULT 1,
             `created_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `updated_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -71,6 +72,7 @@ function uj_create_tables_internal(): array {
             `soak_2`      VARCHAR(100) NOT NULL DEFAULT '',
             `gear`        TEXT,
             `page_number` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+            `source_book`  VARCHAR(60)  NOT NULL DEFAULT '','
             `published`   TINYINT(1)   NOT NULL DEFAULT 1,
             `created_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `updated_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -91,6 +93,7 @@ function uj_create_tables_internal(): array {
             `gift_2`      VARCHAR(100) NOT NULL DEFAULT '',
             `gear`        TEXT,
             `page_number` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+            `source_book`  VARCHAR(60)  NOT NULL DEFAULT '','
             `published`   TINYINT(1)   NOT NULL DEFAULT 1,
             `created_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `updated_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -110,6 +113,7 @@ function uj_create_tables_internal(): array {
             `effect`        VARCHAR(120) NOT NULL DEFAULT '',
             `notes`         VARCHAR(200) NOT NULL DEFAULT '',
             `page_number`   SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+            `source_book`  VARCHAR(60)  NOT NULL DEFAULT '','
             `published`     TINYINT(1)   NOT NULL DEFAULT 1,
             `created_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `updated_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -126,6 +130,7 @@ function uj_create_tables_internal(): array {
             `price_early` VARCHAR(30)  NOT NULL DEFAULT '',
             `price_late`  VARCHAR(30)  NOT NULL DEFAULT '',
             `page_number` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+            `source_book`  VARCHAR(60)  NOT NULL DEFAULT '','
             `published`   TINYINT(1)   NOT NULL DEFAULT 1,
             `created_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `updated_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -144,6 +149,7 @@ function uj_create_tables_internal(): array {
             `recharge`      VARCHAR(60)  NOT NULL DEFAULT '',
             `requires_text` TEXT,
             `page_number`   SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+            `source_book`  VARCHAR(60)  NOT NULL DEFAULT '','
             `published`     TINYINT(1)   NOT NULL DEFAULT 1,
             `created_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `updated_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -162,6 +168,7 @@ function uj_create_tables_internal(): array {
             `description`    TEXT,
             `soak_type`      ENUM('basic','advanced') NOT NULL DEFAULT 'basic',
             `page_number`    SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+            `source_book`  VARCHAR(60)  NOT NULL DEFAULT '','
             `published`      TINYINT(1)   NOT NULL DEFAULT 1,
             `created_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `updated_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -179,6 +186,7 @@ function uj_create_tables_internal(): array {
             `sample_favorites` TEXT,
             `gift_notes`       TEXT,
             `page_number`      SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+            `source_book`  VARCHAR(60)  NOT NULL DEFAULT '','
             `published`        TINYINT(1)   NOT NULL DEFAULT 1,
             `created_at`       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `updated_at`       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -259,11 +267,14 @@ function uj_create_tables_internal(): array {
         $created[] = $m[1] ?? '?';
     }
 
-    // ── Migration: add page_number column to existing tables ──────────────
+    // ── Migration: add page_number + source_book columns to existing tables
     // Safe to run repeatedly; ignores errors when the column already exists.
     foreach (['species','types','careers','attacks','items','gifts','soaks','skills'] as $suffix) {
         try {
             cg_exec("ALTER TABLE `{$p}uj_{$suffix}` ADD COLUMN `page_number` SMALLINT UNSIGNED NOT NULL DEFAULT 0");
+        } catch (Throwable) { /* column already exists */ }
+        try {
+            cg_exec("ALTER TABLE `{$p}uj_{$suffix}` ADD COLUMN `source_book` VARCHAR(60) NOT NULL DEFAULT ''");
         } catch (Throwable) { /* column already exists */ }
     }
 
@@ -1741,6 +1752,42 @@ function uj_install_gifts(): int {
         );
         $count++;
     }
+
+    // ── Occult Horror source-book metadata ────────────────────────────────
+    // Set source_book + page_number for gifts that come from Occult Horror.
+    // Safe to run repeatedly. Skipped silently if columns don't yet exist.
+    $ohGifts = [
+        // slug => page number in Occult Horror
+        'personal-power'           => 209,
+        'petitioned-power'         => 209,
+        'extra-sensory-perception' => 210,
+        'mesmerism'                => 210,
+        'psychokinesis'            => 210,
+        'spiritualism'             => 210,
+        'telepathy'                => 210,
+        'vitalism'                 => 210,
+        'abjure-arcana'            => 211,
+        'anodyne-arcana'           => 211,
+        'channeling-arcana'        => 211,
+        'coercive-arcana'          => 211,
+        'conniption-arcana'        => 211,
+        'dowsing-arcana'           => 211,
+        'hasty-arcana'             => 211,
+        'mass-arcana'              => 211,
+        'meticulous-arcana'        => 212,
+        'oneiric-arcana'           => 212,
+        'protection-arcana'        => 212,
+        'retro-arcana'             => 212,
+    ];
+    foreach ($ohGifts as $slug => $page) {
+        try {
+            cg_exec(
+                "UPDATE `$t` SET source_book = ?, page_number = ? WHERE slug = ?",
+                ['Occult Horror', $page, $slug]
+            );
+        } catch (Throwable) { /* columns may not exist yet on very old installs */ }
+    }
+
     return $count;
 }
 
