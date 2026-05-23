@@ -12,7 +12,7 @@
   RewriteRule ^$ home.php [L]
 
   # /builder → character builder
-  RewriteRule ^builder/?$ index.php [L,QSA]
+  RewriteRule ^builder/?$ builder.php [L,QSA]
 
   # /blog-admin → blog management
   RewriteRule ^blog-admin/?$ blog-admin.php [L,QSA]
