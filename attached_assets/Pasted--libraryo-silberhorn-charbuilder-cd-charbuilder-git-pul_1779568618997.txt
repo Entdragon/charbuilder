@@ -1,0 +1,42 @@
+[libraryo@silberhorn charbuilder]$ cd ~/charbuilder && git pull
+Already up to date.
+[libraryo@silberhorn charbuilder]$ cp -r php/uj php/actions ~/public_html/
+[libraryo@silberhorn charbuilder]$ cp php/admin.php ~/public_html/admin.php
+[libraryo@silberhorn charbuilder]$ https://libraryofcalbria.com/ajax.php?action=cg_install_uj_tables
+bash: https://libraryofcalbria.com/ajax.php?action=cg_install_uj_tables: No such file or directory
+[libraryo@silberhorn charbuilder]$ curl -X POST -d 'action=uj_install_tables' https://libraryofcalbria.com/ajax.php
+{"success":false,"data":"Not logged in."}[libraryo@silberhorn charbuilder]$
+[libraryo@silberhorn charbuilder]$ grep -c "page_number" ~/public_html/actions/uj.php
+0
+[libraryo@silberhorn charbuilder]$ grep -c "page_number" ~/public_html/actions/admin.php
+0
+[libraryo@silberhorn charbuilder]$ grep -c "page_number" ~/public_html/admin.php
+0
+[libraryo@silberhorn charbuilder]$ cd ~/charbuilder && git pull
+remote: Enumerating objects: 36, done.
+remote: Counting objects: 100% (36/36), done.
+remote: Compressing objects: 100% (5/5), done.
+remote: Total 25 (delta 20), reused 25 (delta 20), pack-reused 0 (from 0)
+Unpacking objects: 100% (25/25), 820.93 KiB | 4.54 MiB/s, done.
+From https://github.com/Entdragon/charbuilder
+   9ba29597..3478c699  master     -> origin/master
+Updating 9ba29597..3478c699
+Fast-forward
+ attached_assets/image_1776066714540.png | Bin 0 -> 141176 bytes
+ attached_assets/image_1776066737797.png | Bin 0 -> 138733 bytes
+ attached_assets/image_1779567632681.png | Bin 0 -> 314894 bytes
+ attached_assets/image_1779568434894.png | Bin 0 -> 292486 bytes
+ php/.htaccess                           |   2 +-
+ php/actions/admin.php                   |  14 ++++++++++++++
+ php/actions/uj.php                      |  17 +++++++++++++++++
+ php/admin.php                           |   7 +++++++
+ php/uj/pages/detail.php                 |  15 ++++++++++++---
+ 9 files changed, 51 insertions(+), 4 deletions(-)
+ create mode 100644 attached_assets/image_1776066714540.png
+ create mode 100644 attached_assets/image_1776066737797.png
+ create mode 100644 attached_assets/image_1779567632681.png
+ create mode 100644 attached_assets/image_1779568434894.png
+[libraryo@silberhorn charbuilder]$ cp -r php/uj php/actions ~/public_html/
+[libraryo@silberhorn charbuilder]$ cp php/admin.php ~/public_html/admin.php
+[libraryo@silberhorn charbuilder]$ grep -c "page_number" ~/public_html/actions/uj.php
+10
