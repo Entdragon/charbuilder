@@ -49,6 +49,7 @@ function uj_create_tables_internal(): array {
             `skill_3`     VARCHAR(60)  NOT NULL DEFAULT '',
             `gift_1`      VARCHAR(100) NOT NULL DEFAULT '',
             `gift_2`      VARCHAR(100) NOT NULL DEFAULT '',
+            `page_number` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
             `published`   TINYINT(1)   NOT NULL DEFAULT 1,
             `created_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `updated_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -69,6 +70,7 @@ function uj_create_tables_internal(): array {
             `soak_1`      VARCHAR(100) NOT NULL DEFAULT '',
             `soak_2`      VARCHAR(100) NOT NULL DEFAULT '',
             `gear`        TEXT,
+            `page_number` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
             `published`   TINYINT(1)   NOT NULL DEFAULT 1,
             `created_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `updated_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -88,6 +90,7 @@ function uj_create_tables_internal(): array {
             `gift_1`      VARCHAR(100) NOT NULL DEFAULT '',
             `gift_2`      VARCHAR(100) NOT NULL DEFAULT '',
             `gear`        TEXT,
+            `page_number` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
             `published`   TINYINT(1)   NOT NULL DEFAULT 1,
             `created_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `updated_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -106,6 +109,7 @@ function uj_create_tables_internal(): array {
             `attack_dice`   VARCHAR(120) NOT NULL DEFAULT '',
             `effect`        VARCHAR(120) NOT NULL DEFAULT '',
             `notes`         VARCHAR(200) NOT NULL DEFAULT '',
+            `page_number`   SMALLINT UNSIGNED NOT NULL DEFAULT 0,
             `published`     TINYINT(1)   NOT NULL DEFAULT 1,
             `created_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `updated_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -121,6 +125,7 @@ function uj_create_tables_internal(): array {
             `cost_class`  ENUM('Affordable','Expensive','Extravagant','Proscribed') NOT NULL DEFAULT 'Affordable',
             `price_early` VARCHAR(30)  NOT NULL DEFAULT '',
             `price_late`  VARCHAR(30)  NOT NULL DEFAULT '',
+            `page_number` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
             `published`   TINYINT(1)   NOT NULL DEFAULT 1,
             `created_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `updated_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -138,6 +143,7 @@ function uj_create_tables_internal(): array {
             `gift_type`     ENUM('basic','advanced') NOT NULL DEFAULT 'basic',
             `recharge`      VARCHAR(60)  NOT NULL DEFAULT '',
             `requires_text` TEXT,
+            `page_number`   SMALLINT UNSIGNED NOT NULL DEFAULT 0,
             `published`     TINYINT(1)   NOT NULL DEFAULT 1,
             `created_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `updated_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -155,6 +161,7 @@ function uj_create_tables_internal(): array {
             `side_effect`    VARCHAR(200) NOT NULL DEFAULT '',
             `description`    TEXT,
             `soak_type`      ENUM('basic','advanced') NOT NULL DEFAULT 'basic',
+            `page_number`    SMALLINT UNSIGNED NOT NULL DEFAULT 0,
             `published`      TINYINT(1)   NOT NULL DEFAULT 1,
             `created_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `updated_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -171,6 +178,7 @@ function uj_create_tables_internal(): array {
             `paired_trait`     VARCHAR(60)  NOT NULL DEFAULT '',
             `sample_favorites` TEXT,
             `gift_notes`       TEXT,
+            `page_number`      SMALLINT UNSIGNED NOT NULL DEFAULT 0,
             `published`        TINYINT(1)   NOT NULL DEFAULT 1,
             `created_at`       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `updated_at`       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -250,6 +258,15 @@ function uj_create_tables_internal(): array {
         preg_match('/CREATE TABLE IF NOT EXISTS `([^`]+)`/', $sql, $m);
         $created[] = $m[1] ?? '?';
     }
+
+    // ── Migration: add page_number column to existing tables ──────────────
+    // Safe to run repeatedly; ignores errors when the column already exists.
+    foreach (['species','types','careers','attacks','items','gifts','soaks','skills'] as $suffix) {
+        try {
+            cg_exec("ALTER TABLE `{$p}uj_{$suffix}` ADD COLUMN `page_number` SMALLINT UNSIGNED NOT NULL DEFAULT 0");
+        } catch (Throwable) { /* column already exists */ }
+    }
+
     return $created;
 }
 
