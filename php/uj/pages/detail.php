@@ -24,8 +24,8 @@ if ($entity === 'books') {
 
     // Load content tagged to this book via the source_book field.
     // The core book (urban-jungle) also owns all legacy rows where source_book is empty.
-    $allSpecies = $allCareers = $allGifts = $allSkills = [];
-    $speciesCount = $careerCount = $giftCount = $skillCount = 0;
+    $allSpecies = $allCareers = $allGifts = $allSkills = $allSoaks = $allPowers = [];
+    $speciesCount = $careerCount = $giftCount = $skillCount = $soakCount = $powerCount = 0;
     // Match by either exact book name or by slugifying the source_book value
     // (so "Occult Horror" tag matches the "occult-horror" book even when the
     // book's full name is longer, e.g. "Occult Horror: Supernatural Options…").
@@ -41,10 +41,14 @@ if ($entity === 'books') {
         $allCareers   = cg_query("SELECT name, slug FROM `{$p}uj_careers` WHERE {$whereClause} ORDER BY name", $params);
         $allGifts     = cg_query("SELECT name, slug FROM `{$p}uj_gifts`   WHERE {$whereClause} ORDER BY name", $params);
         $allSkills    = cg_query("SELECT name, slug FROM `{$p}uj_skills`  WHERE {$whereClause} ORDER BY name", $params);
+        $allSoaks     = cg_query("SELECT name, slug, damage_negated, soak_type FROM `{$p}uj_soaks` WHERE {$whereClause} ORDER BY soak_type, name", $params);
+        $allPowers    = cg_query("SELECT name, slug FROM `{$p}uj_powers`  WHERE {$whereClause} ORDER BY power, order_level, name", $params);
         $speciesCount = count($allSpecies);
         $careerCount  = count($allCareers);
         $giftCount    = count($allGifts);
         $skillCount   = count($allSkills);
+        $soakCount    = count($allSoaks);
+        $powerCount   = count($allPowers);
     } catch (Throwable) { /* source_book column may not exist yet */ }
 
     $pageTitle = $book['name'];
@@ -113,6 +117,28 @@ if ($entity === 'books') {
           </div>
         </div>
         <?php endif; ?>
+
+        <?php if ($allSoaks): ?>
+        <div class="detail-section">
+          <p class="detail-section-title">Soaks (<?= $soakCount ?>)</p>
+          <div class="card-tags">
+            <?php foreach ($allSoaks as $s): ?>
+              <a href="/uj/soaks/<?= htmlspecialchars($s['slug']) ?>" class="tag tag-basic"><?= htmlspecialchars($s['name']) ?><?php if (!empty($s['damage_negated'])): ?> <span style="opacity:0.7; font-weight:400;">— <?= htmlspecialchars($s['damage_negated']) ?></span><?php endif; ?></a>
+            <?php endforeach; ?>
+          </div>
+        </div>
+        <?php endif; ?>
+
+        <?php if ($allPowers): ?>
+        <div class="detail-section">
+          <p class="detail-section-title">Power Effects (<?= $powerCount ?>)</p>
+          <div class="card-tags">
+            <?php foreach ($allPowers as $pw): ?>
+              <a href="/uj/powers/<?= htmlspecialchars($pw['slug']) ?>" class="tag tag-basic"><?= htmlspecialchars($pw['name']) ?></a>
+            <?php endforeach; ?>
+          </div>
+        </div>
+        <?php endif; ?>
       </div>
 
       <div class="detail-sidebar">
@@ -126,7 +152,7 @@ if ($entity === 'books') {
           </div>
         <?php endif; ?>
 
-        <?php if ($speciesCount || $careerCount || $giftCount || $skillCount): ?>
+        <?php if ($speciesCount || $careerCount || $giftCount || $skillCount || $soakCount || $powerCount): ?>
         <div class="sidebar-card">
           <h3 class="sidebar-card-title">Contents</h3>
           <table style="width:100%; font-size:0.88rem; border-collapse:collapse;">
@@ -134,6 +160,8 @@ if ($entity === 'books') {
             <?php if ($careerCount):  ?><tr><td style="color:var(--uj-text-dim); padding:0.25rem 0;">Careers</td><td style="color:var(--uj-text-muted);"><?= $careerCount ?></td></tr><?php endif; ?>
             <?php if ($giftCount):    ?><tr><td style="color:var(--uj-text-dim); padding:0.25rem 0;">Gifts</td><td style="color:var(--uj-text-muted);"><?= $giftCount ?></td></tr><?php endif; ?>
             <?php if ($skillCount):   ?><tr><td style="color:var(--uj-text-dim); padding:0.25rem 0;">Skills</td><td style="color:var(--uj-text-muted);"><?= $skillCount ?></td></tr><?php endif; ?>
+            <?php if ($soakCount):    ?><tr><td style="color:var(--uj-text-dim); padding:0.25rem 0;">Soaks</td><td style="color:var(--uj-text-muted);"><?= $soakCount ?></td></tr><?php endif; ?>
+            <?php if ($powerCount):   ?><tr><td style="color:var(--uj-text-dim); padding:0.25rem 0;">Power Effects</td><td style="color:var(--uj-text-muted);"><?= $powerCount ?></td></tr><?php endif; ?>
           </table>
         </div>
         <?php endif; ?>
@@ -238,6 +266,51 @@ try {
                         [$slug]
                     ) ?: [];
                 } catch (Throwable) { $powerEffects = []; }
+
+                // Gifts that enable / grant access to this Power.
+                // Always includes the universal gates (Personal/Petitioned
+                // Power) plus any gift whose text mentions this Power's
+                // full name or label.
+                $pwGifts = [];
+                try {
+                    $like = '%' . $m['full_name'] . '%';
+                    $likeLbl = '%' . $m['label'] . '%';
+                    $rows = cg_query(
+                        "SELECT name, slug, subtitle, gift_type
+                           FROM `{$p}uj_gifts`
+                          WHERE published = 1 AND (
+                                name LIKE 'Personal Power%'
+                             OR name LIKE 'Petitioned Power%'
+                             OR description LIKE ?
+                             OR description LIKE ?
+                             OR subtitle LIKE ?
+                             OR name LIKE ?)
+                          ORDER BY
+                            (CASE WHEN name LIKE 'Personal Power%' THEN 0
+                                  WHEN name LIKE 'Petitioned Power%' THEN 1
+                                  ELSE 2 END),
+                            name",
+                        [$like, $likeLbl, $like, $like]
+                    ) ?: [];
+                    // ESP is too short — re-filter description matches
+                    if ($slug === 'esp') {
+                        $rows = array_values(array_filter($rows, function($g) {
+                            if (stripos($g['name'], 'Personal Power') === 0
+                                || stripos($g['name'], 'Petitioned Power') === 0) return true;
+                            return (bool)preg_match('/\bESP\b/', $g['name'] . ' ' . $g['subtitle']);
+                        }));
+                        // Add gifts whose description has a word-boundary ESP
+                        $extra = cg_query(
+                            "SELECT name, slug, subtitle, gift_type FROM `{$p}uj_gifts`
+                              WHERE published=1 AND description REGEXP '[[:<:]]ESP[[:>:]]'
+                              ORDER BY name"
+                        ) ?: [];
+                        $seen = [];
+                        foreach ($rows as $r) $seen[$r['slug']] = true;
+                        foreach ($extra as $e) if (empty($seen[$e['slug']])) $rows[] = $e;
+                    }
+                    $pwGifts = $rows;
+                } catch (Throwable) { $pwGifts = []; }
             } else {
                 $record = cg_query_one(
                     "SELECT * FROM `{$p}uj_powers` WHERE slug = ? AND published = 1",
@@ -308,6 +381,26 @@ try {
                 [$giftPowerKey]
             ) ?: [];
         } catch (Throwable) { $giftPowers = []; }
+
+        // ── Detect cross-references to the 7 Powers in the gift text ─────
+        // Personal Power / Petitioned Power are universal gates → link to
+        // all 7. Otherwise scan for power label / full name mentions.
+        require_once __DIR__ . '/../../actions/uj.php';
+        $powersMeta = uj_powers_meta();
+        $relatedPowers = [];
+        $giftName = (string)($record['name'] ?? '');
+        $haystack = ' ' . strtolower($giftName . ' ' . ($record['subtitle'] ?? '') . ' ' . ($record['description'] ?? '')) . ' ';
+        $isUniversalGate = (stripos($giftName, 'Personal Power') !== false || stripos($giftName, 'Petitioned Power') !== false);
+        foreach ($powersMeta as $key => $m) {
+            $hit = $isUniversalGate
+                || str_contains($haystack, strtolower(' ' . $m['full_name']))
+                || ($key === 'esp'
+                    ? (bool)preg_match('/\besp\b/i', $haystack)
+                    : str_contains($haystack, strtolower(' ' . $m['label'])));
+            if ($hit) {
+                $relatedPowers[$key] = ['key' => $key, 'label' => $m['full_name']];
+            }
+        }
 
         $giftCareers = cg_query("
             SELECT c.name, c.slug
@@ -642,6 +735,17 @@ $listLabel = [
   </div>
 
   <div class="detail-sidebar">
+    <?php if (!empty($relatedPowers)): ?>
+    <div class="sidebar-card">
+      <h3 class="sidebar-card-title">Related Powers</h3>
+      <ul class="trait-list">
+        <?php foreach ($relatedPowers as $rp): ?>
+        <li><a href="/uj/powers/<?= htmlspecialchars($rp['key']) ?>" style="color:var(--uj-teal);"><?= htmlspecialchars($rp['label']) ?></a></li>
+        <?php endforeach; ?>
+      </ul>
+    </div>
+    <?php endif; ?>
+
     <?php if ($giftCareers): ?>
     <div class="sidebar-card">
       <h3 class="sidebar-card-title">Careers With This Gift</h3>
@@ -824,6 +928,19 @@ $cc  = $classColors[$cls] ?? 'var(--uj-text-muted)';
   </div>
 
   <div class="detail-sidebar">
+    <?php if (!empty($pwGifts)): ?>
+    <div class="sidebar-card">
+      <h3 class="sidebar-card-title">Gifts That Enable This Power</h3>
+      <ul class="trait-list">
+        <?php foreach ($pwGifts as $g): ?>
+        <li><a href="/uj/gifts/<?= htmlspecialchars($g['slug']) ?>" style="color:var(--uj-amber);"><?= htmlspecialchars($g['name']) ?></a>
+          <?php if (!empty($g['subtitle'])): ?><br><small style="color:var(--uj-text-dim);"><?= htmlspecialchars($g['subtitle']) ?></small><?php endif; ?>
+        </li>
+        <?php endforeach; ?>
+      </ul>
+    </div>
+    <?php endif; ?>
+
     <div class="sidebar-card">
       <h3 class="sidebar-card-title">Source</h3>
       <p style="font-size:0.9rem; margin:0;">
