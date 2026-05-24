@@ -1401,6 +1401,10 @@ function uj_normalize_name(string $name): string {
     $name = preg_replace('/\s*\[.*?\]$/u', '', $name);
     // Strip trailing ' −N' or ' -N' (Unicode minus or ASCII hyphen + digits)
     $name = preg_replace('/\s+[\x{2212}\-]\d+$/u', '', $name);
+    // Strip trailing die spec like ' d6', ' d8', ' 2d8', ' 6d6' (gift names
+    // such as "Personal Power d6" so they match careers referencing them as
+    // "Personal Power"; also handles "Meticulous Arcana 2d8" → "Meticulous Arcana").
+    $name = preg_replace('/\s+\d*d\d+$/iu', '', $name);
     return trim($name);
 }
 
@@ -1414,18 +1418,20 @@ function uj_build_joins_internal(): int {
         cg_exec("DELETE FROM `" . uj_tbl($tbl) . "`", []);
     }
 
-    // Build name → id maps for skills, gifts, soaks.
+    // Build normalized-name → id maps for skills, gifts, soaks. We key by
+    // uj_normalize_name() on both sides so e.g. gift "Personal Power d6" in
+    // the gifts table matches the career reference "Personal Power".
     $skillMap = [];
     foreach (cg_query("SELECT id, name FROM `" . uj_tbl('skills') . "`") as $r) {
-        $skillMap[$r['name']] = (int)$r['id'];
+        $skillMap[uj_normalize_name($r['name'])] = (int)$r['id'];
     }
     $giftMap = [];
     foreach (cg_query("SELECT id, name FROM `" . uj_tbl('gifts') . "`") as $r) {
-        $giftMap[$r['name']] = (int)$r['id'];
+        $giftMap[uj_normalize_name($r['name'])] = (int)$r['id'];
     }
     $soakMap = [];
     foreach (cg_query("SELECT id, name FROM `" . uj_tbl('soaks') . "`") as $r) {
-        $soakMap[$r['name']] = (int)$r['id'];
+        $soakMap[uj_normalize_name($r['name'])] = (int)$r['id'];
     }
 
     $count = 0;
@@ -1759,6 +1765,40 @@ function uj_get_all_full(): void {
             $species[$i]['powers'] = $raw ? $resolvePowers($raw) : [];
         }
     } catch (Throwable) { /* raw columns missing; leave powers empty */ }
+
+    // ── Soaks granted via career gift_1/gift_2 (occult careers) ─────────
+    // Some occult careers reference an advanced Soak by name in their gift
+    // slots (e.g. Witch → "Malign Soak -4"). They don't have a real gift to
+    // link to, so resolve them here against the soaks table by name match
+    // and attach `soaks` arrays the builder can surface on the sheet and
+    // in the Gifts step.
+    $soaksByName = [];
+    foreach ($soaks as $s) {
+        $soaksByName[$norm((string)($s['name'] ?? ''))] = $s;
+    }
+    $resolveSoaks = function(array $row) use ($soaksByName, $norm): array {
+        $hits = [];
+        foreach (['gift_1', 'gift_2'] as $col) {
+            $val = trim((string) ($row[$col] ?? ''));
+            if ($val === '') continue;
+            $key = $norm($val);
+            if (isset($soaksByName[$key])) {
+                $sk = $soaksByName[$key];
+                $hits[(int)$sk['id']] = $sk;
+            }
+        }
+        return array_values($hits);
+    };
+    try {
+        if (!isset($caMap)) {
+            $caRaw = cg_query("SELECT id, gift_1, gift_2 FROM `{$p}uj_careers` WHERE published=1");
+            $caMap = []; foreach ($caRaw as $r) $caMap[(int)$r['id']] = $r;
+        }
+        for ($i = 0, $n = count($careers); $i < $n; $i++) {
+            $raw = $caMap[(int)$careers[$i]['id']] ?? null;
+            $careers[$i]['soaks'] = $raw ? $resolveSoaks($raw) : [];
+        }
+    } catch (Throwable) { /* leave soaks empty */ }
 
     cg_json(['success' => true, 'data' => compact(
         'species','types','careers','skills','gifts','soaks','attacks'

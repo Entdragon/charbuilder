@@ -1288,6 +1288,39 @@
     return result;
   }
 
+  // Aux grants: Powers and Soaks attached to species/type/career by the
+  // server-side resolver in `uj_get_all_full` (Occult Horror careers that
+  // reference a Power name or an advanced Soak name in gift_1/gift_2 instead
+  // of a real gift). Returned as flat cards rendered alongside gifts.
+  function collectAuxGrants() {
+    var d  = state.allData || {};
+    var sp = (d.species || []).find(function(x) { return x.id == state.speciesId; }) || null;
+    var ty = (d.types   || []).find(function(x) { return x.id == state.typeId;   }) || null;
+    var ca = (d.careers || []).find(function(x) { return x.id == state.careerId; }) || null;
+    var out = [];
+    [sp, ty, ca].forEach(function(src) {
+      if (!src) return;
+      (src.powers || []).forEach(function(pm) {
+        out.push({
+          kind: 'power',
+          name: pm.full_name || pm.label,
+          label: pm.label || pm.full_name,
+          description: pm.description || '',
+          source: src.name,
+        });
+      });
+      (src.soaks || []).forEach(function(sk) {
+        out.push({
+          kind: 'soak',
+          name: sk.name,
+          description: sk.damage_negated || sk.description || '',
+          source: src.name,
+        });
+      });
+    });
+    return out;
+  }
+
   function buildGiftsStep() {
     var gifts = collectAllGifts();
     var d = state.allData || {};
@@ -1395,6 +1428,26 @@
         html += '</div></div>';
       }
 
+      html += '</div>';
+    });
+
+    // ── Aux grants (Powers / Soaks attached server-side) ────────────────
+    var aux = collectAuxGrants();
+    aux.forEach(function(a) {
+      var isPower = (a.kind === 'power');
+      var tagText = isPower ? 'Power' : 'Soak';
+      var tagBg   = isPower ? 'rgba(180,120,30,0.18)' : 'rgba(20,80,90,0.22)';
+      var tagFg   = isPower ? 'var(--uj-amber-light)' : 'var(--uj-teal,#5eead4)';
+      html += '<div style="background:var(--uj-surface);border:1px solid var(--uj-border-cool);border-radius:var(--uj-radius-lg,8px);padding:1rem 1.25rem;margin-bottom:0.75rem;">';
+      html += '<div style="display:flex;align-items:baseline;gap:0.75rem;flex-wrap:wrap;margin-bottom:0.25rem;">';
+      html += '<span style="font-family:\'Cinzel\',Georgia,serif;font-size:1rem;font-weight:700;color:' + tagFg + ';">' + esc(a.name) + '</span>';
+      html += '<span style="font-size:0.7rem;padding:0.1rem 0.5rem;border-radius:4px;background:' + tagBg + ';color:' + tagFg + ';text-transform:uppercase;letter-spacing:0.08em;">' + tagText + '</span>';
+      html += '<span style="font-size:0.73rem;color:var(--uj-text-dim);text-transform:uppercase;letter-spacing:0.06em;margin-left:auto;">' + esc(a.source) + '</span>';
+      html += '</div>';
+      if (a.description) {
+        var d2 = a.description.length > 280 ? a.description.slice(0, 277) + '\u2026' : a.description;
+        html += '<p style="font-size:0.88rem;color:var(--uj-text-muted);margin:0;line-height:1.5;">' + esc(d2) + '</p>';
+      }
       html += '</div>';
     });
 
@@ -1529,6 +1582,11 @@
     var soakMap = {};
     if (ty && ty.soaks) {
       ty.soaks.forEach(function(s) {
+        if (!soakMap[s.id]) soakMap[s.id] = { name: s.name, detail: s.damage_negated || '' };
+      });
+    }
+    if (ca && ca.soaks) {
+      ca.soaks.forEach(function(s) {
         if (!soakMap[s.id]) soakMap[s.id] = { name: s.name, detail: s.damage_negated || '' };
       });
     }
