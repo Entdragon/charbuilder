@@ -1,4 +1,4 @@
-modules = ["nodejs-20", "php-8.2", "bash", "postgresql-16"]
+modules = ["nodejs-20", "php-8.2", "bash", "postgresql-16", "python-3.11"]
 [agent]
 expertMode = true
 

@@ -2,109 +2,58 @@
 $pageTitle = 'Powers';
 $activeNav = 'powers';
 
+require_once __DIR__ . '/../../actions/uj.php';
+
 $p = cg_prefix();
+$meta = uj_powers_meta();
 
-// Filter by power key
-$powerFilter = $_GET['power'] ?? '';
-$validPowers = ['esp','mesmerism','psychokinesis','rituals','spiritualism','telepathy','vitalism'];
-if (!in_array($powerFilter, $validPowers, true)) $powerFilter = '';
-
-$where = $powerFilter ? "AND power = ?" : '';
-$args  = $powerFilter ? [$powerFilter] : [];
-
-$rows = [];
+// Count effects per power for the cards
+$counts = array_fill_keys(array_keys($meta), 0);
 $tableMissing = false;
 try {
-    $rows = cg_query(
-        "SELECT name, slug, power, power_label, order_level, descriptors, description, page_number
-           FROM `{$p}uj_powers`
-          WHERE published = 1 $where
-          ORDER BY power_label, order_level, name",
-        $args
-    );
+    foreach ($meta as $key => $_) {
+        $row = cg_query_one(
+            "SELECT COUNT(*) n FROM `{$p}uj_powers` WHERE published=1 AND power=?",
+            [$key]
+        );
+        $counts[$key] = (int)($row['n'] ?? 0);
+    }
 } catch (Throwable) {
     $tableMissing = true;
 }
-
-// Group by power_label
-$grouped = [];
-foreach ($rows as $r) {
-    $grouped[$r['power_label']][] = $r;
-}
-
-// Counts per power for filter pills
-$counts = array_fill_keys($validPowers, 0);
-if (!$tableMissing) {
-    foreach ($validPowers as $pk) {
-        try {
-            $row = cg_query_one("SELECT COUNT(*) n FROM `{$p}uj_powers` WHERE published=1 AND power=?", [$pk]);
-            $counts[$pk] = (int)($row['n'] ?? 0);
-        } catch (Throwable) { }
-    }
-}
-
-// Pretty labels for pills
-$pillLabels = [
-    'esp' => 'ESP', 'mesmerism' => 'Mesmerism', 'psychokinesis' => 'PK',
-    'rituals' => 'Rituals', 'spiritualism' => 'Spiritualism',
-    'telepathy' => 'Telepathy', 'vitalism' => 'Vitalism',
-];
 
 require __DIR__ . '/../layout-head.php';
 ?>
 
 <div class="page-header">
   <div class="header-row">
-    <h1>Powers</h1>
+    <h1>Powers of Supernatural Power</h1>
   </div>
-  <p>The seven Powers of Supernatural Power from Occult Horror — <?= count($rows) ?> effects across <?= count($grouped) ?> power<?= count($grouped) === 1 ? '' : 's' ?>. Effects are ordered by their casting Order (1, 3, 5, 7, or 10), which sets the difficulty of the spellcasting roll.</p>
-</div>
-
-<div class="filter-bar">
-  <div class="filter-search">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <input id="uj-live-search" data-target=".power-row" type="search" placeholder="Filter effects…">
-  </div>
-  <div class="filter-pills">
-    <a href="/uj/powers" class="filter-pill<?= $powerFilter === '' ? ' active' : '' ?>">All</a>
-    <?php foreach ($validPowers as $pk): if (!$counts[$pk]) continue; ?>
-      <a href="/uj/powers?power=<?= $pk ?>" class="filter-pill<?= $powerFilter === $pk ? ' active' : '' ?>"><?= htmlspecialchars($pillLabels[$pk]) ?> <?= $counts[$pk] ?></a>
-    <?php endforeach; ?>
-  </div>
+  <p>The seven Powers from <em>Occult Horror</em>. Each Power grants access to a list of effects you can cast, provided you have a Power die from <a href="/uj/gifts/personal-power" style="color:var(--uj-teal);">Personal Power</a> or <a href="/uj/gifts/petitioned-power" style="color:var(--uj-teal);">Petitioned Power</a>.</p>
 </div>
 
 <?php if ($tableMissing): ?>
   <p style="color:var(--uj-text-muted);">The <code>uj_powers</code> table has not been created yet. Run the UJ data installer from the admin panel to create it and seed the Occult Horror powers.</p>
-<?php elseif (!$rows): ?>
-  <p style="color:var(--uj-text-muted);">No effects found. (Admins: run installer to seed Occult Horror powers.)</p>
 <?php else: ?>
-  <?php foreach ($grouped as $label => $effects): ?>
-    <h2 style="font-family:'Cinzel',Georgia,serif; font-size:1.1rem; color:var(--uj-amber); letter-spacing:0.08em; text-transform:uppercase; margin:1.75rem 0 0.5rem; padding-bottom:0.35rem; border-bottom:1px solid var(--uj-border-light);"><?= htmlspecialchars($label) ?> <span style="color:var(--uj-text-dim); font-size:0.8rem; font-weight:400;">(<?= count($effects) ?>)</span></h2>
-    <table class="uj-table">
-      <thead>
-        <tr>
-          <th style="width:3.5rem;">Ord.</th>
-          <th>Effect</th>
-          <th>Descriptors</th>
-          <th style="width:3rem;">Pg</th>
-        </tr>
-      </thead>
-      <tbody>
-        <?php foreach ($effects as $r): ?>
-        <tr class="power-row" data-name="<?= htmlspecialchars($r['name'] . ' ' . $r['descriptors']) ?>">
-          <td class="td-dim"><?= (int)$r['order_level'] ?></td>
-          <td class="td-name">
-            <a href="/uj/powers/<?= htmlspecialchars($r['slug']) ?>"><?= htmlspecialchars($r['name']) ?></a>
-            <br>
-            <span style="font-family:'Crimson Pro',Georgia,serif; font-weight:400; font-size:0.88rem; color:var(--uj-text-muted); text-transform:none; letter-spacing:0; white-space:normal;"><?= htmlspecialchars($r['description']) ?></span>
-          </td>
-          <td class="td-dim" style="white-space:normal;"><?= htmlspecialchars($r['descriptors']) ?></td>
-          <td class="td-dim"><?= $r['page_number'] ? (int)$r['page_number'] : '' ?></td>
-        </tr>
-        <?php endforeach; ?>
-      </tbody>
-    </table>
-  <?php endforeach; ?>
+  <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:1rem; margin-top:1rem;">
+    <?php foreach ($meta as $key => $m): ?>
+      <a href="/uj/powers/<?= htmlspecialchars($key) ?>"
+         style="display:block; background:var(--uj-surface-2); border:1px solid rgba(244,166,34,0.18); border-left:3px solid var(--uj-amber); border-radius:var(--uj-radius); padding:1rem 1.1rem; text-decoration:none; transition:border-color 0.15s, background 0.15s;"
+         onmouseover="this.style.borderLeftColor='var(--uj-teal)';this.style.background='var(--uj-surface-3,var(--uj-surface-2))';"
+         onmouseout="this.style.borderLeftColor='var(--uj-amber)';this.style.background='var(--uj-surface-2)';">
+        <div style="display:flex; align-items:baseline; justify-content:space-between; gap:0.75rem; margin-bottom:0.4rem;">
+          <h2 style="font-family:'Cinzel',Georgia,serif; font-size:1.05rem; color:var(--uj-amber); letter-spacing:0.06em; text-transform:uppercase; margin:0;"><?= htmlspecialchars($m['full_name']) ?></h2>
+          <span style="font-size:0.78rem; color:var(--uj-text-dim);"><?= $counts[$key] ?> effect<?= $counts[$key] === 1 ? '' : 's' ?></span>
+        </div>
+        <p style="font-family:'Crimson Pro',Georgia,serif; font-size:0.9rem; color:var(--uj-text-muted); line-height:1.45; margin:0;">
+          <?= htmlspecialchars(mb_substr($m['description'], 0, 180)) ?><?= mb_strlen($m['description']) > 180 ? '…' : '' ?>
+        </p>
+        <p style="font-size:0.75rem; color:var(--uj-text-dim); margin:0.6rem 0 0; text-transform:uppercase; letter-spacing:0.05em;">
+          Occult Horror &middot; Page <?= (int)$m['page'] ?>
+        </p>
+      </a>
+    <?php endforeach; ?>
+  </div>
 <?php endif; ?>
 
 <?php require __DIR__ . '/../layout-foot.php'; ?>

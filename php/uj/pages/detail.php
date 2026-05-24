@@ -212,10 +212,38 @@ try {
             );
             break;
         case 'powers':
-            $record = cg_query_one(
-                "SELECT * FROM `{$p}uj_powers` WHERE slug = ? AND published = 1",
-                [$slug]
-            );
+            // First: is this a top-level Power key (esp, mesmerism, …)?
+            require_once __DIR__ . '/../../actions/uj.php';
+            $powersMeta = uj_powers_meta();
+            if (isset($powersMeta[$slug])) {
+                $m = $powersMeta[$slug];
+                $record = [
+                    'id'           => 0,
+                    'is_power_top' => true,
+                    'name'         => $m['full_name'],
+                    'slug'         => $slug,
+                    'power'        => $slug,
+                    'power_label'  => $m['label'],
+                    'description'  => $m['description'],
+                    'requires_text'=> $m['requires'],
+                    'page_number'  => $m['page'],
+                    'source_book'  => 'Occult Horror',
+                ];
+                try {
+                    $powerEffects = cg_query(
+                        "SELECT name, slug, order_level, descriptors, description, page_number
+                           FROM `{$p}uj_powers`
+                          WHERE power = ? AND published = 1
+                          ORDER BY order_level, name",
+                        [$slug]
+                    ) ?: [];
+                } catch (Throwable) { $powerEffects = []; }
+            } else {
+                $record = cg_query_one(
+                    "SELECT * FROM `{$p}uj_powers` WHERE slug = ? AND published = 1",
+                    [$slug]
+                );
+            }
             break;
     }
 } catch (Throwable) { }
@@ -236,6 +264,7 @@ $pageTitle = $record['name'];
 $joinedSkills = [];
 $joinedGifts  = [];
 $joinedSoaks  = [];
+$joinedPowers = [];
 
 $entityId = (int)$record['id'];
 
@@ -300,16 +329,16 @@ try {
 
 try {
     if (in_array($entity, ['species', 'types', 'careers'])) {
-        $singular = rtrim($entity, 's'); // species→specy (not used), types→type, careers→career
-        // Fix: entity slug to singular for table names
-        $singMap  = ['species' => 'species', 'types' => 'types', 'careers' => 'careers'];
-        $tblBase  = $singMap[$entity];
+        // Table name (plural) vs FK column name (singular) — they differ
+        // for types (type_id) and careers (career_id). species_id matches both.
+        $tblBase = $entity;
+        $colBase = ['species' => 'species', 'types' => 'type', 'careers' => 'career'][$entity];
 
         $joinedSkills = cg_query(
             "SELECT s.name, s.slug, s.paired_trait, s.description
                FROM `{$p}uj_{$tblBase}_skills` js
                JOIN `{$p}uj_skills` s ON s.id = js.skill_id
-              WHERE js.{$tblBase}_id = ?
+              WHERE js.{$colBase}_id = ?
               ORDER BY js.sort_order, s.name",
             [$entityId]
         ) ?: [];
@@ -318,10 +347,37 @@ try {
             "SELECT g.name, g.slug, g.subtitle, g.gift_type, g.description, g.recharge
                FROM `{$p}uj_{$tblBase}_gifts` jg
                JOIN `{$p}uj_gifts` g ON g.id = jg.gift_id
-              WHERE jg.{$tblBase}_id = ?
+              WHERE jg.{$colBase}_id = ?
               ORDER BY jg.sort_order, g.name",
             [$entityId]
         ) ?: [];
+
+        // ── Resolve Powers from raw gift_1/gift_2 names ───────────────────
+        // The 6 power-gate "gifts" were removed in favor of top-level Powers
+        // at /uj/powers. Career data still references them by name
+        // (e.g. "Mesmerism", "Telepathy"), so resolve those here against the
+        // power-meta name map and surface them as Powers Granted.
+        require_once __DIR__ . '/../../actions/uj.php';
+        $powersMeta = uj_powers_meta();
+        $powerNameMap = [];
+        foreach ($powersMeta as $key => $m) {
+            $powerNameMap[strtolower($m['full_name'])] = $key;
+            $powerNameMap[strtolower($m['label'])]     = $key;
+        }
+        // Allow "ESP" alias
+        $powerNameMap['esp'] = 'esp';
+
+        foreach (['gift_1', 'gift_2'] as $col) {
+            $raw = trim((string)($record[$col] ?? ''));
+            if ($raw === '') continue;
+            $key = $powerNameMap[strtolower($raw)] ?? null;
+            if ($key !== null && isset($powersMeta[$key])) {
+                $joinedPowers[$key] = [
+                    'key'   => $key,
+                    'label' => $powersMeta[$key]['full_name'],
+                ];
+            }
+        }
     }
 
     if ($entity === 'types') {
@@ -329,7 +385,7 @@ try {
             "SELECT s.name, s.slug, s.damage_negated, s.soak_type
                FROM `{$p}uj_types_soaks` js
                JOIN `{$p}uj_soaks` s ON s.id = js.soak_id
-              WHERE js.types_id = ?
+              WHERE js.type_id = ?
               ORDER BY js.sort_order, s.name",
             [$entityId]
         ) ?: [];
@@ -392,6 +448,22 @@ $listLabel = [
           <?php if ($g['subtitle']): ?><p style="font-style:italic; color:var(--uj-teal); font-size:0.85rem; margin:0.2rem 0 0;"><?= htmlspecialchars($g['subtitle']) ?></p><?php endif; ?>
           <?php if ($g['description']): ?><p style="font-size:0.85rem; color:var(--uj-text-muted); margin:0.3rem 0 0; line-height:1.4;"><?= htmlspecialchars($g['description']) ?></p><?php endif; ?>
           <?php if ($g['recharge']): ?><p style="font-size:0.78rem; color:var(--uj-text-dim); margin:0.25rem 0 0;">Recharge: <?= htmlspecialchars($g['recharge']) ?></p><?php endif; ?>
+        </div>
+        <?php endforeach; ?>
+      </div>
+    </div>
+    <?php endif; ?>
+
+    <?php if ($joinedPowers): ?>
+    <div class="detail-section">
+      <h3 class="detail-section-title">Powers Granted</h3>
+      <div style="display:flex; flex-direction:column; gap:0.5rem;">
+        <?php foreach ($joinedPowers as $pw): ?>
+        <div style="background:var(--uj-surface-2); border:1px solid rgba(75,191,216,0.18); border-left:3px solid var(--uj-teal); border-radius:var(--uj-radius); padding:0.6rem 0.9rem;">
+          <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap;">
+            <a href="/uj/powers/<?= htmlspecialchars($pw['key']) ?>" style="font-family:'Cinzel',serif; font-size:0.9rem; font-weight:700; color:var(--uj-teal);"><?= htmlspecialchars($pw['label']) ?></a>
+            <span class="tag tag-advanced">Power</span>
+          </div>
         </div>
         <?php endforeach; ?>
       </div>
@@ -708,23 +780,70 @@ $cc  = $classColors[$cls] ?? 'var(--uj-text-muted)';
 </p>
 <?php endif; ?>
 
+<?php elseif ($entity === 'powers' && !empty($record['is_power_top'])): ?>
+<!-- ── Power (top-level) detail ─────────────────────────────────────────── -->
+<div class="detail-layout">
+  <div class="detail-body">
+    <h1 class="detail-name" style="margin:0 0 0.5rem;"><?= htmlspecialchars($record['name']) ?></h1>
+    <p class="detail-subtitle"><?= htmlspecialchars($record['power_label']) ?> &middot; <?= count($powerEffects ?? []) ?> effect<?= count($powerEffects ?? []) === 1 ? '' : 's' ?></p>
+
+    <p class="detail-desc"><?= nl2br(htmlspecialchars($record['description'])) ?></p>
+
+    <?php if (!empty($record['requires_text'])): ?>
+    <div class="detail-section">
+      <h3 class="detail-section-title">Requires</h3>
+      <p style="color:var(--uj-text-muted); font-size:0.95rem; margin:0;"><?= htmlspecialchars($record['requires_text']) ?></p>
+    </div>
+    <?php endif; ?>
+
+    <?php if (!empty($powerEffects)): ?>
+    <div class="detail-section" style="margin-top:1.5rem;">
+      <h3 class="detail-section-title">Effects (<?= count($powerEffects) ?>)</h3>
+      <table class="uj-table">
+        <thead>
+          <tr><th style="width:3rem;">Ord.</th><th>Effect</th><th>Descriptors</th><th>Pg</th></tr>
+        </thead>
+        <tbody>
+        <?php foreach ($powerEffects as $eff): ?>
+          <tr>
+            <td class="td-dim"><?= (int)$eff['order_level'] ?></td>
+            <td class="td-name">
+              <a href="/uj/powers/<?= htmlspecialchars($eff['slug']) ?>"><?= htmlspecialchars($eff['name']) ?></a><br>
+              <span class="td-muted" style="font-weight:400; font-family:'Crimson Pro',Georgia,serif; text-transform:none; letter-spacing:0; white-space:normal;"><?= htmlspecialchars($eff['description']) ?></span>
+            </td>
+            <td class="td-dim" style="white-space:normal;"><?= htmlspecialchars($eff['descriptors']) ?></td>
+            <td class="td-dim"><?= $eff['page_number'] ? (int)$eff['page_number'] : '' ?></td>
+          </tr>
+        <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+    <?php endif; ?>
+
+    <p style="margin-top:1.5rem;"><a href="/uj/powers" style="color:var(--uj-amber);">← All Powers</a></p>
+  </div>
+
+  <div class="detail-sidebar">
+    <div class="sidebar-card">
+      <h3 class="sidebar-card-title">Source</h3>
+      <p style="font-size:0.9rem; margin:0;">
+        <a href="/uj/books/occult-horror">Occult Horror</a>
+      </p>
+      <?php if (!empty($record['page_number'])): ?>
+        <p style="font-size:0.8rem; color:var(--uj-text-dim); margin:0.25rem 0 0; text-transform:uppercase; letter-spacing:0.05em;">Page&nbsp;<?= (int)$record['page_number'] ?></p>
+      <?php endif; ?>
+    </div>
+  </div>
+</div>
+
 <?php elseif ($entity === 'powers'): ?>
 <!-- ── Power effect detail ──────────────────────────────────────────────── -->
-<?php
-  // Map power-key back to the parent gift slug for the breadcrumb link.
-  $parentGiftSlug = $record['power'] === 'esp' ? 'extra-sensory-perception' : $record['power'];
-  $isRitual = ($record['power'] === 'rituals');
-?>
 <div style="display:flex; align-items:flex-start; gap:0.75rem; margin-bottom:0.5rem; flex-wrap:wrap;">
   <h1 class="detail-name" style="margin:0;"><?= htmlspecialchars($record['name']) ?></h1>
   <span class="tag tag-gift" style="margin-top:6px;">Order&nbsp;<?= (int)$record['order_level'] ?></span>
 </div>
 <p class="detail-subtitle">
-  <?php if ($isRitual): ?>
-    <?= htmlspecialchars($record['power_label']) ?>
-  <?php else: ?>
-    Effect of <a href="/uj/gifts/<?= htmlspecialchars($parentGiftSlug) ?>" style="color:var(--uj-teal);"><?= htmlspecialchars($record['power_label']) ?></a>
-  <?php endif; ?>
+  Effect of <a href="/uj/powers/<?= htmlspecialchars($record['power']) ?>" style="color:var(--uj-teal);"><?= htmlspecialchars($record['power_label']) ?></a>
 </p>
 <?php if (!empty($record['descriptors'])): ?>
 <p style="font-size:0.9rem; color:var(--uj-text-muted); margin:0 0 1rem;"><strong style="color:var(--uj-text-dim);">Descriptors:</strong> <?= htmlspecialchars($record['descriptors']) ?></p>

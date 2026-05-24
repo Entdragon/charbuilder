@@ -1794,8 +1794,64 @@ function uj_install_skills(): int {
 
 // ── Gifts data ────────────────────────────────────────────────────────────────
 
+/**
+ * Metadata for the 7 top-level Powers of Supernatural Power (Occult Horror).
+ * Used by /uj/powers (listing) and /uj/powers/<key> (Power detail page).
+ * Keys correspond to the `power` column on uj_powers (effect rows).
+ */
+function uj_powers_meta(): array {
+    return [
+        'esp' => [
+            'key' => 'esp', 'label' => 'ESP', 'full_name' => 'Extra-Sensory Perception',
+            'page' => 195, 'requires' => 'a gift of supernatural power',
+            'description' => "You may call upon the powers of Extra-Sensory Perception (ESP). Characters without this Power may not call upon the powers of ESP. You may claim a d8 bonus to any roll to research ESP on an academic level, to observe an ESP effect, and to question other people about ESP. You will need a power die to make casting rolls, such as the power dice given to you by Personal Power or Petitioned Power.",
+        ],
+        'mesmerism' => [
+            'key' => 'mesmerism', 'label' => 'Mesmerism', 'full_name' => 'Mesmerism',
+            'page' => 196, 'requires' => 'a gift of supernatural power',
+            'description' => "You may call upon the powers of Mesmerism. Characters without this Power may not call upon its effects. You may claim a d8 bonus to any roll to research mesmerism on an academic level, to observe a mesmerism effect, and to question other people about mesmerism. You will need a power die to make casting rolls, such as the power dice given to you by Personal Power or Petitioned Power.",
+        ],
+        'psychokinesis' => [
+            'key' => 'psychokinesis', 'label' => 'PK', 'full_name' => 'Psychokinesis',
+            'page' => 197, 'requires' => 'a gift of supernatural power',
+            'description' => "You may call upon the powers of Psychokinesis (PK). Characters without this Power may not call upon its effects. You may claim a d8 bonus to any roll to research psychokinesis on an academic level, to observe a PK effect, and to question other people about psychokinesis. You will need a power die to make casting rolls, such as the power dice given to you by Personal Power or Petitioned Power.",
+        ],
+        'rituals' => [
+            'key' => 'rituals', 'label' => 'Rituals', 'full_name' => 'Rituals',
+            'page' => 198, 'requires' => 'any Power of Supernatural Power (Personal Power or Petitioned Power)',
+            'description' => "Rituals are the slow, deliberate workings of supernatural power. Any character with a Power of Supernatural Power may cast Rituals, provided they can read the directions and gather the necessary materials. Rituals do not need a dedicated gift to access — they are universally available to practitioners.",
+        ],
+        'spiritualism' => [
+            'key' => 'spiritualism', 'label' => 'Spiritualism', 'full_name' => 'Spiritualism',
+            'page' => 200, 'requires' => 'a gift of supernatural power',
+            'description' => "You may call upon the powers of Spiritualism. Characters without this Power may not call upon its effects. You may claim a d8 bonus to any roll to research spiritualism on an academic level, to observe a spiritualist effect, and to question other people about spiritualism. You will need a power die to make casting rolls, such as the power dice given to you by Personal Power or Petitioned Power.",
+        ],
+        'telepathy' => [
+            'key' => 'telepathy', 'label' => 'Telepathy', 'full_name' => 'Telepathy',
+            'page' => 205, 'requires' => 'a gift of supernatural power',
+            'description' => "You may call upon the powers of Telepathy. Characters without this Power may not call upon its effects. You may claim a d8 bonus to any roll to research telepathy on an academic level, to observe a telepathy effect, and to question other people about telepathy. You will need a power die to make casting rolls, such as the power dice given to you by Personal Power or Petitioned Power.",
+        ],
+        'vitalism' => [
+            'key' => 'vitalism', 'label' => 'Vitalism', 'full_name' => 'Vitalism',
+            'page' => 207, 'requires' => 'a gift of supernatural power',
+            'description' => "You may call upon the powers of Vitalism. Characters without this Power may not call upon its effects. You may claim a d8 bonus to any roll to research vitalism on an academic level, to observe a vitalism effect, and to question other people about vitalism. You will need a power die to make casting rolls, such as the power dice given to you by Personal Power or Petitioned Power.",
+        ],
+    ];
+}
+
 function uj_install_gifts(): int {
     $t = uj_tbl('gifts');
+
+    // ── Cleanup: remove the 6 "Power-gate" gifts (ESP, Mesmerism, PK,
+    // Spiritualism, Telepathy, Vitalism). These are no longer gifts — they
+    // live as top-level Powers at /uj/powers. Safe to run repeatedly.
+    try {
+        cg_exec(
+            "DELETE FROM `{$t}` WHERE slug IN
+             ('extra-sensory-perception','mesmerism','psychokinesis',
+              'spiritualism','telepathy','vitalism')"
+        );
+    } catch (Throwable) { /* table missing or already clean */ }
 
     // Each row: [name, slug, subtitle, description, gift_type, recharge, requires_text]
     $rows = [
@@ -2094,31 +2150,11 @@ function uj_install_gifts(): int {
          "You can call upon the Opinion dice of supernatural entities to give you power dice. You need power dice to cast supernatural effects. (Characters without this gift cannot use an entity's Opinion dice as power dice. They can make all the incantations, offerings, and sacrifices that they want\u{2026} but only true practitioners can petition the otherworldly in a way that will be heard.) You must roll a power die when casting supernatural effects. If you don't roll a power die, the supernatural effect fails to work. The rules for casting begin on page 188. The entity's good Opinion of you is a power die for your magic. For example, if you have \"Petitioned Power\", and Gamigyn has a good Opinion die of d8 for you, then you may use that Opinion die as a power die when casting spells. (Note that since the Opinion die is a dwindle die, if you roll a 1, that die decreases by one size. The entities will grow weary of your constant demands.) The entity's bad Opinion of your target is a power die for your magic. If your target has a bad Opinion from an entity that can be petitioned, you can use that bad opinion die as a power die. You must know the name of the entity that has the bad Opinion of the target, but you don't have to know what the die size is. You can petition for multiple entities\u{2026} but your casting roll becomes wicked. More dice can mean more successes, but it also means more chances for power to dwindle. And multiple entities will want different favors to win their good Opinion\u{2026} sometimes at cross-purposes. You normally only petition one entity per casting. If you petition two or more entities, your casting becomes wicked. (See page 191.) You can cast Rituals. You need at least one power die to cast for supernatural powers. You will need more gifts to unlock more powers.",
          'basic', '', ''],
 
-        // Gifts that Unlock Effects (p. 210)
-        ['Extra-Sensory Perception', 'extra-sensory-perception',
-         'unlocks ESP List (page 195)',
-         "You may call upon the powers of Extra-Sensory Perception (ESP). (Characters without this gift may not call upon the powers of ESP.) See page 195 for more details. You may claim a d8 bonus to any roll to research ESP on an academic level, to observe an ESP effect, and to question other people about ESP. You will need a power die to make casting rolls, such as the power dice given to you by Personal Power (page 209) or Petitioned Power (page 209).",
-         'advanced', '', 'Requires: a gift of supernatural power'],
-        ['Mesmerism', 'mesmerism',
-         'unlocks Mesmerism List (page 196)',
-         "You may call upon the powers of Mesmerism. (Characters without this gift may not call upon the powers of Mesmerism.) See page 196 for more details. You may claim a d8 bonus to any roll to research mesmerism on an academic level, to observe a mesmerism effect, and to question other people about mesmerism. You will need a power die to make casting rolls, such as the power dice given to you by Personal Power (page 209) or Petitioned Power (page 209).",
-         'advanced', '', 'Requires: a gift of supernatural power'],
-        ['Psychokinesis', 'psychokinesis',
-         'unlocks PK List (page 197)',
-         "You may call upon the powers of Psychokinesis (PK). (Characters without this gift may not call upon the powers of Psychokinesis.) See page 197 for more details. You may claim a d8 bonus to any roll to research psychokinesis on an academic level, to observe a psychokinesis effect, and to question other people about psychokinesis. You will need a power die to make casting rolls, such as the power dice given to you by Personal Power (page 209) or Petitioned Power (page 209).",
-         'advanced', '', 'Requires: a gift of supernatural power'],
-        ['Spiritualism', 'spiritualism',
-         'unlocks Spiritualism List (page 200)',
-         "You may call upon the powers of Spiritualism. (Characters without this gift may not call upon the powers of Spiritualism.) See page 200 for more details. You may claim a d8 bonus to any roll to research spiritualism on an academic level, to observe a spiritualist effect, and to question other people about spiritualism. You will need a power die to make casting rolls, such as the power dice given to you by Personal Power (page 209) or Petitioned Power (page 209).",
-         'advanced', '', 'Requires: a gift of supernatural power'],
-        ['Telepathy', 'telepathy',
-         'unlocks Telepathy List (page 205)',
-         "You may call upon the powers of Telepathy. (Characters without this gift may not call upon the powers of Telepathy.) See page 205 for more details. You may claim a d8 bonus to any roll to research telepathy on an academic level, to observe a telepathy effect, and to question other people about telepathy. You will need a power die to make casting rolls, such as the power dice given to you by Personal Power (page 209) or Petitioned Power (page 209).",
-         'advanced', '', 'Requires: a gift of supernatural power'],
-        ['Vitalism', 'vitalism',
-         'unlocks Vitalism List (page 207)',
-         "You may call upon the powers of Vitalism. (Characters without this gift may not call upon the powers of Vitalism.) See page 207 for more details. You may claim a d8 bonus to any roll to research vitalism on an academic level, to observe a vitalism effect, and to question other people about vitalism. You will need a power die to make casting rolls, such as the power dice given to you by Personal Power (page 209) or Petitioned Power (page 209).",
-         'advanced', '', 'Requires: a gift of supernatural power'],
+        // NOTE: The 6 "Power-gate" gifts (Extra-Sensory Perception, Mesmerism,
+        // Psychokinesis, Spiritualism, Telepathy, Vitalism) used to live here.
+        // They are now modeled as top-level Powers — see uj_powers_meta() and
+        // /uj/powers. The cleanup DELETE at the top of this function removes
+        // any stale rows from existing databases.
 
         // Gifts for Arcana Casting (pp. 211-212)
         ['Abjure Arcana 2d8', 'abjure-arcana',
@@ -2215,12 +2251,6 @@ function uj_install_gifts(): int {
         // slug => page number in Occult Horror
         'personal-power'           => 209,
         'petitioned-power'         => 209,
-        'extra-sensory-perception' => 210,
-        'mesmerism'                => 210,
-        'psychokinesis'            => 210,
-        'spiritualism'             => 210,
-        'telepathy'                => 210,
-        'vitalism'                 => 210,
         'abjure-arcana'            => 211,
         'anodyne-arcana'           => 211,
         'channeling-arcana'        => 211,
