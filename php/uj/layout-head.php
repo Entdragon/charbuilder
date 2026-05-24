@@ -13,13 +13,27 @@ $isAdmin = cg_is_admin();
 if (!isset($ujCounts)) {
     $ujCounts = [];
     $p = cg_prefix();
-    foreach (['species','types','careers','skills','gifts','soaks','attacks','items','powers'] as $t) {
+    foreach (['species','types','careers','skills','gifts','soaks','attacks','items'] as $t) {
         try {
             $row = cg_query_one("SELECT COUNT(*) AS n FROM `{$p}uj_{$t}` WHERE published = 1");
             $ujCounts[$t] = (int)($row['n'] ?? 0);
         } catch (Throwable) {
             $ujCounts[$t] = 0;
         }
+    }
+    // Powers: 7 top-level Powers (from meta), and a separate count of
+    // their effects in uj_powers.
+    try {
+        require_once __DIR__ . '/../actions/uj.php';
+        $ujCounts['powers'] = count(uj_powers_meta());
+    } catch (Throwable) {
+        $ujCounts['powers'] = 0;
+    }
+    try {
+        $row = cg_query_one("SELECT COUNT(*) AS n FROM `{$p}uj_powers` WHERE published = 1");
+        $ujCounts['power_effects'] = (int)($row['n'] ?? 0);
+    } catch (Throwable) {
+        $ujCounts['power_effects'] = 0;
     }
 }
 

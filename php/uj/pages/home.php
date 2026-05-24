@@ -19,6 +19,7 @@ require __DIR__ . '/../layout-head.php';
   <a href="/uj/gifts"    class="stat-card"><div class="stat-n"><?= $ujCounts['gifts']   ?></div><div class="stat-l">Gifts</div></a>
   <a href="/uj/soaks"    class="stat-card"><div class="stat-n"><?= $ujCounts['soaks']   ?></div><div class="stat-l">Soaks</div></a>
   <a href="/uj/powers"   class="stat-card"><div class="stat-n"><?= $ujCounts['powers']  ?></div><div class="stat-l">Powers</div></a>
+  <a href="/uj/powers"   class="stat-card"><div class="stat-n"><?= $ujCounts['power_effects'] ?></div><div class="stat-l">Power Effects</div></a>
   <a href="/uj/attacks"  class="stat-card"><div class="stat-n"><?= $ujCounts['attacks'] ?></div><div class="stat-l">Attacks</div></a>
   <a href="/uj/items"    class="stat-card"><div class="stat-n"><?= $ujCounts['items']   ?></div><div class="stat-l">Items</div></a>
 </div>
