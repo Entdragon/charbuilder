@@ -211,6 +211,12 @@ try {
                 [$slug]
             );
             break;
+        case 'powers':
+            $record = cg_query_one(
+                "SELECT * FROM `{$p}uj_powers` WHERE slug = ? AND published = 1",
+                [$slug]
+            );
+            break;
     }
 } catch (Throwable) { }
 
@@ -238,6 +244,7 @@ $skillCareers = [];
 $skillSpecies = [];
 $giftCareers  = [];
 $giftSpecies  = [];
+$giftPowers   = [];
 
 try {
     if ($entity === 'skills') {
@@ -259,6 +266,20 @@ try {
     }
 
     if ($entity === 'gifts') {
+        // Find any Power effects whose `power` key matches this gift's slug
+        // (mapping: extra-sensory-perception → esp; otherwise slug == power-key).
+        $giftPowerKey = $record['slug'];
+        if ($giftPowerKey === 'extra-sensory-perception') $giftPowerKey = 'esp';
+        try {
+            $giftPowers = cg_query(
+                "SELECT name, slug, order_level, descriptors, description, page_number
+                   FROM `{$p}uj_powers`
+                  WHERE power = ? AND published = 1
+                  ORDER BY order_level, name",
+                [$giftPowerKey]
+            ) ?: [];
+        } catch (Throwable) { $giftPowers = []; }
+
         $giftCareers = cg_query("
             SELECT c.name, c.slug
             FROM `{$p}uj_careers` c
@@ -319,7 +340,7 @@ require __DIR__ . '/../layout-head.php';
 
 $listLabel = [
     'species' => 'Species', 'types' => 'Types', 'careers' => 'Careers',
-    'skills' => 'Skills', 'gifts' => 'Gifts', 'soaks' => 'Soaks',
+    'skills' => 'Skills', 'gifts' => 'Gifts', 'soaks' => 'Soaks', 'powers' => 'Powers',
     'attacks' => 'Attacks', 'items' => 'Items',
 ][$entity] ?? ucfirst($entity);
 ?>
@@ -525,6 +546,27 @@ $listLabel = [
     <?php if (!empty($record['recharge'])): ?>
     <p style="color:var(--uj-text-dim); font-size:0.9rem; margin-top:1rem;"><strong style="color:var(--uj-text-muted);">Recharge:</strong> <?= htmlspecialchars($record['recharge']) ?></p>
     <?php endif; ?>
+
+    <?php if ($giftPowers): ?>
+    <div class="detail-section" style="margin-top:1.5rem;">
+      <h3 class="detail-section-title">Effects (<?= count($giftPowers) ?>)</h3>
+      <table class="uj-table">
+        <thead>
+          <tr><th style="width:3rem;">Ord.</th><th>Effect</th><th>Descriptors</th><th>Pg</th></tr>
+        </thead>
+        <tbody>
+        <?php foreach ($giftPowers as $eff): ?>
+          <tr>
+            <td class="td-dim"><?= (int)$eff['order_level'] ?></td>
+            <td class="td-name"><a href="/uj/powers/<?= htmlspecialchars($eff['slug']) ?>"><?= htmlspecialchars($eff['name']) ?></a><br><span class="td-muted" style="font-weight:400; font-family:'Crimson Pro',Georgia,serif; text-transform:none; letter-spacing:0; white-space:normal;"><?= htmlspecialchars($eff['description']) ?></span></td>
+            <td class="td-dim" style="white-space:normal;"><?= htmlspecialchars($eff['descriptors']) ?></td>
+            <td class="td-dim"><?= $eff['page_number'] ? (int)$eff['page_number'] : '' ?></td>
+          </tr>
+        <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+    <?php endif; ?>
   </div>
 
   <div class="detail-sidebar">
@@ -665,6 +707,43 @@ $cc  = $classColors[$cls] ?? 'var(--uj-text-muted)';
   <a href="/uj/books/<?= htmlspecialchars($srcSlug) ?>"><?= htmlspecialchars($srcBook) ?></a><?php if (!empty($record['page_number'])): ?> &middot; Page&nbsp;<?= (int)$record['page_number'] ?><?php endif; ?>
 </p>
 <?php endif; ?>
+
+<?php elseif ($entity === 'powers'): ?>
+<!-- ── Power effect detail ──────────────────────────────────────────────── -->
+<?php
+  // Map power-key back to the parent gift slug for the breadcrumb link.
+  $parentGiftSlug = $record['power'] === 'esp' ? 'extra-sensory-perception' : $record['power'];
+  $isRitual = ($record['power'] === 'rituals');
+?>
+<div style="display:flex; align-items:flex-start; gap:0.75rem; margin-bottom:0.5rem; flex-wrap:wrap;">
+  <h1 class="detail-name" style="margin:0;"><?= htmlspecialchars($record['name']) ?></h1>
+  <span class="tag tag-gift" style="margin-top:6px;">Order&nbsp;<?= (int)$record['order_level'] ?></span>
+</div>
+<p class="detail-subtitle">
+  <?php if ($isRitual): ?>
+    <?= htmlspecialchars($record['power_label']) ?>
+  <?php else: ?>
+    Effect of <a href="/uj/gifts/<?= htmlspecialchars($parentGiftSlug) ?>" style="color:var(--uj-teal);"><?= htmlspecialchars($record['power_label']) ?></a>
+  <?php endif; ?>
+</p>
+<?php if (!empty($record['descriptors'])): ?>
+<p style="font-size:0.9rem; color:var(--uj-text-muted); margin:0 0 1rem;"><strong style="color:var(--uj-text-dim);">Descriptors:</strong> <?= htmlspecialchars($record['descriptors']) ?></p>
+<?php endif; ?>
+<?php if (!empty($record['description'])): ?>
+<p class="detail-desc"><?= nl2br(htmlspecialchars($record['description'])) ?></p>
+<?php endif; ?>
+<?php if (!empty($record['page_number']) || !empty($record['source_book'])): ?>
+<?php
+  $srcBook = !empty($record['source_book']) ? $record['source_book'] : 'Urban Jungle';
+  $srcSlug = strtolower(preg_replace('/[^a-z0-9]+/i', '-', trim($srcBook)));
+  $srcSlug = trim($srcSlug, '-');
+?>
+<p style="color:var(--uj-text-dim); font-size:0.85rem; margin-top:1rem;">
+  <a href="/uj/books/<?= htmlspecialchars($srcSlug) ?>"><?= htmlspecialchars($srcBook) ?></a><?php if (!empty($record['page_number'])): ?> &middot; Page&nbsp;<?= (int)$record['page_number'] ?><?php endif; ?>
+</p>
+<?php endif; ?>
+<p style="margin-top:1.5rem;"><a href="/uj/powers" style="color:var(--uj-amber);">← All Powers</a></p>
+
 <?php endif; ?>
 
 <?php require __DIR__ . '/../layout-foot.php'; ?>

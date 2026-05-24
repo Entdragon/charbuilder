@@ -27,6 +27,7 @@ $sections = [
     'soaks'   => 'soaks',
     'attacks' => 'attacks',
     'items'   => 'items',
+    'powers'  => 'powers',
     'books'   => 'books',
     'search'  => 'search',
     'builder' => 'builder',

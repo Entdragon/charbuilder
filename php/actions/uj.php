@@ -258,6 +258,27 @@ function uj_create_tables_internal(): array {
             PRIMARY KEY (`id`),
             UNIQUE KEY `career_gift` (`career_id`, `gift_id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+        // ── Supernatural Powers / Effects (Occult Horror) ─────────────────────
+        "CREATE TABLE IF NOT EXISTS `{$p}uj_powers` (
+            `id`            INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `name`          VARCHAR(120) NOT NULL DEFAULT '',
+            `slug`          VARCHAR(120) NOT NULL DEFAULT '',
+            `power`         VARCHAR(40)  NOT NULL DEFAULT '',
+            `power_label`   VARCHAR(60)  NOT NULL DEFAULT '',
+            `order_level`   TINYINT UNSIGNED NOT NULL DEFAULT 1,
+            `descriptors`   VARCHAR(200) NOT NULL DEFAULT '',
+            `description`   TEXT,
+            `page_number`   SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+            `source_book`   VARCHAR(60)  NOT NULL DEFAULT '',
+            `published`     TINYINT(1)   NOT NULL DEFAULT 1,
+            `created_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `updated_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `slug` (`slug`),
+            KEY `power` (`power`),
+            KEY `order_level` (`order_level`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
     ];
 
     $created = [];
@@ -299,6 +320,7 @@ function uj_install_data(): void {
     $counts = [];
     $counts['species']  = uj_install_species();
     $counts['types']    = uj_install_types();
+    $counts['powers']   = uj_install_powers();
     $counts['careers']  = uj_install_careers();
     $counts['skills']   = uj_install_skills();
     $counts['gifts']    = uj_install_gifts();
@@ -307,8 +329,267 @@ function uj_install_data(): void {
     $counts['items']    = uj_install_items();
     $counts['joins']    = uj_build_joins_internal();
 
-    $msg = "Upserted: {$counts['species']} species, {$counts['types']} types, {$counts['careers']} careers, {$counts['skills']} skills, {$counts['gifts']} gifts, {$counts['soaks']} soaks, {$counts['attacks']} attacks, {$counts['items']} items. Built {$counts['joins']} join rows.";
+    $msg = "Upserted: {$counts['species']} species, {$counts['types']} types, {$counts['careers']} careers, {$counts['skills']} skills, {$counts['gifts']} gifts, {$counts['soaks']} soaks, {$counts['attacks']} attacks, {$counts['items']} items, {$counts['powers']} power effects. Built {$counts['joins']} join rows.";
     cg_json(['success' => true, 'data' => $msg]);
+}
+
+// ── Powers / effects (Occult Horror) ──────────────────────────────────────────
+
+function uj_install_powers(): int {
+    $t = uj_tbl('powers');
+
+    // Each row: [order, name, slug, power-key, power-label, descriptors, description, page]
+    // Descriptions are concise mechanical paraphrases — see Occult Horror pp.195-208 for full text.
+    $rows = [
+        // ── ESP (p.195) ────────────────────────────────────────────────────────
+        [1, 'Clear Senses',       'esp-clear-senses',       'esp', 'ESP', 'ESP',
+         'Suppress one ongoing distraction or sensory penalty for the caster for the rest of the scene.', 195],
+        [1, 'Dowsing I',           'esp-dowsing-i',         'esp', 'ESP', 'ESP, Dowsing',
+         'Sense the direction (but not distance) to a single object or person the caster knows by name; line of sight not required.', 195],
+        [3, 'Dowsing III',         'esp-dowsing-iii',       'esp', 'ESP', 'ESP, Dowsing',
+         'As Dowsing I, but also reveals approximate distance and intervening obstacles.', 195],
+        [3, 'Psychometry',         'esp-psychometry',       'esp', 'ESP', 'ESP, Retro',
+         'By touching an object, glimpse the strongest emotional impressions or recent events tied to it.', 195],
+        [3, 'Retrocognition III',  'esp-retrocognition-iii','esp', 'ESP', 'ESP, Retro',
+         'Witness past events at the caster\'s current location, going back up to a few days.', 195],
+        [5, 'Precognition V',      'esp-precognition-v',    'esp', 'ESP', 'ESP, Precog',
+         'Glimpse a likely near-future outcome of a course of action the caster is considering.', 195],
+        [5, 'Remote Viewing',      'esp-remote-viewing',    'esp', 'ESP', 'ESP',
+         'Project the caster\'s senses to a distant place known to the caster, for the duration of a scene.', 195],
+        [5, 'Retrocognition V',    'esp-retrocognition-v',  'esp', 'ESP', 'ESP, Retro',
+         'As Retrocognition III, but reach back weeks or months and view in greater detail.', 195],
+        [7, 'Precognition VII',    'esp-precognition-vii',  'esp', 'ESP', 'ESP, Precog',
+         'Foresee a longer-range likely future, hours or days ahead; results remain probabilistic.', 195],
+
+        // ── Mesmerism (p.196-197) ──────────────────────────────────────────────
+        [1, 'Clouding of Minds',   'mes-clouding-of-minds', 'mesmerism', 'Mesmerism', 'Mesmerism, Mental',
+         'Make a single target overlook or fail to notice the caster for the rest of the scene.', 196],
+        [1, 'Mesmeric Shield',     'mes-mesmeric-shield',   'mesmerism', 'Mesmerism', 'Mesmerism, Protect',
+         'Grant the caster bonus dice to resist Mental and Mesmerism effects for the scene.', 196],
+        [3, 'Forgetfulness',       'mes-forgetfulness',     'mesmerism', 'Mesmerism', 'Mesmerism, Mental',
+         'Cause one target to forget the last few minutes of events involving the caster.', 196],
+        [3, 'Hypnosis',            'mes-hypnosis',          'mesmerism', 'Mesmerism', 'Mesmerism, Verbal, Mental',
+         'Place a willing or unaware subject in a hypnotic trance, then ask questions or implant simple cues.', 196],
+        [5, 'Mass Forgetfulness',  'mes-mass-forgetfulness','mesmerism', 'Mesmerism', 'Mesmerism, Mass, Mental',
+         'As Forgetfulness, but affects a small group within sight of the caster.', 197],
+        [5, 'Mass Suggestion',     'mes-mass-suggestion',   'mesmerism', 'Mesmerism', 'Mesmerism, Verbal, Mass, Mental',
+         'Issue a brief, plausible suggestion that a small group of listeners will tend to act on.', 197],
+        [5, 'Phantasm',            'mes-phantasm',          'mesmerism', 'Mesmerism', 'Mesmerism, Verbal, Mental',
+         'Plant a vivid sensory hallucination in one target that only they perceive.', 197],
+        [5, 'Suggestion',          'mes-suggestion',        'mesmerism', 'Mesmerism', 'Mesmerism, Verbal, Mental',
+         'Slip a single plausible suggestion past one target\'s judgement; lasts until acted on or contradicted.', 197],
+        [7, 'Compulsion',          'mes-compulsion',        'mesmerism', 'Mesmerism', 'Mesmerism, Verbal, Mental',
+         'Issue a binding command that one target must struggle to disobey, even if dangerous.', 197],
+        [7, 'Mass Phantasm',       'mes-mass-phantasm',     'mesmerism', 'Mesmerism', 'Mesmerism, Verbal, Mass, Mental',
+         'As Phantasm, sharing the same illusion across a small group within sight and earshot.', 197],
+        [10,'Mass Compulsion',     'mes-mass-compulsion',   'mesmerism', 'Mesmerism', 'Mesmerism, Verbal, Mass, Mental',
+         'As Compulsion, levied on a small crowd at once.', 197],
+
+        // ── Psychokinesis (p.198-199) ──────────────────────────────────────────
+        [1, 'Block PK',            'pk-block-pk',           'psychokinesis', 'PK', 'PK, Protect, Interrupt',
+         'Interrupt an incoming PK effect targeted at the caster or a nearby ally and dispel it.', 198],
+        [1, 'PK Parlor Tricks',    'pk-parlor-tricks',      'psychokinesis', 'PK', 'PK, Telekinesis, Abjure',
+         'Move tiny objects (cards, dice, coins) with the mind for showy effect or minor cheats.', 198],
+        [1, 'PK Shield',           'pk-shield',             'psychokinesis', 'PK', 'PK, Protect',
+         'Erect an invisible kinetic shield that grants bonus dice vs. ranged attacks for the scene.', 198],
+        [1, 'Shove',               'pk-shove',              'psychokinesis', 'PK', 'PK, Telekinesis, Abjure',
+         'Knock a nearby target one pace back, possibly off-balance, with a focused mental push.', 198],
+        [3, 'Electrokinesis',      'pk-electrokinesis',     'psychokinesis', 'PK', 'PK, Energy',
+         'Discharge a burst of static or arc electricity sufficient to shock a target or short a device.', 198],
+        [3, 'Fetch III',           'pk-fetch-iii',          'psychokinesis', 'PK', 'PK, Telekinesis',
+         'Lift and pull a hand-sized object across the room into the caster\'s grasp.', 198],
+        [3, 'Mass Shove',          'pk-mass-shove',         'psychokinesis', 'PK', 'PK, Telekinesis, Abjure, Mass',
+         'As Shove, but affects multiple targets in a small area.', 198],
+        [3, 'Opener of Ways III',  'pk-opener-of-ways-iii', 'psychokinesis', 'PK', 'PK, Telekinesis, Sabotage',
+         'Unlatch, unlock, or trip simple mechanisms from a distance without touching them.', 198],
+        [3, 'Poltergeist III',     'pk-poltergeist-iii',    'psychokinesis', 'PK', 'PK, Telekinesis, Abjure',
+         'Hurl loose objects around a room in a chaotic burst, distracting and lightly injuring targets.', 199],
+        [3, 'Pyrokinesis',         'pk-pyrokinesis',        'psychokinesis', 'PK', 'PK, Energy',
+         'Ignite a small, flammable target at a short distance, or boost an existing fire.', 199],
+        [3, 'Thoughtography I',    'pk-thoughtography-i',   'psychokinesis', 'PK', 'PK, Energy',
+         'Imprint a faint mental image onto a piece of film or photo-sensitive surface.', 199],
+        [3, 'Thoughtography III',  'pk-thoughtography-iii', 'psychokinesis', 'PK', 'PK, Energy',
+         'As Thoughtography I, with sharper, more detailed imagery and choice of medium.', 199],
+        [5, 'Fetch V',             'pk-fetch-v',            'psychokinesis', 'PK', 'PK, Telekinesis',
+         'As Fetch III, but lift and steer objects up to roughly a person\'s weight.', 199],
+        [5, 'Levitation',          'pk-levitation',         'psychokinesis', 'PK', 'PK, Telekinesis',
+         'Lift the caster off the ground at a walking pace for the duration of the scene.', 199],
+        [5, 'Mass Poltergeist',    'pk-mass-poltergeist',   'psychokinesis', 'PK', 'PK, Telekinesis, Mass, Abjure',
+         'As Poltergeist, sweeping a larger area and rattling multiple targets at once.', 199],
+        [5, 'Opener of Ways V',    'pk-opener-of-ways-v',   'psychokinesis', 'PK', 'PK, Telekinesis, Sabotage',
+         'Defeat stronger locks and mechanisms, or sabotage moving parts, from across a room.', 199],
+        [5, 'Poltergeist V',       'pk-poltergeist-v',      'psychokinesis', 'PK', 'PK, Telekinesis, Abjure',
+         'A more violent poltergeist burst that can hurl furniture and seriously hurt a target.', 199],
+        [5, 'Snatch',              'pk-snatch',             'psychokinesis', 'PK', 'PK, Telekinesis',
+         'Rip a held object out of a target\'s grip and pull it to the caster.', 199],
+        [5, 'Thoughtography V',    'pk-thoughtography-v',   'psychokinesis', 'PK', 'PK, Energy',
+         'Imprint vivid, full-colour mental imagery onto film, photo, or a treated surface.', 199],
+        [7, 'Fetch VII',           'pk-fetch-vii',          'psychokinesis', 'PK', 'PK, Telekinesis',
+         'Move very heavy objects across a room — beams, statues, motorcycles — under deliberate control.', 199],
+        [7, 'Mass Levitation',     'pk-mass-levitation',    'psychokinesis', 'PK', 'PK, Telekinesis',
+         'As Levitation, raising the caster and a small group of willing companions.', 199],
+        [7, 'Poltergeist VII',     'pk-poltergeist-vii',    'psychokinesis', 'PK', 'PK, Telekinesis, Abjure',
+         'A devastating poltergeist that can wreck a room and badly injure those inside it.', 199],
+
+        // ── Rituals (p.200-202) ────────────────────────────────────────────────
+        [1, 'Ritual I',            'rit-ritual-i',          'rituals', 'Rituals', 'Ritual, Scene',
+         'Perform a 1st-order ritual chosen at casting; effect resolves at the end of the scene-long working.', 200],
+        [3, 'Fête Solo',           'rit-fete-solo',         'rituals', 'Rituals', 'Ritual, Day',
+         'A day-long solo working that channels a 3rd-order effect of the caster\'s choosing.', 200],
+        [3, 'Ritual III',          'rit-ritual-iii',        'rituals', 'Rituals', 'Ritual, Scene',
+         'Perform a 3rd-order ritual over the course of a scene.', 200],
+        [5, 'Fête de Trois',       'rit-fete-de-trois',     'rituals', 'Rituals', 'Ritual, 3 people, Day',
+         'A day-long ritual conducted by three casters in concert, reaching 5th-order effects.', 200],
+        [5, 'Rite Insouciant',     'rit-rite-insouciant',   'rituals', 'Rituals', 'Ritual, Hasty, Wicked',
+         'A reckless, shortened working that achieves a 5th-order effect at the cost of dangerous side-effects.', 201],
+        [5, 'Ritual V',            'rit-ritual-v',          'rituals', 'Rituals', 'Ritual, Scene',
+         'Perform a 5th-order ritual over the course of a scene.', 200],
+        [5, 'Séance de Trois',     'rit-seance-de-trois',   'rituals', 'Rituals', 'Ritual, 3 people, Day',
+         'A day-long séance conducted by three casters, suitable for 5th-order spirit work.', 200],
+        [7, 'Fête de Douzaine',    'rit-fete-de-douzaine',  'rituals', 'Rituals', 'Ritual, 12 people, Day',
+         'A day-long ritual of twelve casters, reaching 7th-order effects.', 201],
+        [7, 'Ritual VII',          'rit-ritual-vii',        'rituals', 'Rituals', 'Ritual, Scene',
+         'Perform a 7th-order ritual over the course of a scene.', 201],
+        [7, 'Séance de Douzaine',  'rit-seance-de-douzaine','rituals', 'Rituals', 'Ritual, 12 people, Day',
+         'A day-long séance of twelve casters working as one, suitable for 7th-order spirit work.', 201],
+        [10,'Fête de la Collecte', 'rit-fete-de-la-collecte','rituals','Rituals', 'Ritual, 30 people, Day',
+         'A grand day-long ritual of thirty celebrants, reaching 10th-order effects.', 202],
+        [10,'Rite Imprudent',      'rit-rite-imprudent',    'rituals', 'Rituals', 'Ritual, Hasty, Wicked',
+         'A wildly dangerous shortened working that achieves a 10th-order effect at severe personal cost.', 202],
+        [10,'Ritual X',            'rit-ritual-x',          'rituals', 'Rituals', 'Ritual, Scene',
+         'Perform a 10th-order ritual over the course of a scene.', 201],
+        [10,'Séance de la Collecte','rit-seance-de-la-collecte','rituals','Rituals','Ritual, 30 people, Day',
+         'A grand day-long séance of thirty celebrants, suitable for 10th-order spirit work.', 202],
+
+        // ── Spiritualism (p.203-204) ───────────────────────────────────────────
+        [1, 'Block Spiritual',     'spi-block-spiritual',   'spiritualism', 'Spiritualism', 'Spiritual, Protect, Interrupt',
+         'Interrupt an incoming Spiritual effect targeted at the caster or a nearby ally and dispel it.', 203],
+        [1, 'Detect Spirits',      'spi-detect-spirits',    'spiritualism', 'Spiritualism', 'Spiritual, Channel',
+         'Sense the presence, number, and rough disposition of spirits in the caster\'s vicinity.', 203],
+        [1, 'Spirit Shield',       'spi-spirit-shield',     'spiritualism', 'Spiritualism', 'Spiritual, Protect',
+         'Grant the caster bonus dice to resist spiritual attack and possession for the scene.', 203],
+        [1, 'Spirit Ward I',       'spi-spirit-ward-i',     'spiritualism', 'Spiritualism', 'Spiritual, Protect',
+         'Inscribe a ward that bars 1st-order spirits from a doorway or small area.', 203],
+        [3, 'Apportation III',     'spi-apportation-iii',   'spiritualism', 'Spiritualism', 'Spiritual, Telekinesis',
+         'Cause a small object to vanish from one place and appear in another known location.', 203],
+        [3, 'Call Spirits',        'spi-call-spirits',      'spiritualism', 'Spiritualism', 'Spiritual, Channel',
+         'Summon nearby spirits to a séance and offer them voice through the caster.', 203],
+        [3, 'Cosmic Alignment III','spi-cosmic-alignment-iii','spiritualism','Spiritualism','Spiritual, Channel',
+         'Read the auspices of the moment and grant the caster a small bonus on the next significant action.', 203],
+        [3, 'Dispossess III',      'spi-dispossess-iii',    'spiritualism', 'Spiritualism', 'Spiritual, Exorcism',
+         'Drive a 3rd-order spirit out of a possessed person, object, or place.', 204],
+        [3, 'Spirit Ward III',     'spi-spirit-ward-iii',   'spiritualism', 'Spiritualism', 'Spiritual, Protect',
+         'A stronger ward, barring 3rd-order spirits from a room or building entrance.', 204],
+        [5, 'Apportation V',       'spi-apportation-v',     'spiritualism', 'Spiritualism', 'Spiritual, Telekinesis',
+         'As Apportation III, with greater range and somewhat larger objects.', 204],
+        [5, 'Cosmic Alignment V',  'spi-cosmic-alignment-v','spiritualism', 'Spiritualism', 'Spiritual, Channel',
+         'A stronger reading of the auspices, granting a bonus to the entire scene\'s key actions.', 204],
+        [5, 'Dispossess V',        'spi-dispossess-v',      'spiritualism', 'Spiritualism', 'Spiritual, Exorcism',
+         'Drive a 5th-order spirit out of a possessed host.', 204],
+        [5, 'Spirit Ward V',       'spi-spirit-ward-v',     'spiritualism', 'Spiritualism', 'Spiritual, Protect',
+         'Ward an area against 5th-order spirits for the duration of a long working.', 204],
+        [5, 'Sundered Veil',       'spi-sundered-veil',     'spiritualism', 'Spiritualism', 'Spiritual, Exorcism',
+         'Briefly tear the veil between worlds, exposing nearby spirits to direct interaction.', 204],
+        [7, 'Apportation VII',     'spi-apportation-vii',   'spiritualism', 'Spiritualism', 'Spiritual, Telekinesis',
+         'Apport substantial objects across significant distances.', 204],
+        [7, 'Astral Projection',   'spi-astral-projection', 'spiritualism', 'Spiritualism', 'Spiritual, Astral',
+         'Project the caster\'s spirit out of their body to roam, observe, and (rarely) interact.', 204],
+        [7, 'Dispossess VII',      'spi-dispossess-vii',    'spiritualism', 'Spiritualism', 'Spiritual, Exorcism',
+         'Drive a 7th-order spirit out of a possessed host or place.', 204],
+        [7, 'Spirit Ward VII',     'spi-spirit-ward-vii',   'spiritualism', 'Spiritualism', 'Spiritual, Protect',
+         'A potent ward against 7th-order spirits over an extended area.', 204],
+        [10,'Spirit Ward X',       'spi-spirit-ward-x',     'spiritualism', 'Spiritualism', 'Spiritual, Protect',
+         'A grand ward that can deny even 10th-order spirits a chosen building or grounds.', 204],
+
+        // ── Telepathy (p.205-206) ──────────────────────────────────────────────
+        [1, 'Beyond Words',        'tel-beyond-words',      'telepathy', 'Telepathy', 'Telepathy, Oneiric, Mental',
+         'Share a fleeting feeling, image, or warning with one nearby ally without speaking.', 205],
+        [1, 'Block Telepathy',     'tel-block-telepathy',   'telepathy', 'Telepathy', 'Telepathy, Protect, Interrupt',
+         'Interrupt an incoming Telepathy effect targeted at the caster or a nearby ally and dispel it.', 205],
+        [1, 'Mental Shield',       'tel-mental-shield',     'telepathy', 'Telepathy', 'Telepathy, Protect',
+         'Grant the caster bonus dice to resist Mental effects for the scene.', 205],
+        [1, 'Thought-Reading I',   'tel-thought-reading-i', 'telepathy', 'Telepathy', 'Telepathy',
+         'Pick up the surface thoughts of one nearby target who is not actively guarded.', 205],
+        [1, 'Thought-Sending',     'tel-thought-sending',   'telepathy', 'Telepathy', 'Telepathy',
+         'Send a brief, clear thought to one known recipient within line of sight.', 205],
+        [3, 'Mental Blast III',    'tel-mental-blast-iii',  'telepathy', 'Telepathy', 'Telepathy, Conniption, Mental',
+         'Stab a target with a burst of pain that staggers them and inflicts mental damage.', 205],
+        [3, 'Mental Recoup',       'tel-mental-recoup',     'telepathy', 'Telepathy', 'Telepathy, Oneiric, Mental',
+         'Help one ally shake off a fear, shock, or mental conniption.', 206],
+        [3, 'Rapport',             'tel-rapport',           'telepathy', 'Telepathy', 'Telepathy, Oneiric, Mental',
+         'Open a quiet two-way mental channel with one willing ally for the scene.', 206],
+        [3, 'Sweven',              'tel-sweven',            'telepathy', 'Telepathy', 'Telepathy, Oneiric, Mental',
+         'Reach into a sleeping target\'s dream and converse with them there.', 206],
+        [3, 'Thought-Reading III', 'tel-thought-reading-iii','telepathy','Telepathy', 'Telepathy',
+         'Read deeper thoughts and short-term memories of a target who is not guarded.', 206],
+        [5, 'Mental Blast V',      'tel-mental-blast-v',    'telepathy', 'Telepathy', 'Telepathy, Conniption, Mental',
+         'A stronger mental strike, capable of dropping an unwary target.', 206],
+        [5, 'Mental Restore',      'tel-mental-restore',    'telepathy', 'Telepathy', 'Telepathy',
+         'Heal lingering mental damage and conniptions in one target over the scene.', 206],
+        [5, 'Thought-Reading V',   'tel-thought-reading-v', 'telepathy', 'Telepathy', 'Telepathy',
+         'Probe deeply and selectively for specific memories or knowledge in one target.', 206],
+        [7, 'Mental Blast VII',    'tel-mental-blast-vii',  'telepathy', 'Telepathy', 'Telepathy, Conniption, Mental',
+         'A punishing mental strike that can incapacitate even guarded targets.', 206],
+        [10,'Mental Blast X',      'tel-mental-blast-x',    'telepathy', 'Telepathy', 'Telepathy, Conniption, Mental',
+         'A devastating mental blast capable of killing a target outright.', 206],
+
+        // ── Vitalism (p.207-208) ───────────────────────────────────────────────
+        [1, 'Block Vitalism',      'vit-block-vitalism',    'vitalism', 'Vitalism', 'Vitalism, Protect, Interrupt',
+         'Interrupt an incoming Vitalism effect targeted at the caster or a nearby ally and dispel it.', 207],
+        [1, 'Incite Greatness I',  'vit-incite-greatness-i','vitalism', 'Vitalism', 'Vitalism, Anodyne',
+         'Bolster one ally with a wash of confidence and energy, granting a small bonus on their next roll.', 207],
+        [1, 'Induce Terror',       'vit-induce-terror',     'vitalism', 'Vitalism', 'Vitalism, Coercive',
+         'Stoke primal fear in one target, causing them to flinch or flee.', 207],
+        [3, 'Incite Greatness III','vit-incite-greatness-iii','vitalism','Vitalism', 'Vitalism, Anodyne',
+         'A stronger boon that lifts an ally\'s performance across the whole scene.', 207],
+        [3, 'Induce Mass Terror',  'vit-induce-mass-terror','vitalism', 'Vitalism', 'Vitalism, Mass, Coercive',
+         'As Induce Terror, scaring a small crowd at once.', 207],
+        [3, 'Induce Paralysis',    'vit-induce-paralysis',  'vitalism', 'Vitalism', 'Vitalism, Coercive',
+         'Lock up one target\'s muscles, freezing them in place for a few moments.', 207],
+        [3, 'Magnetic Personality','vit-magnetic-personality','vitalism','Vitalism', 'Vitalism, Coercive',
+         'Radiate an aura of charm that grants bonus dice on social rolls for the scene.', 207],
+        [3, 'Psychic Surgery III', 'vit-psychic-surgery-iii','vitalism','Vitalism', 'Vitalism, Anodyne',
+         'Heal a modest amount of physical damage in one patient through hands-on focus.', 208],
+        [3, 'Wracking Touch III',  'vit-wracking-touch-iii','vitalism', 'Vitalism', 'Vitalism',
+         'A touch that inflicts crippling pain and a small amount of damage on a target.', 208],
+        [5, 'Incite Greatness V',  'vit-incite-greatness-v','vitalism', 'Vitalism', 'Vitalism, Anodyne',
+         'Push one ally to truly exceptional performance for the scene.', 207],
+        [5, 'Induce Mass Paralysis','vit-induce-mass-paralysis','vitalism','Vitalism','Vitalism, Mass, Coercive',
+         'As Induce Paralysis, locking up a small group of targets at once.', 207],
+        [5, 'Psychic Surgery V',   'vit-psychic-surgery-v', 'vitalism', 'Vitalism', 'Vitalism, Anodyne',
+         'Heal substantial damage and knit serious injuries in one patient.', 208],
+        [5, 'Wracking Touch V',    'vit-wracking-touch-v',  'vitalism', 'Vitalism', 'Vitalism',
+         'A more punishing wracking touch that can drop an unprepared target.', 208],
+        [7, 'Psychic Surgery VII', 'vit-psychic-surgery-vii','vitalism','Vitalism', 'Vitalism, Anodyne',
+         'Restore a gravely wounded patient nearly to full health in a single working.', 208],
+        [7, 'Wracking Touch VII',  'vit-wracking-touch-vii','vitalism', 'Vitalism', 'Vitalism',
+         'A wracking touch capable of incapacitating even tough targets.', 208],
+        [10,'Psychic Surgery X',   'vit-psychic-surgery-x', 'vitalism', 'Vitalism', 'Vitalism, Anodyne',
+         'Pull a patient back from the brink of death itself.', 208],
+        [10,'Wracking Touch X',    'vit-wracking-touch-x',  'vitalism', 'Vitalism', 'Vitalism',
+         'A killing touch — a target who fails to resist may die on the spot.', 208],
+    ];
+
+    $n = 0;
+    foreach ($rows as $r) {
+        [$ord, $name, $slug, $power, $label, $desc, $description, $page] = $r;
+        cg_exec(
+            "INSERT INTO `$t` (name, slug, power, power_label, order_level, descriptors, description, page_number, source_book, published)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Occult Horror', 1)
+             ON DUPLICATE KEY UPDATE
+                name = VALUES(name),
+                power = VALUES(power),
+                power_label = VALUES(power_label),
+                order_level = VALUES(order_level),
+                descriptors = VALUES(descriptors),
+                description = VALUES(description),
+                page_number = VALUES(page_number),
+                source_book = VALUES(source_book)",
+            [$name, $slug, $power, $label, $ord, $desc, $description, $page]
+        );
+        $n++;
+    }
+    return $n;
 }
 
 // ── Species data ──────────────────────────────────────────────────────────────

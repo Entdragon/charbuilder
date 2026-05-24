@@ -12,13 +12,15 @@ $isAdmin = cg_is_admin();
 // Fetch nav counts once if not already set
 if (!isset($ujCounts)) {
     $ujCounts = [];
-    try {
-        $p = cg_prefix();
-        foreach (['species','types','careers','skills','gifts','soaks','attacks','items'] as $t) {
+    $p = cg_prefix();
+    foreach (['species','types','careers','skills','gifts','soaks','attacks','items','powers'] as $t) {
+        try {
             $row = cg_query_one("SELECT COUNT(*) AS n FROM `{$p}uj_{$t}` WHERE published = 1");
             $ujCounts[$t] = (int)($row['n'] ?? 0);
+        } catch (Throwable) {
+            $ujCounts[$t] = 0;
         }
-    } catch (Throwable) { }
+    }
 }
 
 $nt = fn(string $k): string => $ujCounts[$k] ? ' <span class="nav-count">' . $ujCounts[$k] . '</span>' : '';
@@ -922,6 +924,7 @@ $na = fn(string $k): string => ($activeNav ?? '') === $k ? ' active' : '';
       <a href="/uj/skills"   class="nav-item<?= $na('skills') ?>">Skills <?= $nt('skills') ?></a>
       <a href="/uj/gifts"    class="nav-item<?= $na('gifts') ?>">Gifts <?= $nt('gifts') ?></a>
       <a href="/uj/soaks"    class="nav-item<?= $na('soaks') ?>">Soaks <?= $nt('soaks') ?></a>
+      <a href="/uj/powers"   class="nav-item<?= $na('powers') ?>">Powers <?= $nt('powers') ?></a>
 
       <div class="nav-divider"></div>
       <div class="nav-group-label">Equipment</div>
