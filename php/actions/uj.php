@@ -570,26 +570,31 @@ function uj_install_powers(): int {
          'A killing touch — a target who fails to resist may die on the spot.', 208],
     ];
 
-    $n = 0;
+    // Bulk insert in a single statement to avoid one HTTP-proxy round-trip per row.
+    $placeholders = [];
+    $params       = [];
     foreach ($rows as $r) {
         [$ord, $name, $slug, $power, $label, $desc, $description, $page] = $r;
-        cg_exec(
-            "INSERT INTO `$t` (name, slug, power, power_label, order_level, descriptors, description, page_number, source_book, published)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Occult Horror', 1)
-             ON DUPLICATE KEY UPDATE
-                name = VALUES(name),
-                power = VALUES(power),
-                power_label = VALUES(power_label),
-                order_level = VALUES(order_level),
-                descriptors = VALUES(descriptors),
-                description = VALUES(description),
-                page_number = VALUES(page_number),
-                source_book = VALUES(source_book)",
-            [$name, $slug, $power, $label, $ord, $desc, $description, $page]
-        );
-        $n++;
+        $placeholders[] = "(?, ?, ?, ?, ?, ?, ?, ?, 'Occult Horror', 1)";
+        array_push($params, $name, $slug, $power, $label, $ord, $desc, $description, $page);
     }
-    return $n;
+    if (!$placeholders) return 0;
+
+    cg_exec(
+        "INSERT INTO `$t` (name, slug, power, power_label, order_level, descriptors, description, page_number, source_book, published)
+         VALUES " . implode(', ', $placeholders) . "
+         ON DUPLICATE KEY UPDATE
+            name        = VALUES(name),
+            power       = VALUES(power),
+            power_label = VALUES(power_label),
+            order_level = VALUES(order_level),
+            descriptors = VALUES(descriptors),
+            description = VALUES(description),
+            page_number = VALUES(page_number),
+            source_book = VALUES(source_book)",
+        $params
+    );
+    return count($rows);
 }
 
 // ── Species data ──────────────────────────────────────────────────────────────
