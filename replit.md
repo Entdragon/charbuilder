@@ -104,6 +104,7 @@ cd ~/charbuilder && git pull
 cp php/ajax.php   ~/public_html/ajax.php
 cp php/home.php   ~/public_html/home.php
 cp php/index.php  ~/public_html/builder.php   # NOTE: index.php → builder.php on live
+cp php/uj.php     ~/public_html/uj.php        # the /uj/* router itself (separate from php/uj/ dir)
 cp -r php/uj php/actions php/includes ~/public_html/
 
 # Frontend assets (only if JS/CSS changed)
