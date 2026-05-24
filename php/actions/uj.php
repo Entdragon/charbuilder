@@ -1742,21 +1742,22 @@ function uj_get_all_full(): void {
         $caMap = []; foreach ($caRaw as $r) $caMap[(int)$r['id']] = $r;
         $tyMap = []; foreach ($tyRaw as $r) $tyMap[(int)$r['id']] = $r;
         $spMap = []; foreach ($spRaw as $r) $spMap[(int)$r['id']] = $r;
-        foreach ($careers as &$ca) {
-            $raw = $caMap[(int)$ca['id']] ?? null;
-            $ca['powers'] = $raw ? $resolvePowers($raw) : [];
+        // NOTE: the earlier per-collection loops above use `foreach (... as &$x)`
+        // without unset(), so $ca / $ty / $sp remain bound by reference to the
+        // last element. Re-using `&$ca` here would silently corrupt the last
+        // row. Iterate by index instead.
+        for ($i = 0, $n = count($careers); $i < $n; $i++) {
+            $raw = $caMap[(int)$careers[$i]['id']] ?? null;
+            $careers[$i]['powers'] = $raw ? $resolvePowers($raw) : [];
         }
-        unset($ca);
-        foreach ($types as &$ty) {
-            $raw = $tyMap[(int)$ty['id']] ?? null;
-            $ty['powers'] = $raw ? $resolvePowers($raw) : [];
+        for ($i = 0, $n = count($types); $i < $n; $i++) {
+            $raw = $tyMap[(int)$types[$i]['id']] ?? null;
+            $types[$i]['powers'] = $raw ? $resolvePowers($raw) : [];
         }
-        unset($ty);
-        foreach ($species as &$sp) {
-            $raw = $spMap[(int)$sp['id']] ?? null;
-            $sp['powers'] = $raw ? $resolvePowers($raw) : [];
+        for ($i = 0, $n = count($species); $i < $n; $i++) {
+            $raw = $spMap[(int)$species[$i]['id']] ?? null;
+            $species[$i]['powers'] = $raw ? $resolvePowers($raw) : [];
         }
-        unset($sp);
     } catch (Throwable) { /* raw columns missing; leave powers empty */ }
 
     cg_json(['success' => true, 'data' => compact(
