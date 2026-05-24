@@ -24,8 +24,8 @@ if ($entity === 'books') {
 
     // Load content tagged to this book via the source_book field.
     // The core book (urban-jungle) also owns all legacy rows where source_book is empty.
-    $allSpecies = $allCareers = $allGifts = $allSkills = $allSoaks = $allPowers = [];
-    $speciesCount = $careerCount = $giftCount = $skillCount = $soakCount = $powerCount = 0;
+    $allSpecies = $allCareers = $allGifts = $allSkills = $allSoaks = $allPowers = $allPowerTops = [];
+    $speciesCount = $careerCount = $giftCount = $skillCount = $soakCount = $powerCount = $powerTopCount = 0;
     // Match by either exact book name or by slugifying the source_book value
     // (so "Occult Horror" tag matches the "occult-horror" book even when the
     // book's full name is longer, e.g. "Occult Horror: Supernatural Options…").
@@ -50,6 +50,27 @@ if ($entity === 'books') {
         $soakCount    = count($allSoaks);
         $powerCount   = count($allPowers);
     } catch (Throwable) { /* source_book column may not exist yet */ }
+
+    // Top-level Powers from uj_powers_meta — currently all 7 belong to
+    // Occult Horror. Match by book name or slug appearing in the meta's
+    // source ("Occult Horror"), so this works for both the long-titled
+    // Occult Horror book and any future Power-bearing book.
+    try {
+        require_once __DIR__ . '/../../actions/uj.php';
+        $bookNorm = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $book['name']));
+        $bookNorm = trim($bookNorm, '-');
+        foreach (uj_powers_meta() as $key => $m) {
+            $src = strtolower($m['source_book'] ?? 'Occult Horror');
+            $srcSlug = trim(preg_replace('/[^a-z0-9]+/i', '-', $src), '-');
+            if ($book['slug'] === $srcSlug
+                || stripos($bookNorm, $srcSlug) !== false
+                || strcasecmp($book['name'], $m['source_book'] ?? 'Occult Horror') === 0
+                || stripos($book['name'], 'Occult Horror') === 0) {
+                $allPowerTops[] = ['key' => $key, 'label' => $m['full_name']];
+            }
+        }
+        $powerTopCount = count($allPowerTops);
+    } catch (Throwable) { /* uj_powers_meta unavailable */ }
 
     $pageTitle = $book['name'];
     $activeNav = 'books';
@@ -129,6 +150,17 @@ if ($entity === 'books') {
         </div>
         <?php endif; ?>
 
+        <?php if ($allPowerTops): ?>
+        <div class="detail-section">
+          <p class="detail-section-title">Powers (<?= $powerTopCount ?>)</p>
+          <div class="card-tags">
+            <?php foreach ($allPowerTops as $pw): ?>
+              <a href="/uj/powers/<?= htmlspecialchars($pw['key']) ?>" class="tag tag-basic"><?= htmlspecialchars($pw['label']) ?></a>
+            <?php endforeach; ?>
+          </div>
+        </div>
+        <?php endif; ?>
+
         <?php if ($allPowers): ?>
         <div class="detail-section">
           <p class="detail-section-title">Power Effects (<?= $powerCount ?>)</p>
@@ -152,16 +184,17 @@ if ($entity === 'books') {
           </div>
         <?php endif; ?>
 
-        <?php if ($speciesCount || $careerCount || $giftCount || $skillCount || $soakCount || $powerCount): ?>
+        <?php if ($speciesCount || $careerCount || $giftCount || $skillCount || $soakCount || $powerCount || $powerTopCount): ?>
         <div class="sidebar-card">
           <h3 class="sidebar-card-title">Contents</h3>
           <table style="width:100%; font-size:0.88rem; border-collapse:collapse;">
-            <?php if ($speciesCount): ?><tr><td style="color:var(--uj-text-dim); padding:0.25rem 0;">Species</td><td style="color:var(--uj-text-muted);"><?= $speciesCount ?></td></tr><?php endif; ?>
-            <?php if ($careerCount):  ?><tr><td style="color:var(--uj-text-dim); padding:0.25rem 0;">Careers</td><td style="color:var(--uj-text-muted);"><?= $careerCount ?></td></tr><?php endif; ?>
-            <?php if ($giftCount):    ?><tr><td style="color:var(--uj-text-dim); padding:0.25rem 0;">Gifts</td><td style="color:var(--uj-text-muted);"><?= $giftCount ?></td></tr><?php endif; ?>
-            <?php if ($skillCount):   ?><tr><td style="color:var(--uj-text-dim); padding:0.25rem 0;">Skills</td><td style="color:var(--uj-text-muted);"><?= $skillCount ?></td></tr><?php endif; ?>
-            <?php if ($soakCount):    ?><tr><td style="color:var(--uj-text-dim); padding:0.25rem 0;">Soaks</td><td style="color:var(--uj-text-muted);"><?= $soakCount ?></td></tr><?php endif; ?>
-            <?php if ($powerCount):   ?><tr><td style="color:var(--uj-text-dim); padding:0.25rem 0;">Power Effects</td><td style="color:var(--uj-text-muted);"><?= $powerCount ?></td></tr><?php endif; ?>
+            <?php if ($speciesCount):  ?><tr><td style="color:var(--uj-text-dim); padding:0.25rem 0;">Species</td><td style="color:var(--uj-text-muted);"><?= $speciesCount ?></td></tr><?php endif; ?>
+            <?php if ($careerCount):   ?><tr><td style="color:var(--uj-text-dim); padding:0.25rem 0;">Careers</td><td style="color:var(--uj-text-muted);"><?= $careerCount ?></td></tr><?php endif; ?>
+            <?php if ($giftCount):     ?><tr><td style="color:var(--uj-text-dim); padding:0.25rem 0;">Gifts</td><td style="color:var(--uj-text-muted);"><?= $giftCount ?></td></tr><?php endif; ?>
+            <?php if ($skillCount):    ?><tr><td style="color:var(--uj-text-dim); padding:0.25rem 0;">Skills</td><td style="color:var(--uj-text-muted);"><?= $skillCount ?></td></tr><?php endif; ?>
+            <?php if ($soakCount):     ?><tr><td style="color:var(--uj-text-dim); padding:0.25rem 0;">Soaks</td><td style="color:var(--uj-text-muted);"><?= $soakCount ?></td></tr><?php endif; ?>
+            <?php if ($powerTopCount): ?><tr><td style="color:var(--uj-text-dim); padding:0.25rem 0;">Powers</td><td style="color:var(--uj-text-muted);"><?= $powerTopCount ?></td></tr><?php endif; ?>
+            <?php if ($powerCount):    ?><tr><td style="color:var(--uj-text-dim); padding:0.25rem 0;">Power Effects</td><td style="color:var(--uj-text-muted);"><?= $powerCount ?></td></tr><?php endif; ?>
           </table>
         </div>
         <?php endif; ?>
