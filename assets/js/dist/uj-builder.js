@@ -378,6 +378,7 @@
       state.allySpeciesId = null;
       state.allyCareerId = null;
       state.giftChoices = {};
+      state.powerChoices = {};
       state.experience = 0;
       state.purchasedGifts = [];
       state.currentStep = 0;
@@ -413,6 +414,13 @@
         state.giftChoices = function() {
           try {
             return JSON.parse(c.gift_choices || "{}") || {};
+          } catch (e) {
+            return {};
+          }
+        }();
+        state.powerChoices = function() {
+          try {
+            return JSON.parse(c.power_choices || "{}") || {};
           } catch (e) {
             return {};
           }
@@ -467,6 +475,13 @@
             return [];
           }
         }();
+        state.powerChoices = function() {
+          try {
+            return JSON.parse(c.power_choices || "{}") || {};
+          } catch (e) {
+            return {};
+          }
+        }();
         state.extraCareerId = c.extra_career_id ? Number(c.extra_career_id) : null;
         state.extraTypeId = c.extra_type_id ? Number(c.extra_type_id) : null;
         state.extraCareerDie = c.extra_career_die || null;
@@ -504,6 +519,13 @@
         state.giftChoices = function() {
           try {
             return JSON.parse(c.gift_choices || "{}") || {};
+          } catch (e) {
+            return {};
+          }
+        }();
+        state.powerChoices = function() {
+          try {
+            return JSON.parse(c.power_choices || "{}") || {};
           } catch (e) {
             return {};
           }
@@ -1298,7 +1320,8 @@
         var choiceKey = g.slug + "_" + g.occurrence;
         var isImproved = g.slug === "improved-trait";
         var isAlly = g.slug === "ally";
-        var needsChoice = isImproved || isAlly;
+        var isPowerGate = g.slug === "personal-power" || g.slug === "petitioned-power";
+        var needsChoice = isImproved || isAlly || isPowerGate;
         var borderColor = needsChoice ? "var(--uj-amber-border,#7c5c1e)" : "var(--uj-border-cool)";
         html += '<div style="background:var(--uj-surface);border:1px solid ' + borderColor + ';border-radius:var(--uj-radius-lg,8px);padding:1rem 1.25rem;margin-bottom:0.75rem;">';
         html += '<div style="display:flex;align-items:baseline;gap:0.75rem;flex-wrap:wrap;margin-bottom:0.25rem;">';
@@ -1351,6 +1374,20 @@
             html += '<p style="font-size:0.88rem;color:var(--uj-text-muted);margin:0;line-height:1.5;">' + esc(desc2) + "</p>";
           }
         }
+        if (isPowerGate) {
+          var pmeta = d.powers_meta || [];
+          var picked = state.powerChoices[choiceKey] || [];
+          var pickHint = g.slug === "personal-power" ? "Personal Power supplies your power die. Pick which Power(s) you can call upon." : "Petitioned Power lets you petition a spirit. Pick which Power(s) you can access through it.";
+          html += '<div style="margin-top:0.6rem;padding-top:0.6rem;border-top:1px dashed var(--uj-border-cool);">';
+          html += '<div style="font-size:0.76rem;color:var(--uj-text-dim);margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:0.08em;">Choose Power(s):</div>';
+          html += '<p style="font-size:0.8rem;color:var(--uj-text-muted);margin:0 0 0.55rem;line-height:1.45;">' + esc(pickHint) + "</p>";
+          html += '<div class="uj-power-picker" data-choice-key="' + esc(choiceKey) + '" style="display:flex;flex-wrap:wrap;gap:0.4rem;">';
+          pmeta.forEach(function(pm) {
+            var active = picked.indexOf(pm.key) >= 0;
+            html += '<label class="uj-power-pill" data-power-key="' + esc(pm.key) + '" style="cursor:pointer;padding:0.35rem 0.9rem;border-radius:999px;font-size:0.82rem;user-select:none;border:1px solid ' + (active ? "var(--uj-amber)" : "var(--uj-border-cool)") + ";color:" + (active ? "var(--uj-amber-light)" : "var(--uj-text-muted)") + ";background:" + (active ? "rgba(180,120,30,0.18)" : "transparent") + ';"><input type="checkbox" value="' + esc(pm.key) + '"' + (active ? " checked" : "") + ' style="display:none;">' + esc(pm.label) + "</label>";
+          });
+          html += "</div></div>";
+        }
         html += "</div>";
       });
       return html;
@@ -1374,6 +1411,30 @@
               p.style.color = active ? "var(--uj-amber-light)" : "var(--uj-text-muted)";
               p.style.background = active ? "rgba(180,120,30,0.18)" : "transparent";
             });
+          });
+        });
+      });
+      container.querySelectorAll(".uj-power-picker").forEach(function(picker) {
+        var choiceKey = picker.dataset.choiceKey;
+        picker.querySelectorAll(".uj-power-pill").forEach(function(pill) {
+          pill.addEventListener("click", function(ev) {
+            ev.preventDefault();
+            var cb = pill.querySelector('input[type="checkbox"]');
+            if (!cb)
+              return;
+            var key = pill.dataset.powerKey;
+            var list = (state.powerChoices[choiceKey] || []).slice();
+            var idx = list.indexOf(key);
+            if (idx >= 0)
+              list.splice(idx, 1);
+            else
+              list.push(key);
+            state.powerChoices[choiceKey] = list;
+            var active = list.indexOf(key) >= 0;
+            cb.checked = active;
+            pill.style.borderColor = active ? "var(--uj-amber)" : "var(--uj-border-cool)";
+            pill.style.color = active ? "var(--uj-amber-light)" : "var(--uj-text-muted)";
+            pill.style.background = active ? "rgba(180,120,30,0.18)" : "transparent";
           });
         });
       });
@@ -1634,6 +1695,80 @@
         html += '<li class="gift-item">' + esc(g.name) + (subtitle2 ? '<span style="display:block;font-size:0.78rem;color:#4ade80;font-style:italic;margin-top:0.1rem;">' + esc(subtitle2) + "</span>" : "") + "<small>" + esc((g.sources || []).join(", ")) + (g.note ? " \u2014 " + g.note : "") + "</small></li>";
       });
       html += "</ul></div>";
+      var powersMeta = d.powers_meta || [];
+      var powerEffects = d.power_effects || [];
+      var powerMap = {};
+      function addPower(pm, source) {
+        if (!pm || !pm.key)
+          return;
+        if (!powerMap[pm.key]) {
+          powerMap[pm.key] = { meta: pm, sources: [] };
+        }
+        if (powerMap[pm.key].sources.indexOf(source) < 0) {
+          powerMap[pm.key].sources.push(source);
+        }
+      }
+      [sp, ty, ca, extraTy, extraCa].forEach(function(src) {
+        if (!src || !src.powers)
+          return;
+        src.powers.forEach(function(pm) {
+          addPower(pm, src.name);
+        });
+      });
+      var giftMetaByKey = {};
+      powersMeta.forEach(function(pm) {
+        giftMetaByKey[pm.key] = pm;
+      });
+      var activeGateKeys = {};
+      collectAllGifts().forEach(function(gg) {
+        if (gg.slug === "personal-power" || gg.slug === "petitioned-power") {
+          activeGateKeys[gg.slug + "_" + gg.occurrence] = gg.slug === "personal-power" ? "Personal Power" : "Petitioned Power";
+        }
+      });
+      Object.keys(activeGateKeys).forEach(function(choiceKey) {
+        var label = activeGateKeys[choiceKey];
+        var picks = state.powerChoices && state.powerChoices[choiceKey];
+        if (!Array.isArray(picks))
+          return;
+        picks.forEach(function(k) {
+          if (giftMetaByKey[k])
+            addPower(giftMetaByKey[k], label);
+        });
+      });
+      var powerList = Object.values(powerMap);
+      if (powerList.length) {
+        html += '<div class="summary-section" style="grid-column:1/-1;">';
+        html += '<div class="summary-section-title" style="color:var(--uj-amber-light);">Supernatural Powers</div>';
+        powerList.forEach(function(p) {
+          var pm = p.meta;
+          var effects = powerEffects.filter(function(e) {
+            return e.power === pm.key;
+          });
+          html += '<div style="border:1px solid var(--uj-border-cool);border-radius:8px;padding:0.85rem 1rem;margin-bottom:0.75rem;background:var(--uj-surface);">';
+          html += '<div style="display:flex;align-items:baseline;gap:0.6rem;flex-wrap:wrap;margin-bottom:0.25rem;">';
+          html += '<a href="/uj/powers/' + esc(pm.key) + `" target="_blank" style="font-family:'Cinzel',Georgia,serif;font-size:1.02rem;font-weight:700;color:var(--uj-amber-light);text-decoration:none;">` + esc(pm.full_name || pm.label) + "</a>";
+          if (pm.full_name && pm.label && pm.full_name !== pm.label) {
+            html += '<span style="font-size:0.78rem;color:var(--uj-text-dim);">(' + esc(pm.label) + ")</span>";
+          }
+          html += '<span style="font-size:0.7rem;color:var(--uj-text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-left:auto;">' + esc(p.sources.join(", ")) + "</span>";
+          html += "</div>";
+          if (pm.description) {
+            html += '<p style="font-size:0.85rem;color:var(--uj-text-muted);margin:0 0 0.6rem;line-height:1.5;">' + esc(pm.description) + "</p>";
+          }
+          if (effects.length) {
+            html += '<details style="margin-top:0.4rem;"><summary style="cursor:pointer;font-size:0.78rem;color:var(--uj-text-dim);text-transform:uppercase;letter-spacing:0.08em;">Effects (' + effects.length + ")</summary>";
+            html += '<table class="skills-table" style="font-size:0.8rem;margin-top:0.5rem;width:100%;">';
+            html += '<thead><tr><th style="width:2.4rem;text-align:left;">Ord</th><th style="text-align:left;">Effect</th><th style="text-align:left;width:30%;">Descriptors</th><th style="text-align:left;">Description</th></tr></thead><tbody>';
+            effects.forEach(function(e) {
+              var ord = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"][(e.order_level | 0) - 1] || String(e.order_level || "");
+              html += '<tr><td style="color:var(--uj-amber-light);font-weight:600;">' + esc(ord) + '</td><td style="font-weight:500;">' + esc(e.name) + '</td><td style="font-size:0.74rem;color:var(--uj-text-dim);">' + esc(e.descriptors || "") + '</td><td style="font-size:0.78rem;color:var(--uj-text-muted);line-height:1.45;">' + esc(e.description || "") + "</td></tr>";
+            });
+            html += "</tbody></table></details>";
+          }
+          html += "</div>";
+        });
+        html += "</div>";
+      }
       if (state.purchasedGifts && state.purchasedGifts.length > 0) {
         var allSoaksData = d.soaks || [];
         html += '<div class="summary-section"><div class="summary-section-title" style="color:var(--uj-teal);">Developed Gifts &amp; Soaks</div><ul class="summary-list">';
@@ -1826,6 +1961,7 @@
         ally_species_id: state.allySpeciesId !== null ? state.allySpeciesId : "",
         ally_career_id: state.allyCareerId !== null ? state.allyCareerId : "",
         gift_choices: JSON.stringify(state.giftChoices || {}),
+        power_choices: JSON.stringify(state.powerChoices || {}),
         experience: state.experience || 0,
         purchased_gifts: JSON.stringify(state.purchasedGifts || [])
       };

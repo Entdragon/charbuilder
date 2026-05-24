@@ -52,6 +52,7 @@ function uj_ensure_characters_table(): void {
         'extra_type_id INT DEFAULT NULL',
         'extra_career_die VARCHAR(4) DEFAULT NULL',
         'extra_type_die VARCHAR(4) DEFAULT NULL',
+        'power_choices TEXT DEFAULT NULL',
     ] as $colDef) {
         try {
             cg_exec("ALTER TABLE `{$p}uj_character_records` ADD COLUMN {$colDef}");
@@ -82,6 +83,7 @@ function uj_load_characters(): void {
                 ally_body_die, ally_speed_die, ally_mind_die, ally_will_die, gift_choices,
                 experience, purchased_gifts,
                 extra_career_id, extra_type_id, extra_career_die, extra_type_die,
+                power_choices,
                 created_at, updated_at
            FROM `{$p}uj_character_records`
           WHERE user_id = ?
@@ -153,6 +155,7 @@ function uj_save_character(): void {
     $rawGiftChoices    = $data['gift_choices']     ?? null;
     $rawExperience     = $data['experience']       ?? null;
     $rawPurchasedGifts = $data['purchased_gifts']  ?? null;
+    $rawPowerChoices   = $data['power_choices']    ?? null;
 
     if (is_array($rawGiftChoices)) {
         $rawGiftChoices = json_encode($rawGiftChoices);
@@ -163,6 +166,11 @@ function uj_save_character(): void {
         $rawPurchasedGifts = json_encode($rawPurchasedGifts);
     } elseif (!is_string($rawPurchasedGifts)) {
         $rawPurchasedGifts = null;
+    }
+    if (is_array($rawPowerChoices)) {
+        $rawPowerChoices = json_encode($rawPowerChoices);
+    } elseif (!is_string($rawPowerChoices)) {
+        $rawPowerChoices = null;
     }
 
     $fields = [
@@ -184,6 +192,7 @@ function uj_save_character(): void {
         'gift_choices'     => $rawGiftChoices,
         'experience'       => ($rawExperience !== null) ? max(0, (int) $rawExperience) : 0,
         'purchased_gifts'  => $rawPurchasedGifts,
+        'power_choices'    => $rawPowerChoices,
         'updated_at'       => date('Y-m-d H:i:s'),
     ];
 

@@ -1692,7 +1692,76 @@ function uj_get_all_full(): void {
 
     $attacks = cg_query("SELECT id, name, slug, category, attack_range, counter_range, attack_dice, effect FROM `{$p}uj_attacks` WHERE published=1 ORDER BY category ASC, name ASC");
 
-    cg_json(['success' => true, 'data' => compact('species','types','careers','skills','gifts','soaks','attacks')]);
+    // ── Powers (Occult Horror) ───────────────────────────────────────────
+    // Ship the 7 top-level Powers and all 107 effects so the builder can
+    // render Power details on the sheet for table reference, and so it can
+    // auto-detect which Powers a career/type/species grants by name-matching
+    // their gift_1/gift_2 raw fields against power labels/full names.
+    $powersMeta = array_values(uj_powers_meta());
+    $powerEffects = [];
+    try {
+        $powerEffects = cg_query(
+            "SELECT id, name, slug, power, power_label, order_level, descriptors, description, page_number
+               FROM `{$p}uj_powers`
+              WHERE published = 1
+              ORDER BY power ASC, order_level ASC, name ASC"
+        );
+    } catch (Throwable) { /* uj_powers table may not exist yet */ }
+
+    // Build a lookup of normalized name → power-meta entry so we can match
+    // raw gift_1/gift_2 strings (e.g. "Mesmerism", "Extra-Sensory Perception",
+    // "PK") to their canonical Power key.
+    $norm = function(string $s): string {
+        return strtolower(trim(preg_replace('/[^a-z0-9]+/i', ' ', $s)));
+    };
+    $byName = [];
+    foreach ($powersMeta as $m) {
+        foreach (array_filter([$m['label'] ?? '', $m['full_name'] ?? '', $m['key'] ?? '']) as $alias) {
+            $byName[$norm($alias)] = $m;
+        }
+    }
+    // Helper: scan a row's raw gift_1/gift_2 fields for power names.
+    $resolvePowers = function(array $row) use ($byName, $norm): array {
+        $hits = [];
+        foreach (['gift_1', 'gift_2'] as $col) {
+            $val = trim((string) ($row[$col] ?? ''));
+            if ($val === '') continue;
+            $key = $norm($val);
+            if (isset($byName[$key])) $hits[$byName[$key]['key']] = $byName[$key];
+        }
+        return array_values($hits);
+    };
+
+    // Pull raw gift_1/gift_2 columns from the three source tables so we can
+    // resolve granted Powers without altering the existing junction-based
+    // gifts arrays already attached above.
+    try {
+        $caRaw = cg_query("SELECT id, gift_1, gift_2 FROM `{$p}uj_careers`  WHERE published=1");
+        $tyRaw = cg_query("SELECT id, gift_1 AS gift_1, '' AS gift_2 FROM `{$p}uj_types` WHERE published=1");
+        $spRaw = cg_query("SELECT id, gift_1, gift_2 FROM `{$p}uj_species` WHERE published=1");
+        $caMap = []; foreach ($caRaw as $r) $caMap[(int)$r['id']] = $r;
+        $tyMap = []; foreach ($tyRaw as $r) $tyMap[(int)$r['id']] = $r;
+        $spMap = []; foreach ($spRaw as $r) $spMap[(int)$r['id']] = $r;
+        foreach ($careers as &$ca) {
+            $raw = $caMap[(int)$ca['id']] ?? null;
+            $ca['powers'] = $raw ? $resolvePowers($raw) : [];
+        }
+        unset($ca);
+        foreach ($types as &$ty) {
+            $raw = $tyMap[(int)$ty['id']] ?? null;
+            $ty['powers'] = $raw ? $resolvePowers($raw) : [];
+        }
+        unset($ty);
+        foreach ($species as &$sp) {
+            $raw = $spMap[(int)$sp['id']] ?? null;
+            $sp['powers'] = $raw ? $resolvePowers($raw) : [];
+        }
+        unset($sp);
+    } catch (Throwable) { /* raw columns missing; leave powers empty */ }
+
+    cg_json(['success' => true, 'data' => compact(
+        'species','types','careers','skills','gifts','soaks','attacks'
+    ) + ['powers_meta' => $powersMeta, 'power_effects' => $powerEffects]]);
 }
 
 // ── Skills data ───────────────────────────────────────────────────────────────
