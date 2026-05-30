@@ -135,6 +135,12 @@ Seed with `action=cg_install_spells` (idempotent truncate + re-insert).
 - Command: `php -S 0.0.0.0:5000 php/router.php`
 - Port: 5000 (webview)
 
+## Urban Jungle Junction Tables
+UJ species/types/careers store granted traits as **text** (`gift_1/2`, `skill_1..3`, `soak_1/2`). The `uj_*_gifts/skills/soaks` junction tables are built by name-matching those strings against the trait tables via `uj_normalize_name()` (strips ` [..]` options, trailing soak mods like ` -4`, and die specs like ` d6`).
+
+- **Rebuild in dev:** run `php tools/uj-rebuild-joins.php` (bulk insert, ~20s). Do **NOT** trigger the admin "Build Joins" action from Replit dev — it issues one proxy round-trip per row, takes 10+ min, and the dev proxy writes to the **live** DB, so a killed run leaves production junctions truncated. On live cPanel (direct PDO) the admin action is fine.
+- **Occult careers grant Powers/Soaks by name:** 11 Occult Horror careers reference a Power (Mesmerism, ESP, etc.) or advanced Soak (Malign Soak -4, etc.) in their gift slots instead of a real gift. `uj_get_all_full` resolves these into per-career `powers`/`soaks` arrays; the builder shows them as "Power"/"Soak" cards in the Gifts step and folds career soaks into the summary.
+
 ## CSS Scoping Rule
 Any CSS affecting generic HTML elements MUST be scoped under `#cg-modal` to avoid WordPress theme interference (the generator is embedded in a WP page).
 
