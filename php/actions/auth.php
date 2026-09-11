@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/password.php';
+require_once __DIR__ . '/../includes/auth-proxy.php';
 
 /**
  * Fallback: delegate authentication to WordPress's wp_authenticate() via the
@@ -9,28 +10,7 @@ require_once __DIR__ . '/../includes/password.php';
  * compatibility edge cases.
  */
 function cg_wp_auth_check(string $username, string $password): bool {
-    $proxyUrl    = CG_PROXY_URL;
-    $proxySecret = CG_PROXY_SECRET;
-    if (!$proxyUrl || !$proxySecret) return false;
-
-    $payload = json_encode(['action' => 'wp_auth_check', 'username' => $username, 'password' => $password]);
-    $opts = [
-        'http' => [
-            'method'        => 'POST',
-            'header'        => implode("\r\n", [
-                'Content-Type: application/json',
-                'X-CG-Secret: ' . $proxySecret,
-                'Content-Length: ' . strlen($payload),
-            ]),
-            'content'       => $payload,
-            'timeout'       => 10,
-            'ignore_errors' => true,
-        ],
-    ];
-    $raw  = @file_get_contents($proxyUrl, false, stream_context_create($opts));
-    if (!$raw) return false;
-    $data = json_decode($raw, true);
-    return !empty($data['success']);
+    return cg_auth_proxy_check(CG_PROXY_URL, CG_PROXY_SECRET, $username, $password);
 }
 
 function cg_login_user(): void {
@@ -50,14 +30,13 @@ function cg_login_user(): void {
     );
 
     if (!$row) {
-        error_log("[CG auth] login failed — user not found: '{$username}'");
+        error_log("[CG auth] login failed — user not found");
         cg_json(['success' => false, 'data' => 'Invalid username or password.']);
         return;
     }
 
     $hash   = $row['user_pass'] ?? '';
-    $prefix = substr($hash, 0, 4);
-    error_log("[CG auth] login attempt — user ID={$row['ID']} hash_prefix='{$prefix}'");
+    error_log("[CG auth] login attempt — user ID={$row['ID']}");
 
     $authenticated = cg_check_password($password, $hash);
 
@@ -74,12 +53,12 @@ function cg_login_user(): void {
     }
 
     if (!$authenticated) {
-        error_log("[CG auth] all auth methods failed for user ID={$row['ID']} hash_prefix='{$prefix}'");
+        error_log("[CG auth] all auth methods failed for user ID={$row['ID']}");
         cg_json(['success' => false, 'data' => 'Invalid username or password.']);
         return;
     }
 
-    error_log("[CG auth] login succeeded for user ID={$row['ID']} login='{$row['user_login']}'");
+    error_log("[CG auth] login succeeded for user ID={$row['ID']}");
 
     $meta = cg_query_one(
         "SELECT meta_value FROM {$p}usermeta

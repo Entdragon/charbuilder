@@ -5,7 +5,7 @@
  * Implements the phpass portable hash scheme used by WordPress ($P$ prefix).
  * Also handles:
  *   - bcrypt ($2y$) — via PHP's native password_verify()
- *   - $wp$ prefix — bcrypt via wp-passwords-bcrypt plugin (strips prefix, then bcrypt)
+ *   - $wp prefix — WordPress 6.8+ HMAC-SHA384 followed by bcrypt
  *   - Legacy MD5 — 32-char hex strings
  */
 
@@ -32,11 +32,12 @@ function cg_phpass_crypt(string $password, string $setting): string {
     $output     = '*0';
     if (substr($setting, 0, 2) === $output) $output = '*1';
 
+    if (strlen($setting) < 12) return $output;
     $id = substr($setting, 0, 3);
     if ($id !== '$P$' && $id !== '$H$') return $output;
 
     $count_log2 = strpos(CG_ITOA64, $setting[3]);
-    if ($count_log2 < 7 || $count_log2 > 30) return $output;
+    if ($count_log2 === false || $count_log2 < 7 || $count_log2 > 30) return $output;
 
     $count = 1 << $count_log2;
     $salt  = substr($setting, 4, 8);
@@ -52,40 +53,26 @@ function cg_phpass_crypt(string $password, string $setting): string {
  * Verify a plaintext password against a WordPress password hash.
  */
 function cg_check_password(string $password, string $hash): bool {
-    // $wp$ prefix (wp-passwords-bcrypt plugin)
-    // Format: $wp$$2y$... — strip the 4-char "$wp$" prefix to get the real bcrypt hash
-    if (str_starts_with($hash, '$wp$')) {
-        // Log the raw hash structure (first 16 chars only, safe to log) for diagnosis
-        $rawSample = substr($hash, 0, 16);
-        error_log("[CG pw] \$wp\$ raw sample='" . $rawSample . "' len=" . strlen($hash));
-        // Try both formats:
-        //   Format A: $wp$$2y$... (plugin prepends "$wp$" before real bcrypt "$2y$...")
-        //   Format B: $wp$2y$...  (plugin stores without the leading "$" of bcrypt)
-        $suffix = substr($hash, 4);
-        if (str_starts_with($suffix, '$')) {
-            // Format A: suffix already starts with "$" → real bcrypt hash = suffix
-            $real = $suffix;
-        } else {
-            // Format B: suffix missing the leading "$" → restore it
-            $real = '$' . $suffix;
-        }
-        error_log("[CG pw] reconstructed real='" . substr($real, 0, 16) . "'");
-        return password_verify($password, $real);
+    if (strlen($password) > 4096) return false;
+    // Core stores "$wp" + bcrypt; bcrypt receives the prehashed password.
+    if (str_starts_with($hash, '$wp')) {
+        $prepared = base64_encode(hash_hmac('sha384', $password, 'wp-sha384', true));
+        return password_verify($prepared, substr($hash, 3));
     }
 
-    // bcrypt (WordPress 6.8+ core or bcrypt plugin)
+    // Unprefixed bcrypt (legacy or plugin-generated).
     if (str_starts_with($hash, '$2y$') || str_starts_with($hash, '$2a$') || str_starts_with($hash, '$2b$')) {
         return password_verify($password, $hash);
     }
 
     // phpass portable hash
     if (str_starts_with($hash, '$P$') || str_starts_with($hash, '$H$')) {
-        return cg_phpass_crypt($password, $hash) === $hash;
+        return strlen($hash) === 34 && hash_equals($hash, cg_phpass_crypt($password, $hash));
     }
 
     // Legacy MD5
     if (strlen($hash) === 32 && ctype_xdigit($hash)) {
-        return md5($password) === $hash;
+        return hash_equals($hash, md5($password));
     }
 
     return false;
